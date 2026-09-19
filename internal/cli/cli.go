@@ -1,0 +1,102 @@
+// Package cli parses the command line.
+package cli
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/app"
+	"go.dlh.dev/vedi/internal/clipboard"
+	"go.dlh.dev/vedi/internal/layout"
+)
+
+const Usage = `usage: vedi [flags] [file...]
+
+  -S, --nowrap          start in nowrap mode
+  +G                    start at the last line and follow until EOF
+  +N                    start with line N at the top
+  --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
+  -h, --help            show this help
+
+Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
+quit, / search, n/N next/prev, w toggle wrap, q quit.
+`
+
+type Options struct {
+	NoWrap       bool
+	StartLine    int // 1-based; 0 for none
+	Follow       bool
+	ClipboardCmd string
+	Help         bool
+}
+
+// App converts the parsed options into the app's, with the clipboard
+// bound to scr.
+func (o Options) App(scr tcell.Screen) app.Options {
+	mode := layout.Wrap
+	if o.NoWrap {
+		mode = layout.NoWrap
+	}
+	return app.Options{
+		Mode:      mode,
+		StartLine: o.StartLine,
+		Follow:    o.Follow,
+		Copier:    clipboard.New(scr, o.ClipboardCmd),
+	}
+}
+
+// valueFlags take an argument, as "--flag N" or "--flag=N", and set it.
+var valueFlags = map[string]func(*Options, string) error{
+	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
+}
+
+// Parse parses the command line by hand: package flag does not know
+// +N and +G.
+func Parse(args []string) (Options, []string, error) {
+	var o Options
+	var files []string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		name, val, hasVal := strings.Cut(a, "=")
+		if set, ok := valueFlags[name]; ok {
+			if !hasVal {
+				if i+1 >= len(args) {
+					return o, nil, fmt.Errorf("%s needs an argument", name)
+				}
+				i++
+				val = args[i]
+			}
+			if err := set(&o, val); err != nil {
+				return o, nil, fmt.Errorf("bad %s %v", name, err)
+			}
+			continue
+		}
+		switch {
+		case a == "-S" || a == "--nowrap":
+			o.NoWrap = true
+		case a == "+G":
+			o.Follow = true
+		case strings.HasPrefix(a, "+"):
+			n, err := strconv.Atoi(a[1:])
+			if err != nil || n < 1 {
+				return o, nil, fmt.Errorf("bad line number %q", a)
+			}
+			o.StartLine = n
+		case a == "-h" || a == "--help":
+			o.Help = true
+		case a == "--":
+			files = append(files, args[i+1:]...)
+			i = len(args)
+		case strings.HasPrefix(a, "-") && a != "-":
+			return o, nil, fmt.Errorf("unknown flag %q", a)
+		default:
+			files = append(files, a)
+		}
+	}
+	if o.StartLine > 0 && o.Follow {
+		return o, nil, fmt.Errorf("+N and +G cannot be combined")
+	}
+	return o, files, nil
+}
