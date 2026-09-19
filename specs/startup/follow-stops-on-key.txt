@@ -16,7 +16,7 @@ c
 a
 b
 c
-vedi  line 1/3  wrap  reading…    ? help
+<stdin>  line 1/3  wrap  reading…
 -- cursor --
 0 0
 -- eof --

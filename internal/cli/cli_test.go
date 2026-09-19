@@ -61,14 +61,14 @@ func TestParse(t *testing.T) {
 
 func TestApp(t *testing.T) {
 	scr := tcell.NewSimulationScreen("UTF-8")
-	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr)
+	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr, nil)
 	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
 		t.Errorf("App() = %+v", got)
 	}
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {
 		t.Errorf("default copier = %T, want OSC52", got.Copier)
 	}
-	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr).Copier).(clipboard.Command); !ok {
+	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr, nil).Copier).(clipboard.Command); !ok {
 		t.Error("--clipboard-cmd should give a Command copier")
 	}
 }

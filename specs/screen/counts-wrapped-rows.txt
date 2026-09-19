@@ -15,6 +15,6 @@ d
 bbbbbbbbbbbbbbbbbbbbbbbb
 c
 d
-vedi  line 3/4  wrap
+<stdin>  line 3/4  wrap
 -- cursor --
 1 0

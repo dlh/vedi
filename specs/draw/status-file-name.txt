@@ -1,0 +1,14 @@
+The status line starts with the name of the input: each file as given,
+or <stdin> for standard input, whether that is the only input or a "-"
+among the files.
+
+-- size --
+40x3
+-- args --
+a.txt - b.txt
+-- input --
+abc
+-- screen --
+abc
+
+a.txt <stdin> b.txt  line 1/1  wrap

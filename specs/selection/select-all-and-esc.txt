@@ -27,7 +27,7 @@ hello world
 second
 
 
-vedi  line 2/2  wrap              ? help
+<stdin>  line 2/2  wrap           ? help
 -- keys --
 y
 -- screen --

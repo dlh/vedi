@@ -3,30 +3,30 @@ cursor keeps its position in the text, so End in nowrap then w puts it
 on the last wrapped row.
 
 -- size --
-24x5
+26x5
 -- input --
 abcdefghijklmnopqrstuvwxyz0123
 -- screen --
-abcdefghijklmnopqrstuvwx
-yz0123
+abcdefghijklmnopqrstuvwxyz
+0123
 
 
-vedi  line 1/1  wrap
+<stdin>  line 1/1  wrap
 -- keys --
 w
 -- screen --
-abcdefghijklmnopqrstuvwx
+abcdefghijklmnopqrstuvwxyz
 
 
 
-vedi  line 1/1  nowrap
+<stdin>  line 1/1  nowrap
 -- keys --
 End w
 -- screen --
-abcdefghijklmnopqrstuvwx
-yz0123
+abcdefghijklmnopqrstuvwxyz
+0123
 
 
-vedi  line 1/1  wrap
+<stdin>  line 1/1  wrap
 -- cursor --
-1 6
+1 4

@@ -51,6 +51,6 @@ def
 
 
 
-vedi  line 2/2  wrap                                                      ? help
+<stdin>  line 2/2  wrap                                                   ? help
 -- cursor --
 1 0

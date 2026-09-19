@@ -12,7 +12,7 @@ abcd
 
 
 
-vedi
+<std
 -- keys --
 End
 -- screen --
@@ -20,7 +20,7 @@ hij
 
 
 
-vedi
+<std
 -- cursor --
 0 3
 -- keys --
@@ -30,6 +30,6 @@ abcd
 
 
 
-vedi
+<std
 -- cursor --
 0 0

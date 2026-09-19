@@ -9,6 +9,6 @@ Down End G
 
 
 
-vedi  line 1/0  wrap              ? help
+<stdin>  line 1/0  wrap           ? help
 -- cursor --
 hidden

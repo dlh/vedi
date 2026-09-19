@@ -201,8 +201,8 @@ func (s *scenario) start() error {
 		s.buf.Finish(nil, s.nl)
 	}
 	opts, files, err := cli.Parse(s.args)
-	if err != nil || len(files) > 0 {
-		return fmt.Errorf("args %q: %v (files %q)", s.args, err, files)
+	if err != nil {
+		return fmt.Errorf("args %q: %v", s.args, err)
 	}
 	s.scr = tcell.NewSimulationScreen("UTF-8")
 	if err := s.scr.Init(); err != nil {
@@ -210,7 +210,7 @@ func (s *scenario) start() error {
 	}
 	s.t.Cleanup(s.scr.Fini)
 	s.scr.SetSize(s.w, s.h)
-	s.app = app.New(s.scr, s.buf, opts.App(s.scr))
+	s.app = app.New(s.scr, s.buf, opts.App(s.scr, files))
 	s.notify()
 	return nil
 }
@@ -283,7 +283,7 @@ func sideBySide(want, got string) string {
 // contract and a misspelled section each fail the scenario, so a green
 // suite means the assertions ran.
 func TestRunScenarioRejects(t *testing.T) {
-	const ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\nvedi  line 1/1  wrap              ? help\n"
+	const ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\n<stdin>  line 1/1  wrap           ? help\n"
 	if err := runScenario(t, parseArchive(ok)); err != nil {
 		t.Fatalf("control scenario failed: %v", err)
 	}

@@ -20,7 +20,7 @@ PgDn
 line 2
 line 3
 line 4
-vedi  line 4/10  wrap             ? help
+<stdin>  line 4/10  wrap          ? help
 -- cursor --
 2 0
 -- keys --
@@ -29,7 +29,7 @@ G
 line 8
 line 9
 line 10
-vedi  line 10/10  wrap            ? help
+<stdin>  line 10/10  wrap         ? help
 -- cursor --
 2 0
 -- keys --
@@ -38,7 +38,7 @@ b
 line 7
 line 8
 line 9
-vedi  line 7/10  wrap             ? help
+<stdin>  line 7/10  wrap          ? help
 -- cursor --
 0 0
 -- keys --
@@ -47,7 +47,7 @@ g
 line 1
 line 2
 line 3
-vedi  line 1/10  wrap             ? help
+<stdin>  line 1/10  wrap          ? help
 -- cursor --
 0 0
 -- keys --
@@ -56,6 +56,6 @@ Space
 line 2
 line 3
 line 4
-vedi  line 4/10  wrap             ? help
+<stdin>  line 4/10  wrap          ? help
 -- cursor --
 2 0

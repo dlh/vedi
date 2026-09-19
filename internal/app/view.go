@@ -161,7 +161,7 @@ func (a *App) statusText() string {
 	if eof, _ := a.buf.Finished(); !eof {
 		reading = "  reading…"
 	}
-	return fmt.Sprintf("vedi  line %d/%d  %s%s", a.cur.Line+1, a.buf.Len(), mode, reading)
+	return fmt.Sprintf("%s  line %d/%d  %s%s", a.name, a.cur.Line+1, a.buf.Len(), mode, reading)
 }
 
 // runeStyle is the style of rune i: its own, reversed for a control

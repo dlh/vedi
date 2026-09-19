@@ -18,7 +18,8 @@ lets you select it with the keyboard.
       --cursor-col N        put the cursor in column N of the last screenful
       --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
 
-With no files, `vedi` reads stdin.
+With no files, `vedi` reads stdin. The status line names the files
+being viewed, or `<stdin>`.
 
 ## Keys
 

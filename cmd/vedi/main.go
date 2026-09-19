@@ -76,7 +76,7 @@ func main() {
 	defer scr.Fini()
 
 	buf := buffer.New()
-	a := app.New(scr, buf, opts.App(scr))
+	a := app.New(scr, buf, opts.App(scr, files))
 	go buffer.Fill(in, buf, a.Notify)
 	a.Run()
 }

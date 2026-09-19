@@ -28,6 +28,6 @@ one
 two
 three
 
-vedi  line 3/3  wrap              ? help
+<stdin>  line 3/3  wrap           ? help
 -- cursor --
 2 1

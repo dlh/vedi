@@ -12,7 +12,7 @@ abcd
 efgh
 ij
 k
-vedi
+<std
 -- keys --
 Down
 -- cursor --

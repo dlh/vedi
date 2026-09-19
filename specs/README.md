@@ -39,7 +39,7 @@ Setup:
 | Section | Content |
 |---|---|
 | `-- size --` | `WxH`. Default `40x6`. |
-| `-- args --` | The command line: `-S +G`, `--scrolled-by 1 --cursor-row 3`, `--clipboard-cmd false`. Split on whitespace, no quoting, so a `--clipboard-cmd` value cannot contain spaces. |
+| `-- args --` | The command line: `-S +G`, `--scrolled-by 1 --cursor-row 3`, `--clipboard-cmd false`. Split on whitespace, no quoting, so a `--clipboard-cmd` value cannot contain spaces. File names only name the input in the status line; the text still comes from `-- input --`. |
 | `-- input --` | Text for the buffer. A section ending with a blank line is input that ends with a newline. Repeats append later. |
 | `-- eof --` | Ends the input. Without one, input is complete before the first draw. |
 

@@ -36,20 +36,35 @@ type Options struct {
 	Help         bool
 }
 
-// App converts the parsed options into the app's, with the clipboard
-// bound to scr.
-func (o Options) App(scr tcell.Screen) app.Options {
+// App converts the options to the app's. The input is named after
+// files, each as given; "-" and no files are "<stdin>".
+func (o Options) App(scr tcell.Screen, files []string) app.Options {
 	mode := layout.Wrap
 	if o.NoWrap {
 		mode = layout.NoWrap
 	}
 	return app.Options{
+		Name:      inputName(files),
 		Mode:      mode,
 		StartLine: o.StartLine,
 		Follow:    o.Follow,
 		Screen:    o.Screen,
 		Copier:    clipboard.New(scr, o.ClipboardCmd),
 	}
+}
+
+func inputName(files []string) string {
+	if len(files) == 0 {
+		return "<stdin>"
+	}
+	names := make([]string, len(files))
+	for i, f := range files {
+		if f == "-" {
+			f = "<stdin>"
+		}
+		names[i] = f
+	}
+	return strings.Join(names, " ")
 }
 
 // valueFlags take an argument, as "--flag N" or "--flag=N", and set it.

@@ -11,6 +11,6 @@ hello
 world
 
 
-vedi  line 1/2  wrap              ? help
+<stdin>  line 1/2  wrap           ? help
 -- cursor --
 0 0

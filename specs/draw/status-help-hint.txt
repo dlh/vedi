@@ -3,19 +3,19 @@ bindings can be found from any message. The hint is dropped, not cut,
 when fewer than two spaces would separate it from the text.
 
 -- size --
-30x3
+32x3
 -- input --
 abc
 -- screen --
 abc
 
-vedi  line 1/1  wrap    ? help
+<stdin>  line 1/1  wrap   ? help
 -- resize --
-27x3
+30x3
 -- screen --
 abc
 
-vedi  line 1/1  wrap
+<stdin>  line 1/1  wrap
 -- resize --
 40x3
 -- keys --

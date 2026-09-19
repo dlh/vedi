@@ -16,6 +16,7 @@ import (
 )
 
 type Options struct {
+	Name      string // what the status line calls the input
 	Mode      layout.Mode
 	StartLine int  // 1-based line to put at the top; 0 for none
 	Follow    bool // keep the cursor on the last line until EOF (+G)
@@ -38,6 +39,7 @@ type App struct {
 	scr    tcell.Screen
 	buf    *buffer.Buffer
 	copier clipboard.Copier
+	name   string
 	mode   layout.Mode
 
 	cur    buffer.Pos
@@ -66,6 +68,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		scr:       scr,
 		buf:       buf,
 		copier:    opts.Copier,
+		name:      opts.Name,
 		mode:      opts.Mode,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,

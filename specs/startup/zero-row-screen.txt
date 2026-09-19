@@ -19,7 +19,7 @@ hidden
 10x2
 -- screen --
 only
-vedi  line
+<stdin>  l
 -- cursor --
 0 4
 -- keys --

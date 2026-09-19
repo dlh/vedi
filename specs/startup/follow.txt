@@ -15,7 +15,7 @@ line 5
 line 3
 line 4
 line 5
-vedi  line 5/5  wrap  reading…    ? help
+<stdin>  line 5/5  wrap  reading…
 -- cursor --
 2 0
 -- input --
@@ -24,7 +24,7 @@ line 6
 line 4
 line 5
 line 6
-vedi  line 6/6  wrap  reading…    ? help
+<stdin>  line 6/6  wrap  reading…
 -- cursor --
 2 0
 -- eof --
@@ -32,4 +32,4 @@ vedi  line 6/6  wrap  reading…    ? help
 line 4
 line 5
 line 6
-vedi  line 6/6  wrap              ? help
+<stdin>  line 6/6  wrap           ? help

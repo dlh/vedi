@@ -18,6 +18,6 @@ line 5
 line 4
 line 5
 
-vedi  line 5/5  wrap              ? help
+<stdin>  line 5/5  wrap           ? help
 -- cursor --
 1 0
