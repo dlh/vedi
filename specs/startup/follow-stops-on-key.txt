@@ -16,7 +16,7 @@ c
 a
 b
 c
-vedi  line 1/3  wrap  reading…
+vedi  line 1/3  wrap  reading…    ? help
 -- cursor --
 0 0
 -- eof --

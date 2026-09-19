@@ -1,6 +1,8 @@
 package input
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -39,6 +41,7 @@ func TestDecode(t *testing.T) {
 		{"N", k(tcell.KeyRune, 'N', 0), Command{SearchPrev, false}},
 		{"w", k(tcell.KeyRune, 'w', 0), Command{ToggleWrap, false}},
 		{"q", k(tcell.KeyRune, 'q', 0), Command{Quit, false}},
+		{"?", k(tcell.KeyRune, '?', 0), Command{Help, false}},
 		{"unbound", k(tcell.KeyRune, 'z', 0), Command{}},
 		{"unbound key", k(tcell.KeyF1, 0, 0), Command{}},
 	}
@@ -57,9 +60,46 @@ func TestIsMovement(t *testing.T) {
 			t.Errorf("IsMovement(%d) = false", a)
 		}
 	}
-	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchNext, SearchPrev, ToggleWrap, Quit} {
+	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchNext, SearchPrev, ToggleWrap, Quit, Help} {
 		if IsMovement(a) {
 			t.Errorf("IsMovement(%d) = true", a)
+		}
+	}
+}
+
+// TestBindingsMatchREADME keeps the help screen and the README's Keys
+// table the same list: each row of the table is a Binding, in order.
+func TestBindingsMatchREADME(t *testing.T) {
+	data, err := os.ReadFile("../../README.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []Binding
+	inKeys := false
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, "## ") {
+			inKeys = line == "## Keys"
+			continue
+		}
+		if !inKeys || !strings.HasPrefix(line, "|") {
+			continue
+		}
+		cells := strings.Split(strings.Trim(line, "|"), "|")
+		if len(cells) != 2 {
+			t.Fatalf("README row %q: want two cells", line)
+		}
+		key, doc := strings.TrimSpace(cells[0]), strings.TrimSpace(cells[1])
+		if key == "Key" || key == "---" {
+			continue
+		}
+		rows = append(rows, Binding{key, doc})
+	}
+	if len(rows) != len(Bindings) {
+		t.Fatalf("README has %d bindings, Bindings has %d", len(rows), len(Bindings))
+	}
+	for i := range rows {
+		if rows[i] != Bindings[i] {
+			t.Errorf("row %d: README %+v, Bindings %+v", i, rows[i], Bindings[i])
 		}
 	}
 }

@@ -52,6 +52,7 @@ type App struct {
 	status  string // one-shot message, cleared on the next key
 	readErr string
 
+	helping   bool // the key bindings are shown instead of the text
 	searching bool // the / prompt is open
 	query     []rune
 	matcher   search.Matcher
@@ -111,6 +112,10 @@ func (a *App) Handle(ev tcell.Event) bool {
 		a.startLine = -1
 		a.screen = nil
 		a.status = ""
+		if a.helping {
+			a.helping = false
+			return false
+		}
 		if a.searching {
 			a.handleSearchKey(ev)
 			return false
@@ -245,6 +250,8 @@ func (a *App) handleKey(c input.Command) bool {
 			a.mode = layout.Wrap
 		}
 		a.xoff = 0
+	case input.Help:
+		a.helping = true
 	case input.Quit:
 		return true
 	}

@@ -14,7 +14,7 @@ o[ne ]
 [two ]
 [th]ree
 
-copied 3 lines
+copied 3 lines                    ? help
 -- cursor --
 2 2
 -- clipboard --
@@ -28,6 +28,6 @@ one
 two
 three
 
-vedi  line 3/3  wrap
+vedi  line 3/3  wrap              ? help
 -- cursor --
 2 1

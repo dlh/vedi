@@ -12,7 +12,7 @@ line 1
 line 1
 
 
-vedi  line 1/1  wrap  reading…
+vedi  line 1/1  wrap  reading…    ? help
 -- cursor --
 0 0
 -- input --
@@ -22,7 +22,7 @@ line 3
 line 3
 
 
-vedi  line 3/3  wrap  reading…
+vedi  line 3/3  wrap  reading…    ? help
 -- cursor --
 0 0
 -- eof --

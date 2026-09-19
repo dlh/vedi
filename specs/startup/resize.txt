@@ -20,7 +20,7 @@ G
 line 8
 line 9
 line 10
-vedi  line 10/10  wrap
+vedi  line 10/10  wrap            ? help
 -- resize --
 40x8
 -- screen --
@@ -31,6 +31,6 @@ line 10
 
 
 
-vedi  line 10/10  wrap
+vedi  line 10/10  wrap            ? help
 -- cursor --
 2 0

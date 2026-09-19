@@ -29,7 +29,33 @@ const (
 	SearchPrev
 	ToggleWrap
 	Quit
+	Help
 )
+
+// Binding is one row of the help screen: the keys and what they do.
+type Binding struct {
+	Keys, Doc string
+}
+
+// Bindings lists every key, in the order the help screen shows them.
+// The README's Keys table is the same list.
+var Bindings = []Binding{
+	{"↑ ↓ ← →, Home, End", "Move the cursor"},
+	{"⇞ ⇟, Space, b", "Move by a page"},
+	{"⌃←, ⌃→", "Move by word"},
+	{"g, G", "First line, last line"},
+	{"⇧ + ↑ ↓ ← →, Home, End", "Extend the selection"},
+	{"⇧⇞, ⇧⇟", "Extend by a page"},
+	{"⌃⇧←, ⌃⇧→", "Extend by word"},
+	{"⌃A", "Select all"},
+	{"⎋", "Clear the selection, then the search highlight"},
+	{"⌃C, y", "Copy the selection as plain text"},
+	{"⏎", "Copy the selection and quit; with none, down a line"},
+	{"/", "Search (smartcase); n and N for next and previous"},
+	{"w", "Toggle wrap / nowrap"},
+	{"q", "Quit"},
+	{"?", "Show the key bindings"},
+}
 
 // IsMovement reports whether a moves the cursor.
 func IsMovement(a Action) bool { return a >= Up && a <= Last }
@@ -100,6 +126,8 @@ func Decode(ev *tcell.EventKey) Command {
 			return Command{Action: ToggleWrap}
 		case 'q':
 			return Command{Action: Quit}
+		case '?':
+			return Command{Action: Help}
 		}
 	}
 	return Command{}

@@ -24,18 +24,21 @@ With no files, `vedi` reads stdin.
 
 | Key | Action |
 |---|---|
-| Arrows, Home, End | Move the cursor |
-| PgUp, PgDn, Space, b | Move by a page |
-| Ctrl+Left/Right | Move by word |
+| ↑ ↓ ← →, Home, End | Move the cursor |
+| ⇞ ⇟, Space, b | Move by a page |
+| ⌃←, ⌃→ | Move by word |
 | g, G | First line, last line |
-| Shift + arrows, Home, End, PgUp, PgDn; Ctrl+Shift+Left/Right | Extend the selection |
-| Ctrl+A | Select all |
-| Esc | Clear the selection, then the search highlight |
-| Ctrl+C, y | Copy the selection as plain text |
-| Enter | With a selection: copy and quit. Without: down one line |
+| ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
+| ⇧⇞, ⇧⇟ | Extend by a page |
+| ⌃⇧←, ⌃⇧→ | Extend by word |
+| ⌃A | Select all |
+| ⎋ | Clear the selection, then the search highlight |
+| ⌃C, y | Copy the selection as plain text |
+| ⏎ | Copy the selection and quit; with none, down a line |
 | / | Search (smartcase); n and N for next and previous |
 | w | Toggle wrap / nowrap |
 | q | Quit |
+| ? | Show the key bindings |
 
 ## Clipboard
 

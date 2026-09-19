@@ -25,7 +25,7 @@ bar [foo]
 [foo]
 
 
-vedi  line 1/3  wrap
+vedi  line 1/3  wrap              ? help
 -- cursor --
 0 0
 -- keys --
@@ -40,7 +40,7 @@ bar [foo]
 [foo]
 
 
-search wrapped
+search wrapped                    ? help
 -- cursor --
 0 0
 -- keys --
@@ -51,7 +51,7 @@ bar [foo]
 [foo]
 
 
-search wrapped
+search wrapped                    ? help
 -- cursor --
 2 0
 -- keys --
@@ -62,7 +62,7 @@ bar [foo]
 [foo]
 
 
-copied 1 line
+copied 1 line                     ? help
 -- clipboard --
 fo
 -- keys --
@@ -73,7 +73,7 @@ bar [foo]
 [foo]
 
 
-vedi  line 3/3  wrap
+vedi  line 3/3  wrap              ? help
 -- keys --
 Esc
 -- screen --
@@ -82,4 +82,4 @@ bar foo
 foo
 
 
-vedi  line 3/3  wrap
+vedi  line 3/3  wrap              ? help

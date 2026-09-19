@@ -11,4 +11,4 @@ a[^M]b    c
 
 
 
-vedi  line 1/1  wrap
+vedi  line 1/1  wrap              ? help

@@ -1,0 +1,16 @@
+The bindings are cut at the status line when the screen is too short
+for them all.
+
+-- size --
+60x6
+-- input --
+abc
+-- keys --
+?
+-- screen --
+↑ ↓ ← →, Home, End      Move the cursor
+⇞ ⇟, Space, b           Move by a page
+⌃←, ⌃→                  Move by word
+g, G                    First line, last line
+⇧ + ↑ ↓ ← →, Home, End  Extend the selection
+help  any key returns

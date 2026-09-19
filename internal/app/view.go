@@ -6,23 +6,26 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
+	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 )
 
-// selStyle is the one style every selected cell is drawn in, whatever
-// the text's own color: the terminal's default colors, swapped.
+// selStyle draws every selected cell, whatever the text's own color:
+// the terminal's default colors, swapped.
 var selStyle = tcell.StyleDefault.Reverse(true)
 
-// Draw renders the buffer from top, the selection in selStyle, search
+// Draw renders the text from top, the selection in selStyle, search
 // matches in reverse video, and the status line. While a Screen waits
-// for EOF only the status line is drawn: the view is not known yet, and
-// drawing the tail as it arrives would repaint the whole screen for
-// every batch of lines.
+// for EOF only the status line is drawn: the view is not known until
+// then. While help is up the bindings take the text's place.
 func (a *App) Draw() {
 	a.scr.Clear()
 	a.top = a.snap(a.top)
 	curX, curY := -1, -1
-	if a.screen == nil {
+	switch {
+	case a.helping:
+		a.drawHelp()
+	case a.screen == nil:
 		curX, curY = a.drawText()
 	}
 	a.drawStatus()
@@ -94,8 +97,29 @@ func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 	return curX, ok
 }
 
+// drawHelp draws input.Bindings, keys in a column as wide as the
+// widest, as many as fit above the status line.
+func (a *App) drawHelp() {
+	w, _ := a.scr.Size()
+	keyw := 0
+	for _, b := range input.Bindings {
+		keyw = max(keyw, len([]rune(b.Keys)))
+	}
+	for y, b := range input.Bindings {
+		if y >= a.textRows() {
+			break
+		}
+		row := []rune(fmt.Sprintf("%-*s  %s", keyw, b.Keys, b.Doc))
+		for x, r := range row {
+			put(a.scr, x, y, w, r, tcell.StyleDefault)
+		}
+	}
+}
+
 // drawStatus draws statusText in reverse video on the bottom row, which
-// exists only when the screen has at least two rows.
+// needs two rows to exist, with "? help" at the right edge unless help
+// is up, a search is being typed, or it would come within two spaces of
+// the text.
 func (a *App) drawStatus() {
 	w, h := a.scr.Size()
 	if h < 2 {
@@ -103,10 +127,16 @@ func (a *App) drawStatus() {
 	}
 	st := tcell.StyleDefault.Reverse(true)
 	text := []rune(a.statusText())
+	hint := []rune("? help")
+	if a.helping || a.searching || len(text)+2+len(hint) > w {
+		hint = nil
+	}
 	for x := 0; x < w; x++ {
 		r := ' '
 		if x < len(text) {
 			r = text[x]
+		} else if x >= w-len(hint) {
+			r = hint[x-(w-len(hint))]
 		}
 		a.scr.SetContent(x, h-1, r, nil, st)
 	}
@@ -114,6 +144,8 @@ func (a *App) drawStatus() {
 
 func (a *App) statusText() string {
 	switch {
+	case a.helping:
+		return "help  any key returns"
 	case a.searching:
 		return "/" + string(a.query)
 	case a.status != "":

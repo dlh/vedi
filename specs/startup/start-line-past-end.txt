@@ -14,6 +14,6 @@ line 5
 line 5
 
 
-vedi  line 5/5  wrap
+vedi  line 5/5  wrap              ? help
 -- cursor --
 0 0

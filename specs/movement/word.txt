@@ -35,7 +35,7 @@ foo bar_1  [baz]
 next
 
 
-copied 1 line
+copied 1 line                     ? help
 -- cursor --
 0 14
 -- clipboard --
@@ -47,7 +47,7 @@ foo bar_1  [baz]
 next
 
 
-copied 1 line
+copied 1 line                     ? help
 -- cursor --
 0 11
 -- clipboard --

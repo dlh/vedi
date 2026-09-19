@@ -14,7 +14,7 @@ Ctrl+A y
 [second]
 
 
-copied 2 lines
+copied 2 lines                    ? help
 -- cursor --
 1 6
 -- clipboard --
@@ -27,7 +27,7 @@ hello world
 second
 
 
-vedi  line 2/2  wrap
+vedi  line 2/2  wrap              ? help
 -- keys --
 y
 -- screen --
@@ -35,4 +35,4 @@ hello world
 second
 
 
-nothing selected
+nothing selected                  ? help

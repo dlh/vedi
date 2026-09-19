@@ -1,0 +1,56 @@
+? replaces the text with the key bindings and their meaning; the
+status line says how to get back. Any key returns to the text and
+does nothing else, so q returns rather than quits and the cursor is
+where it was.
+
+-- size --
+80x18
+-- input --
+abc
+def
+-- keys --
+Down ?
+-- screen --
+↑ ↓ ← →, Home, End      Move the cursor
+⇞ ⇟, Space, b           Move by a page
+⌃←, ⌃→                  Move by word
+g, G                    First line, last line
+⇧ + ↑ ↓ ← →, Home, End  Extend the selection
+⇧⇞, ⇧⇟                  Extend by a page
+⌃⇧←, ⌃⇧→                Extend by word
+⌃A                      Select all
+⎋                       Clear the selection, then the search highlight
+⌃C, y                   Copy the selection as plain text
+⏎                       Copy the selection and quit; with none, down a line
+/                       Search (smartcase); n and N for next and previous
+w                       Toggle wrap / nowrap
+q                       Quit
+?                       Show the key bindings
+
+
+help  any key returns
+-- cursor --
+hidden
+-- keys --
+q
+-- screen --
+abc
+def
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+vedi  line 2/2  wrap                                                      ? help
+-- cursor --
+1 0

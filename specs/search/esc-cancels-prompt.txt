@@ -11,7 +11,7 @@ abc
 
 
 
-vedi  line 1/1  wrap
+vedi  line 1/1  wrap              ? help
 -- cursor --
 0 0
 -- keys --
@@ -22,4 +22,4 @@ abc
 
 
 
-no search pattern
+no search pattern                 ? help

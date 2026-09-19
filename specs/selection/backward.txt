@@ -12,7 +12,7 @@ abcd[ef]
 
 
 
-copied 1 line
+copied 1 line                     ? help
 -- cursor --
 0 4
 -- clipboard --

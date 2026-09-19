@@ -13,7 +13,7 @@ foo
 
 
 
-not found: FOO
+not found: FOO                    ? help
 -- cursor --
 0 0
 -- keys --
@@ -24,6 +24,6 @@ not found: FOO
 
 
 
-vedi  line 2/2  wrap
+vedi  line 2/2  wrap              ? help
 -- cursor --
 1 0

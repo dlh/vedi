@@ -12,7 +12,7 @@ ab
 cd
 
 
-vedi  line 1/2  wrap
+vedi  line 1/2  wrap              ? help
 -- keys --
 Shift+Down
 -- screen --
@@ -20,6 +20,6 @@ Shift+Down
 cd
 
 
-vedi  line 2/2  wrap
+vedi  line 2/2  wrap              ? help
 -- cursor --
 1 0
