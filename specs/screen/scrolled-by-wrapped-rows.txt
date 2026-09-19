@@ -1,0 +1,19 @@
+--scrolled-by counts wrapped rows too: scrolling up one row from the
+last screenful shows both rows of the wrapped line.
+
+-- size --
+24x4
+-- args --
+--scrolled-by 1
+-- input --
+a
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+c
+d
+-- screen --
+bbbbbbbbbbbbbbbbbbbbbbbb
+bbbbbbbbbbbbbbbbbbbbbbbb
+c
+vedi  line 2/4  wrap
+-- cursor --
+0 0

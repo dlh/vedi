@@ -14,11 +14,13 @@ func Fill(r io.Reader, buf *Buffer, notify func()) {
 	br := bufio.NewReaderSize(r, 64*1024)
 	p := ansi.NewParser()
 	var err error
+	nl := false
 	for {
 		var raw []byte
 		raw, err = br.ReadBytes('\n')
 		if len(raw) > 0 {
-			if raw[len(raw)-1] == '\n' {
+			nl = raw[len(raw)-1] == '\n'
+			if nl {
 				raw = raw[:len(raw)-1]
 				if len(raw) > 0 && raw[len(raw)-1] == '\r' {
 					raw = raw[:len(raw)-1]
@@ -35,6 +37,6 @@ func Fill(r io.Reader, buf *Buffer, notify func()) {
 	if err == io.EOF {
 		err = nil
 	}
-	buf.Finish(err)
+	buf.Finish(err, nl)
 	notify()
 }

@@ -19,7 +19,19 @@ type Options struct {
 	Mode      layout.Mode
 	StartLine int  // 1-based line to put at the top; 0 for none
 	Follow    bool // keep the cursor on the last line until EOF (+G)
+	Screen    *Screen
 	Copier    clipboard.Copier
+}
+
+// Screen is the view the terminal was showing, so the pager can open on
+// the same rows: the last screenful, scrolled ScrolledBy rows up, with
+// the cursor at the 1-based (CursorRow, CursorCol) of that screenful.
+// A zero CursorRow leaves the cursor at the top. The status line takes
+// one row, so the terminal's top row is dropped.
+type Screen struct {
+	ScrolledBy int
+	CursorRow  int
+	CursorCol  int
 }
 
 type App struct {
@@ -34,7 +46,8 @@ type App struct {
 	xoff   int         // horizontal scroll in NoWrap mode
 
 	follow    bool
-	startLine int // 0-based +N target; -1 once applied
+	startLine int     // 0-based +N target; -1 once applied
+	screen    *Screen // applied at EOF, then nil; no text is drawn until then
 
 	status  string // one-shot message, cleared on the next key
 	readErr string
@@ -55,6 +68,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		mode:      opts.Mode,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
+		screen:    opts.Screen,
 	}
 	if opts.StartLine <= 0 {
 		a.startLine = -1
@@ -95,6 +109,7 @@ func (a *App) Handle(ev tcell.Event) bool {
 	case *tcell.EventKey:
 		a.follow = false
 		a.startLine = -1
+		a.screen = nil
 		a.status = ""
 		if a.searching {
 			a.handleSearchKey(ev)
@@ -106,7 +121,7 @@ func (a *App) Handle(ev tcell.Event) bool {
 }
 
 // onData runs after the reader appended lines: it applies a pending +N,
-// follows the end for +G, and records a read error.
+// follows for +G, applies a Screen at EOF and records a read error.
 func (a *App) onData() {
 	eof, err := a.buf.Finished()
 	if err != nil {
@@ -121,7 +136,47 @@ func (a *App) onData() {
 	if a.follow {
 		a.cur = buffer.Pos{Line: max(n-1, 0)}
 	}
+	if a.screen != nil && eof {
+		a.showScreen(*a.screen)
+		a.screen = nil
+	}
 	a.scrollToCursor()
+}
+
+// showScreen puts the view where the terminal had it. The buffer's last
+// row was the terminal's bottom row, so the top is rows-1 plus the
+// scroll above it; a trailing newline means the bottom row was blank
+// and not in the buffer, one row fewer. The status line's row comes off
+// the top of the screenful, and the cursor row moves up with it. When
+// scrolled, the cursor was below the view and goes to the top.
+func (a *App) showScreen(s Screen) {
+	n := a.buf.Len()
+	if n == 0 {
+		return
+	}
+	_, h := a.scr.Size()
+	rows := a.textRows()
+	back := rows - 1 + s.ScrolledBy
+	if a.buf.TrailingNewline() {
+		back--
+	}
+	top := a.snap(buffer.Pos{Line: n - 1, Col: len(a.line(n - 1))})
+	for i := 0; i < back; i++ {
+		top = a.prevRow(top)
+	}
+	a.top = top
+	a.cur = top
+	if s.ScrolledBy > 0 || s.CursorRow <= 0 {
+		return
+	}
+	p := top
+	for i := 0; i < min(s.CursorRow-(h-rows), rows)-1; i++ {
+		p = a.nextRow(p)
+	}
+	l := a.layout()
+	text := a.line(p.Line)
+	row, _ := l.Pos(text, p.Col)
+	a.cur = buffer.Pos{Line: p.Line, Col: l.Col(text, row, max(s.CursorCol-1, 0))}
 }
 
 func (a *App) handleKey(c input.Command) bool {

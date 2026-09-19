@@ -1,0 +1,20 @@
+Rows are counted as displayed: a line that wrapped in the terminal
+counts for the rows it wrapped into, so the view can start in the
+middle of one and the line still copies as one line.
+
+-- size --
+24x4
+-- args --
+--cursor-row 3 --cursor-col 1
+-- input --
+a
+bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+c
+d
+-- screen --
+bbbbbbbbbbbbbbbbbbbbbbbb
+c
+d
+vedi  line 3/4  wrap
+-- cursor --
+1 0

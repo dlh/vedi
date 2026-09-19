@@ -28,6 +28,7 @@ type Buffer struct {
 	lines []Line
 	eof   bool
 	err   error
+	nl    bool // the input ended with "\n"
 }
 
 func New() *Buffer { return &Buffer{} }
@@ -54,11 +55,21 @@ func (b *Buffer) Append(l Line) {
 	b.mu.Unlock()
 }
 
-// Finish marks the end of input. err is the read error, or nil at EOF.
-func (b *Buffer) Finish(err error) {
+// Finish marks the end of input. err is the read error, or nil at EOF;
+// trailingNewline reports whether the input ended with "\n".
+func (b *Buffer) Finish(err error, trailingNewline bool) {
 	b.mu.Lock()
-	b.eof, b.err = true, err
+	b.eof, b.err, b.nl = true, err, trailingNewline
 	b.mu.Unlock()
+}
+
+// TrailingNewline reports whether the input ended with "\n". A trailing
+// "\n" adds no line, so this tells a terminated last line from a blank
+// bottom row.
+func (b *Buffer) TrailingNewline() bool {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.nl
 }
 
 // Finished reports whether input has ended and with what error.

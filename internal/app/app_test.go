@@ -79,7 +79,7 @@ func clip(scr tcell.SimulationScreen) string { return string(scr.GetClipboardDat
 func TestReadErrorInStatus(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "", Options{})
 	a.buf.Append(buffer.Line{Text: []rune("partial")})
-	a.buf.Finish(fmt.Errorf("disk on fire"))
+	a.buf.Finish(fmt.Errorf("disk on fire"), false)
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Draw()
 	if got := row(scr, 3); got != "read error: disk on fire" {

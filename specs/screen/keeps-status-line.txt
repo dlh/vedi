@@ -1,0 +1,20 @@
+A cursor on the terminal's bottom row lands on the pager's last text
+row, above the status line.
+
+-- size --
+40x4
+-- args --
+--cursor-row 4 --cursor-col 1
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+line 3
+line 4
+line 5
+vedi  line 5/5  wrap
+-- cursor --
+2 0

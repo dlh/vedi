@@ -1,0 +1,20 @@
+--scrolled-by N opens N rows above the last screenful. The terminal's
+cursor was below the view, so the pager's cursor goes to the top row.
+
+-- size --
+40x4
+-- args --
+--scrolled-by 1 --cursor-row 2 --cursor-col 3
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+line 2
+line 3
+line 4
+vedi  line 2/5  wrap
+-- cursor --
+0 0

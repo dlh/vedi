@@ -1,0 +1,22 @@
+--cursor-row and --cursor-col open the pager on the terminal's last
+screenful: the input's last line is the terminal's bottom row. The
+status line takes one row, so the terminal's top row is dropped and the
+cursor keeps its line, one row higher.
+
+-- size --
+40x4
+-- args --
+--cursor-row 2 --cursor-col 3
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+line 3
+line 4
+line 5
+vedi  line 3/5  wrap
+-- cursor --
+0 2

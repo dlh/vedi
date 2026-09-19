@@ -14,11 +14,17 @@ import (
 var selStyle = tcell.StyleDefault.Reverse(true)
 
 // Draw renders the buffer from top, the selection in selStyle, search
-// matches in reverse video, and the status line.
+// matches in reverse video, and the status line. While a Screen waits
+// for EOF only the status line is drawn: the view is not known yet, and
+// drawing the tail as it arrives would repaint the whole screen for
+// every batch of lines.
 func (a *App) Draw() {
 	a.scr.Clear()
 	a.top = a.snap(a.top)
-	curX, curY := a.drawText()
+	curX, curY := -1, -1
+	if a.screen == nil {
+		curX, curY = a.drawText()
+	}
 	a.drawStatus()
 	if curX >= 0 {
 		w, _ := a.scr.Size()

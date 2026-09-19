@@ -17,6 +17,9 @@ const Usage = `usage: vedi [flags] [file...]
   -S, --nowrap          start in nowrap mode
   +G                    start at the last line and follow until EOF
   +N                    start with line N at the top
+  --scrolled-by N       start on the last screenful, scrolled N rows up
+  --cursor-row N        put the cursor on row N of the last screenful
+  --cursor-col N        put the cursor in column N of the last screenful
   --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
   -h, --help            show this help
 
@@ -28,6 +31,7 @@ type Options struct {
 	NoWrap       bool
 	StartLine    int // 1-based; 0 for none
 	Follow       bool
+	Screen       *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd string
 	Help         bool
 }
@@ -43,13 +47,33 @@ func (o Options) App(scr tcell.Screen) app.Options {
 		Mode:      mode,
 		StartLine: o.StartLine,
 		Follow:    o.Follow,
+		Screen:    o.Screen,
 		Copier:    clipboard.New(scr, o.ClipboardCmd),
 	}
 }
 
 // valueFlags take an argument, as "--flag N" or "--flag=N", and set it.
 var valueFlags = map[string]func(*Options, string) error{
+	"--scrolled-by":   screenInt(0, func(s *app.Screen) *int { return &s.ScrolledBy }),
+	"--cursor-row":    screenInt(1, func(s *app.Screen) *int { return &s.CursorRow }),
+	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
 	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
+}
+
+// screenInt returns a setter that parses an integer of at least min
+// into a Screen field, allocating the Screen on first use.
+func screenInt(min int, field func(*app.Screen) *int) func(*Options, string) error {
+	return func(o *Options, v string) error {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < min {
+			return fmt.Errorf("%q", v)
+		}
+		if o.Screen == nil {
+			o.Screen = &app.Screen{}
+		}
+		*field(o.Screen) = n
+		return nil
+	}
 }
 
 // Parse parses the command line by hand: package flag does not know
@@ -94,6 +118,9 @@ func Parse(args []string) (Options, []string, error) {
 		default:
 			files = append(files, a)
 		}
+	}
+	if o.Screen != nil && (o.StartLine > 0 || o.Follow) {
+		return o, nil, fmt.Errorf("--scrolled-by and --cursor-* cannot be combined with +N or +G")
 	}
 	if o.StartLine > 0 && o.Follow {
 		return o, nil, fmt.Errorf("+N and +G cannot be combined")

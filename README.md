@@ -13,6 +13,9 @@ lets you select it with the keyboard.
       -S, --nowrap          start in nowrap mode
       +G                    start at the last line and follow until EOF
       +N                    start with line N at the top
+      --scrolled-by N       start on the last screenful, scrolled N rows up
+      --cursor-row N        put the cursor on row N of the last screenful
+      --cursor-col N        put the cursor in column N of the last screenful
       --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
 
 With no files, `vedi` reads stdin.
@@ -43,9 +46,14 @@ and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
 
 ## kitty
 
-    scrollback_pager vedi -S +INPUT_LINE_NUMBER
+Open the scrollback on the rows you were looking at, cursor where it was:
 
-Kitty sends one line per screen row, so `-S` keeps them as they were.
+    map <shortcut> launch --type overlay --stdin-source=@screen_scrollback --stdin-add-formatting vedi --scrolled-by @scrolled-by --cursor-row @cursor-y --cursor-col @cursor-x
+
+Or as the `scrollback_pager`, which gets one line per screen row — `-S`
+keeps them so, but a wrapped line then copies with a newline at each wrap:
+
+    scrollback_pager vedi -S +INPUT_LINE_NUMBER
 
 ## License
 

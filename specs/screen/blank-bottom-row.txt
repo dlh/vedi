@@ -1,0 +1,23 @@
+Terminals join rows with newlines and end without one, so input ending
+in a newline means the terminal's bottom row was blank. That row is not
+in the buffer but still counts as a row of the screenful. This input
+ends with a newline: the section ends with a blank line.
+
+-- size --
+40x4
+-- args --
+--cursor-row 3 --cursor-col 1
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+
+-- screen --
+line 4
+line 5
+
+vedi  line 5/5  wrap
+-- cursor --
+1 0

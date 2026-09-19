@@ -1,0 +1,28 @@
+The last screenful is only known at EOF, so until then the pager draws
+nothing but the status line rather than redraw on every batch of lines.
+
+-- size --
+40x4
+-- args --
+--cursor-row 1
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+
+
+
+vedi  line 1/5  wrap  reading…
+-- cursor --
+hidden
+-- eof --
+-- screen --
+line 3
+line 4
+line 5
+vedi  line 3/5  wrap
+-- cursor --
+0 0

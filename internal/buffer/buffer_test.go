@@ -46,6 +46,21 @@ func TestFillSplitsLines(t *testing.T) {
 	}
 }
 
+func TestFillRecordsTrailingNewline(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want bool
+	}{
+		{"a\n", true}, {"a\r\n", true}, {"\n", true}, {"a", false}, {"a\nb", false}, {"", false},
+	} {
+		b := New()
+		Fill(strings.NewReader(tc.in), b, func() {})
+		if got := b.TrailingNewline(); got != tc.want {
+			t.Errorf("TrailingNewline(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
+
 func TestFillStyleCarriesAcrossLines(t *testing.T) {
 	b := New()
 	Fill(strings.NewReader("\x1b[31ma\nb"), b, func() {})

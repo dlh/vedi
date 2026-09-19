@@ -43,6 +43,7 @@ type scenario struct {
 	app      *app.App
 	w, h     int
 	args     []string
+	nl       bool // the last input section ended with a newline
 	hasEOF   bool // the file has an eof section, so input stays open
 	finished bool // an eof section has run
 	started  bool
@@ -102,7 +103,7 @@ func runScenario(t *testing.T, a archive) error {
 			if err := s.start(); err != nil {
 				return err
 			}
-			s.buf.Finish(nil)
+			s.buf.Finish(nil, s.nl)
 			s.notify()
 		case "keys":
 			if s.quit {
@@ -179,7 +180,9 @@ func (s *scenario) input(body string) {
 	if body == "" {
 		return
 	}
-	text := strings.TrimSuffix(strings.TrimSuffix(body, "\n"), "\n")
+	text := strings.TrimSuffix(body, "\n")
+	s.nl = strings.HasSuffix(text, "\n")
+	text = strings.TrimSuffix(text, "\n")
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSuffix(line, "\r") // as buffer.Fill drops a "\r" before "\n"
 		t, runs := s.parser.Parse([]byte(line))
@@ -195,7 +198,7 @@ func (s *scenario) start() error {
 	}
 	s.started = true
 	if !s.hasEOF {
-		s.buf.Finish(nil)
+		s.buf.Finish(nil, s.nl)
 	}
 	opts, files, err := cli.Parse(s.args)
 	if err != nil || len(files) > 0 {

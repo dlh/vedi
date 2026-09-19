@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
 )
@@ -32,6 +33,12 @@ func TestParse(t *testing.T) {
 		{"bad line text", []string{"+abc"}, Options{}, nil, true},
 		{"missing cmd", []string{"--clipboard-cmd"}, Options{}, nil, true},
 		{"unknown flag", []string{"--bogus"}, Options{}, nil, true},
+		{"scrolled by eq", []string{"--scrolled-by=0"}, Options{Screen: &app.Screen{}}, nil, false},
+		{"cursor", []string{"--cursor-row", "20", "--cursor-col", "5"}, Options{Screen: &app.Screen{CursorRow: 20, CursorCol: 5}}, nil, false},
+		{"bad scrolled by", []string{"--scrolled-by", "-1"}, Options{}, nil, true},
+		{"bad cursor row", []string{"--cursor-row", "0"}, Options{}, nil, true},
+		{"screen conflicts with plus N", []string{"+5", "--scrolled-by", "0"}, Options{}, nil, true},
+		{"screen conflicts with plus G", []string{"--cursor-row", "1", "+G"}, Options{}, nil, true},
 		{"plus G conflicts with plus N", []string{"+G", "+5"}, Options{}, nil, true},
 		{"flag after file", []string{"a", "-S"}, Options{NoWrap: true}, []string{"a"}, false},
 		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{}, nil, false},
@@ -54,8 +61,8 @@ func TestParse(t *testing.T) {
 
 func TestApp(t *testing.T) {
 	scr := tcell.NewSimulationScreen("UTF-8")
-	got := Options{NoWrap: true, StartLine: 3, Follow: false}.App(scr)
-	if got.Mode != layout.NoWrap || got.StartLine != 3 {
+	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr)
+	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
 		t.Errorf("App() = %+v", got)
 	}
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {
