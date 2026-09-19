@@ -81,16 +81,21 @@ func (a *App) drag(x, y int) {
 	a.scrollToCursor()
 }
 
-// selectWord selects the word under the cursor, if it is on one.
+// selectWord selects the word runes around the cursor, if it is on one.
 func (a *App) selectWord() {
 	text := a.line(a.cur.Line)
 	if a.cur.Col >= len(text) || !isWord(text[a.cur.Col]) {
 		return
 	}
-	a.wordLeft()
-	p := a.cur
-	a.anchor = &p
-	a.wordRight()
+	i, j := a.cur.Col, a.cur.Col+1
+	for i > 0 && isWord(text[i-1]) {
+		i--
+	}
+	for j < len(text) && isWord(text[j]) {
+		j++
+	}
+	a.anchor = &buffer.Pos{Line: a.cur.Line, Col: i}
+	a.cur.Col = j
 }
 
 // cellPos maps a screen cell to the position drawn there: y rows down
