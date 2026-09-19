@@ -27,11 +27,11 @@ being viewed, or `<stdin>`.
 |---|---|
 | ↑ ↓ ← →, Home, End | Move the cursor |
 | ⇞ ⇟, Space, b | Move by a page |
-| ⌃←, ⌃→ | Move by word |
+| ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F | Move by word |
 | g, G | First line, last line |
 | ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
-| ⌃⇧←, ⌃⇧→ | Extend by word |
+| ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
 | ⌃A | Select all |
 | ⎋ | Clear the selection, then the search highlight |
 | ⌃C, y | Copy the selection as plain text |

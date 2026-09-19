@@ -42,11 +42,11 @@ type Binding struct {
 var Bindings = []Binding{
 	{"↑ ↓ ← →, Home, End", "Move the cursor"},
 	{"⇞ ⇟, Space, b", "Move by a page"},
-	{"⌃←, ⌃→", "Move by word"},
+	{"⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F", "Move by word"},
 	{"g, G", "First line, last line"},
 	{"⇧ + ↑ ↓ ← →, Home, End", "Extend the selection"},
 	{"⇧⇞, ⇧⇟", "Extend by a page"},
-	{"⌃⇧←, ⌃⇧→", "Extend by word"},
+	{"⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→", "Extend by word"},
 	{"⌃A", "Select all"},
 	{"⎋", "Clear the selection, then the search highlight"},
 	{"⌃C, y", "Copy the selection as plain text"},
@@ -60,31 +60,34 @@ var Bindings = []Binding{
 // IsMovement reports whether a moves the cursor.
 func IsMovement(a Action) bool { return a >= Up && a <= Last }
 
-// Command is a decoded key. Extend is set when Shift was held on a
-// movement key, which extends the selection instead of clearing it.
+// Command is a decoded key. Extend is Shift on a movement key: extend
+// the selection instead of clearing it.
 type Command struct {
 	Action Action
 	Extend bool
 }
 
-// Decode maps a key event to a Command. Unbound keys give Command{}.
-// Only arrows, Home/End, PgUp/PgDn and Ctrl+arrows extend: Shift on a
-// letter is a different letter, and Shift+Space is not distinguishable.
+// Decode maps a key event to a Command; unbound keys give Command{}.
+// Only arrows, Home/End, PgUp/PgDn and Ctrl/Alt+arrows extend: Shift on
+// a letter is another letter, and Shift+Space is indistinguishable.
+// Alt+arrow is Ctrl+arrow, and Alt+b/Alt+f are the emacs word motions,
+// which Terminal.app sends for Option+arrow.
 func Decode(ev *tcell.EventKey) Command {
 	shift := ev.Modifiers()&tcell.ModShift != 0
-	ctrl := ev.Modifiers()&tcell.ModCtrl != 0
+	word := ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0
+	alt := ev.Modifiers()&tcell.ModAlt != 0
 	switch ev.Key() {
 	case tcell.KeyUp:
 		return Command{Up, shift}
 	case tcell.KeyDown:
 		return Command{Down, shift}
 	case tcell.KeyLeft:
-		if ctrl {
+		if word {
 			return Command{WordLeft, shift}
 		}
 		return Command{Left, shift}
 	case tcell.KeyRight:
-		if ctrl {
+		if word {
 			return Command{WordRight, shift}
 		}
 		return Command{Right, shift}
@@ -105,6 +108,15 @@ func Decode(ev *tcell.EventKey) Command {
 	case tcell.KeyEnter:
 		return Command{Action: Enter}
 	case tcell.KeyRune:
+		if alt {
+			switch ev.Rune() {
+			case 'b':
+				return Command{Action: WordLeft}
+			case 'f':
+				return Command{Action: WordRight}
+			}
+			return Command{}
+		}
 		switch ev.Rune() {
 		case ' ':
 			return Command{Action: PageDown}

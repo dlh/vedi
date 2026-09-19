@@ -2,6 +2,9 @@ Ctrl+Right moves to the end of the current or next word, Ctrl+Left to
 the start of the current or previous one; a word is letters, digits and
 underscores. At a line's end or start they cross to the next or
 previous line. With Shift, each direction extends the selection.
+Option (Alt) on an arrow does the same as Ctrl, and Option+f and
+Option+b are the emacs word motions, which Terminal.app sends for
+Option+arrow; those two never extend.
 
 -- size --
 40x5
@@ -29,7 +32,35 @@ Ctrl+Left
 -- cursor --
 0 11
 -- keys --
-Ctrl+Shift+Right y
+Alt+Left
+-- cursor --
+0 4
+-- keys --
+Alt+Right
+-- cursor --
+0 9
+-- keys --
+Alt+b
+-- cursor --
+0 4
+-- keys --
+Alt+f
+-- cursor --
+0 9
+-- keys --
+Alt+Right Alt+Shift+Left y
+-- screen --
+foo bar_1  [baz]
+next
+
+
+copied 1 line                     ? help
+-- cursor --
+0 11
+-- clipboard --
+baz
+-- keys --
+Esc Ctrl+Shift+Right y
 -- screen --
 foo bar_1  [baz]
 next

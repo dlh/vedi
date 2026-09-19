@@ -55,7 +55,7 @@ Actions:
 
 | Section | Content |
 |---|---|
-| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, with `Shift+` and `Ctrl+`; a single character as itself; `"quoted text"` typed rune by rune. |
+| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, with `Shift+`, `Ctrl+` and `Alt+`; a single character as itself, optionally with `Alt+`; `"quoted text"` typed rune by rune. |
 | `-- resize --` | `WxH`. |
 
 Assertions, checked at that point:

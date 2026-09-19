@@ -63,7 +63,7 @@ var namedKeys = map[string]tcell.Key{
 }
 
 // parseKeys turns a "-- keys --" body into key events: named keys with
-// optional Shift+/Ctrl+ prefixes, single characters as themselves,
+// optional Shift+/Ctrl+/Alt+ prefixes, single characters as themselves,
 // "quoted text" typed rune by rune.
 func parseKeys(s string) ([]*tcell.EventKey, error) {
 	var keys []*tcell.EventKey
@@ -96,13 +96,18 @@ func parseKeys(s string) ([]*tcell.EventKey, error) {
 
 func parseKey(tok string) (*tcell.EventKey, error) {
 	var mod tcell.ModMask
-	for strings.HasPrefix(tok, "Shift+") || strings.HasPrefix(tok, "Ctrl+") {
-		if strings.HasPrefix(tok, "Shift+") {
-			mod |= tcell.ModShift
-			tok = tok[len("Shift+"):]
-		} else {
-			mod |= tcell.ModCtrl
-			tok = tok[len("Ctrl+"):]
+	prefixes := []struct {
+		name string
+		mod  tcell.ModMask
+	}{{"Shift+", tcell.ModShift}, {"Ctrl+", tcell.ModCtrl}, {"Alt+", tcell.ModAlt}}
+	for again := true; again; {
+		again = false
+		for _, p := range prefixes {
+			if strings.HasPrefix(tok, p.name) {
+				mod |= p.mod
+				tok = tok[len(p.name):]
+				again = true
+			}
 		}
 	}
 	if tok == "Space" {
@@ -118,10 +123,10 @@ func parseKey(tok string) (*tcell.EventKey, error) {
 		if mod&tcell.ModCtrl != 0 && r >= 'A' && r <= 'Z' {
 			return tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(r-'A'), 0, mod), nil
 		}
-		if mod != 0 {
+		if mod&^tcell.ModAlt != 0 {
 			return nil, fmt.Errorf("%q: modifiers on a character key", tok)
 		}
-		return tcell.NewEventKey(tcell.KeyRune, r, 0), nil
+		return tcell.NewEventKey(tcell.KeyRune, r, mod), nil
 	}
 	return nil, fmt.Errorf("unknown key %q", tok)
 }
@@ -147,7 +152,7 @@ func TestParseArchive(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	keys, err := parseKeys(`Down Shift+Right Ctrl+Shift+Left Ctrl+C y "a b" Esc Backspace Space`)
+	keys, err := parseKeys(`Down Shift+Right Ctrl+Shift+Left Alt+Shift+Right Alt+b Ctrl+C y "a b" Esc Backspace Space`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,6 +160,8 @@ func TestParseKeys(t *testing.T) {
 		tcell.NewEventKey(tcell.KeyDown, 0, 0),
 		tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModShift),
 		tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModCtrl|tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModAlt|tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyRune, 'b', tcell.ModAlt),
 		tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModCtrl),
 		tcell.NewEventKey(tcell.KeyRune, 'y', 0),
 		tcell.NewEventKey(tcell.KeyRune, 'a', 0),
