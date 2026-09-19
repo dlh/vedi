@@ -74,6 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer scr.Fini()
+	scr.EnableMouse(tcell.MouseDragEvents)
 
 	buf := buffer.New()
 	a := app.New(scr, buf, opts.App(scr, files))

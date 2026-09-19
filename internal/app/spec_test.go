@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/ansi"
@@ -48,6 +49,7 @@ type scenario struct {
 	finished bool // an eof section has run
 	started  bool
 	quit     bool
+	now      time.Time // the app's clock, advanced by mouse actions
 }
 
 // runScenario runs one scenario and returns the first failure, a
@@ -122,6 +124,20 @@ func runScenario(t *testing.T, a archive) error {
 			}
 			if s.quit && (i+1 >= len(a.sections) || a.sections[i+1].name != "quit") {
 				return fail("a key quit; the next section must be -- quit --")
+			}
+		case "mouse":
+			if s.quit {
+				return fail("mouse after the app quit")
+			}
+			if err := s.start(); err != nil {
+				return err
+			}
+			acts, err := parseMouse(sec.body)
+			if err != nil {
+				return fail("%v", err)
+			}
+			for _, a := range acts {
+				s.mouse(a)
 			}
 		case "resize":
 			if err := s.start(); err != nil {
@@ -210,9 +226,44 @@ func (s *scenario) start() error {
 	}
 	s.t.Cleanup(s.scr.Fini)
 	s.scr.SetSize(s.w, s.h)
-	s.app = app.New(s.scr, s.buf, opts.App(s.scr, files))
+	appOpts := opts.App(s.scr, files)
+	appOpts.Now = func() time.Time { return s.now }
+	s.app = app.New(s.scr, s.buf, appOpts)
 	s.notify()
 	return nil
+}
+
+// mouse delivers one action as the events a terminal would send. The
+// clock moves on a second before every click, so two clicks in a row
+// are never a double-click; dblclick presses twice without moving it.
+func (s *scenario) mouse(a mouseAction) {
+	send := func(x, y int, btn tcell.ButtonMask) {
+		s.app.Handle(tcell.NewEventMouse(x, y, btn, 0))
+		s.app.Draw()
+	}
+	switch a.kind {
+	case "click", "dblclick":
+		s.now = s.now.Add(time.Second)
+		send(a.x, a.y, tcell.Button1)
+		send(a.x, a.y, tcell.ButtonNone)
+		if a.kind == "dblclick" {
+			send(a.x, a.y, tcell.Button1)
+			send(a.x, a.y, tcell.ButtonNone)
+		}
+	case "drag":
+		s.now = s.now.Add(time.Second)
+		send(a.x, a.y, tcell.Button1)
+		send(a.x2, a.y2, tcell.Button1)
+		send(a.x2, a.y2, tcell.ButtonNone)
+	case "wheel":
+		btn := tcell.WheelDown
+		if a.up {
+			btn = tcell.WheelUp
+		}
+		for i := 0; i < a.n; i++ {
+			send(0, 0, btn)
+		}
+	}
 }
 
 // notify delivers the reader's data event, as buffer.Fill would.
@@ -294,6 +345,8 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"quit without section", "T\n-- input --\nhi\n-- keys --\nq\n", "line 4, -- keys --: a key quit; the next section must be -- quit --"},
 		{"quit section without quit", "T\n-- input --\nhi\n-- keys --\nDown\n-- quit --\n", "line 6, -- quit --: the last key did not quit"},
 		{"keys after quit", "T\n-- input --\nhi\n-- keys --\nq\n-- quit --\n-- keys --\nDown\n", "line 7, -- keys --: keys after the app quit"},
+		{"mouse after quit", "T\n-- input --\nhi\n-- keys --\nq\n-- quit --\n-- mouse --\nclick 0 0\n", "line 7, -- mouse --: mouse after the app quit"},
+		{"bad mouse action", "T\n-- input --\nhi\n-- mouse --\ntap 0 0\n", `line 4, -- mouse --: unknown mouse action "tap"`},
 		{"unknown section", "T\n-- input --\nhi\n-- screeen --\nho\n", "line 4, -- screeen --: unknown section"},
 	}
 	for _, c := range cases {

@@ -1,0 +1,21 @@
+A click past a row's end puts the cursor on the newline, where End
+would; on a wrapped row it stays on that row's last rune. A click below
+the last line lands on the last row.
+
+-- size --
+10x5
+-- input --
+abc
+abcdefghijklm
+-- mouse --
+click 0 7
+-- cursor --
+0 3
+-- mouse --
+click 1 12
+-- cursor --
+1 9
+-- mouse --
+click 3 1
+-- cursor --
+2 1

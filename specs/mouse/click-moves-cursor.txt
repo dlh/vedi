@@ -1,0 +1,29 @@
+A click puts the cursor on that cell and clears the selection, like an
+unshifted arrow key. A click on the status line does nothing, nor does
+a drag that starts there.
+
+-- size --
+40x4
+-- input --
+one two
+three four
+-- keys --
+Shift+Right
+-- screen --
+[o]ne two
+three four
+
+<stdin>  line 1/2  wrap           ? help
+-- mouse --
+click 1 6
+-- screen --
+one two
+three four
+
+<stdin>  line 2/2  wrap           ? help
+-- cursor --
+1 6
+-- mouse --
+click 3 2 drag 3 2 0 0
+-- cursor --
+1 6

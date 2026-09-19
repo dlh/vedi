@@ -1,7 +1,7 @@
 # vedi
 
 See it, select it, copy it. A pager that shows ANSI-colored text and
-lets you select it with the keyboard.
+lets you select it with the keyboard or mouse.
 
 ## Install
 
@@ -32,6 +32,9 @@ being viewed, or `<stdin>`.
 | ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
+| Click, drag | Move the cursor, select |
+| Double-click | Select the word |
+| Wheel | Scroll |
 | ⌃A | Select all |
 | ⎋ | Clear the selection, then the search highlight |
 | ⌃C, y | Copy the selection as plain text |

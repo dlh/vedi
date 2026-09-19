@@ -1,10 +1,12 @@
-// Package app holds the pager state and drives it from key events.
+// Package app holds the pager state and drives it from key and mouse
+// events.
 package app
 
 import (
 	"fmt"
 	"strings"
 	"sync/atomic"
+	"time"
 	"unicode"
 
 	"github.com/gdamore/tcell/v2"
@@ -22,6 +24,7 @@ type Options struct {
 	Follow    bool // keep the cursor on the last line until EOF (+G)
 	Screen    *Screen
 	Copier    clipboard.Copier
+	Now       func() time.Time // the clock double-clicks are timed by; nil for time.Now
 }
 
 // Screen is the view the terminal was showing, so the pager can open on
@@ -51,7 +54,7 @@ type App struct {
 	startLine int     // 0-based +N target; -1 once applied
 	screen    *Screen // applied at EOF, then nil; no text is drawn until then
 
-	status  string // one-shot message, cleared on the next key
+	status  string // one-shot message, cleared by the next key or click
 	readErr string
 
 	helping   bool // the key bindings are shown instead of the text
@@ -60,7 +63,17 @@ type App struct {
 	matcher   search.Matcher
 	highlight bool
 
+	now       func() time.Time
+	lastPress click // the last button-1 press, for double-clicks and drags
+	held      bool  // button 1 is down
+	dragging  bool  // and went down on the text, so motion selects
+
 	pending atomic.Bool
+}
+
+type click struct {
+	at   time.Time
+	x, y int
 }
 
 func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
@@ -73,6 +86,10 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
+		now:       opts.Now,
+	}
+	if a.now == nil {
+		a.now = time.Now
 	}
 	if opts.StartLine <= 0 {
 		a.startLine = -1
@@ -111,10 +128,7 @@ func (a *App) Handle(ev tcell.Event) bool {
 		a.pending.Store(false)
 		a.onData()
 	case *tcell.EventKey:
-		a.follow = false
-		a.startLine = -1
-		a.screen = nil
-		a.status = ""
+		a.act()
 		if a.helping {
 			a.helping = false
 			return false
@@ -124,8 +138,19 @@ func (a *App) Handle(ev tcell.Event) bool {
 			return false
 		}
 		return a.handleKey(input.Decode(ev))
+	case *tcell.EventMouse:
+		a.handleMouse(ev)
 	}
 	return false
+}
+
+// act records that the user did something: startup positioning stops
+// and the one-shot status clears.
+func (a *App) act() {
+	a.follow = false
+	a.startLine = -1
+	a.screen = nil
+	a.status = ""
 }
 
 // onData runs after the reader appended lines: it applies a pending +N,

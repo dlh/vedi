@@ -1,0 +1,26 @@
+A click returns from the help screen like any key, and does nothing
+else. The wheel is ignored while help is up.
+
+-- size --
+40x4
+-- input --
+abc
+def
+-- keys --
+Down ?
+-- mouse --
+wheel down
+-- screen --
+↑ ↓ ← →, Home, End      Move the cursor
+⇞ ⇟, Space, b           Move by a page
+⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F  Move by word
+help  any key returns
+-- mouse --
+click 0 0
+-- screen --
+abc
+def
+
+<stdin>  line 2/2  wrap           ? help
+-- cursor --
+1 0

@@ -1,0 +1,35 @@
+Two clicks on the same cell within 400ms select the word there, by the
+same rule ⌥→ uses. On a cell that is not in a word the cursor moves and
+nothing is selected. Two clicks further apart in time are two clicks.
+
+-- size --
+40x4
+-- input --
+foo bar_1 baz
+-- mouse --
+dblclick 0 6
+-- screen --
+foo [bar_1] baz
+
+
+<stdin>  line 1/1  wrap           ? help
+-- cursor --
+0 9
+-- mouse --
+dblclick 0 3
+-- screen --
+foo bar_1 baz
+
+
+<stdin>  line 1/1  wrap           ? help
+-- cursor --
+0 3
+-- mouse --
+click 0 1 click 0 1
+-- screen --
+foo bar_1 baz
+
+
+<stdin>  line 1/1  wrap           ? help
+-- cursor --
+0 1

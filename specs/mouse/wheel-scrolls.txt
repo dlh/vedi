@@ -1,0 +1,61 @@
+The wheel scrolls the view three rows a tick, and the cursor stays on
+its line while it is on screen. The view stops at the first line and
+cannot scroll the last row off the top. The selection is kept.
+
+-- size --
+40x6
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+Down Down Down Down Shift+Down
+-- mouse --
+wheel down
+-- screen --
+[line 5 ]
+line 6
+line 7
+line 8
+
+<stdin>  line 6/8  wrap           ? help
+-- cursor --
+1 0
+-- mouse --
+wheel down 3
+-- screen --
+line 8
+
+
+
+
+<stdin>  line 8/8  wrap           ? help
+-- cursor --
+0 0
+-- mouse --
+wheel up 2
+-- screen --
+line 2
+line 3
+line 4
+[line 5 ]
+line 6
+<stdin>  line 6/8  wrap           ? help
+-- cursor --
+4 0
+-- mouse --
+wheel up 5
+-- screen --
+line 1
+line 2
+line 3
+line 4
+line 5
+<stdin>  line 5/8  wrap           ? help
+-- cursor --
+4 0

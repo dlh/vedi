@@ -1,0 +1,147 @@
+package app
+
+import (
+	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/buffer"
+)
+
+// doubleClick is how soon a second press on the same cell selects the
+// word there.
+const doubleClick = 400 * time.Millisecond
+
+// wheelRows is how far one wheel tick scrolls the view.
+const wheelRows = 3
+
+// handleMouse: button 1 places the cursor and drags the selection, the
+// wheel scrolls. A press dismisses help like any key; the wheel is
+// ignored there. The mouse is ignored at the / prompt.
+func (a *App) handleMouse(ev *tcell.EventMouse) {
+	if a.searching {
+		return
+	}
+	x, y := ev.Position()
+	btn := ev.Buttons()
+	switch {
+	case btn&tcell.WheelUp != 0:
+		if !a.helping {
+			a.scrollView(-wheelRows)
+		}
+	case btn&tcell.WheelDown != 0:
+		if !a.helping {
+			a.scrollView(wheelRows)
+		}
+	case btn&tcell.Button1 == 0:
+		a.held, a.dragging = false, false
+	case a.held:
+		// Motion with the button down looks like a press; only a press on
+		// the text drags.
+		if a.dragging {
+			a.drag(x, y)
+		}
+	default:
+		a.held = true
+		a.press(x, y)
+	}
+}
+
+// press returns from help, ignores the status line, and otherwise puts
+// the cursor on the cell; a second press there within doubleClick
+// selects the word.
+func (a *App) press(x, y int) {
+	a.act()
+	if a.helping {
+		a.helping = false
+		return
+	}
+	if y >= a.textRows() {
+		return
+	}
+	now := a.now()
+	double := x == a.lastPress.x && y == a.lastPress.y && now.Sub(a.lastPress.at) <= doubleClick
+	a.lastPress = click{now, x, y}
+	a.dragging = true
+	a.cur = a.cellPos(x, y)
+	a.anchor = nil
+	if double {
+		a.selectWord()
+	}
+	a.scrollToCursor()
+}
+
+// drag selects from the pressed cell to the one under the mouse,
+// clamped to the text rows.
+func (a *App) drag(x, y int) {
+	if a.anchor == nil {
+		p := a.cellPos(a.lastPress.x, a.lastPress.y)
+		a.anchor = &p
+	}
+	a.cur = a.cellPos(x, min(y, a.textRows()-1))
+	a.scrollToCursor()
+}
+
+// selectWord selects the word under the cursor, if it is on one.
+func (a *App) selectWord() {
+	text := a.line(a.cur.Line)
+	if a.cur.Col >= len(text) || !isWord(text[a.cur.Col]) {
+		return
+	}
+	a.wordLeft()
+	p := a.cur
+	a.anchor = &p
+	a.wordRight()
+}
+
+// cellPos maps a screen cell to the position drawn there: y rows down
+// from top, stopping at the buffer's last row; the rune whose cells
+// hold x, or the newline past the row's end.
+func (a *App) cellPos(x, y int) buffer.Pos {
+	if a.buf.Len() == 0 {
+		return buffer.Pos{}
+	}
+	p := a.snap(a.top)
+	for i := 0; i < y; i++ {
+		p = a.nextRow(p)
+	}
+	l := a.layout()
+	text := a.line(p.Line)
+	row, _ := l.Pos(text, p.Col)
+	return buffer.Pos{Line: p.Line, Col: l.Col(text, row, x+a.xoff)}
+}
+
+// scrollView moves the view n rows (negative is up), keeping the first
+// line to the last row at the top. A cursor that would leave the screen
+// is pulled to the edge row, keeping its column.
+func (a *App) scrollView(n int) {
+	a.act()
+	rows := a.textRows()
+	if rows <= 0 || a.buf.Len() == 0 {
+		return
+	}
+	a.top = a.snap(a.top)
+	for ; n > 0; n-- {
+		a.top = a.nextRow(a.top)
+	}
+	for ; n < 0; n++ {
+		a.top = a.prevRow(a.top)
+	}
+	bottom := a.top
+	for i := 0; i < rows-1; i++ {
+		bottom = a.nextRow(bottom)
+	}
+	crow := a.snap(a.cur)
+	l := a.layout()
+	_, x := l.Pos(a.line(a.cur.Line), a.cur.Col)
+	edge := crow
+	if crow.Less(a.top) {
+		edge = a.top
+	} else if bottom.Less(crow) {
+		edge = bottom
+	}
+	if edge != crow {
+		text := a.line(edge.Line)
+		row, _ := l.Pos(text, edge.Col)
+		a.cur = buffer.Pos{Line: edge.Line, Col: l.Col(text, row, x)}
+	}
+}

@@ -1,0 +1,36 @@
+When the wheel would scroll the cursor off the screen, the cursor is
+pulled to the edge row it would have left by, keeping its column.
+
+-- size --
+40x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+Right Right
+-- mouse --
+wheel down
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  wrap           ? help
+-- cursor --
+0 2
+-- keys --
+Down Down
+-- mouse --
+wheel up
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 3/8  wrap           ? help
+-- cursor --
+2 2

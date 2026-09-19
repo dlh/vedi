@@ -1,0 +1,46 @@
+Dragging selects from the press to where the button is released; the
+cursor ends there. Dragging up selects backward, and a drag onto the
+status line or past the last row stops on the last row.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- mouse --
+drag 0 1 2 2
+-- screen --
+o[ne ]
+[two ]
+[th]ree
+
+<stdin>  line 3/3  wrap           ? help
+-- cursor --
+2 2
+-- keys --
+y
+-- clipboard --
+ne
+two
+th
+-- mouse --
+drag 1 1 0 2
+-- screen --
+on[e ]
+[t]wo
+three
+
+<stdin>  line 1/3  wrap           ? help
+-- cursor --
+0 2
+-- mouse --
+drag 0 0 3 4
+-- screen --
+[one ]
+[two ]
+[thre]e
+
+<stdin>  line 3/3  wrap           ? help
+-- cursor --
+2 4

@@ -56,6 +56,7 @@ Actions:
 | Section | Content |
 |---|---|
 | `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, with `Shift+`, `Ctrl+` and `Alt+`; a single character as itself, optionally with `Alt+`; `"quoted text"` typed rune by rune. |
+| `-- mouse --` | `click R C`, `dblclick R C`, `drag R C R C` (press at the first cell, release at the second), `wheel up` or `wheel down`, optionally followed by a count of ticks. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
 
 Assertions, checked at that point:

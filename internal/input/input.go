@@ -37,8 +37,8 @@ type Binding struct {
 	Keys, Doc string
 }
 
-// Bindings lists every key, in the order the help screen shows them.
-// The README's Keys table is the same list.
+// Bindings is the help screen, in order. The README's Keys table is the
+// same list.
 var Bindings = []Binding{
 	{"↑ ↓ ← →, Home, End", "Move the cursor"},
 	{"⇞ ⇟, Space, b", "Move by a page"},
@@ -47,6 +47,9 @@ var Bindings = []Binding{
 	{"⇧ + ↑ ↓ ← →, Home, End", "Extend the selection"},
 	{"⇧⇞, ⇧⇟", "Extend by a page"},
 	{"⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→", "Extend by word"},
+	{"Click, drag", "Move the cursor, select"},
+	{"Double-click", "Select the word"},
+	{"Wheel", "Scroll"},
 	{"⌃A", "Select all"},
 	{"⎋", "Clear the selection, then the search highlight"},
 	{"⌃C, y", "Copy the selection as plain text"},
