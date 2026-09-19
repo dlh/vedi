@@ -2,6 +2,8 @@
 package ansi
 
 import (
+	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
@@ -104,5 +106,124 @@ func escape(b []byte) (n int, sgr []byte, ok bool) {
 	}
 }
 
-// applySGR is completed in Task 2. Until then every SGR is a no-op.
-func applySGR(s tcell.Style, params []byte) tcell.Style { return s }
+// applySGR applies SGR parameters to s. params is the text between
+// "ESC [" and "m": "1;38;5;208", "38:2::255:0:0" (T.416 colon form), or "" (reset).
+func applySGR(s tcell.Style, params []byte) tcell.Style {
+	if len(params) == 0 {
+		return tcell.StyleDefault
+	}
+	groups := strings.Split(string(params), ";")
+	for gi := 0; gi < len(groups); gi++ {
+		sub := strings.Split(groups[gi], ":")
+		n := atoi(sub[0])
+		switch {
+		case n == 0:
+			s = tcell.StyleDefault
+		case n == 1:
+			s = s.Bold(true)
+		case n == 2:
+			s = s.Dim(true)
+		case n == 3:
+			s = s.Italic(true)
+		case n == 4:
+			s = s.Underline(len(sub) < 2 || sub[1] != "0")
+		case n == 7:
+			s = s.Reverse(true)
+		case n == 9:
+			s = s.StrikeThrough(true)
+		case n == 22:
+			s = s.Bold(false).Dim(false)
+		case n == 23:
+			s = s.Italic(false)
+		case n == 24:
+			s = s.Underline(false)
+		case n == 27:
+			s = s.Reverse(false)
+		case n == 29:
+			s = s.StrikeThrough(false)
+		case n >= 30 && n <= 37:
+			s = s.Foreground(tcell.PaletteColor(n - 30))
+		case n == 39:
+			s = s.Foreground(tcell.ColorDefault)
+		case n >= 40 && n <= 47:
+			s = s.Background(tcell.PaletteColor(n - 40))
+		case n == 49:
+			s = s.Background(tcell.ColorDefault)
+		case n >= 90 && n <= 97:
+			s = s.Foreground(tcell.PaletteColor(n - 90 + 8))
+		case n >= 100 && n <= 107:
+			s = s.Background(tcell.PaletteColor(n - 100 + 8))
+		case n == 38 || n == 48 || n == 58:
+			var args []string
+			if len(sub) > 1 {
+				args = sub[1:]
+			} else {
+				args, gi = takeColorArgs(groups, gi)
+			}
+			c, ok := extendedColor(args)
+			if !ok {
+				continue
+			}
+			switch n {
+			case 38:
+				s = s.Foreground(c)
+			case 48:
+				s = s.Background(c)
+			}
+		}
+	}
+	return s
+}
+
+// takeColorArgs reads the semicolon-form arguments of the 38/48/58 at
+// groups[gi] ("5;n" or "2;r;g;b") and the index of the last group
+// taken. A malformed tail takes the rest.
+func takeColorArgs(groups []string, gi int) ([]string, int) {
+	if gi+1 < len(groups) {
+		switch groups[gi+1] {
+		case "5":
+			if gi+2 < len(groups) {
+				return groups[gi+1 : gi+3], gi + 2
+			}
+		case "2":
+			if gi+4 < len(groups) {
+				return groups[gi+1 : gi+5], gi + 4
+			}
+		}
+	}
+	return nil, len(groups) - 1
+}
+
+// extendedColor decodes "5 n" or "2 [colorspace] r g b" arguments.
+func extendedColor(args []string) (tcell.Color, bool) {
+	if len(args) == 0 {
+		return 0, false
+	}
+	switch args[0] {
+	case "5":
+		if len(args) >= 2 {
+			return tcell.PaletteColor(clamp(atoi(args[1]))), true
+		}
+	case "2":
+		if len(args) >= 4 {
+			rgb := args[len(args)-3:]
+			return tcell.NewRGBColor(int32(clamp(atoi(rgb[0]))), int32(clamp(atoi(rgb[1]))), int32(clamp(atoi(rgb[2])))), true
+		}
+	}
+	return 0, false
+}
+
+func atoi(s string) int {
+	n, _ := strconv.Atoi(s)
+	return n
+}
+
+func clamp(n int) int {
+	if n < 0 {
+		return 0
+	}
+	if n > 255 {
+		return 255
+	}
+	return n
+}
