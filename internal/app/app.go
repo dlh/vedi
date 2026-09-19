@@ -267,9 +267,10 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.Copy:
 		a.copy()
 	case input.Enter:
-		if a.anchor != nil {
+		if _, _, ok := a.selection(); ok {
 			return a.copy()
 		}
+		a.anchor = nil
 		a.moveRows(1)
 	case input.Search:
 		a.searching = true

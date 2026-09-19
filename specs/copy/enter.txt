@@ -1,17 +1,23 @@
 Enter without a selection moves down one line, like less. With a
-selection it copies and quits.
+selection it copies and quits. A selection with nothing in it is no
+selection.
 
 -- size --
 40x5
 -- input --
 hello
 world
+there
 -- keys --
 Enter
 -- cursor --
 1 0
 -- keys --
+Shift+Right Shift+Left Enter
+-- cursor --
+2 0
+-- keys --
 Shift+Right Enter
 -- quit --
 -- clipboard --
-w
+t
