@@ -1,0 +1,23 @@
+A screen with no columns draws nothing and hides the cursor; keys are
+still handled. Once a resize gives it columns the text appears.
+
+-- size --
+0x3
+-- input --
+only
+-- screen --
+
+
+
+-- cursor --
+hidden
+-- keys --
+Down End Shift+Left
+-- resize --
+10x3
+-- screen --
+onl[y]
+
+<stdin>  l
+-- cursor --
+0 3

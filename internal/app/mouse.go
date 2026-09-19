@@ -109,10 +109,9 @@ func (a *App) cellPos(x, y int) buffer.Pos {
 	for i := 0; i < y; i++ {
 		p = a.nextRow(p)
 	}
-	l := a.layout()
-	text := a.line(p.Line)
-	row, _ := l.Pos(text, p.Col)
-	return buffer.Pos{Line: p.Line, Col: l.Col(text, row, x+a.xoff)}
+	ln := a.lineLayout(p.Line)
+	row, _ := ln.Pos(p.Col)
+	return buffer.Pos{Line: p.Line, Col: ln.Col(row, x+a.xoff)}
 }
 
 // scrollView moves the view n rows (negative is up), keeping the first
@@ -136,8 +135,7 @@ func (a *App) scrollView(n int) {
 		bottom = a.nextRow(bottom)
 	}
 	crow := a.snap(a.cur)
-	l := a.layout()
-	_, x := l.Pos(a.line(a.cur.Line), a.cur.Col)
+	_, x := a.lineLayout(a.cur.Line).Pos(a.cur.Col)
 	edge := crow
 	if crow.Less(a.top) {
 		edge = a.top
@@ -145,8 +143,8 @@ func (a *App) scrollView(n int) {
 		edge = bottom
 	}
 	if edge != crow {
-		text := a.line(edge.Line)
-		row, _ := l.Pos(text, edge.Col)
-		a.cur = buffer.Pos{Line: edge.Line, Col: l.Col(text, row, x)}
+		ln := a.lineLayout(edge.Line)
+		row, _ := ln.Pos(edge.Col)
+		a.cur = buffer.Pos{Line: edge.Line, Col: ln.Col(row, x)}
 	}
 }

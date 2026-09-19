@@ -2,7 +2,11 @@
 // (row, cell) positions for a given width and wrap mode.
 package layout
 
-import "github.com/rivo/uniseg"
+import (
+	"sort"
+
+	"github.com/rivo/uniseg"
+)
 
 type Mode int
 
@@ -51,65 +55,79 @@ type Layout struct {
 	Mode  Mode
 }
 
-// Segments splits text into visual rows. NoWrap, or a width of zero,
-// gives one row. Wrap moves a rune that does not fit to the next row.
-// An empty line is one empty row.
-func (l Layout) Segments(text []rune) []Segment {
-	if l.Mode == NoWrap || l.Width <= 0 {
-		return []Segment{{0, len(text)}}
-	}
+// Line is text laid out once: its cell columns and visual rows. Lay a
+// line out once and keep it; every method is then cheap.
+type Line struct {
+	xs   []int
+	segs []Segment
+}
+
+// Line lays text out. NoWrap, or a width of zero, gives one row. Wrap
+// moves a rune that does not fit to the next row. An empty line is one
+// empty row.
+func (l Layout) Line(text []rune) Line {
 	xs := Cells(text)
+	n := len(text)
+	if l.Mode == NoWrap || l.Width <= 0 {
+		return Line{xs, []Segment{{0, n}}}
+	}
 	var segs []Segment
 	start, x0 := 0, 0
-	for i := range text {
+	for i := 0; i < n; i++ {
 		w := xs[i+1] - xs[i]
 		if xs[i]-x0+w > l.Width && i > start {
 			segs = append(segs, Segment{start, i})
 			start, x0 = i, xs[i]
 		}
 	}
-	return append(segs, Segment{start, len(text)})
+	return Line{xs, append(segs, Segment{start, n})}
 }
 
-// Rows is the number of visual rows text occupies.
-func (l Layout) Rows(text []rune) int { return len(l.Segments(text)) }
+// Cells is the line's cell columns, as the Cells function gives them.
+func (ln Line) Cells() []int { return ln.xs }
+
+// Segments is the line's visual rows.
+func (ln Line) Segments() []Segment { return ln.segs }
+
+// Rows is the number of visual rows.
+func (ln Line) Rows() int { return len(ln.segs) }
 
 // SegmentAt returns the index of the segment containing rune index col.
 // col == len(text) belongs to the last segment.
-func (l Layout) SegmentAt(text []rune, col int) int {
-	segs := l.Segments(text)
-	for i, s := range segs {
-		if col < s.End {
-			return i
-		}
-	}
-	return len(segs) - 1
+func (ln Line) SegmentAt(col int) int {
+	i := sort.Search(len(ln.segs), func(i int) bool { return col < ln.segs[i].End })
+	return min(i, len(ln.segs)-1)
 }
 
 // Pos maps rune index col, clamped to 0..len(text), to its row and cell
 // x within it.
-func (l Layout) Pos(text []rune, col int) (row, x int) {
-	col = max(0, min(col, len(text)))
-	xs := Cells(text)
-	row = l.SegmentAt(text, col)
-	return row, xs[col] - xs[l.Segments(text)[row].Start]
+func (ln Line) Pos(col int) (row, x int) {
+	col = max(0, min(col, len(ln.xs)-1))
+	row = ln.SegmentAt(col)
+	return row, ln.xs[col] - ln.xs[ln.segs[row].Start]
 }
 
 // Col maps a row and cell x back to the rune whose cells hold x. Past
 // the row's end it is len(text) on the last row and End-1 on any other,
 // so the cursor stays on that row. Rows are clamped.
-func (l Layout) Col(text []rune, row, x int) int {
-	segs := l.Segments(text)
-	row = max(0, min(row, len(segs)-1))
-	s := segs[row]
-	xs := Cells(text)
+func (ln Line) Col(row, x int) int {
+	row = max(0, min(row, len(ln.segs)-1))
+	s := ln.segs[row]
 	for i := s.Start; i < s.End; i++ {
-		if xs[i+1]-xs[s.Start] > x {
+		if ln.xs[i+1]-ln.xs[s.Start] > x {
 			return i
 		}
 	}
-	if row == len(segs)-1 {
-		return len(text)
+	if row == len(ln.segs)-1 {
+		return len(ln.xs) - 1
 	}
 	return s.End - 1
 }
+
+// Segments, Rows, SegmentAt, Pos and Col lay text out and answer once;
+// see Line for repeated use.
+func (l Layout) Segments(text []rune) []Segment        { return l.Line(text).Segments() }
+func (l Layout) Rows(text []rune) int                  { return l.Line(text).Rows() }
+func (l Layout) SegmentAt(text []rune, col int) int    { return l.Line(text).SegmentAt(col) }
+func (l Layout) Pos(text []rune, col int) (row, x int) { return l.Line(text).Pos(col) }
+func (l Layout) Col(text []rune, row, x int) int       { return l.Line(text).Col(row, x) }

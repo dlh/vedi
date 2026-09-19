@@ -62,9 +62,9 @@ func (a *App) drawText() (curX, curY int) {
 func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 	w, _ := a.scr.Size()
 	line := a.buf.Line(p.Line)
-	xs := layout.Cells(line.Text)
-	l := a.layout()
-	seg := l.Segments(line.Text)[l.SegmentAt(line.Text, p.Col)]
+	ln := a.lineLayout(p.Line)
+	xs := ln.Cells()
+	seg := ln.Segments()[ln.SegmentAt(p.Col)]
 	x0 := xs[seg.Start] + a.xoff
 	var matches []int
 	if a.highlight {

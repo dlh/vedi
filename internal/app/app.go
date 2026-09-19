@@ -72,7 +72,13 @@ type App struct {
 	dragging  bool  // and went down on the text, so motion selects
 
 	pending atomic.Bool
+
+	laid    layout.Layout       // what laidOut was laid out for
+	laidOut map[int]layout.Line // lines laid out, by index
 }
+
+// laidLines is how many lines are kept laid out before starting over.
+const laidLines = 1024
 
 type click struct {
 	at   time.Time
@@ -213,10 +219,9 @@ func (a *App) showScreen(s Screen) {
 	for i := 0; i < min(s.CursorRow-(h-rows), rows)-1; i++ {
 		p = a.nextRow(p)
 	}
-	l := a.layout()
-	text := a.line(p.Line)
-	row, _ := l.Pos(text, p.Col)
-	a.cur = buffer.Pos{Line: p.Line, Col: l.Col(text, row, max(s.CursorCol-1, 0))}
+	ln := a.lineLayout(p.Line)
+	row, _ := ln.Pos(p.Col)
+	a.cur = buffer.Pos{Line: p.Line, Col: ln.Col(row, max(s.CursorCol-1, 0))}
 }
 
 func (a *App) handleKey(c input.Command) bool {
@@ -305,6 +310,27 @@ func (a *App) layout() layout.Layout {
 	return layout.Layout{Width: w, Mode: a.mode}
 }
 
+// lineLayout is line i laid out for the current width and mode. Lines
+// never change once in the buffer, so layouts are kept until the width
+// or mode changes, or laidLines of them are held.
+func (a *App) lineLayout(i int) layout.Line {
+	l := a.layout()
+	if a.laidOut == nil || a.laid != l || len(a.laidOut) >= laidLines {
+		a.laid, a.laidOut = l, map[int]layout.Line{}
+	}
+	if ln, ok := a.laidOut[i]; ok {
+		return ln
+	}
+	// Len before Line: a line past the end when counted may exist by
+	// the time it is read, and its layout must not be kept as empty.
+	keep := i >= 0 && i < a.buf.Len()
+	ln := l.Line(a.line(i))
+	if keep {
+		a.laidOut[i] = ln
+	}
+	return ln
+}
+
 // textRows is the rows left for text: all but the status line, which
 // needs two rows to exist.
 func (a *App) textRows() int {
@@ -328,15 +354,14 @@ func (a *App) endPos() buffer.Pos {
 // moveRows moves the cursor n visual rows (negative is up), keeping its
 // cell column where possible.
 func (a *App) moveRows(n int) {
-	l := a.layout()
-	text := a.line(a.cur.Line)
-	row, x := l.Pos(text, a.cur.Col)
+	ln := a.lineLayout(a.cur.Line)
+	row, x := ln.Pos(a.cur.Col)
 	for n > 0 {
-		if row+1 < l.Rows(text) {
+		if row+1 < ln.Rows() {
 			row++
 		} else if a.cur.Line+1 < a.buf.Len() {
 			a.cur.Line++
-			text = a.line(a.cur.Line)
+			ln = a.lineLayout(a.cur.Line)
 			row = 0
 		} else {
 			break
@@ -348,14 +373,14 @@ func (a *App) moveRows(n int) {
 			row--
 		} else if a.cur.Line > 0 {
 			a.cur.Line--
-			text = a.line(a.cur.Line)
-			row = l.Rows(text) - 1
+			ln = a.lineLayout(a.cur.Line)
+			row = ln.Rows() - 1
 		} else {
 			break
 		}
 		n++
 	}
-	a.cur.Col = l.Col(text, row, x)
+	a.cur.Col = ln.Col(row, x)
 }
 
 // moveCol moves one rune left or right, crossing lines at the ends, and
@@ -561,20 +586,16 @@ func (a *App) snap(p buffer.Pos) buffer.Pos {
 		return buffer.Pos{}
 	}
 	p.Line = max(0, min(p.Line, n-1))
-	l := a.layout()
-	text := a.line(p.Line)
-	segs := l.Segments(text)
-	p.Col = segs[l.SegmentAt(text, p.Col)].Start
+	ln := a.lineLayout(p.Line)
+	p.Col = ln.Segments()[ln.SegmentAt(p.Col)].Start
 	return p
 }
 
 // nextRow returns the row start after p, or p at the end.
 func (a *App) nextRow(p buffer.Pos) buffer.Pos {
-	l := a.layout()
-	text := a.line(p.Line)
-	segs := l.Segments(text)
-	if i := l.SegmentAt(text, p.Col); i+1 < len(segs) {
-		return buffer.Pos{Line: p.Line, Col: segs[i+1].Start}
+	ln := a.lineLayout(p.Line)
+	if i := ln.SegmentAt(p.Col); i+1 < ln.Rows() {
+		return buffer.Pos{Line: p.Line, Col: ln.Segments()[i+1].Start}
 	}
 	if p.Line+1 < a.buf.Len() {
 		return buffer.Pos{Line: p.Line + 1}
@@ -584,14 +605,12 @@ func (a *App) nextRow(p buffer.Pos) buffer.Pos {
 
 // prevRow returns the row start before p, or p at the beginning.
 func (a *App) prevRow(p buffer.Pos) buffer.Pos {
-	l := a.layout()
-	text := a.line(p.Line)
-	segs := l.Segments(text)
-	if i := l.SegmentAt(text, p.Col); i > 0 {
-		return buffer.Pos{Line: p.Line, Col: segs[i-1].Start}
+	ln := a.lineLayout(p.Line)
+	if i := ln.SegmentAt(p.Col); i > 0 {
+		return buffer.Pos{Line: p.Line, Col: ln.Segments()[i-1].Start}
 	}
 	if p.Line > 0 {
-		prev := l.Segments(a.line(p.Line - 1))
+		prev := a.lineLayout(p.Line - 1).Segments()
 		return buffer.Pos{Line: p.Line - 1, Col: prev[len(prev)-1].Start}
 	}
 	return p
@@ -623,7 +642,7 @@ func (a *App) scrollToCursor() {
 	}
 	l := a.layout()
 	if a.mode == layout.NoWrap && l.Width > 0 {
-		_, x := l.Pos(a.line(a.cur.Line), a.cur.Col)
+		_, x := a.lineLayout(a.cur.Line).Pos(a.cur.Col)
 		if x < a.xoff {
 			a.xoff = x
 		} else if x >= a.xoff+l.Width {

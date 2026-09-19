@@ -145,3 +145,23 @@ func TestSelectionStyleIsConstant(t *testing.T) {
 		}
 	}
 }
+
+// BenchmarkLongLine moves right and redraws on a 1 MB line, which must
+// not lay the whole line out again on every key.
+func BenchmarkLongLine(b *testing.B) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		b.Fatal(err)
+	}
+	defer scr.Fini()
+	scr.SetSize(80, 24)
+	buf := buffer.New()
+	buf.Append(buffer.Line{Text: []rune(strings.Repeat("a", 1<<20))})
+	buf.Finish(nil, true)
+	a := New(scr, buf, Options{})
+	a.Draw()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		press(a, key(tcell.KeyRight, 0, 0))
+	}
+}
