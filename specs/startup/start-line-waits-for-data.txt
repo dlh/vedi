@@ -1,0 +1,28 @@
++N is applied once line N has been read; until then the pager shows
+what it has from the top. The status line says input is still being
+read.
+
+-- size --
+40x4
+-- args --
++3
+-- input --
+line 1
+-- screen --
+line 1
+
+
+vedi  line 1/1  wrap  reading…
+-- cursor --
+0 0
+-- input --
+line 2
+line 3
+-- screen --
+line 3
+
+
+vedi  line 3/3  wrap  reading…
+-- cursor --
+0 0
+-- eof --

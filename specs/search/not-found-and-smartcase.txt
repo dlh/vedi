@@ -1,0 +1,29 @@
+A pattern with no match leaves the cursor and says so. Matching is
+smartcase: a lowercase pattern ignores case, one with an uppercase
+letter does not.
+
+-- input --
+Foo
+foo
+-- keys --
+/ "FOO" Enter
+-- screen --
+Foo
+foo
+
+
+
+not found: FOO
+-- cursor --
+0 0
+-- keys --
+/ "foo" Enter n
+-- screen --
+[Foo]
+[foo]
+
+
+
+vedi  line 2/2  wrap
+-- cursor --
+1 0

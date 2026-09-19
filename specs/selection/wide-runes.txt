@@ -1,0 +1,19 @@
+Selection and copying count runes, not cells: two Shift+Rights over
+East Asian text select two characters that span four cells.
+
+-- size --
+40x5
+-- input --
+日本語 x
+-- keys --
+Shift+Right Shift+Right y
+-- screen --
+[日本]語 x
+
+
+
+copied 1 line
+-- cursor --
+0 4
+-- clipboard --
+日本

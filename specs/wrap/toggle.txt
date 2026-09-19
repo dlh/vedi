@@ -1,0 +1,32 @@
+w toggles between wrap and nowrap; the status line shows the mode. The
+cursor keeps its position in the text, so End in nowrap then w puts it
+on the last wrapped row.
+
+-- size --
+24x5
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- screen --
+abcdefghijklmnopqrstuvwx
+yz0123
+
+
+vedi  line 1/1  wrap
+-- keys --
+w
+-- screen --
+abcdefghijklmnopqrstuvwx
+
+
+
+vedi  line 1/1  nowrap
+-- keys --
+End w
+-- screen --
+abcdefghijklmnopqrstuvwx
+yz0123
+
+
+vedi  line 1/1  wrap
+-- cursor --
+1 6

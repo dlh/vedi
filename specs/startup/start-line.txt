@@ -1,0 +1,19 @@
++N starts with line N at the top and the cursor on it.
+
+-- size --
+40x4
+-- args --
++3
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+line 3
+line 4
+line 5
+vedi  line 3/5  wrap
+-- cursor --
+0 0

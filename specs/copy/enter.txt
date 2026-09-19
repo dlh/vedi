@@ -1,0 +1,17 @@
+Enter without a selection moves down one line, like less. With a
+selection it copies and quits.
+
+-- size --
+40x5
+-- input --
+hello
+world
+-- keys --
+Enter
+-- cursor --
+1 0
+-- keys --
+Shift+Right Enter
+-- quit --
+-- clipboard --
+w

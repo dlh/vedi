@@ -1,0 +1,19 @@
++N past the end of the input starts on the last line.
+
+-- size --
+40x4
+-- args --
++99
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- screen --
+line 5
+
+
+vedi  line 5/5  wrap
+-- cursor --
+0 0

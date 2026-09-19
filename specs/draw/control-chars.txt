@@ -1,0 +1,14 @@
+A C0 control character other than tab is drawn as ^X in reverse video
+and a tab as spaces to the next tab stop. This file holds a raw
+carriage return and a raw tab in its input.
+
+-- size --
+40x5
+-- input --
+ab	c
+-- screen --
+a[^M]b    c
+
+
+
+vedi  line 1/1  wrap

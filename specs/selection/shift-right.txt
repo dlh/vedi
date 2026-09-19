@@ -1,0 +1,20 @@
+Shift+Right extends the selection one rune at a time from where the
+cursor was. Ctrl+C copies it as plain text and reports how many lines.
+
+-- size --
+40x5
+-- input --
+hello world
+second
+-- keys --
+Shift+Right Shift+Right Shift+Right Shift+Right Shift+Right Ctrl+C
+-- screen --
+[hello] world
+second
+
+
+copied 1 line
+-- cursor --
+0 5
+-- clipboard --
+hello

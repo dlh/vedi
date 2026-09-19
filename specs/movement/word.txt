@@ -1,0 +1,54 @@
+Ctrl+Right moves to the end of the current or next word, Ctrl+Left to
+the start of the current or previous one; a word is letters, digits and
+underscores. At a line's end or start they cross to the next or
+previous line. With Shift, each direction extends the selection.
+
+-- size --
+40x5
+-- input --
+foo bar_1  baz
+next
+-- keys --
+Ctrl+Right
+-- cursor --
+0 3
+-- keys --
+Ctrl+Right
+-- cursor --
+0 9
+-- keys --
+Ctrl+Right Ctrl+Right
+-- cursor --
+1 0
+-- keys --
+Ctrl+Left
+-- cursor --
+0 14
+-- keys --
+Ctrl+Left
+-- cursor --
+0 11
+-- keys --
+Ctrl+Shift+Right y
+-- screen --
+foo bar_1  [baz]
+next
+
+
+copied 1 line
+-- cursor --
+0 14
+-- clipboard --
+baz
+-- keys --
+Esc Ctrl+Shift+Left y
+-- screen --
+foo bar_1  [baz]
+next
+
+
+copied 1 line
+-- cursor --
+0 11
+-- clipboard --
+baz

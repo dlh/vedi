@@ -1,0 +1,33 @@
+Down moves the cursor one row. When it leaves the bottom of the screen
+the view scrolls by the least amount that brings it back; Up scrolls
+the same way at the top.
+
+-- size --
+40x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+Down Down Down Down Down
+-- screen --
+line 4
+line 5
+line 6
+vedi  line 6/8  wrap
+-- cursor --
+2 0
+-- keys --
+Up Up Up
+-- screen --
+line 3
+line 4
+line 5
+vedi  line 3/8  wrap
+-- cursor --
+0 0

@@ -1,0 +1,25 @@
+A line's newline is a virtual cell after its last rune. It draws nothing
+when unselected and one reverse cell when selected; the newline after
+the selection's end stays plain.
+
+-- size --
+40x5
+-- input --
+ab
+cd
+-- screen --
+ab
+cd
+
+
+vedi  line 1/2  wrap
+-- keys --
+Shift+Down
+-- screen --
+[ab ]
+cd
+
+
+vedi  line 2/2  wrap
+-- cursor --
+1 0

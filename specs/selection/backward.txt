@@ -1,0 +1,19 @@
+The selection is the range between where it started and the cursor,
+whichever way round.
+
+-- size --
+40x5
+-- input --
+abcdef
+-- keys --
+End Shift+Left Shift+Left y
+-- screen --
+abcd[ef]
+
+
+
+copied 1 line
+-- cursor --
+0 4
+-- clipboard --
+ef

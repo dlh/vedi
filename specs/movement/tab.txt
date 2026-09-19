@@ -1,0 +1,17 @@
+A tab is one rune that spans cells up to the next tab stop, so Right
+over it moves the cursor eight cells. This file holds a raw tab.
+
+-- size --
+40x5
+-- input --
+	x
+-- keys --
+Right
+-- screen --
+        x
+
+
+
+vedi  line 1/1  wrap
+-- cursor --
+0 8

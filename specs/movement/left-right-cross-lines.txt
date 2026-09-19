@@ -1,0 +1,27 @@
+Right at the end of a line moves to the start of the next; Left at the
+start of a line moves to the end of the previous. Home goes to the
+start of the line.
+
+-- size --
+40x5
+-- input --
+ab
+cd
+-- keys --
+Right Right Right
+-- cursor --
+1 0
+-- keys --
+Left
+-- cursor --
+0 2
+-- keys --
+Home
+-- cursor --
+0 0
+-- screen --
+ab
+cd
+
+
+vedi  line 1/2  wrap

@@ -1,0 +1,16 @@
+Text is drawn from the top left, one line per row, with the status line
+on the bottom row and the cursor on the first rune.
+
+-- size --
+40x5
+-- input --
+hello
+world
+-- screen --
+hello
+world
+
+
+vedi  line 1/2  wrap
+-- cursor --
+0 0

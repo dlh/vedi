@@ -37,8 +37,8 @@ With no files, `vedi` reads stdin.
 ## Clipboard
 
 Copy uses OSC 52, which works in kitty, xterm, tmux (`set-clipboard on`)
-and over ssh. If your terminal does not support it, set
-`--clipboard-cmd pbcopy` (macOS), `--clipboard-cmd wl-copy` (Wayland) or
+and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
+`--clipboard-cmd wl-copy` (Wayland) or
 `--clipboard-cmd 'xclip -selection clipboard'` (X11).
 
 ## kitty

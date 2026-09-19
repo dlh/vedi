@@ -1,0 +1,23 @@
+In wrap mode a long line takes as many rows as it needs, and Down moves
+through those rows before reaching the next line. The 4-column screen
+truncates the status line.
+
+-- size --
+4x5
+-- input --
+abcdefghij
+k
+-- screen --
+abcd
+efgh
+ij
+k
+vedi
+-- keys --
+Down
+-- cursor --
+1 0
+-- keys --
+Down Down
+-- cursor --
+3 0

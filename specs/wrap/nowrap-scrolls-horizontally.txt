@@ -1,0 +1,35 @@
+With -S a long line stays on one row and the view scrolls sideways the
+least amount that keeps the cursor on screen.
+
+-- size --
+4x5
+-- args --
+-S
+-- input --
+abcdefghij
+-- screen --
+abcd
+
+
+
+vedi
+-- keys --
+End
+-- screen --
+hij
+
+
+
+vedi
+-- cursor --
+0 3
+-- keys --
+Home
+-- screen --
+abcd
+
+
+
+vedi
+-- cursor --
+0 0

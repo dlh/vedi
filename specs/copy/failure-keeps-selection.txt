@@ -1,0 +1,20 @@
+When the clipboard command fails, the status line says so, the
+selection stays, and Enter does not quit. `false` is a command that
+always fails.
+
+-- size --
+40x5
+-- args --
+--clipboard-cmd false
+-- input --
+hello
+-- keys --
+Shift+Right Enter
+-- screen --
+[h]ello
+
+
+
+copy failed: exit status 1
+-- cursor --
+0 1

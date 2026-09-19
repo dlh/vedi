@@ -1,0 +1,22 @@
+Any key stops +G following, so lines that arrive afterwards do not move
+the cursor.
+
+-- size --
+40x4
+-- args --
++G
+-- input --
+a
+b
+-- keys --
+Up
+-- input --
+c
+-- screen --
+a
+b
+c
+vedi  line 1/3  wrap  reading…
+-- cursor --
+0 0
+-- eof --

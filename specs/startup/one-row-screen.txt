@@ -1,0 +1,8 @@
+A one-row screen shows text and no status line.
+
+-- size --
+10x1
+-- input --
+only
+-- screen --
+only

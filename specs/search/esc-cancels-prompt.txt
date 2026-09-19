@@ -1,0 +1,25 @@
+Esc at the prompt cancels the search and leaves the cursor where it
+was. n with no pattern says so.
+
+-- input --
+abc
+-- keys --
+/ "b" Esc
+-- screen --
+abc
+
+
+
+
+vedi  line 1/1  wrap
+-- cursor --
+0 0
+-- keys --
+n
+-- screen --
+abc
+
+
+
+
+no search pattern

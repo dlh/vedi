@@ -1,0 +1,7 @@
+q quits.
+
+-- input --
+x
+-- keys --
+q
+-- quit --

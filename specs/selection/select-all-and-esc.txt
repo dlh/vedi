@@ -1,0 +1,38 @@
+Ctrl+A selects everything, up to but not including the last line's
+newline. Esc clears the selection; copying with nothing selected says
+so.
+
+-- size --
+40x5
+-- input --
+hello world
+second
+-- keys --
+Ctrl+A y
+-- screen --
+[hello world ]
+[second]
+
+
+copied 2 lines
+-- cursor --
+1 6
+-- clipboard --
+hello world
+second
+-- keys --
+Esc
+-- screen --
+hello world
+second
+
+
+vedi  line 2/2  wrap
+-- keys --
+y
+-- screen --
+hello world
+second
+
+
+nothing selected

@@ -1,0 +1,33 @@
+A selection spanning lines copies the ranges joined with newlines,
+exactly. Moving without Shift clears the selection.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- keys --
+Right Shift+Down Shift+Down Shift+Right Ctrl+C
+-- screen --
+o[ne ]
+[two ]
+[th]ree
+
+copied 3 lines
+-- cursor --
+2 2
+-- clipboard --
+ne
+two
+th
+-- keys --
+Left
+-- screen --
+one
+two
+three
+
+vedi  line 3/3  wrap
+-- cursor --
+2 1

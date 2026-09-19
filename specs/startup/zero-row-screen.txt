@@ -1,0 +1,29 @@
+A screen with no rows draws nothing and hides the cursor. Movement,
+selection and search keys are still handled without panicking, and the
+keys take effect: once a resize gives the screen rows, the text appears
+with the cursor where End left it.
+
+-- size --
+10x0
+-- input --
+only
+-- screen --
+-- cursor --
+hidden
+-- keys --
+Down PgDn End Shift+Down Ctrl+A / "x" Enter Esc
+-- screen --
+-- cursor --
+hidden
+-- resize --
+10x2
+-- screen --
+only
+vedi  line
+-- cursor --
+0 4
+-- keys --
+Ctrl+A Enter
+-- quit --
+-- clipboard --
+only

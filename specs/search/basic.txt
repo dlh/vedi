@@ -1,0 +1,85 @@
+/ opens a prompt on the status line; Backspace edits it and Enter
+searches from the cursor. Every match is highlighted and the cursor goes
+to the first one. n and N go to the next and previous match, wrapping
+around the buffer with a note. Shift+movement selects from a match. Esc
+clears the selection first and the highlight second.
+
+-- input --
+foo
+bar foo
+foo
+-- keys --
+/ "fox"
+-- screen --
+foo
+bar foo
+foo
+
+
+/fox
+-- keys --
+Backspace "o" Enter
+-- screen --
+[foo]
+bar [foo]
+[foo]
+
+
+vedi  line 1/3  wrap
+-- cursor --
+0 0
+-- keys --
+n
+-- cursor --
+1 4
+-- keys --
+n n
+-- screen --
+[foo]
+bar [foo]
+[foo]
+
+
+search wrapped
+-- cursor --
+0 0
+-- keys --
+N
+-- screen --
+[foo]
+bar [foo]
+[foo]
+
+
+search wrapped
+-- cursor --
+2 0
+-- keys --
+Shift+Right Shift+Right y
+-- screen --
+[foo]
+bar [foo]
+[foo]
+
+
+copied 1 line
+-- clipboard --
+fo
+-- keys --
+Esc
+-- screen --
+[foo]
+bar [foo]
+[foo]
+
+
+vedi  line 3/3  wrap
+-- keys --
+Esc
+-- screen --
+foo
+bar foo
+foo
+
+
+vedi  line 3/3  wrap

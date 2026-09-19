@@ -1,0 +1,36 @@
+When the screen grows, the top row stays where it was: scrolling only
+ever moves the least amount needed to keep the cursor on screen.
+
+-- size --
+40x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+line 9
+line 10
+-- keys --
+G
+-- screen --
+line 8
+line 9
+line 10
+vedi  line 10/10  wrap
+-- resize --
+40x8
+-- screen --
+line 8
+line 9
+line 10
+
+
+
+
+vedi  line 10/10  wrap
+-- cursor --
+2 0

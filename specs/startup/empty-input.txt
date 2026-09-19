@@ -1,0 +1,14 @@
+Empty input draws nothing but the status line; movement keys do nothing
+and the cursor is hidden because there is no rune to rest on.
+
+-- size --
+40x4
+-- keys --
+Down End G
+-- screen --
+
+
+
+vedi  line 1/0  wrap
+-- cursor --
+hidden

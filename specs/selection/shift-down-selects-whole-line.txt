@@ -1,0 +1,23 @@
+Shift+Down extends the selection to the same column on the next line,
+which takes the whole of the first line including its newline. The
+selected newline shows as one reverse cell after the last rune, and the
+copy ends with a newline.
+
+-- size --
+40x5
+-- input --
+hello world
+second
+-- keys --
+Shift+Down y
+-- screen --
+[hello world ]
+second
+
+
+copied 1 line
+-- cursor --
+1 0
+-- clipboard --
+hello world
+
