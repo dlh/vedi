@@ -43,6 +43,7 @@ func TestDecode(t *testing.T) {
 		{"slash", k(tcell.KeyRune, '/', 0), Command{Search, false}},
 		{"n", k(tcell.KeyRune, 'n', 0), Command{SearchNext, false}},
 		{"N", k(tcell.KeyRune, 'N', 0), Command{SearchPrev, false}},
+		{"colon", k(tcell.KeyRune, ':', 0), Command{GoToLine, false}},
 		{"w", k(tcell.KeyRune, 'w', 0), Command{ToggleWrap, false}},
 		{"q", k(tcell.KeyRune, 'q', 0), Command{Quit, false}},
 		{"?", k(tcell.KeyRune, '?', 0), Command{Help, false}},
@@ -64,7 +65,7 @@ func TestIsMovement(t *testing.T) {
 			t.Errorf("IsMovement(%d) = false", a)
 		}
 	}
-	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchNext, SearchPrev, ToggleWrap, Quit, Help} {
+	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchNext, SearchPrev, GoToLine, ToggleWrap, Quit, Help} {
 		if IsMovement(a) {
 			t.Errorf("IsMovement(%d) = true", a)
 		}

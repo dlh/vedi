@@ -1,0 +1,88 @@
+: opens a prompt on the status line; digits type a line number, other
+keys are ignored, Backspace edits and Enter goes to that line, column
+0, with no selection. Lines start at 1: 0 goes to the first and past
+the end goes to the last. Enter with nothing typed and Esc leave the
+cursor where it was.
+
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+line 9
+line 10
+-- keys --
+Right Right : "1x2"
+-- screen --
+line 1
+line 2
+line 3
+line 4
+line 5
+:12
+-- keys --
+Backspace "0" Enter
+-- screen --
+line 6
+line 7
+line 8
+line 9
+line 10
+<stdin>  line 10/10  wrap         ? help
+-- cursor --
+4 0
+-- keys --
+: "3" Enter
+-- screen --
+line 3
+line 4
+line 5
+line 6
+line 7
+<stdin>  line 3/10  wrap          ? help
+-- cursor --
+0 0
+-- keys --
+: "99" Enter
+-- cursor --
+4 0
+-- keys --
+: "3" Enter : "99999999999999999999" Enter
+-- cursor --
+4 0
+-- keys --
+: Enter
+-- cursor --
+4 0
+-- keys --
+: "0" Enter
+-- cursor --
+0 0
+-- keys --
+G
+-- keys --
+: "1" Esc
+-- screen --
+line 6
+line 7
+line 8
+line 9
+line 10
+<stdin>  line 10/10  wrap         ? help
+-- cursor --
+4 0
+-- keys --
+Shift+Up : "1" Enter
+-- screen --
+line 1
+line 2
+line 3
+line 4
+line 5
+<stdin>  line 1/10  wrap          ? help
+-- cursor --
+0 0

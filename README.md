@@ -40,6 +40,7 @@ being viewed, or `<stdin>`.
 | ⌃C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
 | / | Search (smartcase); n and N for next and previous |
+| : | Go to a line number |
 | w | Toggle wrap / nowrap |
 | q | Quit |
 | ? | Show the key bindings |

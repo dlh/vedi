@@ -4,6 +4,7 @@ package app
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -60,6 +61,8 @@ type App struct {
 	helping   bool // the key bindings are shown instead of the text
 	searching bool // the / prompt is open
 	query     []rune
+	gotoing   bool   // the : prompt is open
+	lineNo    []rune // its digits
 	matcher   search.Matcher
 	highlight bool
 
@@ -135,6 +138,10 @@ func (a *App) Handle(ev tcell.Event) bool {
 		}
 		if a.searching {
 			a.handleSearchKey(ev)
+			return false
+		}
+		if a.gotoing {
+			a.handleGotoKey(ev)
 			return false
 		}
 		return a.handleKey(input.Decode(ev))
@@ -271,6 +278,9 @@ func (a *App) handleKey(c input.Command) bool {
 		a.findNext(true)
 	case input.SearchPrev:
 		a.findPrev()
+	case input.GoToLine:
+		a.gotoing = true
+		a.lineNo = a.lineNo[:0]
 	case input.ToggleWrap:
 		if a.mode == layout.Wrap {
 			a.mode = layout.NoWrap
@@ -471,6 +481,33 @@ func (a *App) handleSearchKey(ev *tcell.EventKey) {
 		}
 	case tcell.KeyRune:
 		a.query = append(a.query, ev.Rune())
+	}
+}
+
+// handleGotoKey edits the : prompt: digits only. Enter goes to the
+// 1-based line, clamped to the buffer; with no digits it just closes
+// the prompt.
+func (a *App) handleGotoKey(ev *tcell.EventKey) {
+	switch ev.Key() {
+	case tcell.KeyEscape:
+		a.gotoing = false
+	case tcell.KeyEnter:
+		a.gotoing = false
+		if len(a.lineNo) == 0 {
+			return
+		}
+		n, _ := strconv.Atoi(string(a.lineNo))
+		a.cur = buffer.Pos{Line: n - 1}
+		a.anchor = nil
+		a.scrollToCursor()
+	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		if len(a.lineNo) > 0 {
+			a.lineNo = a.lineNo[:len(a.lineNo)-1]
+		}
+	case tcell.KeyRune:
+		if r := ev.Rune(); r >= '0' && r <= '9' {
+			a.lineNo = append(a.lineNo, r)
+		}
 	}
 }
 

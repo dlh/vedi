@@ -118,8 +118,8 @@ func (a *App) drawHelp() {
 
 // drawStatus draws statusText in reverse video on the bottom row, which
 // needs two rows to exist, with "? help" at the right edge unless help
-// is up, a search is being typed, or it would come within two spaces of
-// the text.
+// is up, a prompt is open, or it would come within two spaces of the
+// text.
 func (a *App) drawStatus() {
 	w, h := a.scr.Size()
 	if h < 2 {
@@ -128,7 +128,7 @@ func (a *App) drawStatus() {
 	st := tcell.StyleDefault.Reverse(true)
 	text := []rune(a.statusText())
 	hint := []rune("? help")
-	if a.helping || a.searching || len(text)+2+len(hint) > w {
+	if a.helping || a.searching || a.gotoing || len(text)+2+len(hint) > w {
 		hint = nil
 	}
 	for x := 0; x < w; x++ {
@@ -148,6 +148,8 @@ func (a *App) statusText() string {
 		return "help  any key returns"
 	case a.searching:
 		return "/" + string(a.query)
+	case a.gotoing:
+		return ":" + string(a.lineNo)
 	case a.status != "":
 		return a.status
 	case a.readErr != "":
