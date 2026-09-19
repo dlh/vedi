@@ -26,6 +26,10 @@ func RuneWidth(r rune, x int) int {
 	return uniseg.StringWidth(string(r))
 }
 
+// ZeroWidth reports whether r takes no cell of its own: a combining
+// mark, drawn on the rune before it.
+func ZeroWidth(r rune) bool { return RuneWidth(r, 0) == 0 }
+
 // Cells returns len(text)+1 entries: xs[i] is the cell column where rune
 // i starts and xs[len(text)] is the total width.
 func Cells(text []rune) []int {

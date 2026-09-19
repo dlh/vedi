@@ -1,0 +1,33 @@
+A combining mark draws on the cell of the rune before it, and ← →
+step over it with that rune: a Shift+Right over an accented letter
+selects both runes. The mark counts as a rune in the copied text.
+
+-- size --
+40x4
+-- input --
+éx
+-- keys --
+Shift+Right
+-- screen --
+[é]x
+
+
+<stdin>  line 1/1  wrap           ? help
+-- cursor --
+0 1
+-- keys --
+Right Left Left
+-- cursor --
+0 0
+-- keys --
+End Left
+-- cursor --
+0 1
+-- keys --
+Home Shift+Right y
+-- clipboard --
+é
+-- keys --
+Home Alt+Right
+-- cursor --
+0 2

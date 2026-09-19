@@ -92,7 +92,12 @@ func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 			continue
 		}
 		st := runeStyle(line, i, matches, a.matcher.Len(), selected)
-		drawGlyph(a.scr, x, y, w, line.Text[i], xs[i+1]-xs[i], st)
+		j := i + 1
+		for j < len(line.Text) && xs[j+1] == xs[j] {
+			j++
+		}
+		drawGlyph(a.scr, x, y, w, line.Text[i], line.Text[i+1:j], xs[i+1]-xs[i], st)
+		i = j - 1
 	}
 	return curX, ok
 }
@@ -186,8 +191,8 @@ func isControl(r rune) bool {
 }
 
 // drawGlyph draws r at (x, y): a tab as width spaces, a control char as
-// ^X (DEL as ^?), anything else as itself.
-func drawGlyph(scr tcell.Screen, x, y, w int, r rune, width int, st tcell.Style) {
+// ^X (DEL as ^?), anything else as itself with its combining marks.
+func drawGlyph(scr tcell.Screen, x, y, w int, r rune, comb []rune, width int, st tcell.Style) {
 	switch {
 	case r == '\t':
 		for k := 0; k < width; k++ {
@@ -199,8 +204,8 @@ func drawGlyph(scr tcell.Screen, x, y, w int, r rune, width int, st tcell.Style)
 	case r < 0x20:
 		put(scr, x, y, w, '^', st)
 		put(scr, x+1, y, w, r+0x40, st)
-	default:
-		put(scr, x, y, w, r, st)
+	case x >= 0 && x < w:
+		scr.SetContent(x, y, r, comb, st)
 	}
 }
 

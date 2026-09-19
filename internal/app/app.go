@@ -358,24 +358,33 @@ func (a *App) moveRows(n int) {
 	a.cur.Col = l.Col(text, row, x)
 }
 
-// moveCol moves one rune left or right, crossing line ends.
+// moveCol moves one rune left or right, crossing lines at the ends, and
+// on over any combining marks so the cursor rests on a rune with a cell.
 func (a *App) moveCol(d int) {
 	text := a.line(a.cur.Line)
 	switch {
 	case d < 0 && a.cur.Col > 0:
 		a.cur.Col--
+		for a.cur.Col > 0 && layout.ZeroWidth(text[a.cur.Col]) {
+			a.cur.Col--
+		}
 	case d < 0 && a.cur.Line > 0:
 		a.cur.Line--
 		a.cur.Col = len(a.line(a.cur.Line))
 	case d > 0 && a.cur.Col < len(text):
 		a.cur.Col++
+		for a.cur.Col < len(text) && layout.ZeroWidth(text[a.cur.Col]) {
+			a.cur.Col++
+		}
 	case d > 0 && a.cur.Line+1 < a.buf.Len():
 		a.cur.Line++
 		a.cur.Col = 0
 	}
 }
 
-func isWord(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' }
+func isWord(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || unicode.IsMark(r) || r == '_'
+}
 
 // wordRight moves to the end of the current or next word.
 func (a *App) wordRight() {
