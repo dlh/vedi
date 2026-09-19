@@ -54,3 +54,76 @@ func TestSegments(t *testing.T) {
 		})
 	}
 }
+
+func TestPosColRoundTrip(t *testing.T) {
+	texts := []string{"", "abc", "abcdefghij", "日本語テキスト", "a\tb\tc", "x\ry", "éabc"}
+	for _, s := range texts {
+		text := []rune(s)
+		for _, mode := range []Mode{Wrap, NoWrap} {
+			for width := 1; width <= 12; width++ {
+				l := Layout{width, mode}
+				for col := 0; col <= len(text); col++ {
+					row, x := l.Pos(text, col)
+					got := l.Col(text, row, x)
+					if got != col && !zeroWidthAt(text, col) {
+						t.Errorf("%q %v w=%d: Col(Pos(%d)=(%d,%d)) = %d", s, mode, width, col, row, x, got)
+					}
+				}
+			}
+		}
+	}
+}
+
+// zeroWidthAt reports whether the rune at col has zero width; Col cannot
+// land on such a rune, which is intended.
+func zeroWidthAt(text []rune, col int) bool {
+	return col < len(text) && RuneWidth(text[col], 0) == 0
+}
+
+func TestPos(t *testing.T) {
+	l := Layout{4, Wrap}
+	text := []rune("abcdefghij")
+	tests := []struct{ col, row, x int }{{0, 0, 0}, {3, 0, 3}, {4, 1, 0}, {9, 2, 1}, {10, 2, 2}}
+	for _, tc := range tests {
+		if row, x := l.Pos(text, tc.col); row != tc.row || x != tc.x {
+			t.Errorf("Pos(%d) = (%d,%d), want (%d,%d)", tc.col, row, x, tc.row, tc.x)
+		}
+	}
+	if row, x := (Layout{4, NoWrap}).Pos(text, 9); row != 0 || x != 9 {
+		t.Errorf("nowrap Pos(9) = (%d,%d), want (0,9)", row, x)
+	}
+}
+
+func TestColNeverInsideWideRune(t *testing.T) {
+	l := Layout{10, NoWrap}
+	text := []rune("日本")
+	for x, want := range []int{0, 0, 1, 1, 2, 2} {
+		if got := l.Col(text, 0, x); got != want {
+			t.Errorf("Col(x=%d) = %d, want %d", x, got, want)
+		}
+	}
+}
+
+func TestColPastRowEnd(t *testing.T) {
+	l := Layout{4, Wrap}
+	text := []rune("abcdefghij")
+	if got := l.Col(text, 0, 99); got != 3 {
+		t.Errorf("Col past end of wrapped row = %d, want 3", got)
+	}
+	if got := l.Col(text, 2, 99); got != 10 {
+		t.Errorf("Col past end of last row = %d, want 10", got)
+	}
+	if got := l.Col(text, 99, 0); got != 8 {
+		t.Errorf("Col with row out of range = %d, want 8 (clamped to last row)", got)
+	}
+}
+
+func TestSegmentAt(t *testing.T) {
+	l := Layout{4, Wrap}
+	text := []rune("abcdefghij")
+	for col, want := range map[int]int{0: 0, 3: 0, 4: 1, 8: 2, 10: 2} {
+		if got := l.SegmentAt(text, col); got != want {
+			t.Errorf("SegmentAt(%d) = %d, want %d", col, got, want)
+		}
+	}
+}

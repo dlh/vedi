@@ -69,3 +69,43 @@ func (l Layout) Segments(text []rune) []Segment {
 
 // Rows is the number of visual rows text occupies.
 func (l Layout) Rows(text []rune) int { return len(l.Segments(text)) }
+
+// SegmentAt returns the index of the segment containing rune index col.
+// col == len(text) belongs to the last segment.
+func (l Layout) SegmentAt(text []rune, col int) int {
+	segs := l.Segments(text)
+	for i, s := range segs {
+		if col < s.End {
+			return i
+		}
+	}
+	return len(segs) - 1
+}
+
+// Pos maps rune index col, clamped to 0..len(text), to its row and cell
+// x within it.
+func (l Layout) Pos(text []rune, col int) (row, x int) {
+	col = max(0, min(col, len(text)))
+	xs := Cells(text)
+	row = l.SegmentAt(text, col)
+	return row, xs[col] - xs[l.Segments(text)[row].Start]
+}
+
+// Col maps a row and cell x back to the rune whose cells hold x. Past
+// the row's end it is len(text) on the last row and End-1 on any other,
+// so the cursor stays on that row. Rows are clamped.
+func (l Layout) Col(text []rune, row, x int) int {
+	segs := l.Segments(text)
+	row = max(0, min(row, len(segs)-1))
+	s := segs[row]
+	xs := Cells(text)
+	for i := s.Start; i < s.End; i++ {
+		if xs[i+1]-xs[s.Start] > x {
+			return i
+		}
+	}
+	if row == len(segs)-1 {
+		return len(text)
+	}
+	return s.End - 1
+}
