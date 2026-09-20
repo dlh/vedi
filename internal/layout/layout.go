@@ -26,6 +26,8 @@ func RuneWidth(r rune, x int) int {
 		return TabWidth - x%TabWidth
 	case r < 0x20 || r == 0x7f:
 		return 2
+	case r < 0x7f:
+		return 1
 	}
 	return uniseg.StringWidth(string(r))
 }
