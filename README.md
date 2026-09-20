@@ -106,9 +106,9 @@ at each wrap:
 [bat](https://github.com/sharkdp/bat) pipes its colored output through
 a pager. To make it vedi:
 
-    export BAT_PAGER=vedi
+    export BAT_PAGER="vedi -F"
 
-or put `--pager=vedi` in `~/.config/bat/config`.
+or put `--pager="vedi -F"` in `~/.config/bat/config`.
 
 ## git-delta
 
@@ -120,7 +120,6 @@ pipes its colored diffs through a second pager. In `~/.gitconfig`:
     [delta]
         pager = vedi -F
 
-`-F` makes a short diff print and return, like `git` without a pager.
 `DELTA_PAGER=vedi -F` in the environment does the same.
 
 ## License
