@@ -1,0 +1,79 @@
+Opening the / or : prompt or help ends a drag: ticks no longer scroll
+or select behind them, and motion after they close does not select.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+four
+five
+six
+seven
+-- mouse --
+press 1 0
+move 4 0
+-- keys --
+/
+-- mouse --
+tick 2
+-- screen --
+one
+[two ]
+[three ]
+four
+/
+-- keys --
+Esc
+-- mouse --
+move 3 0
+release 3 0
+-- screen --
+one
+[two ]
+[three ]
+four
+<stdin>  line 4/7  wrap           h help
+-- cursor --
+3 0
+-- mouse --
+press 1 0
+move 4 0
+-- keys --
+:
+-- mouse --
+tick 2
+-- screen --
+one
+[two ]
+[three ]
+four
+:
+-- keys --
+Esc
+-- mouse --
+release 4 0
+press 1 0
+move 4 0
+-- keys --
+h
+-- mouse --
+tick 2
+-- screen --
+↑ ↓ ← →, Home, End        Move the curso
+j, k                      Down a line, u
+⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
+⌃V, ⌥V                    Down a page, u
+help  any key returns
+-- mouse --
+release 4 0
+click 3 0
+-- screen --
+one
+[two ]
+[three ]
+four
+<stdin>  line 4/7  wrap           h help
+-- cursor --
+3 0

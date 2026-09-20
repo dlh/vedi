@@ -80,6 +80,9 @@ type App struct {
 	lastPress click // the last button-1 press, for double-clicks and drags
 	held      bool  // button 1 is down
 	dragging  bool  // and went down on the text, so motion selects
+	dragX     int   // the cell the drag last reached
+	dragY     int
+	ticking   bool // an auto-scroll Tick is on its way
 
 	pending atomic.Bool
 
@@ -172,6 +175,8 @@ func (a *App) Handle(ev tcell.Event) bool {
 		return a.handleKey(input.Decode(ev))
 	case *tcell.EventMouse:
 		a.handleMouse(ev)
+	case *Tick:
+		a.tick(ev)
 	}
 	return false
 }
@@ -335,7 +340,7 @@ func (a *App) handleKey(c input.Command) bool {
 		a.anchor = nil
 		a.moveRows(1)
 	case input.Search, input.SearchBack:
-		a.searching = true
+		a.searching, a.dragging = true, false
 		a.promptBack = c.Action == input.SearchBack
 		a.query = a.query[:0]
 		a.histPos = len(a.history)
@@ -344,7 +349,7 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.SearchPrev:
 		a.find(!a.backward, true)
 	case input.GoToLine:
-		a.gotoing = true
+		a.gotoing, a.dragging = true, false
 		a.lineNo = a.lineNo[:0]
 	case input.ToggleWrap:
 		if a.mode == layout.Wrap {
@@ -354,7 +359,7 @@ func (a *App) handleKey(c input.Command) bool {
 		}
 		a.xoff = 0
 	case input.Help:
-		a.helping = true
+		a.helping, a.dragging = true, false
 	case input.Quit:
 		return true
 	}

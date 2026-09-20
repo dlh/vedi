@@ -45,7 +45,7 @@ the pager.
 | ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
-| Click, drag | Move the cursor, select |
+| Click, drag | Move the cursor, select; held at an edge, scroll |
 | Double-click | Select the word |
 | Wheel | Scroll |
 | ⌃A | Select all |

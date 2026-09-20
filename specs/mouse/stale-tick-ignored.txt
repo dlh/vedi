@@ -1,0 +1,39 @@
+A tick armed by a drag is ignored once the button is released and
+pressed again: it neither scrolls nor selects for the new press. The
+new drag arms its own ticks.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+four
+five
+six
+seven
+-- mouse --
+press 1 0
+move 4 0
+release 4 0
+press 1 1
+tick
+-- screen --
+one
+two
+three
+four
+<stdin>  line 2/7  wrap           h help
+-- cursor --
+1 1
+-- mouse --
+move 4 0
+tick
+-- screen --
+t[wo ]
+[three ]
+[four ]
+five
+<stdin>  line 5/7  wrap           h help
+-- cursor --
+3 0

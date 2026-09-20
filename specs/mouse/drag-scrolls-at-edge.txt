@@ -1,0 +1,104 @@
+Dragging onto the status row or the top row scrolls a row per tick
+while the button is held, extending the selection to the row under
+the pointer. It stops at the buffer's ends, when the pointer comes
+back inside, and at release.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+four
+five
+six
+seven
+-- mouse --
+press 1 0
+move 4 0
+-- screen --
+one
+[two ]
+[three ]
+four
+<stdin>  line 4/7  wrap           h help
+-- cursor --
+3 0
+-- mouse --
+tick 2
+-- screen --
+[three ]
+[four ]
+[five ]
+six
+<stdin>  line 6/7  wrap           h help
+-- cursor --
+3 0
+-- mouse --
+release 4 0
+tick
+-- screen --
+[three ]
+[four ]
+[five ]
+six
+<stdin>  line 6/7  wrap           h help
+-- keys --
+y
+-- clipboard --
+two
+three
+four
+five
+
+-- mouse --
+press 3 1
+move 0 0
+-- screen --
+[three ]
+[four ]
+[five ]
+[s]ix
+<stdin>  line 3/7  wrap           h help
+-- mouse --
+tick 2
+-- screen --
+[one ]
+[two ]
+[three ]
+[four ]
+<stdin>  line 1/7  wrap           h help
+-- cursor --
+0 0
+-- mouse --
+tick
+-- screen --
+[one ]
+[two ]
+[three ]
+[four ]
+<stdin>  line 1/7  wrap           h help
+-- mouse --
+release 0 0
+-- keys --
+y
+-- clipboard --
+one
+two
+three
+four
+five
+s
+-- mouse --
+press 1 0
+move 4 0
+move 2 0
+tick
+-- screen --
+one
+[two ]
+three
+four
+<stdin>  line 3/7  wrap           h help
+-- cursor --
+2 0

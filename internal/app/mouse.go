@@ -14,6 +14,9 @@ const doubleClick = 400 * time.Millisecond
 // wheelRows is how far one wheel tick scrolls the view.
 const wheelRows = 3
 
+// autoScrollTick is how often a drag held at an edge scrolls a row.
+const autoScrollTick = 50 * time.Millisecond
+
 // handleMouse: button 1 places the cursor and drags the selection, the
 // wheel scrolls. A press dismisses help like any key; the wheel is
 // ignored there. The mouse is ignored at the / and : prompts, and a
@@ -62,7 +65,7 @@ func (a *App) press(x, y int) {
 	}
 	now := a.now()
 	double := x == a.lastPress.x && y == a.lastPress.y && now.Sub(a.lastPress.at) <= doubleClick
-	a.dragging = true
+	a.dragging, a.ticking = true, false
 	a.cur = a.cellPos(x, y)
 	a.lastPress = click{now, x, y, a.cur}
 	a.anchor = nil
@@ -74,14 +77,56 @@ func (a *App) press(x, y int) {
 
 // drag selects from the pressed text to the cell under the mouse,
 // clamped to the text rows. The anchor is the position pressed, not the
-// cell: the press may have moved the rows.
+// cell: the press may have moved the rows. On the top row or the status
+// row the view scrolls a row per tick while the button stays held.
 func (a *App) drag(x, y int) {
 	if a.anchor == nil {
 		p := a.lastPress.pos
 		a.anchor = &p
 	}
+	a.dragX, a.dragY = x, y
 	a.cur = a.cellPos(x, min(y, a.textRows()-1))
 	a.scrollToCursor()
+	if a.edge() != 0 && !a.ticking {
+		a.ticking = true
+		t := &Tick{}
+		t.SetEventTime(a.now())
+		var post func()
+		post = func() {
+			if a.scr.PostEvent(t) != nil { // queue full: try next tick
+				time.AfterFunc(autoScrollTick, post)
+			}
+		}
+		time.AfterFunc(autoScrollTick, post)
+	}
+}
+
+// edge is the direction the held drag is scrolling: -1 on the top row,
+// 1 on the status row, 0 inside the text or not dragging.
+func (a *App) edge() int {
+	switch {
+	case !a.held || !a.dragging:
+		return 0
+	case a.dragY <= 0:
+		return -1
+	case a.dragY >= a.textRows():
+		return 1
+	}
+	return 0
+}
+
+// tick scrolls a row for a drag still held at an edge and extends the
+// selection to the row under the pointer; drag arms the next tick. A
+// tick armed before the last press belongs to an earlier drag.
+func (a *App) tick(ev *Tick) {
+	if ev.When().Before(a.lastPress.at) {
+		return
+	}
+	a.ticking = false
+	if d := a.edge(); d != 0 {
+		a.scrollView(d)
+		a.drag(a.dragX, a.dragY)
+	}
 }
 
 // selectWord selects the word runes around the cursor, if it is on one.
@@ -151,3 +196,8 @@ func (a *App) scrollView(n int) {
 		a.cur = buffer.Pos{Line: edge.Line, Col: ln.Col(row, x)}
 	}
 }
+
+// Tick is the auto-scroll timer's event, timed when it was armed: a
+// drag held at an edge posts one to the screen every autoScrollTick,
+// retrying a tick later when the queue is full so none is lost.
+type Tick struct{ tcell.EventTime }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/ansi"
@@ -200,6 +201,30 @@ func TestNotifyFullQueue(t *testing.T) {
 	}
 	if got := row(scr, 3); got != "read error: disk on fire" {
 		t.Errorf("status = %q", got)
+	}
+}
+
+// TestTickFullQueue: a tick that finds the event queue full still
+// arrives once the queue drains, so an edge drag keeps scrolling.
+func TestTickFullQueue(t *testing.T) {
+	a, scr := newTestApp(t, 30, 4, "a\nb\nc\nd\ne", Options{})
+	for scr.PostEvent(key(tcell.KeyRune, 'j', 0)) == nil {
+	}
+	a.Handle(tcell.NewEventMouse(0, 0, tcell.Button1, 0))
+	a.Handle(tcell.NewEventMouse(0, 3, tcell.Button1, 0))
+	time.Sleep(2 * autoScrollTick)
+	for scr.HasPendingEvent() {
+		a.Handle(scr.PollEvent())
+	}
+	got := make(chan tcell.Event, 1)
+	go func() { got <- scr.PollEvent() }()
+	select {
+	case ev := <-got:
+		if _, ok := ev.(*Tick); !ok {
+			t.Errorf("got %T, want *Tick", ev)
+		}
+	case <-time.After(time.Second):
+		t.Error("tick never arrived")
 	}
 }
 

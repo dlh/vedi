@@ -51,6 +51,7 @@ type scenario struct {
 	started  bool
 	quit     bool
 	now      time.Time // the app's clock, advanced by mouse actions
+	moved    time.Time // the last motion, which arms the auto-scroll timer
 }
 
 // runScenario runs one scenario and returns the first failure, a
@@ -242,9 +243,10 @@ func (s *scenario) start() error {
 	return nil
 }
 
-// mouse delivers one action as the events a terminal would send. The
-// clock moves on a second before every click or press, so two in a row
-// are never a double-click; dblclick presses twice without moving it.
+// mouse delivers one action as the events a terminal would send, or
+// for tick the auto-scroll timer's, armed at the last motion. The clock
+// moves on a second before every click or press, so two in a row are
+// never a double-click; dblclick presses twice without moving it.
 func (s *scenario) mouse(a mouseAction) {
 	send := func(x, y int, btn tcell.ButtonMask) {
 		s.app.Handle(tcell.NewEventMouse(x, y, btn, 0))
@@ -264,8 +266,12 @@ func (s *scenario) mouse(a mouseAction) {
 		send(a.x, a.y, tcell.Button1)
 	case "release":
 		send(a.x, a.y, tcell.ButtonNone)
+	case "move":
+		s.moved = s.now
+		send(a.x, a.y, tcell.Button1)
 	case "drag":
 		s.now = s.now.Add(time.Second)
+		s.moved = s.now
 		send(a.x, a.y, tcell.Button1)
 		send(a.x2, a.y2, tcell.Button1)
 		send(a.x2, a.y2, tcell.ButtonNone)
@@ -276,6 +282,13 @@ func (s *scenario) mouse(a mouseAction) {
 		}
 		for i := 0; i < a.n; i++ {
 			send(0, 0, btn)
+		}
+	case "tick":
+		for i := 0; i < a.n; i++ {
+			t := &app.Tick{}
+			t.SetEventTime(s.moved)
+			s.app.Handle(t)
+			s.app.Draw()
 		}
 	}
 }
