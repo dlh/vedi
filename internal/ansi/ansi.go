@@ -86,9 +86,9 @@ func escape(b []byte) (n int, sgr []byte, ok bool) {
 			}
 		}
 		return len(b), nil, false
-	case ']': // OSC: ends at BEL or ESC \
+	case ']', 'P', '_', '^', 'X': // OSC, DCS, APC, PM, SOS: a string ending at ESC \, or BEL for OSC
 		for i := 2; i < len(b); i++ {
-			if b[i] == 0x07 {
+			if b[i] == 0x07 && b[1] == ']' {
 				return i + 1, nil, true
 			}
 			if b[i] == 0x1b && i+1 < len(b) && b[i+1] == '\\' {
