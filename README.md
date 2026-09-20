@@ -110,6 +110,19 @@ a pager. To make it vedi:
 
 or put `--pager=vedi` in `~/.config/bat/config`.
 
+## git-delta
+
+[delta](https://github.com/dandavison/delta) is a pager for git that
+pipes its colored diffs through a second pager. In `~/.gitconfig`:
+
+    [core]
+        pager = delta
+    [delta]
+        pager = vedi -F
+
+`-F` makes a short diff print and return, like `git` without a pager.
+`DELTA_PAGER=vedi -F` in the environment does the same.
+
 ## License
 
 Copyright (C) 2026 Daniel Lee Harple
