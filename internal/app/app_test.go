@@ -165,3 +165,21 @@ func BenchmarkLongLine(b *testing.B) {
 		press(a, key(tcell.KeyRight, 0, 0))
 	}
 }
+
+// TestNotifyFullQueue: a Notify dropped by a full event queue is still
+// acted on once the queue drains, even with no later Notify.
+func TestNotifyFullQueue(t *testing.T) {
+	a, scr := newTestApp(t, 30, 4, "", Options{})
+	for scr.PostEvent(key(tcell.KeyRune, 'j', 0)) == nil {
+	}
+	a.buf.Append(buffer.Line{Text: []rune("late")})
+	a.buf.Finish(fmt.Errorf("disk on fire"), false)
+	a.Notify()
+	for scr.HasPendingEvent() {
+		a.Handle(scr.PollEvent())
+		a.Draw()
+	}
+	if got := row(scr, 3); got != "read error: disk on fire" {
+		t.Errorf("status = %q", got)
+	}
+}

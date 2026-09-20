@@ -107,12 +107,12 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 }
 
 // Notify asks for a redraw. It is safe to call from the reader
-// goroutine; repeated calls before the next draw are coalesced.
+// goroutine; repeated calls before the next draw are coalesced. When
+// the queue is full the event is dropped but the work stays pending,
+// and Handle does it on whatever event drains the queue.
 func (a *App) Notify() {
 	if a.pending.CompareAndSwap(false, true) {
-		if a.scr.PostEvent(tcell.NewEventInterrupt(nil)) != nil {
-			a.pending.Store(false) // queue full; the next Notify retries
-		}
+		a.scr.PostEvent(tcell.NewEventInterrupt(nil))
 	}
 }
 
@@ -127,15 +127,17 @@ func (a *App) Run() {
 	}
 }
 
-// Handle processes one event and reports whether to quit.
+// Handle processes one event and reports whether to quit. Data the
+// reader notified of is taken up first, whatever the event.
 func (a *App) Handle(ev tcell.Event) bool {
+	_, interrupt := ev.(*tcell.EventInterrupt)
+	if a.pending.Swap(false) || interrupt {
+		a.onData()
+	}
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
 		a.scr.Sync()
 		a.scrollToCursor()
-	case *tcell.EventInterrupt:
-		a.pending.Store(false)
-		a.onData()
 	case *tcell.EventKey:
 		a.act()
 		if a.helping {
