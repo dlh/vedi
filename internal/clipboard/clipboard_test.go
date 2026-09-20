@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -44,6 +45,22 @@ func TestCommandFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "exit status 3") || !strings.Contains(err.Error(), "nope") {
 		t.Fatalf("error = %q, want exit status and stderr", err)
+	}
+}
+
+// A tool that forks a daemon to serve the selection (xclip) leaves a
+// child holding stdout and stderr; Copy must return when the command
+// exits, not when the child does.
+func TestCommandReturnsWhileChildHoldsPipes(t *testing.T) {
+	done := make(chan error, 1)
+	go func() { done <- (Command{Cmd: "sleep 5 & exit 0"}).Copy("x") }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Copy waited for the child")
 	}
 }
 
