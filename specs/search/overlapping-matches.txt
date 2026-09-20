@@ -1,0 +1,19 @@
+Matches may overlap: every place the pattern starts is highlighted, and
+n visits each one.
+
+-- size --
+40x3
+-- input --
+banana
+-- keys --
+/ "ana" Enter
+-- screen --
+b[anana]
+
+<stdin>  line 1/1  wrap           ? help
+-- cursor --
+0 1
+-- keys --
+n
+-- cursor --
+0 3

@@ -75,10 +75,10 @@ func (m Matcher) FindLast(text []rune, before int) int {
 	return -1
 }
 
-// All returns the start of every non-overlapping match in text.
+// All returns the start of every match in text; matches may overlap.
 func (m Matcher) All(text []rune) []int {
 	var out []int
-	for i := m.Find(text, 0); i >= 0; i = m.Find(text, i+len(m.pat)) {
+	for i := m.Find(text, 0); i >= 0; i = m.Find(text, i+1) {
 		out = append(out, i)
 	}
 	return out

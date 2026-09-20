@@ -1,6 +1,7 @@
 package search
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -45,8 +46,8 @@ func TestFindFromAndLast(t *testing.T) {
 	if got := m.FindLast(text, 0); got != -1 {
 		t.Errorf("FindLast before 0 = %d, want -1", got)
 	}
-	if got := New("aa").All([]rune("aaaa")); len(got) != 2 || got[0] != 0 || got[1] != 2 {
-		t.Errorf("All = %v, want [0 2] (non-overlapping)", got)
+	if got := New("aa").All([]rune("aaaa")); !slices.Equal(got, []int{0, 1, 2}) {
+		t.Errorf("All = %v, want [0 1 2] (overlapping)", got)
 	}
 }
 
