@@ -15,6 +15,6 @@ line 5
 line 2
 line 3
 line 4
-<stdin>  line 2/5  wrap           ? help
+<stdin>  line 2/5  wrap           h help
 -- cursor --
 0 0

@@ -30,9 +30,12 @@ being viewed, or `<stdin>`.
 | Key | Action |
 |---|---|
 | ↑ ↓ ← →, Home, End | Move the cursor |
-| ⇞ ⇟, Space, b | Move by a page |
+| j, k | Down a line, up a line |
+| ⇞ ⇟, Space, f, ⌃F, b, ⌃B | Move by a page |
+| ⌃V, ⌥V | Down a page, up a page |
+| d, ⌃D, u, ⌃U | Move by half a page |
 | ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F | Move by word |
-| g, G | First line, last line |
+| g, G, <, > | First line, last line |
 | ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
@@ -44,11 +47,12 @@ being viewed, or `<stdin>`.
 | ⌃C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
 | / | Search; ignores case unless the pattern has a capital |
-| n, N | Next and previous match |
+| ? | Search backward |
+| n, N | Next and previous match; ? swaps them |
 | : | Go to a line number |
 | w | Toggle wrap / nowrap |
 | q | Quit |
-| ? | Show the key bindings |
+| h | Show the key bindings |
 
 ## Clipboard
 

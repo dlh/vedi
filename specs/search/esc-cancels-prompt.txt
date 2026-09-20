@@ -11,7 +11,7 @@ abc
 
 
 
-<stdin>  line 1/1  wrap           ? help
+<stdin>  line 1/1  wrap           h help
 -- cursor --
 0 0
 -- keys --
@@ -22,4 +22,4 @@ abc
 
 
 
-no search pattern                 ? help
+no search pattern                 h help

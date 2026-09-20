@@ -25,7 +25,7 @@ bar [foo]
 [foo]
 
 
-<stdin>  line 1/3  wrap           ? help
+<stdin>  line 1/3  wrap           h help
 -- cursor --
 0 0
 -- keys --
@@ -40,7 +40,7 @@ bar [foo]
 [foo]
 
 
-search wrapped                    ? help
+search wrapped                    h help
 -- cursor --
 0 0
 -- keys --
@@ -51,7 +51,7 @@ bar [foo]
 [foo]
 
 
-search wrapped                    ? help
+search wrapped                    h help
 -- cursor --
 2 0
 -- keys --
@@ -62,7 +62,7 @@ bar [foo]
 [foo]
 
 
-copied 1 line                     ? help
+copied 1 line                     h help
 -- clipboard --
 fo
 -- keys --
@@ -73,7 +73,7 @@ bar [foo]
 [foo]
 
 
-<stdin>  line 3/3  wrap           ? help
+<stdin>  line 3/3  wrap           h help
 -- keys --
 Esc
 -- screen --
@@ -82,4 +82,4 @@ bar foo
 foo
 
 
-<stdin>  line 3/3  wrap           ? help
+<stdin>  line 3/3  wrap           h help

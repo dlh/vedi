@@ -12,7 +12,7 @@ Shift+Right
 [é]x
 
 
-<stdin>  line 1/1  wrap           ? help
+<stdin>  line 1/1  wrap           h help
 -- cursor --
 0 1
 -- keys --

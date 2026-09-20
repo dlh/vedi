@@ -45,6 +45,6 @@ click 2 3
 one two
 three four
 five six
-<stdin>  line 3/3  wrap           ? help
+<stdin>  line 3/3  wrap           h help
 -- cursor --
 2 3

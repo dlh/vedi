@@ -16,6 +16,8 @@ const (
 	End
 	PageUp
 	PageDown
+	HalfPageUp
+	HalfPageDown
 	WordLeft
 	WordRight
 	First
@@ -25,6 +27,7 @@ const (
 	Copy
 	Enter
 	Search
+	SearchBack
 	SearchNext
 	SearchPrev
 	GoToLine
@@ -42,9 +45,12 @@ type Binding struct {
 // same list.
 var Bindings = []Binding{
 	{"↑ ↓ ← →, Home, End", "Move the cursor"},
-	{"⇞ ⇟, Space, b", "Move by a page"},
+	{"j, k", "Down a line, up a line"},
+	{"⇞ ⇟, Space, f, ⌃F, b, ⌃B", "Move by a page"},
+	{"⌃V, ⌥V", "Down a page, up a page"},
+	{"d, ⌃D, u, ⌃U", "Move by half a page"},
 	{"⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F", "Move by word"},
-	{"g, G", "First line, last line"},
+	{"g, G, <, >", "First line, last line"},
 	{"⇧ + ↑ ↓ ← →, Home, End", "Extend the selection"},
 	{"⇧⇞, ⇧⇟", "Extend by a page"},
 	{"⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→", "Extend by word"},
@@ -56,11 +62,12 @@ var Bindings = []Binding{
 	{"⌃C, y", "Copy the selection as plain text"},
 	{"⏎", "Copy the selection and quit; with none, down a line"},
 	{"/", "Search; ignores case unless the pattern has a capital"},
-	{"n, N", "Next and previous match"},
+	{"?", "Search backward"},
+	{"n, N", "Next and previous match; ? swaps them"},
 	{":", "Go to a line number"},
 	{"w", "Toggle wrap / nowrap"},
 	{"q", "Quit"},
-	{"?", "Show the key bindings"},
+	{"h", "Show the key bindings"},
 }
 
 // IsMovement reports whether a moves the cursor.
@@ -77,7 +84,8 @@ type Command struct {
 // Only arrows, Home/End, PgUp/PgDn and Ctrl/Alt+arrows extend: Shift on
 // a letter is another letter, and Shift+Space is indistinguishable.
 // Alt+arrow is Ctrl+arrow, and Alt+b/Alt+f are the emacs word motions,
-// which Terminal.app sends for Option+arrow.
+// which Terminal.app sends for Option+arrow. Ctrl+V/Alt+v page as in
+// emacs; less has Alt+v too.
 func Decode(ev *tcell.EventKey) Command {
 	shift := ev.Modifiers()&tcell.ModShift != 0
 	word := ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0
@@ -105,6 +113,16 @@ func Decode(ev *tcell.EventKey) Command {
 		return Command{PageUp, shift}
 	case tcell.KeyPgDn:
 		return Command{PageDown, shift}
+	case tcell.KeyCtrlF:
+		return Command{Action: PageDown}
+	case tcell.KeyCtrlB:
+		return Command{Action: PageUp}
+	case tcell.KeyCtrlV:
+		return Command{Action: PageDown}
+	case tcell.KeyCtrlD:
+		return Command{Action: HalfPageDown}
+	case tcell.KeyCtrlU:
+		return Command{Action: HalfPageUp}
 	case tcell.KeyCtrlA:
 		return Command{Action: SelectAll}
 	case tcell.KeyEscape:
@@ -120,22 +138,34 @@ func Decode(ev *tcell.EventKey) Command {
 				return Command{Action: WordLeft}
 			case 'f':
 				return Command{Action: WordRight}
+			case 'v':
+				return Command{Action: PageUp}
 			}
 			return Command{}
 		}
 		switch ev.Rune() {
-		case ' ':
+		case 'j':
+			return Command{Action: Down}
+		case 'k':
+			return Command{Action: Up}
+		case ' ', 'f':
 			return Command{Action: PageDown}
 		case 'b':
 			return Command{Action: PageUp}
-		case 'g':
+		case 'd':
+			return Command{Action: HalfPageDown}
+		case 'u':
+			return Command{Action: HalfPageUp}
+		case 'g', '<':
 			return Command{Action: First}
-		case 'G':
+		case 'G', '>':
 			return Command{Action: Last}
 		case 'y':
 			return Command{Action: Copy}
 		case '/':
 			return Command{Action: Search}
+		case '?':
+			return Command{Action: SearchBack}
 		case 'n':
 			return Command{Action: SearchNext}
 		case 'N':
@@ -146,7 +176,7 @@ func Decode(ev *tcell.EventKey) Command {
 			return Command{Action: ToggleWrap}
 		case 'q':
 			return Command{Action: Quit}
-		case '?':
+		case 'h':
 			return Command{Action: Help}
 		}
 	}

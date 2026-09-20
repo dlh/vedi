@@ -1,0 +1,30 @@
+Cancelling a ? or / prompt with Esc leaves n and N going the way the
+last search went.
+
+-- input --
+foo 1
+foo 2
+foo 3
+-- keys --
+/ "foo" Enter
+-- cursor --
+0 0
+-- keys --
+? Esc n
+-- cursor --
+1 0
+-- keys --
+? "foo" Enter
+-- cursor --
+0 0
+-- keys --
+/ Esc n
+-- screen --
+{foo} 1
+{foo} 2
+{foo} 3
+
+
+search wrapped                    h help
+-- cursor --
+2 0

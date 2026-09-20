@@ -24,4 +24,4 @@ ab
 cd
 
 
-<stdin>  line 1/2  wrap           ? help
+<stdin>  line 1/2  wrap           h help

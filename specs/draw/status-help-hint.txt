@@ -1,4 +1,4 @@
-The status line ends with "? help" against the right edge, so the
+The status line ends with "h help" against the right edge, so the
 bindings can be found from any message. The hint is dropped, not cut,
 when fewer than two spaces would separate it from the text.
 
@@ -9,7 +9,7 @@ abc
 -- screen --
 abc
 
-<stdin>  line 1/1  wrap   ? help
+<stdin>  line 1/1  wrap   h help
 -- resize --
 30x3
 -- screen --
@@ -23,4 +23,4 @@ y
 -- screen --
 abc
 
-nothing selected                  ? help
+nothing selected                  h help

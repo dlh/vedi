@@ -141,7 +141,7 @@ func (a *App) drawHelp() {
 }
 
 // drawStatus draws statusText in reverse video on the bottom row, which
-// needs two rows to exist, with "? help" at the right edge unless help
+// needs two rows to exist, with "h help" at the right edge unless help
 // is up, a prompt is open, or it would come within two spaces of the
 // text.
 func (a *App) drawStatus() {
@@ -155,7 +155,7 @@ func (a *App) drawStatus() {
 	}
 	text := []rune(a.statusText())
 	width := drawRunes(a.scr, 0, h-1, w, text, st)
-	hint := []rune("? help")
+	hint := []rune("h help")
 	if !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
 		drawRunes(a.scr, w-len(hint), h-1, w, hint, st)
 	}
@@ -180,6 +180,8 @@ func (a *App) statusText() string {
 	switch {
 	case a.helping:
 		return "help  any key returns"
+	case a.searching && a.promptBack:
+		return "?" + string(a.query)
 	case a.searching:
 		return "/" + string(a.query)
 	case a.gotoing:

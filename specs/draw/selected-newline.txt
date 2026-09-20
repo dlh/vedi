@@ -12,7 +12,7 @@ ab
 cd
 
 
-<stdin>  line 1/2  wrap           ? help
+<stdin>  line 1/2  wrap           h help
 -- keys --
 Shift+Down
 -- screen --
@@ -20,6 +20,6 @@ Shift+Down
 cd
 
 
-<stdin>  line 2/2  wrap           ? help
+<stdin>  line 2/2  wrap           h help
 -- cursor --
 1 0

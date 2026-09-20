@@ -12,7 +12,7 @@ Shift+Right Shift+Right y
 
 
 
-copied 1 line                     ? help
+copied 1 line                     h help
 -- cursor --
 0 4
 -- clipboard --

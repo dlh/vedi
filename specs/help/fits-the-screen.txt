@@ -6,11 +6,11 @@ for them all.
 -- input --
 abc
 -- keys --
-?
+h
 -- screen --
-↑ ↓ ← →, Home, End      Move the cursor
-⇞ ⇟, Space, b           Move by a page
-⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F  Move by word
-g, G                    First line, last line
-⇧ + ↑ ↓ ← →, Home, End  Extend the selection
+↑ ↓ ← →, Home, End        Move the cursor
+j, k                      Down a line, up a line
+⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
+⌃V, ⌥V                    Down a page, up a page
+d, ⌃D, u, ⌃U              Move by half a page
 help  any key returns

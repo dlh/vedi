@@ -58,13 +58,15 @@ type App struct {
 	status  string // one-shot message, cleared by the next key or click
 	readErr string
 
-	helping   bool // the key bindings are shown instead of the text
-	searching bool // the / prompt is open
-	query     []rune
-	gotoing   bool   // the : prompt is open
-	lineNo    []rune // its digits
-	matcher   search.Matcher
-	highlight bool
+	helping    bool // the key bindings are shown instead of the text
+	searching  bool // the / or ? prompt is open
+	promptBack bool // it is ?
+	backward   bool // the last search was ?, and so n goes up and N down
+	query      []rune
+	gotoing    bool   // the : prompt is open
+	lineNo     []rune // its digits
+	matcher    search.Matcher
+	highlight  bool
 
 	now       func() time.Time
 	lastPress click // the last button-1 press, for double-clicks and drags
@@ -255,6 +257,10 @@ func (a *App) handleKey(c input.Command) bool {
 		a.moveRows(-a.pageRows())
 	case input.PageDown:
 		a.moveRows(a.pageRows())
+	case input.HalfPageUp:
+		a.moveRows(-a.halfPageRows())
+	case input.HalfPageDown:
+		a.moveRows(a.halfPageRows())
 	case input.WordLeft:
 		a.wordLeft()
 	case input.WordRight:
@@ -280,13 +286,14 @@ func (a *App) handleKey(c input.Command) bool {
 		}
 		a.anchor = nil
 		a.moveRows(1)
-	case input.Search:
+	case input.Search, input.SearchBack:
 		a.searching = true
+		a.promptBack = c.Action == input.SearchBack
 		a.query = a.query[:0]
 	case input.SearchNext:
-		a.findNext(true)
+		a.find(a.backward, true)
 	case input.SearchPrev:
-		a.findPrev()
+		a.find(!a.backward, true)
 	case input.GoToLine:
 		a.gotoing = true
 		a.lineNo = a.lineNo[:0]
@@ -351,6 +358,8 @@ func (a *App) textRows() int {
 }
 
 func (a *App) pageRows() int { return max(a.textRows(), 1) }
+
+func (a *App) halfPageRows() int { return max(a.textRows()/2, 1) }
 
 func (a *App) endPos() buffer.Pos {
 	n := a.buf.Len()
@@ -519,8 +528,9 @@ func (a *App) handleSearchKey(ev *tcell.EventKey) {
 		a.searching = false
 	case tcell.KeyEnter:
 		a.searching = false
+		a.backward = a.promptBack
 		a.matcher = search.New(string(a.query))
-		a.findNext(false)
+		a.find(a.backward, false)
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if len(a.query) > 0 {
 			a.query = a.query[:len(a.query)-1]
@@ -557,22 +567,18 @@ func (a *App) handleGotoKey(ev *tcell.EventKey) {
 	}
 }
 
-func (a *App) findNext(after bool) {
+// find goes to the next match before or after the cursor. A match at
+// the cursor counts going forward unless skip; backward always skips.
+func (a *App) find(backward, skip bool) {
 	if a.matcher.Empty() {
 		a.status = "no search pattern"
 		return
 	}
-	pos, wrapped, found := search.Next(a.buf, a.matcher, a.cur, after)
-	a.jumpTo(pos, wrapped, found)
-}
-
-func (a *App) findPrev() {
-	if a.matcher.Empty() {
-		a.status = "no search pattern"
-		return
+	if backward {
+		a.jumpTo(search.Prev(a.buf, a.matcher, a.cur))
+	} else {
+		a.jumpTo(search.Next(a.buf, a.matcher, a.cur, skip))
 	}
-	pos, wrapped, found := search.Prev(a.buf, a.matcher, a.cur)
-	a.jumpTo(pos, wrapped, found)
 }
 
 func (a *App) jumpTo(pos buffer.Pos, wrapped, found bool) {

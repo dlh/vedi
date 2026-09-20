@@ -33,7 +33,20 @@ func TestDecode(t *testing.T) {
 		{"pgdn", k(tcell.KeyPgDn, 0, 0), Command{PageDown, false}},
 		{"space", k(tcell.KeyRune, ' ', 0), Command{PageDown, false}},
 		{"b", k(tcell.KeyRune, 'b', 0), Command{PageUp, false}},
+		{"j", k(tcell.KeyRune, 'j', 0), Command{Down, false}},
+		{"k", k(tcell.KeyRune, 'k', 0), Command{Up, false}},
+		{"f", k(tcell.KeyRune, 'f', 0), Command{PageDown, false}},
+		{"ctrl f", k(tcell.KeyCtrlF, 0, tcell.ModCtrl), Command{PageDown, false}},
+		{"ctrl b", k(tcell.KeyCtrlB, 0, tcell.ModCtrl), Command{PageUp, false}},
+		{"ctrl v", k(tcell.KeyCtrlV, 0, tcell.ModCtrl), Command{PageDown, false}},
+		{"alt v", k(tcell.KeyRune, 'v', tcell.ModAlt), Command{PageUp, false}},
+		{"d", k(tcell.KeyRune, 'd', 0), Command{HalfPageDown, false}},
+		{"ctrl d", k(tcell.KeyCtrlD, 0, tcell.ModCtrl), Command{HalfPageDown, false}},
+		{"u", k(tcell.KeyRune, 'u', 0), Command{HalfPageUp, false}},
+		{"ctrl u", k(tcell.KeyCtrlU, 0, tcell.ModCtrl), Command{HalfPageUp, false}},
 		{"g", k(tcell.KeyRune, 'g', 0), Command{First, false}},
+		{"<", k(tcell.KeyRune, '<', tcell.ModShift), Command{First, false}},
+		{">", k(tcell.KeyRune, '>', tcell.ModShift), Command{Last, false}},
 		{"G never extends", k(tcell.KeyRune, 'G', tcell.ModShift), Command{Last, false}},
 		{"ctrl a", k(tcell.KeyCtrlA, 0, tcell.ModCtrl), Command{SelectAll, false}},
 		{"esc", k(tcell.KeyEscape, 0, 0), Command{ClearSelection, false}},
@@ -41,12 +54,13 @@ func TestDecode(t *testing.T) {
 		{"y", k(tcell.KeyRune, 'y', 0), Command{Copy, false}},
 		{"enter", k(tcell.KeyEnter, 0, 0), Command{Enter, false}},
 		{"slash", k(tcell.KeyRune, '/', 0), Command{Search, false}},
+		{"question", k(tcell.KeyRune, '?', tcell.ModShift), Command{SearchBack, false}},
 		{"n", k(tcell.KeyRune, 'n', 0), Command{SearchNext, false}},
 		{"N", k(tcell.KeyRune, 'N', 0), Command{SearchPrev, false}},
 		{"colon", k(tcell.KeyRune, ':', 0), Command{GoToLine, false}},
 		{"w", k(tcell.KeyRune, 'w', 0), Command{ToggleWrap, false}},
 		{"q", k(tcell.KeyRune, 'q', 0), Command{Quit, false}},
-		{"?", k(tcell.KeyRune, '?', 0), Command{Help, false}},
+		{"h", k(tcell.KeyRune, 'h', 0), Command{Help, false}},
 		{"unbound", k(tcell.KeyRune, 'z', 0), Command{}},
 		{"unbound key", k(tcell.KeyF1, 0, 0), Command{}},
 	}
@@ -60,12 +74,12 @@ func TestDecode(t *testing.T) {
 }
 
 func TestIsMovement(t *testing.T) {
-	for _, a := range []Action{Up, Down, Left, Right, Home, End, PageUp, PageDown, WordLeft, WordRight, First, Last} {
+	for _, a := range []Action{Up, Down, Left, Right, Home, End, PageUp, PageDown, HalfPageUp, HalfPageDown, WordLeft, WordRight, First, Last} {
 		if !IsMovement(a) {
 			t.Errorf("IsMovement(%d) = false", a)
 		}
 	}
-	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchNext, SearchPrev, GoToLine, ToggleWrap, Quit, Help} {
+	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, Enter, Search, SearchBack, SearchNext, SearchPrev, GoToLine, ToggleWrap, Quit, Help} {
 		if IsMovement(a) {
 			t.Errorf("IsMovement(%d) = true", a)
 		}

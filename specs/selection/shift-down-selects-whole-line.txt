@@ -15,7 +15,7 @@ Shift+Down y
 second
 
 
-copied 1 line                     ? help
+copied 1 line                     h help
 -- cursor --
 1 0
 -- clipboard --

@@ -20,7 +20,7 @@ wheel down
 line 4
 line 5
 line 6
-<stdin>  line 4/8  wrap           ? help
+<stdin>  line 4/8  wrap           h help
 -- cursor --
 0 2
 -- keys --
@@ -31,6 +31,6 @@ wheel up
 line 1
 line 2
 line 3
-<stdin>  line 3/8  wrap           ? help
+<stdin>  line 3/8  wrap           h help
 -- cursor --
 2 2

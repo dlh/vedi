@@ -7,13 +7,13 @@ else. The wheel is ignored while help is up.
 abc
 def
 -- keys --
-Down ?
+Down h
 -- mouse --
 wheel down
 -- screen --
-↑ ↓ ← →, Home, End      Move the cursor
-⇞ ⇟, Space, b           Move by a page
-⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F  Move by word
+↑ ↓ ← →, Home, End        Move the curso
+j, k                      Down a line, u
+⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
 help  any key returns
 -- mouse --
 click 0 0
@@ -21,6 +21,6 @@ click 0 0
 abc
 def
 
-<stdin>  line 2/2  wrap           ? help
+<stdin>  line 2/2  wrap           h help
 -- cursor --
 1 0

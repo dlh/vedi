@@ -14,7 +14,7 @@ foo
 
 
 
-not found: FOO                    ? help
+not found: FOO                    h help
 -- cursor --
 0 0
 -- keys --
@@ -25,7 +25,7 @@ foo
 
 
 
-not found: FOO                    ? help
+not found: FOO                    h help
 -- keys --
 / "foo" Enter n
 -- screen --
@@ -34,6 +34,6 @@ not found: FOO                    ? help
 
 
 
-<stdin>  line 2/2  wrap           ? help
+<stdin>  line 2/2  wrap           h help
 -- cursor --
 1 0

@@ -1,0 +1,55 @@
+? opens the search prompt with a ? and Enter searches backward from
+the cursor. n then repeats backward and N forward; a / search puts
+them back the usual way.
+
+-- input --
+foo 1
+foo 2
+foo 3
+-- keys --
+G ? "foo"
+-- screen --
+foo 1
+foo 2
+foo 3
+
+
+?foo
+-- keys --
+Enter
+-- screen --
+[foo] 1
+[foo] 2
+[foo] 3
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 0
+-- keys --
+n
+-- cursor --
+0 0
+-- keys --
+N
+-- cursor --
+1 0
+-- keys --
+/ "foo" Enter
+-- cursor --
+1 0
+-- keys --
+n
+-- cursor --
+2 0
+-- keys --
+n
+-- screen --
+[foo] 1
+[foo] 2
+[foo] 3
+
+
+search wrapped                    h help
+-- cursor --
+0 0

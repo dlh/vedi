@@ -23,6 +23,6 @@ hidden
 line 3
 line 4
 line 5
-<stdin>  line 3/5  wrap           ? help
+<stdin>  line 3/5  wrap           h help
 -- cursor --
 0 0

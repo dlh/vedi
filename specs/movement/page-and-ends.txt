@@ -1,5 +1,7 @@
-PgDn and Space move down a screenful of text rows, PgUp and b move up
-one, G goes to the last line and g to the first.
+PgDn, Space, f, Ctrl+F and Ctrl+V move down a screenful of text rows;
+PgUp, b, Ctrl+B and Alt+v move up one. G and > go to the last line, g
+and < to the first. Ctrl+V and Alt+v are the emacs pair; less has
+Alt+v too.
 
 -- size --
 40x4
@@ -20,7 +22,7 @@ PgDn
 line 2
 line 3
 line 4
-<stdin>  line 4/10  wrap          ? help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 2 0
 -- keys --
@@ -29,7 +31,7 @@ G
 line 8
 line 9
 line 10
-<stdin>  line 10/10  wrap         ? help
+<stdin>  line 10/10  wrap         h help
 -- cursor --
 2 0
 -- keys --
@@ -38,7 +40,7 @@ b
 line 7
 line 8
 line 9
-<stdin>  line 7/10  wrap          ? help
+<stdin>  line 7/10  wrap          h help
 -- cursor --
 0 0
 -- keys --
@@ -47,7 +49,7 @@ g
 line 1
 line 2
 line 3
-<stdin>  line 1/10  wrap          ? help
+<stdin>  line 1/10  wrap          h help
 -- cursor --
 0 0
 -- keys --
@@ -56,6 +58,69 @@ Space
 line 2
 line 3
 line 4
-<stdin>  line 4/10  wrap          ? help
+<stdin>  line 4/10  wrap          h help
+-- cursor --
+2 0
+-- keys --
+Ctrl+B
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/10  wrap          h help
+-- cursor --
+0 0
+-- keys --
+f
+-- screen --
+line 2
+line 3
+line 4
+<stdin>  line 4/10  wrap          h help
+-- cursor --
+2 0
+-- keys --
+>
+-- screen --
+line 8
+line 9
+line 10
+<stdin>  line 10/10  wrap         h help
+-- cursor --
+2 0
+-- keys --
+<
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/10  wrap          h help
+-- cursor --
+0 0
+-- keys --
+Ctrl+F
+-- screen --
+line 2
+line 3
+line 4
+<stdin>  line 4/10  wrap          h help
+-- cursor --
+2 0
+-- keys --
+Alt+v
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/10  wrap          h help
+-- cursor --
+0 0
+-- keys --
+Ctrl+V
+-- screen --
+line 2
+line 3
+line 4
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 2 0

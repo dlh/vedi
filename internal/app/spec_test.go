@@ -343,7 +343,7 @@ func sideBySide(want, got string) string {
 // contract and a misspelled section each fail the scenario, so a green
 // suite means the assertions ran.
 func TestRunScenarioRejects(t *testing.T) {
-	const ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\n<stdin>  line 1/1  wrap           ? help\n"
+	const ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\n<stdin>  line 1/1  wrap           h help\n"
 	if err := runScenario(t, parseArchive(ok)); err != nil {
 		t.Fatalf("control scenario failed: %v", err)
 	}

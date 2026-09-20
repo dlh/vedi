@@ -1,0 +1,14 @@
+j and k are Down and Up.
+
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+j j
+-- cursor --
+2 0
+-- keys --
+k
+-- cursor --
+1 0
