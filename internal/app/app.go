@@ -567,6 +567,8 @@ func (a *App) copy() bool {
 	return true
 }
 
+// handleSearchKey edits the / and ? prompts. Enter searches; with
+// nothing typed it repeats the last pattern the prompt's way.
 func (a *App) handleSearchKey(ev *tcell.EventKey) {
 	switch ev.Key() {
 	case tcell.KeyEscape:
@@ -574,6 +576,10 @@ func (a *App) handleSearchKey(ev *tcell.EventKey) {
 	case tcell.KeyEnter:
 		a.searching = false
 		a.backward = a.promptBack
+		if len(a.query) == 0 {
+			a.find(a.backward, true)
+			return
+		}
 		a.matcher = search.New(string(a.query))
 		a.find(a.backward, false)
 	case tcell.KeyBackspace, tcell.KeyBackspace2:

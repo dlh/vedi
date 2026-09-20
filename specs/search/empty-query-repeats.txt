@@ -1,0 +1,47 @@
+Enter with an empty query keeps the last pattern and searches for it
+the prompt's way, moving off a match at the cursor like n; n and N
+follow the new direction. With no pattern yet it says so.
+
+-- input --
+foo 1
+foo 2
+foo 3
+-- keys --
+/ Enter
+-- screen --
+foo 1
+foo 2
+foo 3
+
+
+no search pattern                 h help
+-- keys --
+/ "foo" Enter
+-- cursor --
+0 0
+-- keys --
+/ Enter
+-- screen --
+{foo} 1
+{foo} 2
+{foo} 3
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 0
+-- keys --
+? Enter
+-- cursor --
+0 0
+-- keys --
+n
+-- screen --
+{foo} 1
+{foo} 2
+{foo} 3
+
+
+search wrapped                    h help
+-- cursor --
+2 0

@@ -52,7 +52,7 @@ the pager.
 | ⎋ | Clear the selection, then the search highlight |
 | ⌃C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
-| / | Search; ignores case unless the pattern has a capital |
+| / | Search; ignores case unless capitalized; empty repeats |
 | ? | Search backward |
 | n, N | Next and previous match; ? swaps them |
 | : | Go to a line number |
