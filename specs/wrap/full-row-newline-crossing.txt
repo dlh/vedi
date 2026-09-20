@@ -1,0 +1,33 @@
+Up, Down and paging into a line as wide as the screen land on its text,
+never on its newline row: that row opens only once the cursor is on
+the newline, not while it is still on the line it came from.
+
+-- size --
+6x4
+-- input --
+abcdef
+日本語
+ghij
+klmn
+-- keys --
+Right Right Right Right PgDn
+-- screen --
+日本語
+ghij
+klmn
+<stdin
+-- cursor --
+2 4
+-- keys --
+PgUp
+-- screen --
+abcdef
+日本語
+ghij
+<stdin
+-- cursor --
+0 4
+-- keys --
+Down Down Up
+-- cursor --
+1 4

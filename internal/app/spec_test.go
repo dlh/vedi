@@ -13,6 +13,7 @@ import (
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
+	"go.dlh.dev/vedi/internal/layout"
 )
 
 // TestSpecs runs every scenario file under specs/. The format is
@@ -290,7 +291,10 @@ func dump(scr tcell.SimulationScreen) string {
 		for x := 0; x < w; x++ {
 			c := cells[y*w+x]
 			if len(c.Runes) == 0 {
-				continue // the second cell of a wide rune
+				continue
+			}
+			if layout.RuneWidth(c.Runes[0], 0) == 2 {
+				x++ // the simulation leaves a wide rune's second cell as it was
 			}
 			if !status {
 				_, _, attr := c.Style.Decompose()

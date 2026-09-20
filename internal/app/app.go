@@ -360,7 +360,9 @@ func (a *App) endPos() buffer.Pos {
 }
 
 // moveRows moves the cursor n visual rows (negative is up), keeping its
-// cell column where possible.
+// cell column where possible. Crossing a line resets the column first:
+// lineLayout opens a newline row for the cursor's line, and the old
+// column must not open one on the new line.
 func (a *App) moveRows(n int) {
 	ln := a.lineLayout(a.cur.Line)
 	row, x := ln.Pos(a.cur.Col)
@@ -368,7 +370,7 @@ func (a *App) moveRows(n int) {
 		if row+1 < ln.Rows() {
 			row++
 		} else if a.cur.Line+1 < a.buf.Len() {
-			a.cur.Line++
+			a.cur = buffer.Pos{Line: a.cur.Line + 1}
 			ln = a.lineLayout(a.cur.Line)
 			row = 0
 		} else {
@@ -380,7 +382,7 @@ func (a *App) moveRows(n int) {
 		if row > 0 {
 			row--
 		} else if a.cur.Line > 0 {
-			a.cur.Line--
+			a.cur = buffer.Pos{Line: a.cur.Line - 1}
 			ln = a.lineLayout(a.cur.Line)
 			row = ln.Rows() - 1
 		} else {
