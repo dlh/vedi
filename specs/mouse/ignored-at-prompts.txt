@@ -1,0 +1,50 @@
+The mouse is ignored while the / or : prompt is open: a click does not
+move the cursor and the wheel does not scroll. A press before the
+prompt is forgotten, so a click after it is a click, not a drag from
+the old press.
+
+-- size --
+40x4
+-- input --
+one two
+three four
+five six
+-- keys --
+:
+-- mouse --
+click 1 2 wheel down
+-- screen --
+one two
+three four
+five six
+:
+-- cursor --
+0 0
+-- keys --
+"2" Enter
+-- cursor --
+1 0
+-- mouse --
+press 0 0
+-- keys --
+/
+-- mouse --
+release 0 0 click 1 2 wheel down
+-- screen --
+one two
+three four
+five six
+/
+-- cursor --
+0 0
+-- keys --
+Esc
+-- mouse --
+click 2 3
+-- screen --
+one two
+three four
+five six
+<stdin>  line 3/3  wrap           ? help
+-- cursor --
+2 3

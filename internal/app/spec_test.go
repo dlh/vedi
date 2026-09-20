@@ -234,7 +234,7 @@ func (s *scenario) start() error {
 }
 
 // mouse delivers one action as the events a terminal would send. The
-// clock moves on a second before every click, so two clicks in a row
+// clock moves on a second before every click or press, so two in a row
 // are never a double-click; dblclick presses twice without moving it.
 func (s *scenario) mouse(a mouseAction) {
 	send := func(x, y int, btn tcell.ButtonMask) {
@@ -250,6 +250,11 @@ func (s *scenario) mouse(a mouseAction) {
 			send(a.x, a.y, tcell.Button1)
 			send(a.x, a.y, tcell.ButtonNone)
 		}
+	case "press":
+		s.now = s.now.Add(time.Second)
+		send(a.x, a.y, tcell.Button1)
+	case "release":
+		send(a.x, a.y, tcell.ButtonNone)
 	case "drag":
 		s.now = s.now.Add(time.Second)
 		send(a.x, a.y, tcell.Button1)

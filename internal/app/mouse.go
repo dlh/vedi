@@ -16,9 +16,11 @@ const wheelRows = 3
 
 // handleMouse: button 1 places the cursor and drags the selection, the
 // wheel scrolls. A press dismisses help like any key; the wheel is
-// ignored there. The mouse is ignored at the / prompt.
+// ignored there. The mouse is ignored at the / and : prompts, and a
+// press from before one is forgotten.
 func (a *App) handleMouse(ev *tcell.EventMouse) {
-	if a.searching {
+	if a.searching || a.gotoing {
+		a.held, a.dragging = false, false
 		return
 	}
 	x, y := ev.Position()
