@@ -312,21 +312,27 @@ func (a *App) layout() layout.Layout {
 
 // lineLayout is line i laid out for the current width and mode. Lines
 // never change once in the buffer, so layouts are kept until the width
-// or mode changes, or laidLines of them are held.
+// or mode changes, or laidLines of them are held. The cursor's line
+// gets a row for its newline while the cursor is on it and the line's
+// last row is full; that row is not kept.
 func (a *App) lineLayout(i int) layout.Line {
 	l := a.layout()
 	if a.laidOut == nil || a.laid != l || len(a.laidOut) >= laidLines {
 		a.laid, a.laidOut = l, map[int]layout.Line{}
 	}
-	if ln, ok := a.laidOut[i]; ok {
-		return ln
+	ln, ok := a.laidOut[i]
+	if !ok {
+		// Len before Line: a line past the end when counted may exist
+		// by the time it is read, and its layout must not be kept as
+		// empty.
+		keep := i >= 0 && i < a.buf.Len()
+		ln = l.Line(a.line(i))
+		if keep {
+			a.laidOut[i] = ln
+		}
 	}
-	// Len before Line: a line past the end when counted may exist by
-	// the time it is read, and its layout must not be kept as empty.
-	keep := i >= 0 && i < a.buf.Len()
-	ln := l.Line(a.line(i))
-	if keep {
-		a.laidOut[i] = ln
+	if i == a.cur.Line && a.cur.Col >= len(a.line(i)) {
+		ln = l.NewlineRow(ln)
 	}
 	return ln
 }

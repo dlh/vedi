@@ -83,6 +83,19 @@ func (l Layout) Line(text []rune) Line {
 	return Line{xs, append(segs, Segment{start, n})}
 }
 
+// NewlineRow returns ln, laid out by l, with an empty row after its last
+// when that row is full: a place for the cursor on the newline, which
+// has no cell of its own. Otherwise ln is returned as is.
+func (l Layout) NewlineRow(ln Line) Line {
+	n := len(ln.xs) - 1
+	last := ln.segs[len(ln.segs)-1]
+	if l.Mode == NoWrap || l.Width <= 0 || ln.xs[n]-ln.xs[last.Start] < l.Width {
+		return ln
+	}
+	segs := append(ln.segs[:len(ln.segs):len(ln.segs)], Segment{n, n})
+	return Line{ln.xs, segs}
+}
+
 // Cells is the line's cell columns, as the Cells function gives them.
 func (ln Line) Cells() []int { return ln.xs }
 

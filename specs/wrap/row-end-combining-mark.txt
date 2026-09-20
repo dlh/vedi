@@ -2,17 +2,17 @@ Landing past the end of a wrapped row that ends in a combining mark
 puts the cursor on the mark's base rune, where it is drawn.
 
 -- size --
-4x4
+5x4
 -- input --
 wxyz
-abcéfgh
+abcé日x
 -- keys --
 End Down
 -- screen --
 wxyz
 abcé
-fgh
-<std
+日x
+<stdi
 -- cursor --
 1 3
 -- keys --
@@ -20,7 +20,7 @@ Shift+Right
 -- screen --
 wxyz
 abc[é]
-fgh
-<std
+日x
+<stdi
 -- cursor --
 2 0

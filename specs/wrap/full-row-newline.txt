@@ -1,0 +1,60 @@
+In wrap mode a line exactly as wide as the screen has no cell for its
+newline. While the cursor is on that newline a row for it opens below
+the line; it closes when the cursor leaves, and Up and Down never land
+on it.
+
+-- size --
+6x5
+-- input --
+abcdef
+xy
+-- screen --
+abcdef
+xy
+
+
+<stdin
+-- keys --
+End
+-- screen --
+abcdef
+
+xy
+
+<stdin
+-- cursor --
+1 0
+-- keys --
+Left
+-- screen --
+abcdef
+xy
+
+
+<stdin
+-- cursor --
+0 5
+-- keys --
+Right Right
+-- cursor --
+1 0
+-- keys --
+Up
+-- cursor --
+0 0
+-- keys --
+End Shift+Down Shift+End
+-- screen --
+abcdef
+[xy]
+
+
+<stdin
+-- cursor --
+1 2
+-- keys --
+Up End
+-- mouse --
+click 1 3
+-- cursor --
+1 0

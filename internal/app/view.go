@@ -64,7 +64,8 @@ func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 	line := a.buf.Line(p.Line)
 	ln := a.lineLayout(p.Line)
 	xs := ln.Cells()
-	seg := ln.Segments()[ln.SegmentAt(p.Col)]
+	segi := ln.SegmentAt(p.Col)
+	seg := ln.Segments()[segi]
 	x0 := xs[seg.Start] + a.xoff
 	var matches []int
 	if a.highlight {
@@ -72,10 +73,11 @@ func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 	}
 	selStart, selEnd, hasSel := a.selection()
 
-	// The newline is a virtual cell after the last rune: the cursor can
-	// rest on it, and it shows as one reverse cell when selected.
+	// The newline is a virtual cell after the last rune, on the last
+	// row: the cursor can rest on it, and it shows as one reverse cell
+	// when selected.
 	end := seg.End
-	if end == len(line.Text) {
+	if segi == ln.Rows()-1 {
 		end++
 	}
 	for i := seg.Start; i < end; i++ {

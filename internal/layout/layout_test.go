@@ -124,6 +124,36 @@ func TestColPastRowEnd(t *testing.T) {
 	}
 }
 
+func TestNewlineRow(t *testing.T) {
+	tests := []struct {
+		name string
+		l    Layout
+		in   string
+		want []Segment
+	}{
+		{"full", Layout{4, Wrap}, "abcd", []Segment{{0, 4}, {4, 4}}},
+		{"full last row", Layout{4, Wrap}, "abcdefgh", []Segment{{0, 4}, {4, 8}, {8, 8}}},
+		{"wider than width", Layout{1, Wrap}, "日", []Segment{{0, 1}, {1, 1}}},
+		{"short", Layout{4, Wrap}, "abc", []Segment{{0, 3}}},
+		{"empty", Layout{4, Wrap}, "", []Segment{{0, 0}}},
+		{"nowrap", Layout{4, NoWrap}, "abcd", []Segment{{0, 4}}},
+		{"zero width", Layout{0, Wrap}, "abcd", []Segment{{0, 4}}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ln := tc.l.Line([]rune(tc.in))
+			before := len(ln.Segments())
+			got := tc.l.NewlineRow(ln).Segments()
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("NewlineRow = %v, want %v", got, tc.want)
+			}
+			if len(ln.Segments()) != before {
+				t.Fatal("NewlineRow changed its argument")
+			}
+		})
+	}
+}
+
 func TestSegmentAt(t *testing.T) {
 	l := Layout{4, Wrap}
 	text := []rune("abcdefghij")
