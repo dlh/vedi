@@ -12,5 +12,6 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
 - Colors, read errors and the event loop are tested in Go
   (`internal/app/app_test.go`); everything else belongs in `specs/`.
 - `go test ./...` must pass before every commit.
+- `docs/development.md` says how to check, commit and release.
 - Docs, comments and commit messages are terse: say it once, in as
   few words as read clearly. No preamble, no restating the code.

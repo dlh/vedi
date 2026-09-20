@@ -14,6 +14,10 @@ CI runs `fmt`, `test` and `tidy` on every push and PR;
 run them before committing. Behaviors are specified and tested in
 `specs/`; see `specs/README.md`.
 
+Commit messages follow [Conventional
+Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`,
+`docs:`, `ci:`, `chore:`. The changelog is built from them.
+
 ## Releases
 
 Tag and push:
