@@ -39,7 +39,8 @@ being viewed, or `<stdin>`.
 | ⎋ | Clear the selection, then the search highlight |
 | ⌃C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
-| / | Search (smartcase); n and N for next and previous |
+| / | Search; ignores case unless the pattern has a capital |
+| n, N | Next and previous match |
 | : | Go to a line number |
 | w | Toggle wrap / nowrap |
 | q | Quit |

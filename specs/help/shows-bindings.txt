@@ -4,7 +4,7 @@ does nothing else, so q returns rather than quits and the cursor is
 where it was.
 
 -- size --
-80x21
+80x22
 -- input --
 abc
 def
@@ -25,7 +25,8 @@ Wheel                   Scroll
 ⎋                       Clear the selection, then the search highlight
 ⌃C, y                   Copy the selection as plain text
 ⏎                       Copy the selection and quit; with none, down a line
-/                       Search (smartcase); n and N for next and previous
+/                       Search; ignores case unless the pattern has a capital
+n, N                    Next and previous match
 :                       Go to a line number
 w                       Toggle wrap / nowrap
 q                       Quit
@@ -39,6 +40,7 @@ q
 -- screen --
 abc
 def
+
 
 
 
