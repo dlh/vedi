@@ -116,6 +116,12 @@ func TestColPastRowEnd(t *testing.T) {
 	if got := l.Col(text, 99, 0); got != 8 {
 		t.Errorf("Col with row out of range = %d, want 8 (clamped to last row)", got)
 	}
+	// abce\u0301 | fgh: the first row ends in a combining mark, which has
+	// no cell; past the end is its base rune.
+	text = []rune("abce\u0301fgh")
+	if got := l.Col(text, 0, 99); got != 3 {
+		t.Errorf("Col past end of row ending in a mark = %d, want 3", got)
+	}
 }
 
 func TestSegmentAt(t *testing.T) {

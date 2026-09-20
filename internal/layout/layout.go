@@ -108,8 +108,9 @@ func (ln Line) Pos(col int) (row, x int) {
 }
 
 // Col maps a row and cell x back to the rune whose cells hold x. Past
-// the row's end it is len(text) on the last row and End-1 on any other,
-// so the cursor stays on that row. Rows are clamped.
+// the row's end it is len(text) on the last row and the last rune with
+// a cell on any other, so the cursor stays on that row. Rows are
+// clamped.
 func (ln Line) Col(row, x int) int {
 	row = max(0, min(row, len(ln.segs)-1))
 	s := ln.segs[row]
@@ -121,7 +122,11 @@ func (ln Line) Col(row, x int) int {
 	if row == len(ln.segs)-1 {
 		return len(ln.xs) - 1
 	}
-	return s.End - 1
+	i := s.End - 1
+	for i > s.Start && ln.xs[i+1] == ln.xs[i] {
+		i--
+	}
+	return i
 }
 
 // Segments, Rows, SegmentAt, Pos and Col lay text out and answer once;
