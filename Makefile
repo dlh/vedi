@@ -1,4 +1,4 @@
-.PHONY: build install test bench vet staticcheck fmt release-check clean
+.PHONY: build install test bench vet staticcheck fmt tidy release-check clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -21,6 +21,11 @@ staticcheck:
 # Lists unformatted files and fails; never rewrites.
 fmt:
 	@out=$$(gofmt -l .); if [ -n "$$out" ]; then echo "$$out"; exit 1; fi
+
+# Shows what go mod tidy would change and fails; never rewrites.
+tidy:
+	go mod tidy -diff
+	cd tools && go mod tidy -diff
 
 # Needs a git remote.
 release-check:
