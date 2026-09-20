@@ -1,0 +1,17 @@
+With -S the view scrolls so the whole character under the cursor is on
+screen, not only its first cell.
+
+-- size --
+6x3
+-- args --
+-S
+-- input --
+abcde日f
+-- keys --
+Right Right Right Right Right
+-- screen --
+bcde日
+
+<stdin
+-- cursor --
+0 4

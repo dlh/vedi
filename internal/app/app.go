@@ -83,6 +83,7 @@ const laidLines = 1024
 type click struct {
 	at   time.Time
 	x, y int
+	pos  buffer.Pos // the text under the cell, as laid out at the press
 }
 
 func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
@@ -652,11 +653,17 @@ func (a *App) scrollToCursor() {
 	}
 	l := a.layout()
 	if a.mode == layout.NoWrap && l.Width > 0 {
-		_, x := a.lineLayout(a.cur.Line).Pos(a.cur.Col)
+		// The cursor's whole rune must fit, not just its first cell.
+		ln := a.lineLayout(a.cur.Line)
+		_, x := ln.Pos(a.cur.Col)
+		w := 1
+		if xs := ln.Cells(); a.cur.Col < len(xs)-1 {
+			w = max(1, xs[a.cur.Col+1]-xs[a.cur.Col])
+		}
 		if x < a.xoff {
 			a.xoff = x
-		} else if x >= a.xoff+l.Width {
-			a.xoff = x - l.Width + 1
+		} else if x+w > a.xoff+l.Width {
+			a.xoff = min(x, x+w-l.Width)
 		}
 	} else {
 		a.xoff = 0
