@@ -1,0 +1,70 @@
+At the prompt, Up recalls earlier queries, newest first, and Down goes
+back toward what was being typed. Editing a recalled query leaves the
+history alone; a query equal to the newest entry is not added again.
+
+-- input --
+foo
+bar
+-- keys --
+/ "foo" Enter / "bar" Enter / Up
+-- screen --
+foo
+{bar}
+
+
+
+/bar
+-- keys --
+Up
+-- screen --
+foo
+{bar}
+
+
+
+/foo
+-- keys --
+Up
+-- screen --
+foo
+{bar}
+
+
+
+/foo
+-- keys --
+Down Down "ba"
+-- screen --
+foo
+{bar}
+
+
+
+/ba
+-- keys --
+Up Backspace "z"
+-- screen --
+foo
+{bar}
+
+
+
+/baz
+-- keys --
+Down
+-- screen --
+foo
+{bar}
+
+
+
+/ba
+-- keys --
+Esc / "baz" Enter / "baz" Enter / Up Up
+-- screen --
+foo
+bar
+
+
+
+/bar

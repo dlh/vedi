@@ -63,6 +63,7 @@ var Bindings = []Binding{
 	{"⏎", "Copy the selection and quit; with none, down a line"},
 	{"/", "Search; ignores case unless capitalized; empty repeats"},
 	{"?", "Search backward"},
+	{"↑ ↓ at the prompt", "Recall earlier searches"},
 	{"n, N", "Next and previous match; ? swaps them"},
 	{":", "Go to a line number"},
 	{"w", "Toggle wrap / nowrap"},
