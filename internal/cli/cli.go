@@ -22,6 +22,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-col N        put the cursor in column N of the last screenful
   --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
   -h, --help            show this help
+  -v, --version         print the version
 
 Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
 quit, / search, n/N next/prev, w toggle wrap, q quit.
@@ -34,6 +35,7 @@ type Options struct {
 	Screen       *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd string
 	Help         bool
+	Version      bool
 }
 
 // App converts the options to the app's. The input is named after
@@ -125,6 +127,8 @@ func Parse(args []string) (Options, []string, error) {
 			o.StartLine = n
 		case a == "-h" || a == "--help":
 			o.Help = true
+		case a == "-v" || a == "--version":
+			o.Version = true
 		case a == "--":
 			files = append(files, args[i+1:]...)
 			i = len(args)

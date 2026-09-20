@@ -17,6 +17,7 @@ lets you select it with the keyboard or mouse.
       --cursor-row N        put the cursor on row N of the last screenful
       --cursor-col N        put the cursor in column N of the last screenful
       --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
+      -v, --version         print the version
 
 With no files, `vedi` reads stdin. The status line names the files
 being viewed, or `<stdin>`.

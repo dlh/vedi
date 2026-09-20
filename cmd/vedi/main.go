@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/app"
@@ -45,6 +46,10 @@ func openInput(files []string) (io.Reader, func(), error) {
 	}, nil
 }
 
+// version is set by the linker for releases; otherwise the module
+// version, which go install fills in.
+var version string
+
 func main() {
 	opts, files, err := cli.Parse(os.Args[1:])
 	if err != nil {
@@ -53,6 +58,15 @@ func main() {
 	}
 	if opts.Help {
 		fmt.Print(cli.Usage)
+		return
+	}
+	if opts.Version {
+		if version == "" {
+			if bi, ok := debug.ReadBuildInfo(); ok {
+				version = bi.Main.Version
+			}
+		}
+		fmt.Println("vedi", version)
 		return
 	}
 	in, closeInput, err := openInput(files)

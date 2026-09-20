@@ -27,6 +27,8 @@ func TestParse(t *testing.T) {
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
 		{"clipboard cmd eq", []string{"--clipboard-cmd=wl-copy -n"}, Options{ClipboardCmd: "wl-copy -n"}, nil, false},
 		{"help", []string{"-h"}, Options{Help: true}, nil, false},
+		{"version short", []string{"-v"}, Options{Version: true}, nil, false},
+		{"version long", []string{"--version"}, Options{Version: true}, nil, false},
 		{"dash dash", []string{"--", "-S"}, Options{}, []string{"-S"}, false},
 		{"stdin dash", []string{"-"}, Options{}, []string{"-"}, false},
 		{"bad line", []string{"+0"}, Options{}, nil, true},
