@@ -5,6 +5,9 @@ lets you select it with the keyboard or mouse.
 
 ## Install
 
+Download a binary for linux or macOS from the [releases
+page](https://github.com/dlh/vedi/releases), or build from source:
+
     go install go.dlh.dev/vedi/cmd/vedi@latest
 
 ## Usage
