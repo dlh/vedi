@@ -57,6 +57,8 @@ type scenario struct {
 // malformed section or a failed assertion, prefixed with its line. t
 // only cleans up the screen.
 func runScenario(t *testing.T, a archive) error {
+	// The copier must not depend on the terminal running the tests.
+	t.Setenv("TERM_PROGRAM", "")
 	if strings.TrimSpace(a.comment) == "" {
 		return fmt.Errorf("a scenario starts with prose describing the behavior")
 	}

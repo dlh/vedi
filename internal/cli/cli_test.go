@@ -62,6 +62,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestApp(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "")
 	scr := tcell.NewSimulationScreen("UTF-8")
 	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr, nil)
 	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
@@ -72,5 +73,9 @@ func TestApp(t *testing.T) {
 	}
 	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr, nil).Copier).(clipboard.Command); !ok {
 		t.Error("--clipboard-cmd should give a Command copier")
+	}
+	t.Setenv("TERM_PROGRAM", "Apple_Terminal")
+	if c, ok := (Options{}.App(scr, nil).Copier).(clipboard.Command); !ok || c.Cmd != "pbcopy" {
+		t.Error("Terminal.app should default to pbcopy")
 	}
 }

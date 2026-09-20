@@ -52,7 +52,12 @@ func (c Command) Copy(text string) error {
 }
 
 // New returns Command when cmd is set, otherwise OSC52 on scr.
-func New(scr tcell.Screen, cmd string) Copier {
+// Terminal.app (termProgram "Apple_Terminal") ignores OSC 52, so there
+// the default is pbcopy.
+func New(scr tcell.Screen, cmd, termProgram string) Copier {
+	if cmd == "" && termProgram == "Apple_Terminal" {
+		cmd = "pbcopy"
+	}
 	if cmd != "" {
 		return Command{Cmd: cmd}
 	}

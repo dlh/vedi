@@ -64,12 +64,16 @@ func TestCommandReturnsWhileChildHoldsPipes(t *testing.T) {
 	}
 }
 
+// Terminal.app ignores OSC 52, so with no command it gets pbcopy.
 func TestNew(t *testing.T) {
 	scr := tcell.NewSimulationScreen("UTF-8")
-	if _, ok := New(scr, "").(OSC52); !ok {
-		t.Error("New with empty cmd should be OSC52")
+	if got := New(scr, "", "Apple_Terminal"); got != (Command{Cmd: "pbcopy"}) {
+		t.Fatalf("Apple_Terminal: %#v", got)
 	}
-	if c, ok := New(scr, "pbcopy").(Command); !ok || c.Cmd != "pbcopy" {
-		t.Error("New with cmd should be Command")
+	if got := New(scr, "", "iTerm.app"); got != (OSC52{Screen: scr}) {
+		t.Fatalf("iTerm.app: %#v", got)
+	}
+	if got := New(scr, "wl-copy", "Apple_Terminal"); got != (Command{Cmd: "wl-copy"}) {
+		t.Fatalf("explicit command: %#v", got)
 	}
 }

@@ -64,6 +64,23 @@ and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
 `--clipboard-cmd wl-copy` (Wayland) or
 `--clipboard-cmd 'xclip -selection clipboard'` (X11).
 
+## Terminal.app
+
+Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞ or ⇧⇟, so
+the program sees them as unshifted. To select with them, add these
+under Settings → Profiles → Keyboard, action Send Text:
+
+| Key | Text |
+|-----|------|
+| ⇧↑ | `\033[1;2A` |
+| ⇧↓ | `\033[1;2B` |
+| ⇧Home | `\033[1;2H` |
+| ⇧End | `\033[1;2F` |
+| ⇧⇞ | `\033[5;2~` |
+| ⇧⇟ | `\033[6;2~` |
+
+It does not support OSC 52, so copy uses `pbcopy`.
+
 ## kitty scrollback
 
 The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its

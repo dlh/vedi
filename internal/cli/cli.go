@@ -3,6 +3,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -51,7 +52,7 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 		StartLine: o.StartLine,
 		Follow:    o.Follow,
 		Screen:    o.Screen,
-		Copier:    clipboard.New(scr, o.ClipboardCmd),
+		Copier:    clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
 	}
 }
 
