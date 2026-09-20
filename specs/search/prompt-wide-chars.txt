@@ -1,0 +1,13 @@
+The prompt shows wide characters in their own cells and combining
+marks on the character before them.
+
+-- size --
+20x3
+-- input --
+日本語 café
+-- keys --
+/ "日本語 café"
+-- screen --
+日本語 café
+
+/日本語 café

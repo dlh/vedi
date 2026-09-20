@@ -133,20 +133,30 @@ func (a *App) drawStatus() {
 		return
 	}
 	st := tcell.StyleDefault.Reverse(true)
-	text := []rune(a.statusText())
-	hint := []rune("? help")
-	if a.helping || a.searching || a.gotoing || len(text)+2+len(hint) > w {
-		hint = nil
-	}
 	for x := 0; x < w; x++ {
-		r := ' '
-		if x < len(text) {
-			r = text[x]
-		} else if x >= w-len(hint) {
-			r = hint[x-(w-len(hint))]
-		}
-		a.scr.SetContent(x, h-1, r, nil, st)
+		a.scr.SetContent(x, h-1, ' ', nil, st)
 	}
+	text := []rune(a.statusText())
+	width := drawRunes(a.scr, 0, h-1, w, text, st)
+	hint := []rune("? help")
+	if !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
+		drawRunes(a.scr, w-len(hint), h-1, w, hint, st)
+	}
+}
+
+// drawRunes draws text from (x, y) glyph by glyph and returns its
+// width in cells.
+func drawRunes(scr tcell.Screen, x, y, w int, text []rune, st tcell.Style) int {
+	xs := layout.Cells(text)
+	for i := 0; i < len(text); i++ {
+		j := i + 1
+		for j < len(text) && xs[j+1] == xs[j] {
+			j++
+		}
+		drawGlyph(scr, x+xs[i], y, w, text[i], text[i+1:j], xs[i+1]-xs[i], st)
+		i = j - 1
+	}
+	return xs[len(text)]
 }
 
 func (a *App) statusText() string {
