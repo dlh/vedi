@@ -40,6 +40,13 @@ role.
     APPLE_API_KEY_ID               API key ID
     APPLE_API_KEY_P8_BASE64        API key .p8, base64
 
+Export the certificate from Keychain Access (My Certificates →
+Developer ID Application → File → Export Items… → .p12). Encode both
+files without line breaks; goreleaser rejects wrapped base64:
+
+    base64 -i Certificates.p12 | tr -d ' \n' | pbcopy
+    base64 -i AuthKey_XXXXXXXXXX.p8 | tr -d ' \n' | pbcopy
+
 To load them from a 1Password item whose fields carry the same names:
 
     bin/sync_secrets_from_1password.sh "op://Private/GitHub vedi Secrets"
