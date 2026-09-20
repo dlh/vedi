@@ -1,0 +1,31 @@
+The selection anchors on the text under the press, even when the press
+itself changes the layout: here it leaves the newline row after a full
+row, moving the rows below up.
+
+-- size --
+6x4
+-- input --
+abcdef
+xy
+zzz
+-- keys --
+End
+-- screen --
+abcdef
+
+xy
+<stdin
+-- mouse --
+drag 2 0 2 1
+-- screen --
+abcdef
+[xy ]
+[z]zz
+<stdin
+-- cursor --
+2 1
+-- keys --
+y
+-- clipboard --
+xy
+z

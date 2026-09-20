@@ -62,9 +62,9 @@ func (a *App) press(x, y int) {
 	}
 	now := a.now()
 	double := x == a.lastPress.x && y == a.lastPress.y && now.Sub(a.lastPress.at) <= doubleClick
-	a.lastPress = click{now, x, y}
 	a.dragging = true
 	a.cur = a.cellPos(x, y)
+	a.lastPress = click{now, x, y, a.cur}
 	a.anchor = nil
 	if double {
 		a.selectWord()
@@ -72,11 +72,12 @@ func (a *App) press(x, y int) {
 	a.scrollToCursor()
 }
 
-// drag selects from the pressed cell to the one under the mouse,
-// clamped to the text rows.
+// drag selects from the pressed text to the cell under the mouse,
+// clamped to the text rows. The anchor is the position pressed, not the
+// cell: the press may have moved the rows.
 func (a *App) drag(x, y int) {
 	if a.anchor == nil {
-		p := a.cellPos(a.lastPress.x, a.lastPress.y)
+		p := a.lastPress.pos
 		a.anchor = &p
 	}
 	a.cur = a.cellPos(x, min(y, a.textRows()-1))
