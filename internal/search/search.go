@@ -11,6 +11,7 @@ import (
 // Matcher matches a fixed pattern; one without upper-case letters
 // ignores case.
 type Matcher struct {
+	src  string // the pattern as given
 	pat  []rune
 	fold bool
 }
@@ -29,8 +30,11 @@ func New(pattern string) Matcher {
 			pat[i] = unicode.ToLower(r)
 		}
 	}
-	return Matcher{pat: pat, fold: fold}
+	return Matcher{src: pattern, pat: pat, fold: fold}
 }
+
+// Pattern is the pattern as given to New.
+func (m Matcher) Pattern() string { return m.src }
 
 func (m Matcher) Empty() bool { return len(m.pat) == 0 }
 func (m Matcher) Len() int    { return len(m.pat) }

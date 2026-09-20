@@ -1,5 +1,6 @@
-A pattern with no match leaves the cursor and says so. Matching is
-smartcase: a lowercase pattern ignores case, one with an uppercase
+A pattern with no match leaves the cursor and says so, naming the
+pattern searched for, not what was last typed at the prompt. Matching
+is smartcase: a lowercase pattern ignores case, one with an uppercase
 letter does not.
 
 -- input --
@@ -16,6 +17,15 @@ foo
 not found: FOO                    ? help
 -- cursor --
 0 0
+-- keys --
+/ "zzz" Esc n
+-- screen --
+Foo
+foo
+
+
+
+not found: FOO                    ? help
 -- keys --
 / "foo" Enter n
 -- screen --

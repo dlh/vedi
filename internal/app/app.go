@@ -566,7 +566,7 @@ func (a *App) findPrev() {
 
 func (a *App) jumpTo(pos buffer.Pos, wrapped, found bool) {
 	if !found {
-		a.status = "not found: " + string(a.query)
+		a.status = "not found: " + a.matcher.Pattern()
 		return
 	}
 	a.cur = pos
