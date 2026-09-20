@@ -9,6 +9,7 @@ import (
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
+	"go.dlh.dev/vedi/internal/search"
 )
 
 // newTestApp builds an app on a w×h simulation screen with input fully
@@ -181,5 +182,36 @@ func TestNotifyFullQueue(t *testing.T) {
 	}
 	if got := row(scr, 3); got != "read error: disk on fire" {
 		t.Errorf("status = %q", got)
+	}
+}
+
+// benchApp builds an app on a 200×60 screen over lines, drawn once.
+func benchApp(b *testing.B, lines ...buffer.Line) *App {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(scr.Fini)
+	scr.SetSize(200, 60)
+	buf := buffer.New()
+	for _, l := range lines {
+		buf.Append(l)
+	}
+	buf.Finish(nil, true)
+	a := New(scr, buf, Options{})
+	a.Draw()
+	return a
+}
+
+// BenchmarkDrawHighlight redraws a 1 MB line wrapped over the screen
+// with search highlighting on, which must search the line once per
+// draw, not once per row.
+func BenchmarkDrawHighlight(b *testing.B) {
+	a := benchApp(b, buffer.Line{Text: []rune(strings.Repeat("abcdefgh ", 1<<17))})
+	a.matcher = search.New("zzz")
+	a.highlight = true
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Draw()
 	}
 }

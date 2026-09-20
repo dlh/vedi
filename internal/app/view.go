@@ -44,8 +44,13 @@ func (a *App) drawText() (curX, curY int) {
 	curX, curY = -1, -1
 	rows := a.textRows()
 	p := a.top
+	var matches []int
+	matchLine := -1
 	for y := 0; y < rows && p.Line < a.buf.Len(); y++ {
-		if x, ok := a.drawRow(y, p); ok {
+		if a.highlight && p.Line != matchLine {
+			matches, matchLine = a.matcher.All(a.line(p.Line)), p.Line
+		}
+		if x, ok := a.drawRow(y, p, matches); ok {
 			curX, curY = x, y
 		}
 		next := a.nextRow(p)
@@ -57,9 +62,10 @@ func (a *App) drawText() (curX, curY int) {
 	return curX, curY
 }
 
-// drawRow draws the row starting at p on screen row y and reports the
-// cursor's column, if the cursor is on it.
-func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
+// drawRow draws the row starting at p on screen row y, with matches the
+// line's search matches, and reports the cursor's column, if the cursor
+// is on it.
+func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	w, _ := a.scr.Size()
 	line := a.buf.Line(p.Line)
 	ln := a.lineLayout(p.Line)
@@ -67,10 +73,6 @@ func (a *App) drawRow(y int, p buffer.Pos) (curX int, ok bool) {
 	segi := ln.SegmentAt(p.Col)
 	seg := ln.Segments()[segi]
 	x0 := xs[seg.Start] + a.xoff
-	var matches []int
-	if a.highlight {
-		matches = a.matcher.All(line.Text)
-	}
 	selStart, selEnd, hasSel := a.selection()
 
 	// The newline is a virtual cell after the last rune, on the last
