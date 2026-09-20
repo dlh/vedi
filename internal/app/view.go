@@ -74,6 +74,8 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	seg := ln.Segments()[segi]
 	x0 := xs[seg.Start] + a.xoff
 	selStart, selEnd, hasSel := a.selection()
+	runs, ri := line.Runs, 0
+	n, mi := a.matcher.Len(), 0
 
 	// The newline is a virtual cell after the last rune, on the last
 	// row: the cursor can rest on it, and it shows as one reverse cell
@@ -95,7 +97,20 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 			}
 			continue
 		}
-		st := runeStyle(line, i, matches, a.matcher.Len(), selected)
+		// Runs and matches are sorted: skip those ending before i.
+		for ri < len(runs) && runs[ri].End <= i {
+			ri++
+		}
+		for mi < len(matches) && matches[mi]+n <= i {
+			mi++
+		}
+		st := selStyle
+		if !selected {
+			st = styleAt(runs, ri, i)
+			if isControl(line.Text[i]) || mi < len(matches) && matches[mi] <= i {
+				st = st.Reverse(true)
+			}
+		}
 		j := i + 1
 		for j < len(line.Text) && xs[j+1] == xs[j] {
 			j++
@@ -185,19 +200,6 @@ func (a *App) statusText() string {
 	return fmt.Sprintf("%s  line %d/%d  %s%s", a.name, a.cur.Line+1, a.buf.Len(), mode, reading)
 }
 
-// runeStyle is the style of rune i: its own, reversed for a control
-// char or a search match of length n; selStyle when selected.
-func runeStyle(line buffer.Line, i int, matches []int, n int, selected bool) tcell.Style {
-	if selected {
-		return selStyle
-	}
-	st := styleAt(line.Runs, i)
-	if isControl(line.Text[i]) || matched(matches, n, i) {
-		st = st.Reverse(true)
-	}
-	return st
-}
-
 // isControl reports whether r is drawn as ^X: a C0 control other than
 // tab, or DEL.
 func isControl(r rune) bool {
@@ -230,21 +232,11 @@ func put(scr tcell.Screen, x, y, w int, r rune, st tcell.Style) {
 	}
 }
 
-func styleAt(runs []ansi.Run, i int) tcell.Style {
-	for _, r := range runs {
-		if i >= r.Start && i < r.End {
-			return r.Style
-		}
+// styleAt is the style of rune i, where runs[ri] is the first run not
+// ending before i.
+func styleAt(runs []ansi.Run, ri, i int) tcell.Style {
+	if ri < len(runs) && runs[ri].Start <= i {
+		return runs[ri].Style
 	}
 	return tcell.StyleDefault
-}
-
-// matched reports whether rune i is inside a match of length n.
-func matched(matches []int, n, i int) bool {
-	for _, m := range matches {
-		if i >= m && i < m+n {
-			return true
-		}
-	}
-	return false
 }

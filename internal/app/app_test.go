@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
@@ -210,6 +211,25 @@ func BenchmarkDrawHighlight(b *testing.B) {
 	a := benchApp(b, buffer.Line{Text: []rune(strings.Repeat("abcdefgh ", 1<<17))})
 	a.matcher = search.New("zzz")
 	a.highlight = true
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		a.Draw()
+	}
+}
+
+// BenchmarkDrawRuns redraws lines styled rune by rune, which must not
+// scan every run for every rune.
+func BenchmarkDrawRuns(b *testing.B) {
+	var sb strings.Builder
+	for i := 0; i < 200; i++ {
+		sb.WriteString("\x1b[3" + string(rune('1'+i%7)) + "mx")
+	}
+	var lines []buffer.Line
+	for i := 0; i < 60; i++ {
+		text, runs := ansi.NewParser().Parse([]byte(sb.String()))
+		lines = append(lines, buffer.Line{Text: text, Runs: runs})
+	}
+	a := benchApp(b, lines...)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		a.Draw()
