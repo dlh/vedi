@@ -11,32 +11,48 @@ import (
 )
 
 // Run is a maximal range of runes [Start, End) drawn in one style.
+// Url and UrlId are the style's OSC 8 link, which tcell.Style does not
+// expose.
 type Run struct {
 	Start, End int
 	Style      tcell.Style
+	Url, UrlId string
 }
 
 // Parser converts bytes to text and style runs. The style carries
-// across calls: a color set on one line stays until a reset.
+// across calls: a color set on one line stays until a reset. The OSC 8
+// link is kept apart from the SGR style because a reset inside a link
+// (ls --hyperlink does this) must not end it.
 type Parser struct {
-	style tcell.Style
+	sgr     tcell.Style
+	url, id string
 }
 
-func NewParser() *Parser { return &Parser{style: tcell.StyleDefault} }
+func NewParser() *Parser { return &Parser{sgr: tcell.StyleDefault} }
+
+// style is the SGR style with the link on it.
+func (p *Parser) style() tcell.Style {
+	s := p.sgr.Url(p.url)
+	if p.id != "" {
+		s = s.UrlId(p.id)
+	}
+	return s
+}
 
 // Parse takes one line without its ending and returns the visible runes
-// and runs covering them. SGR changes the style; every other escape is
-// skipped whole. C0 controls other than \t and \r are dropped, as is a
-// sequence cut off by the end of line.
+// and runs covering them. SGR changes the style and OSC 8 the link;
+// every other escape is skipped whole. C0 controls other than \t and
+// \r are dropped, as is a sequence cut off by the end of line.
 func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 	// A rune is at least one byte; a run starts at a line's start or an
 	// escape.
 	text := make([]rune, 0, len(line))
 	runs := make([]Run, 0, bytes.Count(line, []byte{0x1b})+1)
 	runStart := 0
+	style, url, id := p.style(), p.url, p.id
 	closeRun := func() {
 		if len(text) > runStart {
-			runs = append(runs, Run{runStart, len(text), p.style})
+			runs = append(runs, Run{runStart, len(text), style, url, id})
 		}
 		runStart = len(text)
 	}
@@ -44,16 +60,20 @@ func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 		c := line[i]
 		switch {
 		case c == 0x1b:
-			n, sgr, ok := escape(line[i:])
+			n, sgr, osc, ok := escape(line[i:])
 			if !ok {
 				i = len(line)
 				continue
 			}
 			if sgr != nil {
-				if next := applySGR(p.style, sgr); next != p.style {
-					closeRun()
-					p.style = next
-				}
+				p.sgr = applySGR(p.sgr, sgr)
+			}
+			if url, id, ok := link(osc); ok {
+				p.url, p.id = url, id
+			}
+			if next := p.style(); next != style {
+				closeRun()
+				style, url, id = next, p.url, p.id
 			}
 			i += n
 		case c == '\t' || c == '\r':
@@ -81,41 +101,63 @@ func trim[T any](s []T) []T {
 }
 
 // escape scans the sequence at b[0] == ESC: its length, its parameters
-// when it is SGR (non-nil, possibly empty), and ok=false when b ends
-// first.
-func escape(b []byte) (n int, sgr []byte, ok bool) {
+// when it is SGR (non-nil, possibly empty), its body when it is OSC
+// (non-nil, possibly empty), and ok=false when b ends first.
+func escape(b []byte) (n int, sgr, osc []byte, ok bool) {
 	if len(b) < 2 {
-		return len(b), nil, false
+		return len(b), nil, nil, false
 	}
 	switch b[1] {
 	case '[': // CSI: parameters and intermediates, then a final byte 0x40-0x7E
 		for i := 2; i < len(b); i++ {
 			if b[i] >= 0x40 && b[i] <= 0x7e {
 				if b[i] == 'm' {
-					return i + 1, b[2:i], true
+					return i + 1, b[2:i], nil, true
 				}
-				return i + 1, nil, true
+				return i + 1, nil, nil, true
 			}
 		}
-		return len(b), nil, false
+		return len(b), nil, nil, false
 	case ']', 'P', '_', '^', 'X': // OSC, DCS, APC, PM, SOS: a string ending at ESC \, or BEL for OSC
 		for i := 2; i < len(b); i++ {
 			if b[i] == 0x07 && b[1] == ']' {
-				return i + 1, nil, true
+				return i + 1, nil, b[2:i], true
 			}
 			if b[i] == 0x1b && i+1 < len(b) && b[i+1] == '\\' {
-				return i + 2, nil, true
+				if b[1] == ']' {
+					return i + 2, nil, b[2:i], true
+				}
+				return i + 2, nil, nil, true
 			}
 		}
-		return len(b), nil, false
+		return len(b), nil, nil, false
 	case '(', ')', '*', '+': // charset select: one more byte
 		if len(b) < 3 {
-			return len(b), nil, false
+			return len(b), nil, nil, false
 		}
-		return 3, nil, true
+		return 3, nil, nil, true
 	default: // ESC plus one byte: ESC 7, ESC =, ...
-		return 2, nil, true
+		return 2, nil, nil, true
 	}
+}
+
+// link decodes an OSC 8 body "8;params;url" into the url and its id
+// param; ok=false for any other OSC. An empty url ends the link.
+func link(osc []byte) (url, id string, ok bool) {
+	body, found := bytes.CutPrefix(osc, []byte("8;"))
+	if !found {
+		return "", "", false
+	}
+	params, u, found := bytes.Cut(body, []byte{';'})
+	if !found {
+		return "", "", false
+	}
+	for _, kv := range bytes.Split(params, []byte{':'}) {
+		if v, found := bytes.CutPrefix(kv, []byte("id=")); found {
+			id = string(v)
+		}
+	}
+	return string(u), id, true
 }
 
 // applySGR applies SGR parameters to s. params is the text between

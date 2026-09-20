@@ -109,11 +109,12 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		for mi < len(matches) && matches[mi]+n <= i {
 			mi++
 		}
-		st := selStyle
+		var st tcell.Style
 		switch {
 		case selected:
+			st = linkAt(selStyle, runs, ri, i)
 		case mi < len(matches) && matches[mi] <= i:
-			st = MatchStyle
+			st = linkAt(MatchStyle, runs, ri, i)
 		default:
 			st = styleAt(runs, ri, i)
 			if isControl(line.Text[i]) {
@@ -250,4 +251,15 @@ func styleAt(runs []ansi.Run, ri, i int) tcell.Style {
 		return runs[ri].Style
 	}
 	return tcell.StyleDefault
+}
+
+// linkAt is st with the link of rune i on it; see styleAt.
+func linkAt(st tcell.Style, runs []ansi.Run, ri, i int) tcell.Style {
+	if ri < len(runs) && runs[ri].Start <= i {
+		st = st.Url(runs[ri].Url)
+		if runs[ri].UrlId != "" {
+			st = st.UrlId(runs[ri].UrlId)
+		}
+	}
+	return st
 }

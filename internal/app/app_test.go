@@ -77,6 +77,34 @@ func TestDrawStyles(t *testing.T) {
 	}
 }
 
+func TestDrawLinks(t *testing.T) {
+	_, scr := newTestApp(t, 20, 5, "\x1b]8;;http://x\x1b\\a\x1b]8;;\x1b\\b", Options{})
+	if got, want := cellStyle(scr, 0, 0), tcell.StyleDefault.Url("http://x"); got != want {
+		t.Errorf("cell 0 style = %v, want %v", got, want)
+	}
+	if got := cellStyle(scr, 1, 0); got != tcell.StyleDefault {
+		t.Errorf("cell 1 style = %v, want default", got)
+	}
+}
+
+func TestHighlightKeepsLink(t *testing.T) {
+	a, scr := newTestApp(t, 20, 5, "\x1b]8;id=k;http://x\x1b\\a\x1b]8;;\x1b\\a", Options{})
+	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
+	if got, want := cellStyle(scr, 0, 0), MatchStyle.Url("http://x").UrlId("k"); got != want {
+		t.Errorf("matched link style = %v, want %v", got, want)
+	}
+	if got := cellStyle(scr, 1, 0); got != MatchStyle {
+		t.Errorf("matched plain style = %v, want %v", got, MatchStyle)
+	}
+	press(a, key(tcell.KeyCtrlA, 0, tcell.ModCtrl))
+	if got, want := cellStyle(scr, 0, 0), selStyle.Url("http://x").UrlId("k"); got != want {
+		t.Errorf("selected link style = %v, want %v", got, want)
+	}
+	if got := cellStyle(scr, 1, 0); got != selStyle {
+		t.Errorf("selected plain style = %v, want %v", got, selStyle)
+	}
+}
+
 func clip(scr tcell.SimulationScreen) string { return string(scr.GetClipboardData()) }
 
 func TestReadErrorInStatus(t *testing.T) {
