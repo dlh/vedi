@@ -18,3 +18,16 @@ checksum:
 changelog:
   filters:
     exclude: ['^docs:', '^build:', '^ci:']
+
+# Sign and notarize darwin binaries; skipped when secrets are absent.
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "APPLE_CERTIFICATE_P12_BASE64" }}'
+      sign:
+        certificate: '{{ .Env.APPLE_CERTIFICATE_P12_BASE64 }}'
+        password: '{{ .Env.APPLE_CERTIFICATE_PASSWORD }}'
+      notarize:
+        issuer_id: '{{ .Env.APPLE_API_ISSUER_ID }}'
+        key_id: '{{ .Env.APPLE_API_KEY_ID }}'
+        key: '{{ .Env.APPLE_API_KEY_P8_BASE64 }}'
+        wait: true
