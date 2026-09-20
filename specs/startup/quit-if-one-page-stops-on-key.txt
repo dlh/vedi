@@ -1,0 +1,16 @@
+Any key before EOF cancels -F: the user is paging, so the text stays.
+
+-- size --
+40x4
+-- args --
+-F
+-- input --
+line 1
+-- keys --
+Down
+-- eof --
+-- screen --
+line 1
+
+
+<stdin>  line 1/1  wrap           h help

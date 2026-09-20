@@ -73,6 +73,10 @@ func runScenario(t *testing.T, a archive) error {
 		fail := func(format string, args ...any) error {
 			return fmt.Errorf("line %d, -- %s --: %s", sec.line, sec.name, fmt.Sprintf(format, args...))
 		}
+		if s.quit && actions[sec.name] {
+			return fail("%s after the app quit", sec.name)
+		}
+		started := s.started
 		switch sec.name {
 		case "size":
 			if s.started {
@@ -111,9 +115,6 @@ func runScenario(t *testing.T, a archive) error {
 			s.buf.Finish(nil, s.nl)
 			s.notify()
 		case "keys":
-			if s.quit {
-				return fail("keys after the app quit")
-			}
 			if err := s.start(); err != nil {
 				return err
 			}
@@ -125,13 +126,7 @@ func runScenario(t *testing.T, a archive) error {
 				s.quit = s.app.Handle(k)
 				s.app.Draw()
 			}
-			if s.quit && (i+1 >= len(a.sections) || a.sections[i+1].name != "quit") {
-				return fail("a key quit; the next section must be -- quit --")
-			}
 		case "mouse":
-			if s.quit {
-				return fail("mouse after the app quit")
-			}
 			if err := s.start(); err != nil {
 				return err
 			}
@@ -182,15 +177,26 @@ func runScenario(t *testing.T, a archive) error {
 				return fail("clipboard = %q, want %q", got, want)
 			}
 		case "quit":
+			if err := s.start(); err != nil {
+				return err
+			}
 			if !s.quit {
-				return fail("the last key did not quit")
+				return fail("the app did not quit")
 			}
 		default:
 			return fail("unknown section")
 		}
+		// Starting the app can quit it too: -F at EOF before the first draw.
+		if s.quit && sec.name != "quit" && (actions[sec.name] || !started) && (i+1 >= len(a.sections) || a.sections[i+1].name != "quit") {
+			return fail("the app quit; the next section must be -- quit --")
+		}
 	}
 	return nil
 }
+
+// actions are the sections that drive the app, so none may follow a
+// quit.
+var actions = map[string]bool{"input": true, "eof": true, "keys": true, "mouse": true, "resize": true}
 
 // input appends the body's lines to the buffer through one ANSI parser
 // shared across sections. txtar's trailing newline is stripped; a
@@ -276,7 +282,7 @@ func (s *scenario) mouse(a mouseAction) {
 
 // notify delivers the reader's data event, as buffer.Fill would.
 func (s *scenario) notify() {
-	s.app.Handle(tcell.NewEventInterrupt(nil))
+	s.quit = s.app.Handle(tcell.NewEventInterrupt(nil))
 	s.app.Draw()
 }
 
@@ -361,8 +367,8 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"wrong screen", "T\n-- input --\nhi\n-- screen --\nho\n", "line 4, -- screen --: screen differs"},
 		{"wrong cursor", "T\n-- input --\nhi\n-- cursor --\n0 1\n", "line 4, -- cursor --: cursor = 0 0, want 0 1"},
 		{"wrong clipboard", "T\n-- input --\nhi\n-- keys --\nCtrl+A Enter\n-- quit --\n-- clipboard --\nho\n", `line 7, -- clipboard --: clipboard = "hi", want "ho"`},
-		{"quit without section", "T\n-- input --\nhi\n-- keys --\nq\n", "line 4, -- keys --: a key quit; the next section must be -- quit --"},
-		{"quit section without quit", "T\n-- input --\nhi\n-- keys --\nDown\n-- quit --\n", "line 6, -- quit --: the last key did not quit"},
+		{"quit without section", "T\n-- input --\nhi\n-- keys --\nq\n", "line 4, -- keys --: the app quit; the next section must be -- quit --"},
+		{"quit section without quit", "T\n-- input --\nhi\n-- keys --\nDown\n-- quit --\n", "line 6, -- quit --: the app did not quit"},
 		{"keys after quit", "T\n-- input --\nhi\n-- keys --\nq\n-- quit --\n-- keys --\nDown\n", "line 7, -- keys --: keys after the app quit"},
 		{"mouse after quit", "T\n-- input --\nhi\n-- keys --\nq\n-- quit --\n-- mouse --\nclick 0 0\n", "line 7, -- mouse --: mouse after the app quit"},
 		{"bad mouse action", "T\n-- input --\nhi\n-- mouse --\ntap 0 0\n", `line 4, -- mouse --: unknown mouse action "tap"`},

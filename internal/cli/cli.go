@@ -15,28 +15,30 @@ import (
 
 const Usage = `usage: vedi [flags] [file...]
 
-  -S, --nowrap          start in nowrap mode
-  +G                    start at the last line and follow until EOF
-  +N                    start with line N at the top
-  --scrolled-by N       start on the last screenful, scrolled N rows up
-  --cursor-row N        put the cursor on row N of the last screenful
-  --cursor-col N        put the cursor in column N of the last screenful
-  --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
-  -h, --help            show this help
-  -v, --version         print the version
+  -S, --nowrap            start in nowrap mode
+  -F, --quit-if-one-page  print the text and quit if it fits the screen
+  +G                      start at the last line and follow until EOF
+  +N                      start with line N at the top
+  --scrolled-by N         start on the last screenful, scrolled N rows up
+  --cursor-row N          put the cursor on row N of the last screenful
+  --cursor-col N          put the cursor in column N of the last screenful
+  --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+  -h, --help              show this help
+  -v, --version           print the version
 
 Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
 quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	NoWrap       bool
-	StartLine    int // 1-based; 0 for none
-	Follow       bool
-	Screen       *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd string
-	Help         bool
-	Version      bool
+	NoWrap        bool
+	QuitIfOnePage bool
+	StartLine     int // 1-based; 0 for none
+	Follow        bool
+	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
+	ClipboardCmd  string
+	Help          bool
+	Version       bool
 }
 
 // App converts the options to the app's. The input is named after
@@ -47,12 +49,13 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 		mode = layout.NoWrap
 	}
 	return app.Options{
-		Name:      inputName(files),
-		Mode:      mode,
-		StartLine: o.StartLine,
-		Follow:    o.Follow,
-		Screen:    o.Screen,
-		Copier:    clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
+		Name:          inputName(files),
+		Mode:          mode,
+		QuitIfOnePage: o.QuitIfOnePage,
+		StartLine:     o.StartLine,
+		Follow:        o.Follow,
+		Screen:        o.Screen,
+		Copier:        clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
 	}
 }
 
@@ -118,6 +121,8 @@ func Parse(args []string) (Options, []string, error) {
 		switch {
 		case a == "-S" || a == "--nowrap":
 			o.NoWrap = true
+		case a == "-F" || a == "--quit-if-one-page":
+			o.QuitIfOnePage = true
 		case a == "+G":
 			o.Follow = true
 		case strings.HasPrefix(a, "+"):

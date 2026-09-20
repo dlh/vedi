@@ -19,13 +19,15 @@ import (
 )
 
 type Options struct {
-	Name      string // what the status line calls the input
-	Mode      layout.Mode
-	StartLine int  // 1-based line to put at the top; 0 for none
-	Follow    bool // keep the cursor on the last line until EOF (+G)
-	Screen    *Screen
-	Copier    clipboard.Copier
-	Now       func() time.Time // the clock double-clicks are timed by; nil for time.Now
+	Name          string // what the status line calls the input
+	Mode          layout.Mode
+	QuitIfOnePage bool   // quit at EOF if the text fits the screen (-F)
+	Paging        func() // called once -F is given up: the text will not be printed
+	StartLine     int    // 1-based line to put at the top; 0 for none
+	Follow        bool   // keep the cursor on the last line until EOF (+G)
+	Screen        *Screen
+	Copier        clipboard.Copier
+	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
 }
 
 // Screen is the view the terminal was showing, so the pager can open on
@@ -54,6 +56,9 @@ type App struct {
 	follow    bool
 	startLine int     // 0-based +N target; -1 once applied
 	screen    *Screen // applied at EOF, then nil; no text is drawn until then
+	onePage   bool    // -F: quit at EOF if the text fits
+	paging    func()  // called when that is given up; nil for none
+	printText bool    // -F quit, so the caller prints the text
 
 	status  string // one-shot message, cleared by the next key or click
 	readErr string
@@ -98,6 +103,8 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
+		onePage:   opts.QuitIfOnePage,
+		paging:    opts.Paging,
 		now:       opts.Now,
 	}
 	if a.now == nil {
@@ -130,12 +137,16 @@ func (a *App) Run() {
 	}
 }
 
+// PrintText reports that the app quit for -F: the text fit the screen,
+// and the caller should print it.
+func (a *App) PrintText() bool { return a.printText }
+
 // Handle processes one event and reports whether to quit. Data the
 // reader notified of is taken up first, whatever the event.
 func (a *App) Handle(ev tcell.Event) bool {
 	_, interrupt := ev.(*tcell.EventInterrupt)
-	if a.pending.Swap(false) || interrupt {
-		a.onData()
+	if (a.pending.Swap(false) || interrupt) && a.onData() {
+		return true
 	}
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
@@ -168,15 +179,33 @@ func (a *App) act() {
 	a.follow = false
 	a.startLine = -1
 	a.screen = nil
+	a.page()
 	a.status = ""
+}
+
+// page gives -F up.
+func (a *App) page() {
+	if a.onePage && a.paging != nil {
+		a.paging()
+	}
+	a.onePage = false
 }
 
 // onData runs after the reader appended lines: it applies a pending +N,
 // follows for +G, applies a Screen at EOF and records a read error.
-func (a *App) onData() {
+// It reports whether to quit, for -F.
+func (a *App) onData() bool {
 	eof, err := a.buf.Finished()
 	if err != nil {
 		a.readErr = "read error: " + err.Error()
+	}
+	if a.onePage {
+		if !a.fits() || err != nil {
+			a.page()
+		} else if eof {
+			a.printText = true
+			return true
+		}
 	}
 	n := a.buf.Len()
 	if a.startLine >= 0 && (n > a.startLine || eof) {
@@ -192,6 +221,22 @@ func (a *App) onData() {
 		a.screen = nil
 	}
 	a.scrollToCursor()
+	return false
+}
+
+// fits reports whether every line's rows fit in the text rows. The
+// printed text wraps in the terminal whatever the mode, so it is
+// measured wrapped.
+func (a *App) fits() bool {
+	w, _ := a.scr.Size()
+	l := layout.Layout{Width: w, Mode: layout.Wrap}
+	rows := 0
+	for i := 0; i < a.buf.Len(); i++ {
+		if rows += l.Rows(a.line(i)); rows > a.textRows() {
+			return false
+		}
+	}
+	return true
 }
 
 // showScreen puts the view where the terminal had it. The buffer's last

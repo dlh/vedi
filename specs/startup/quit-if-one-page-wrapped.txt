@@ -1,0 +1,15 @@
+-F counts wrapped rows: a line that wraps takes more than one.
+
+-- size --
+10x4
+-- args --
+-F
+-- input --
+a long line
+line 2
+line 3
+-- screen --
+a long lin
+e
+line 2
+<stdin>  l

@@ -66,6 +66,6 @@ Assertions, checked at that point:
 | `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`; the status row plain; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
-| `-- quit --` | The last key quit. Follows the keys that quit; assertions may follow it. |
+| `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it. |
 
 Colors are not covered; those tests stay in `internal/app/app_test.go`.

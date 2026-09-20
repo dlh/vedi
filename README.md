@@ -13,17 +13,23 @@ page](https://github.com/dlh/vedi/releases), or build from source:
 ## Usage
 
     vedi [flags] [file...]
-      -S, --nowrap          start in nowrap mode
-      +G                    start at the last line and follow until EOF
-      +N                    start with line N at the top
-      --scrolled-by N       start on the last screenful, scrolled N rows up
-      --cursor-row N        put the cursor on row N of the last screenful
-      --cursor-col N        put the cursor in column N of the last screenful
-      --clipboard-cmd CMD   pipe copied text to CMD instead of OSC 52
-      -v, --version         print the version
+      -S, --nowrap            start in nowrap mode
+      -F, --quit-if-one-page  print the text and quit if it fits the screen
+      +G                      start at the last line and follow until EOF
+      +N                      start with line N at the top
+      --scrolled-by N         start on the last screenful, scrolled N rows up
+      --cursor-row N          put the cursor on row N of the last screenful
+      --cursor-col N          put the cursor in column N of the last screenful
+      --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+      -v, --version           print the version
 
 With no files, `vedi` reads stdin. The status line names the files
 being viewed, or `<stdin>`.
+
+`-F` is for a pager that should get out of the way: when all the text
+fits on one screen it is printed as if by `cat`, and the pager only
+opens for more. Pressing a key while the input is still coming keeps
+the pager.
 
 ## Keys
 

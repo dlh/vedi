@@ -252,3 +252,76 @@ func BenchmarkDrawRuns(b *testing.B) {
 		a.Draw()
 	}
 }
+
+// newOnePageApp is a -F app on a 40×3 screen whose input is still
+// open, counting Paging calls in *paging.
+func newOnePageApp(t *testing.T, paging *int) *App {
+	t.Helper()
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(scr.Fini)
+	scr.SetSize(40, 3)
+	return New(scr, buffer.New(), Options{QuitIfOnePage: true, Paging: func() { *paging++ }})
+}
+
+// TestPagingWhenTooLong: -F gives up as soon as the text outgrows the
+// screen, before EOF, and says so once.
+func TestPagingWhenTooLong(t *testing.T) {
+	paging := 0
+	a := newOnePageApp(t, &paging)
+	for _, s := range []string{"1", "2", "3"} {
+		a.buf.Append(buffer.Line{Text: []rune(s)})
+		if a.Handle(tcell.NewEventInterrupt(nil)) {
+			t.Fatal("quit before EOF")
+		}
+	}
+	if paging != 1 {
+		t.Fatalf("Paging called %d times before EOF, want 1", paging)
+	}
+	a.buf.Finish(nil, true)
+	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
+		t.Error("quit at EOF though the text does not fit")
+	}
+	if paging != 1 {
+		t.Errorf("Paging called %d times, want 1", paging)
+	}
+}
+
+// TestPagingOnKey: a key gives -F up.
+func TestPagingOnKey(t *testing.T) {
+	paging := 0
+	a := newOnePageApp(t, &paging)
+	press(a, key(tcell.KeyDown, 0, 0), key(tcell.KeyDown, 0, 0))
+	if paging != 1 {
+		t.Errorf("Paging called %d times, want 1", paging)
+	}
+}
+
+func TestPrintTextWhenFits(t *testing.T) {
+	paging := 0
+	a := newOnePageApp(t, &paging)
+	a.buf.Append(buffer.Line{Text: []rune("1")})
+	a.buf.Finish(nil, true)
+	if !a.Handle(tcell.NewEventInterrupt(nil)) || !a.PrintText() {
+		t.Error("did not quit to print")
+	}
+	if paging != 0 {
+		t.Error("Paging called")
+	}
+}
+
+// TestReadErrorKeepsPager: -F stays on a read error, so it is seen.
+func TestReadErrorKeepsPager(t *testing.T) {
+	paging := 0
+	a := newOnePageApp(t, &paging)
+	a.buf.Append(buffer.Line{Text: []rune("1")})
+	a.buf.Finish(fmt.Errorf("disk on fire"), true)
+	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
+		t.Error("quit despite the read error")
+	}
+	if paging != 1 {
+		t.Errorf("Paging called %d times, want 1", paging)
+	}
+}

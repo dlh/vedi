@@ -1,0 +1,12 @@
+-F quits at EOF when the text fits the screen; main then prints it, so
+a short input shows as if by cat.
+
+-- size --
+40x4
+-- args --
+-F
+-- input --
+line 1
+line 2
+line 3
+-- quit --

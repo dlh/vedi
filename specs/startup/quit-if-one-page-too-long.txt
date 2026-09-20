@@ -1,0 +1,16 @@
+-F stays when the text does not fit the screen.
+
+-- size --
+40x4
+-- args --
+-F
+-- input --
+line 1
+line 2
+line 3
+line 4
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/4  wrap           h help

@@ -26,6 +26,8 @@ func TestParse(t *testing.T) {
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
 		{"clipboard cmd eq", []string{"--clipboard-cmd=wl-copy -n"}, Options{ClipboardCmd: "wl-copy -n"}, nil, false},
+		{"quit if one page short", []string{"-F"}, Options{QuitIfOnePage: true}, nil, false},
+		{"quit if one page long", []string{"--quit-if-one-page"}, Options{QuitIfOnePage: true}, nil, false},
 		{"help", []string{"-h"}, Options{Help: true}, nil, false},
 		{"version short", []string{"-v"}, Options{Version: true}, nil, false},
 		{"version long", []string{"--version"}, Options{Version: true}, nil, false},
@@ -64,8 +66,8 @@ func TestParse(t *testing.T) {
 func TestApp(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
 	scr := tcell.NewSimulationScreen("UTF-8")
-	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr, nil)
-	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
+	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil)
+	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 || !got.QuitIfOnePage {
 		t.Errorf("App() = %+v", got)
 	}
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {

@@ -1,0 +1,15 @@
+-F decides at EOF, not before: text that fits so far may grow.
+
+-- size --
+40x4
+-- args --
+-F
+-- input --
+line 1
+-- screen --
+line 1
+
+
+<stdin>  line 1/1  wrap  reading…
+-- eof --
+-- quit --

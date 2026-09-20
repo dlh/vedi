@@ -114,3 +114,28 @@ func TestPosLess(t *testing.T) {
 }
 
 var _ io.Reader = (*failReader)(nil)
+
+func TestRecorderKeepsWhatWasRead(t *testing.T) {
+	r := Record(strings.NewReader("ab\ncd\n"))
+	if b, err := io.ReadAll(r); err != nil || string(b) != "ab\ncd\n" {
+		t.Fatalf("ReadAll = %q, %v", b, err)
+	}
+	if got := string(r.Bytes()); got != "ab\ncd\n" {
+		t.Errorf("Bytes = %q", got)
+	}
+}
+
+func TestRecorderStopDrops(t *testing.T) {
+	r := Record(strings.NewReader("ab\ncd\n"))
+	p := make([]byte, 3)
+	if _, err := io.ReadFull(r, p); err != nil {
+		t.Fatal(err)
+	}
+	r.Stop()
+	if _, err := io.ReadAll(r); err != nil {
+		t.Fatal(err)
+	}
+	if got := r.Bytes(); got != nil {
+		t.Errorf("Bytes after Stop = %q, want nil", got)
+	}
+}

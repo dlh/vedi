@@ -1,0 +1,16 @@
+-F counts wrapped rows even in nowrap mode: the printed text wraps in
+the terminal whatever the pager showed.
+
+-- size --
+10x4
+-- args --
+-F -S
+-- input --
+a long line
+line 2
+line 3
+-- screen --
+a long lin
+line 2
+line 3
+<stdin>  l
