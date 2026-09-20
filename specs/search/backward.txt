@@ -18,9 +18,9 @@ foo 3
 -- keys --
 Enter
 -- screen --
-[foo] 1
-[foo] 2
-[foo] 3
+{foo} 1
+{foo} 2
+{foo} 3
 
 
 <stdin>  line 2/3  wrap           h help
@@ -45,9 +45,9 @@ n
 -- keys --
 n
 -- screen --
-[foo] 1
-[foo] 2
-[foo] 3
+{foo} 1
+{foo} 2
+{foo} 3
 
 
 search wrapped                    h help

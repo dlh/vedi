@@ -14,8 +14,13 @@ import (
 // the terminal's default colors, swapped.
 var selStyle = tcell.StyleDefault.Reverse(true)
 
+// MatchStyle draws every cell of a search match: black on the
+// terminal's bright yellow, which themes that mute the base palette
+// tend to leave vivid.
+var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
+
 // Draw renders the text from top, the selection in selStyle, search
-// matches in reverse video, and the status line. While a Screen waits
+// matches in MatchStyle, and the status line. While a Screen waits
 // for EOF only the status line is drawn: the view is not known until
 // then. While help is up the bindings take the text's place.
 func (a *App) Draw() {
@@ -105,9 +110,13 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 			mi++
 		}
 		st := selStyle
-		if !selected {
+		switch {
+		case selected:
+		case mi < len(matches) && matches[mi] <= i:
+			st = MatchStyle
+		default:
 			st = styleAt(runs, ri, i)
-			if isControl(line.Text[i]) || mi < len(matches) && matches[mi] <= i {
+			if isControl(line.Text[i]) {
 				st = st.Reverse(true)
 			}
 		}

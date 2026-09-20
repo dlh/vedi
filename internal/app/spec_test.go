@@ -279,15 +279,15 @@ func (s *scenario) notify() {
 }
 
 // dump renders the screen as the -- screen -- section expects it:
-// reverse-video runs in brackets, the status row plain, trailing
-// spaces trimmed, one line per row.
+// reverse-video runs in brackets, search matches in braces, the status
+// row plain, trailing spaces trimmed, one line per row.
 func dump(scr tcell.SimulationScreen) string {
 	cells, w, h := scr.GetContents()
 	var sb strings.Builder
 	for y := 0; y < h; y++ {
 		var row strings.Builder
 		status := h >= 2 && y == h-1
-		rev := false
+		rev, match := false, false
 		for x := 0; x < w; x++ {
 			c := cells[y*w+x]
 			if len(c.Runes) == 0 {
@@ -298,18 +298,26 @@ func dump(scr tcell.SimulationScreen) string {
 			}
 			if !status {
 				_, _, attr := c.Style.Decompose()
-				r := attr&tcell.AttrReverse != 0
+				r, m := attr&tcell.AttrReverse != 0, c.Style == app.MatchStyle
 				if r && !rev {
 					row.WriteByte('[')
 				} else if !r && rev {
 					row.WriteByte(']')
 				}
-				rev = r
+				if m && !match {
+					row.WriteByte('{')
+				} else if !m && match {
+					row.WriteByte('}')
+				}
+				rev, match = r, m
 			}
 			row.WriteString(string(c.Runes))
 		}
 		if rev {
 			row.WriteByte(']')
+		}
+		if match {
+			row.WriteByte('}')
 		}
 		sb.WriteString(strings.TrimRight(row.String(), " "))
 		sb.WriteByte('\n')

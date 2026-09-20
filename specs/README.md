@@ -63,7 +63,7 @@ Assertions, checked at that point:
 
 | Section | Content |
 |---|---|
-| `-- screen --` | Every row. Reverse-video runs — selection, search matches, control characters — in `[` `]`; the status row plain; trailing spaces trimmed. |
+| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`; the status row plain; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The last key quit. Follows the keys that quit; assertions may follow it. |

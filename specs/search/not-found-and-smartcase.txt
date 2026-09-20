@@ -29,8 +29,8 @@ not found: FOO                    h help
 -- keys --
 / "foo" Enter n
 -- screen --
-[Foo]
-[foo]
+{Foo}
+{foo}
 
 
 

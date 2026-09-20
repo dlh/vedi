@@ -54,6 +54,9 @@ being viewed, or `<stdin>`.
 | q | Quit |
 | h | Show the key bindings |
 
+The selection is drawn in reverse video and search matches in black
+on bright yellow, whatever the text's own colors.
+
 ## Clipboard
 
 Copy uses OSC 52, which works in kitty, xterm, tmux (`set-clipboard on`)

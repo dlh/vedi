@@ -1,8 +1,9 @@
 / opens a prompt on the status line; Backspace edits it and Enter
 searches from the cursor. Every match is highlighted and the cursor goes
 to the first one. n and N go to the next and previous match, wrapping
-around the buffer with a note. Shift+movement selects from a match. Esc
-clears the selection first and the highlight second.
+around the buffer with a note. Shift+movement selects from a match, and
+selected cells show as selected. Esc clears the selection first and the
+highlight second.
 
 -- input --
 foo
@@ -20,9 +21,9 @@ foo
 -- keys --
 Backspace "o" Enter
 -- screen --
-[foo]
-bar [foo]
-[foo]
+{foo}
+bar {foo}
+{foo}
 
 
 <stdin>  line 1/3  wrap           h help
@@ -35,9 +36,9 @@ n
 -- keys --
 n n
 -- screen --
-[foo]
-bar [foo]
-[foo]
+{foo}
+bar {foo}
+{foo}
 
 
 search wrapped                    h help
@@ -46,9 +47,9 @@ search wrapped                    h help
 -- keys --
 N
 -- screen --
-[foo]
-bar [foo]
-[foo]
+{foo}
+bar {foo}
+{foo}
 
 
 search wrapped                    h help
@@ -57,9 +58,9 @@ search wrapped                    h help
 -- keys --
 Shift+Right Shift+Right y
 -- screen --
-[foo]
-bar [foo]
-[foo]
+{foo}
+bar {foo}
+[fo]{o}
 
 
 copied 1 line                     h help
@@ -68,9 +69,9 @@ fo
 -- keys --
 Esc
 -- screen --
-[foo]
-bar [foo]
-[foo]
+{foo}
+bar {foo}
+{foo}
 
 
 <stdin>  line 3/3  wrap           h help

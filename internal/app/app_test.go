@@ -148,6 +148,23 @@ func TestSelectionStyleIsConstant(t *testing.T) {
 	}
 }
 
+func TestMatchStyleIsConstant(t *testing.T) {
+	// red, default and reverse-video text, all matched.
+	a, scr := newTestApp(t, 20, 5, "\x1b[31mo\x1b[mo\x1b[7mo\x1b[m", Options{})
+	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'o', 0), key(tcell.KeyEnter, 0, 0))
+	want := tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
+	for x, name := range []string{"red", "default", "reverse"} {
+		if got := cellStyle(scr, x, 0); got != want {
+			t.Errorf("matched %s cell style = %v, want %v", name, got, want)
+		}
+	}
+	// A selected match is drawn as selected.
+	press(a, key(tcell.KeyRight, 0, tcell.ModShift))
+	if got := cellStyle(scr, 0, 0); got != selStyle {
+		t.Errorf("selected match cell style = %v, want %v", got, selStyle)
+	}
+}
+
 // BenchmarkLongLine moves right and redraws on a 1 MB line, which must
 // not lay the whole line out again on every key.
 func BenchmarkLongLine(b *testing.B) {

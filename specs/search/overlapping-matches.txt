@@ -8,7 +8,7 @@ banana
 -- keys --
 / "ana" Enter
 -- screen --
-b[anana]
+b{anana}
 
 <stdin>  line 1/1  wrap           h help
 -- cursor --
