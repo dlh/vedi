@@ -2,6 +2,7 @@
 package ansi
 
 import (
+	"bytes"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -28,8 +29,10 @@ func NewParser() *Parser { return &Parser{style: tcell.StyleDefault} }
 // skipped whole. C0 controls other than \t and \r are dropped, as is a
 // sequence cut off by the end of line.
 func (p *Parser) Parse(line []byte) ([]rune, []Run) {
-	var text []rune
-	var runs []Run
+	// A rune is at least one byte; a run starts at a line's start or an
+	// escape.
+	text := make([]rune, 0, len(line))
+	runs := make([]Run, 0, bytes.Count(line, []byte{0x1b})+1)
 	runStart := 0
 	closeRun := func() {
 		if len(text) > runStart {
@@ -65,7 +68,16 @@ func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 		}
 	}
 	closeRun()
-	return text, runs
+	return trim(text), trim(runs)
+}
+
+// trim copies s to a slice of its own length when most of its capacity
+// is unused, so a line of mostly escapes does not keep it.
+func trim[T any](s []T) []T {
+	if cap(s) > 2*len(s)+8 {
+		return append(make([]T, 0, len(s)), s...)
+	}
+	return s
 }
 
 // escape scans the sequence at b[0] == ESC: its length, its parameters
