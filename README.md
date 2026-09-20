@@ -95,6 +95,15 @@ at each wrap:
 
     scrollback_pager vedi -S +INPUT_LINE_NUMBER
 
+## bat
+
+[bat](https://github.com/sharkdp/bat) pipes its colored output through
+a pager. To make it vedi:
+
+    export BAT_PAGER=vedi
+
+or put `--pager=vedi` in `~/.config/bat/config`.
+
 ## License
 
 Copyright (C) 2026 Daniel Lee Harple
