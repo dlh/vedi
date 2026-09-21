@@ -13,20 +13,23 @@ import (
 	"go.dlh.dev/vedi/internal/cli"
 )
 
-// openInput concatenates the files, or reads stdin when there are none;
-// "-" names stdin.
-func openInput(files []string) (io.Reader, func(), error) {
+// openInput is the files, or stdin when there are none; "-" names
+// stdin. src is the same bytes at random, or nil unless every file is
+// a regular one: a pipe cannot be read twice.
+func openInput(files []string) (in io.Reader, src io.ReaderAt, closeInput func(), err error) {
 	if len(files) == 0 {
 		if fi, err := os.Stdin.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
-			return nil, nil, fmt.Errorf("no input: give a file or pipe something in")
+			return nil, nil, nil, fmt.Errorf("no input: give a file or pipe something in")
 		}
-		return os.Stdin, func() {}, nil
+		return os.Stdin, nil, func() {}, nil
 	}
-	var readers []io.Reader
+	var parts []buffer.Source
 	var closers []io.Closer
+	regular := true
 	for _, name := range files {
 		if name == "-" {
-			readers = append(readers, os.Stdin)
+			parts = append(parts, os.Stdin)
+			regular = false
 			continue
 		}
 		f, err := os.Open(name)
@@ -34,16 +37,24 @@ func openInput(files []string) (io.Reader, func(), error) {
 			for _, c := range closers {
 				c.Close()
 			}
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
-		readers = append(readers, f)
+		if fi, err := f.Stat(); err != nil || !fi.Mode().IsRegular() {
+			regular = false
+		}
+		parts = append(parts, f)
 		closers = append(closers, f)
 	}
-	return io.MultiReader(readers...), func() {
+	c := buffer.NewConcat(parts...)
+	closeInput = func() {
 		for _, c := range closers {
 			c.Close()
 		}
-	}, nil
+	}
+	if !regular {
+		return c, nil, closeInput, nil
+	}
+	return c, c, closeInput, nil
 }
 
 // version is set by the linker for releases; otherwise the module
@@ -69,7 +80,7 @@ func main() {
 		fmt.Println("vedi", version)
 		return
 	}
-	in, closeInput, err := openInput(files)
+	in, src, closeInput, err := openInput(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
 		if len(files) == 0 {
@@ -91,6 +102,9 @@ func main() {
 	scr.EnableMouse(tcell.MouseDragEvents)
 
 	buf := buffer.New()
+	if src != nil {
+		buf = buffer.NewFrom(src)
+	}
 	a := app.New(scr, buf, opts.App(scr, files))
 	go buffer.Fill(in, buf, a.Notify)
 	a.Run()

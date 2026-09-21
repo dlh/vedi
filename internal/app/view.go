@@ -198,15 +198,17 @@ func (a *App) statusText() string {
 		return ":" + string(a.lineNo)
 	case a.status != "":
 		return a.status
-	case a.readErr != "":
-		return a.readErr
+	}
+	eof, err := a.buf.Finished()
+	if err != nil {
+		return "read error: " + err.Error()
 	}
 	mode := "wrap"
 	if a.mode == layout.NoWrap {
 		mode = "nowrap"
 	}
 	reading := ""
-	if eof, _ := a.buf.Finished(); !eof {
+	if !eof {
 		reading = "  reading…"
 	}
 	return fmt.Sprintf("%s  line %d/%d  %s%s", a.name, a.cur.Line+1, a.buf.Len(), mode, reading)

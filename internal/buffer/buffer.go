@@ -3,6 +3,7 @@ package buffer
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"sync"
 
@@ -26,6 +27,10 @@ type Line struct {
 
 // cacheLines is how many decoded lines are kept before starting over.
 const cacheLines = 1024
+
+// errTruncated is the read error when indexed bytes are gone: the file
+// shrank.
+var errTruncated = errors.New("input truncated")
 
 // Buffer indexes the input's lines. The bytes live in src: an arena
 // Write fills, or the caller's ReaderAt. SGR and OSC 8 carry across
@@ -123,7 +128,10 @@ func (b *Buffer) Finish(err error, trailingNewline bool) {
 		b.add(b.pending)
 		b.pending = nil
 	}
-	b.eof, b.err, b.nl = true, err, trailingNewline
+	b.eof, b.nl = true, trailingNewline
+	if err != nil {
+		b.err = err
+	}
 	b.mu.Unlock()
 }
 
@@ -171,7 +179,8 @@ func (b *Buffer) Text(i int, dst []rune) []rune {
 }
 
 // read is line i's bytes without its "\n" or the "\r" before it, in
-// b.raw, good until the next read.
+// b.raw, good until the next read. A short read is recorded as the
+// read error.
 func (b *Buffer) read(i int) ([]byte, bool) {
 	var start int64
 	if i > 0 {
@@ -182,7 +191,13 @@ func (b *Buffer) read(i int) ([]byte, bool) {
 		b.raw = make([]byte, n)
 	}
 	raw := b.raw[:n]
-	if n, _ := b.src.ReadAt(raw, start); n < len(raw) {
+	if n, err := b.src.ReadAt(raw, start); n < len(raw) {
+		if b.err == nil {
+			if err == nil || err == io.EOF || err == io.ErrUnexpectedEOF {
+				err = errTruncated
+			}
+			b.err = err
+		}
 		return nil, false
 	}
 	if n := len(raw); n > 0 && raw[n-1] == '\n' {
@@ -211,7 +226,8 @@ func (b *Buffer) TrailingNewline() bool {
 	return b.nl
 }
 
-// Finished reports whether input has ended and with what error.
+// Finished reports whether input has ended, and the read error: from
+// the reader, or from a line whose bytes are gone.
 func (b *Buffer) Finished() (bool, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()

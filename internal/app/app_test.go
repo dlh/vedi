@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -349,5 +351,54 @@ func TestReadErrorKeepsPager(t *testing.T) {
 	a.buf.Finish(fmt.Errorf("disk on fire"), true)
 	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
 		t.Error("quit despite the read error")
+	}
+}
+
+// TestTruncatedFileDraws: a file that shrinks after its layouts are
+// kept draws without panicking and reports the read error.
+func TestTruncatedFileDraws(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(scr.Fini)
+	scr.SetSize(30, 4)
+	name := filepath.Join(t.TempDir(), "f")
+	var sb strings.Builder
+	for i := 0; i < 2000; i++ {
+		fmt.Fprintf(&sb, "line %d\n", i)
+	}
+	if err := os.WriteFile(name, []byte(sb.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { f.Close() })
+	buf := buffer.NewFrom(f)
+	buffer.Fill(f, buf, func() {})
+	a := New(scr, buf, Options{Copier: clipboard.OSC52{Screen: scr}})
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Handle(key(tcell.KeyRight, 0, 0))
+	a.Handle(key(tcell.KeyRight, 0, 0))
+	a.Draw()
+	for i := 100; i < 1200; i++ { // evict the decoded lines, not the layouts
+		buf.Line(i)
+	}
+	if err := os.Truncate(name, 0); err != nil {
+		t.Fatal(err)
+	}
+	a.Draw()
+	if got := row(scr, 0); got != "" {
+		t.Errorf("row 0 = %q, want empty", got)
+	}
+	if got := row(scr, 3); got != "read error: input truncated" {
+		t.Errorf("status = %q", got)
+	}
+	a.Handle(key(tcell.KeyLeft, 0, 0)) // from past the line's new end
+	a.Draw()
+	if a.cur != (buffer.Pos{}) {
+		t.Errorf("cursor = %v, want 0 0", a.cur)
 	}
 }

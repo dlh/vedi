@@ -294,3 +294,33 @@ func BenchmarkFill(b *testing.B) {
 		Fill(bytes.NewReader(in.Bytes()), New(), func() {})
 	}
 }
+
+// TestShortReadIsError: a line whose bytes are gone is empty, and the
+// read error says so, even after a clean Finish.
+func TestShortReadIsError(t *testing.T) {
+	src := &shrinking{data: []byte("one\ntwo\n")}
+	b := NewFrom(src)
+	b.Write(src.data)
+	src.data = src.data[:2]
+	if got := b.Line(1).Text; len(got) != 0 {
+		t.Errorf("line 1 = %q, want empty", string(got))
+	}
+	b.Finish(nil, true)
+	if _, err := b.Finished(); err != errTruncated {
+		t.Errorf("err = %v, want %v", err, errTruncated)
+	}
+}
+
+// shrinking is a ReaderAt over data, which the test cuts.
+type shrinking struct{ data []byte }
+
+func (s *shrinking) ReadAt(p []byte, off int64) (int, error) {
+	if off >= int64(len(s.data)) {
+		return 0, io.EOF
+	}
+	n := copy(p, s.data[off:])
+	if n < len(p) {
+		return n, io.EOF
+	}
+	return n, nil
+}
