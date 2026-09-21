@@ -140,6 +140,80 @@ func TestNotifyCoalesces(t *testing.T) {
 	}
 }
 
+// readingApp is an app over a buffer still being read, drawn once.
+func readingApp(t *testing.T) (*App, tcell.SimulationScreen) {
+	t.Helper()
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(scr.Fini)
+	scr.SetSize(10, 4)
+	a := New(scr, buffer.New(), Options{})
+	a.buf.Write([]byte("x\n"))
+	a.Notify()
+	a.Handle(scr.PollEvent())
+	a.Draw()
+	return a, scr
+}
+
+// TestNotifyThrottledWhileReading: a Notify within redrawEvery of the
+// last data taken up posts nothing; the redraw comes when it elapses.
+func TestNotifyThrottledWhileReading(t *testing.T) {
+	a, scr := readingApp(t)
+	a.Notify()
+	if scr.HasPendingEvent() {
+		t.Fatal("Notify within redrawEvery should be held")
+	}
+	time.Sleep(2 * redrawEvery)
+	if !scr.HasPendingEvent() {
+		t.Fatal("held Notify should post after redrawEvery")
+	}
+}
+
+// TestNotifyAtEOFPostsAtOnce: the end of input is not held back.
+func TestNotifyAtEOFPostsAtOnce(t *testing.T) {
+	a, scr := readingApp(t)
+	a.buf.Finish(nil, true)
+	a.Notify()
+	if !scr.HasPendingEvent() {
+		t.Fatal("Notify at EOF should post at once")
+	}
+}
+
+// TestNotifyAtEOFFlushesHeld: EOF posts at once even when an earlier
+// Notify is being held.
+func TestNotifyAtEOFFlushesHeld(t *testing.T) {
+	a, scr := readingApp(t)
+	a.Notify()
+	if scr.HasPendingEvent() {
+		t.Fatal("Notify within redrawEvery should be held")
+	}
+	a.buf.Finish(nil, true)
+	a.Notify()
+	if !scr.HasPendingEvent() {
+		t.Fatal("Notify at EOF should post at once")
+	}
+}
+
+// TestNotifyHeldPostsOnceAfterKey: a key taking up the data during a
+// hold, and a new Notify after it, still make one post.
+func TestNotifyHeldPostsOnceAfterKey(t *testing.T) {
+	a, scr := readingApp(t)
+	a.Notify()
+	a.Handle(key(tcell.KeyRune, 'j', 0))
+	a.Notify()
+	time.Sleep(2 * redrawEvery)
+	n := 0
+	for scr.HasPendingEvent() {
+		scr.PollEvent()
+		n++
+	}
+	if n != 1 {
+		t.Fatalf("posts = %d, want 1", n)
+	}
+}
+
 // TestEndToEnd pipes a colored screen dump (each line reopened with
 // \x1b[m, as kitty writes it) through the whole stack and checks what
 // lands on the clipboard.

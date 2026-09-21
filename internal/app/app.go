@@ -81,7 +81,10 @@ type App struct {
 	dragY     int
 	ticking   bool // an auto-scroll Tick is on its way
 
-	pending atomic.Bool
+	pending atomic.Bool               // the reader has data to take up
+	owed    atomic.Uint64             // the held post's generation; 0 for none
+	gen     uint64                    // the last generation; Notify's alone
+	posted  atomic.Pointer[time.Time] // when the last post was
 
 	laid    layout.Layout       // what laidOut was laid out for
 	laidOut map[int]layout.Line // lines laid out, by index
@@ -118,14 +121,51 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 	return a
 }
 
+// redrawEvery bounds how often the reader's data is drawn.
+const redrawEvery = 50 * time.Millisecond
+
 // Notify asks for a redraw. It is safe to call from the reader
-// goroutine; repeated calls before the next draw are coalesced. When
-// the queue is full the event is dropped but the work stays pending,
-// and Handle does it on whatever event drains the queue.
+// goroutine; repeated calls before the next draw are coalesced, and
+// one within redrawEvery of the last is held until that has passed,
+// unless the input has finished. When the queue is full the event is
+// dropped but the work stays pending, and Handle does it on whatever
+// event drains the queue.
 func (a *App) Notify() {
-	if a.pending.CompareAndSwap(false, true) {
-		a.scr.PostEvent(tcell.NewEventInterrupt(nil))
+	first := a.pending.CompareAndSwap(false, true)
+	eof, _ := a.buf.Finished()
+	if eof {
+		if first || a.owed.Swap(0) != 0 {
+			a.post()
+		}
+		return
 	}
+	if !first {
+		return
+	}
+	var wait time.Duration
+	if t := a.posted.Load(); t != nil {
+		wait = redrawEvery - time.Since(*t)
+	}
+	if wait <= 0 {
+		a.post()
+		return
+	}
+	// A held post's timer stays scheduled when a key takes the data up
+	// first, so only the latest generation may post.
+	a.gen++
+	g := a.gen
+	a.owed.Store(g)
+	time.AfterFunc(wait, func() {
+		if a.owed.CompareAndSwap(g, 0) {
+			a.post()
+		}
+	})
+}
+
+func (a *App) post() {
+	t := time.Now()
+	a.posted.Store(&t)
+	a.scr.PostEvent(tcell.NewEventInterrupt(nil))
 }
 
 // Run draws and handles events until an action quits.
