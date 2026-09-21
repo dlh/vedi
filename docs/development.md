@@ -17,8 +17,8 @@ run them before committing. Behaviors are specified and tested in
 `specs/`; see `specs/README.md`.
 
 `bench-pagers` runs each pager on a pty over a million generated
-lines and reports the median time to the first screen, to the end and
-back, for a failed search and to the first screen from stdin, with
+lines and reports the median time to the first screen from a file and
+from stdin, to the end and back, and for a failed search on each, with
 peak RSS. To the end is the rest of the index for vedi and a seek for
 less. `BENCHFLAGS='-lines N -runs R'` changes the input and the
 repetitions.

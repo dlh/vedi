@@ -46,7 +46,7 @@ func (p pager) command(vedi, file string) []string {
 }
 
 // rows are the report's rows, in order.
-var rows = []string{"first-screen ms", "end ms", "home ms", "search-miss ms", "stdin ms", "rss file MB", "rss stdin MB"}
+var rows = []string{"first-screen ms", "end ms", "home ms", "search-miss ms", "stdin ms", "search-miss stdin ms", "rss file MB", "rss stdin MB"}
 
 // firstScreen is the line whose marker means the first screen is up:
 // the last of 23 text rows, above vedi's status line or less's prompt.
@@ -105,28 +105,42 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 	}
 	out["end ms"] = cell{v: ms(t)}
 
-	from, t := s.mark(), time.Now()
-	s.send("g")
-	if err := s.wait(marker(1), from, timeout); err != nil {
-		out["home ms"] = cell{err: err}
+	out["home ms"] = home(s, timeout)
+	if out["home ms"].err != nil {
 		s.kill()
 		return
 	}
-	out["home ms"] = cell{v: ms(t)}
 
 	// The whole file is read now, so the search covers all of it.
-	from, t = s.mark(), time.Now()
-	s.send("/zzzz\r")
-	if err := s.wait(p.notFound, from, timeout); err != nil {
-		out["search-miss ms"] = cell{err: err}
+	out["search-miss ms"] = searchMiss(s, p, timeout)
+	if out["search-miss ms"].err != nil {
 		s.kill()
 		return
 	}
-	out["search-miss ms"] = cell{v: ms(t)}
 
 	s.send("q")
 	rss, err := s.finish(timeout)
 	out["rss file MB"] = cell{v: mb(rss), err: err}
+}
+
+// home times g, from the end to the first line.
+func home(s *session, timeout time.Duration) cell {
+	from, t := s.mark(), time.Now()
+	s.send("g")
+	if err := s.wait(marker(1), from, timeout); err != nil {
+		return cell{err: err}
+	}
+	return cell{v: ms(t)}
+}
+
+// searchMiss times a search for text that is not there.
+func searchMiss(s *session, p pager, timeout time.Duration) cell {
+	from, t := s.mark(), time.Now()
+	s.send("/zzzz\r")
+	if err := s.wait(p.notFound, from, timeout); err != nil {
+		return cell{err: err}
+	}
+	return cell{v: ms(t)}
 }
 
 // endPoll is how often toEnd presses G again. It bounds how late the
@@ -158,7 +172,8 @@ func toEnd(s *session, n int, ready string, timeout time.Duration) error {
 }
 
 // runStdin pipes file into the pager and times the first screen; then
-// it reads to the end, so the RSS is for the whole input.
+// it reads to the end and searches all of it, from the top, so the
+// search and the RSS are for the whole input.
 func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out sample) {
 	f, err := os.Open(file)
 	if err != nil {
@@ -188,8 +203,17 @@ func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out samp
 		return
 	}
 	out["stdin ms"] = cell{v: ms(t0)}
-	if err := toEnd(s, n, p.end(n), timeout); err != nil {
-		out["rss stdin MB"] = cell{err: err}
+	// The end and home are not timed again; a failure there lands on
+	// the search's row.
+	c := cell{err: toEnd(s, n, p.end(n), timeout)}
+	if c.err == nil {
+		c = home(s, timeout)
+	}
+	if c.err == nil {
+		c = searchMiss(s, p, timeout)
+	}
+	out["search-miss stdin ms"] = c
+	if c.err != nil {
 		s.kill()
 		return
 	}
