@@ -21,10 +21,9 @@ import (
 type Options struct {
 	Name          string // what the status line calls the input
 	Mode          layout.Mode
-	QuitIfOnePage bool   // quit at EOF if the text fits the screen (-F)
-	Paging        func() // called once -F is given up: the text will not be printed
-	StartLine     int    // 1-based line to put at the top; 0 for none
-	Follow        bool   // keep the cursor on the last line until EOF (+G)
+	QuitIfOnePage bool // quit at EOF if the text fits the screen (-F)
+	StartLine     int  // 1-based line to put at the top; 0 for none
+	Follow        bool // keep the cursor on the last line until EOF (+G)
 	Screen        *Screen
 	Copier        clipboard.Copier
 	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
@@ -57,7 +56,6 @@ type App struct {
 	startLine int     // 0-based +N target; -1 once applied
 	screen    *Screen // applied at EOF, then nil; no text is drawn until then
 	onePage   bool    // -F: quit at EOF if the text fits
-	paging    func()  // called when that is given up; nil for none
 	printText bool    // -F quit, so the caller prints the text
 
 	status  string // one-shot message, cleared by the next key or click
@@ -110,7 +108,6 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
 		onePage:   opts.QuitIfOnePage,
-		paging:    opts.Paging,
 		now:       opts.Now,
 	}
 	if a.now == nil {
@@ -187,16 +184,8 @@ func (a *App) act() {
 	a.follow = false
 	a.startLine = -1
 	a.screen = nil
-	a.page()
-	a.status = ""
-}
-
-// page gives -F up.
-func (a *App) page() {
-	if a.onePage && a.paging != nil {
-		a.paging()
-	}
 	a.onePage = false
+	a.status = ""
 }
 
 // onData runs after the reader appended lines: it applies a pending +N,
@@ -209,7 +198,7 @@ func (a *App) onData() bool {
 	}
 	if a.onePage {
 		if !a.fits() || err != nil {
-			a.page()
+			a.onePage = false
 		} else if eof {
 			a.printText = true
 			return true

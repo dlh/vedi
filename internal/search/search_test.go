@@ -1,6 +1,7 @@
 package search
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -106,5 +107,24 @@ func TestSingleMatchWrapsToItself(t *testing.T) {
 	pos, wrapped, found := Next(b, New("foo"), at(1, 0), true)
 	if !found || pos != at(1, 0) || !wrapped {
 		t.Errorf("Next = %v wrapped=%v found=%v, want (1,0) wrapped", pos, wrapped, found)
+	}
+}
+
+// BenchmarkNextMiss searches 100k lines for a pattern that is not
+// there, which must not allocate a line at a time.
+func BenchmarkNextMiss(b *testing.B) {
+	var in strings.Builder
+	for i := 0; i < 100_000; i++ {
+		fmt.Fprintf(&in, "\x1b[32mline %d\x1b[0m of some text\n", i)
+	}
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader(in.String()), buf, func() {})
+	m := New("zzz")
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, _, found := Next(buf, m, buffer.Pos{}, false); found {
+			b.Fatal("found")
+		}
 	}
 }

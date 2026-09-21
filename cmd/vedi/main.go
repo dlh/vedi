@@ -91,17 +91,11 @@ func main() {
 	scr.EnableMouse(tcell.MouseDragEvents)
 
 	buf := buffer.New()
-	appOpts := opts.App(scr, files)
-	var rec *buffer.Recorder
-	if opts.QuitIfOnePage {
-		rec = buffer.Record(in)
-		in, appOpts.Paging = rec, rec.Stop
-	}
-	a := app.New(scr, buf, appOpts)
+	a := app.New(scr, buf, opts.App(scr, files))
 	go buffer.Fill(in, buf, a.Notify)
 	a.Run()
 	if a.PrintText() {
 		scr.Fini()
-		os.Stdout.Write(rec.Bytes())
+		buf.WriteTo(os.Stdout)
 	}
 }

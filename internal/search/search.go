@@ -95,12 +95,14 @@ func Next(buf *buffer.Buffer, m Matcher, from buffer.Pos, after bool) (pos buffe
 	if after {
 		col++
 	}
+	var text []rune
 	for k := 0; k <= n; k++ {
 		li := (from.Line + k) % n
 		if k > 0 {
 			col = 0
 		}
-		if i := m.Find(buf.Line(li).Text, col); i >= 0 {
+		text = buf.Text(li, text)
+		if i := m.Find(text, col); i >= 0 {
 			return buffer.Pos{Line: li, Col: i}, from.Line+k >= n, true
 		}
 	}
@@ -114,13 +116,15 @@ func Prev(buf *buffer.Buffer, m Matcher, from buffer.Pos) (pos buffer.Pos, wrapp
 	if n == 0 || m.Empty() {
 		return
 	}
+	var text []rune
 	for k := 0; k <= n; k++ {
 		li := ((from.Line-k)%n + n) % n
 		before := math.MaxInt
 		if k == 0 {
 			before = from.Col
 		}
-		if i := m.FindLast(buf.Line(li).Text, before); i >= 0 {
+		text = buf.Text(li, text)
+		if i := m.FindLast(text, before); i >= 0 {
 			return buffer.Pos{Line: li, Col: i}, from.Line-k < 0, true
 		}
 	}
