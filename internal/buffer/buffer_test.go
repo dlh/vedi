@@ -338,3 +338,28 @@ func (s *shrinking) ReadAt(p []byte, off int64) (int, error) {
 	}
 	return n, nil
 }
+
+// TestReadersDuringFill runs every reader against a filling buffer,
+// for the race detector: Write indexes outside the lock.
+func TestReadersDuringFill(t *testing.T) {
+	in := styledLines(20_000)
+	for _, b := range []*Buffer{New(), NewFrom(bytes.NewReader(in))} {
+		done := make(chan struct{})
+		go func() {
+			Fill(bytes.NewReader(in), b, func() {})
+			close(done)
+		}()
+		var text []rune
+		for eof := false; !eof; eof, _ = b.Finished() {
+			n := b.Len()
+			b.Line(n - 1)
+			text = b.Text(n/2, text)
+			b.WriteTo(io.Discard)
+			b.TrailingNewline()
+		}
+		<-done
+		if n := b.Len(); n != 20_000 {
+			t.Fatalf("Len = %d, want 20000", n)
+		}
+	}
+}

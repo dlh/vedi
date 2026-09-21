@@ -41,13 +41,18 @@ type Buffer struct {
 	src io.ReaderAt
 	mem *arena // src, when Write keeps the bytes
 
+	// Changed under mu, by the writer alone, so it reads them freely.
 	ends    []int64  // just past line i's "\n", or the input's end
 	state   []uint32 // the parser at line i's start, an index into parsers
 	parsers []ansi.Parser
+	written int64
+
+	// The writer's alone. A Write indexes its bytes into staged
+	// outside mu, so readers wait only for publish.
 	ids     map[ansi.Parser]uint32
 	parser  ansi.Parser // after the last indexed line
 	pending []byte      // bytes after the last "\n"
-	written int64
+	staged  index       // lines indexed since the last publish
 
 	cache map[int]Line
 	raw   []byte // read's scratch
@@ -55,6 +60,13 @@ type Buffer struct {
 	eof bool
 	err error
 	nl  bool // the input ended with "\n"
+}
+
+// index is what a run of lines adds to ends, state and parsers.
+type index struct {
+	ends    []int64
+	state   []uint32
+	parsers []ansi.Parser
 }
 
 // New is a buffer that keeps what is written to it.
@@ -78,34 +90,36 @@ func (b *Buffer) Len() int {
 // Write appends input. Bytes up to the last "\n" become lines; the
 // rest wait for the next Write, or Finish.
 func (b *Buffer) Write(p []byte) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
 	if b.mem != nil {
 		b.mem.Write(p)
 	}
+	written := b.written
 	for {
 		i := bytes.IndexByte(p, '\n')
 		if i < 0 {
 			b.pending = append(b.pending, p...)
-			b.written += int64(len(p))
-			return
+			written += int64(len(p))
+			break
 		}
 		line := p[:i]
 		if len(b.pending) > 0 {
 			line = append(b.pending, line...)
 		}
-		b.written += int64(i + 1)
-		b.add(bytes.TrimSuffix(line, []byte{'\r'}))
+		written += int64(i + 1)
+		b.add(bytes.TrimSuffix(line, []byte{'\r'}), written)
 		b.pending = b.pending[:0]
 		p = p[i+1:]
 	}
+	b.mu.Lock()
+	b.publish(written)
+	b.mu.Unlock()
 }
 
-// add indexes one line ending at written, given without its "\n" or
-// the "\r" before it.
-func (b *Buffer) add(raw []byte) {
-	b.ends = append(b.ends, b.written)
-	b.state = append(b.state, b.intern(b.parser))
+// add stages one line ending at end, given without its "\n" or the
+// "\r" before it.
+func (b *Buffer) add(raw []byte, end int64) {
+	b.staged.ends = append(b.staged.ends, end)
+	b.staged.state = append(b.staged.state, b.intern(b.parser))
 	b.parser.Skip(raw)
 }
 
@@ -113,21 +127,34 @@ func (b *Buffer) intern(p ansi.Parser) uint32 {
 	if id, ok := b.ids[p]; ok {
 		return id
 	}
-	id := uint32(len(b.parsers))
-	b.parsers = append(b.parsers, p)
+	id := uint32(len(b.parsers) + len(b.staged.parsers))
+	b.staged.parsers = append(b.staged.parsers, p)
 	b.ids[p] = id
 	return id
+}
+
+// publish makes the staged lines readable, with written bytes in all.
+// Called with mu held.
+func (b *Buffer) publish(written int64) {
+	b.ends = append(b.ends, b.staged.ends...)
+	b.state = append(b.state, b.staged.state...)
+	b.parsers = append(b.parsers, b.staged.parsers...)
+	b.written = written
+	b.staged.ends = b.staged.ends[:0]
+	b.staged.state = b.staged.state[:0]
+	b.staged.parsers = b.staged.parsers[:0]
 }
 
 // Finish marks the end of input: a partial last line becomes a line;
 // err is the read error, or nil at EOF; trailingNewline reports
 // whether the input ended with "\n".
 func (b *Buffer) Finish(err error, trailingNewline bool) {
-	b.mu.Lock()
 	if len(b.pending) > 0 {
-		b.add(b.pending)
+		b.add(b.pending, b.written)
 		b.pending = nil
 	}
+	b.mu.Lock()
+	b.publish(b.written)
 	b.eof, b.nl = true, trailingNewline
 	if err != nil {
 		b.err = err
