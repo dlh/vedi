@@ -92,8 +92,8 @@ func TestFillReportsReadError(t *testing.T) {
 	if !eof || err == nil || err.Error() != "boom" {
 		t.Fatalf("Finished = %v, %v; want true, boom", eof, err)
 	}
-	if calls < 3 {
-		t.Fatalf("notify called %d times, want at least 3 (two lines plus finish)", calls)
+	if calls < 2 {
+		t.Fatalf("notify called %d times, want at least 2 (one read plus finish)", calls)
 	}
 }
 
@@ -137,5 +137,37 @@ func TestRecorderStopDrops(t *testing.T) {
 	}
 	if got := r.Bytes(); got != nil {
 		t.Errorf("Bytes after Stop = %q, want nil", got)
+	}
+}
+
+// TestWriteJoinsAcrossWrites: a line is one line however many writes
+// carry it, and it is not a line until its "\n" or Finish.
+func TestWriteJoinsAcrossWrites(t *testing.T) {
+	b := New()
+	long := strings.Repeat("x", 100_000)
+	b.Write([]byte("ab"))
+	b.Write([]byte("c\n" + long[:50_000]))
+	if got := lines(b); len(got) != 1 || got[0] != "abc" {
+		t.Fatalf("lines = %q, want [abc]", got)
+	}
+	b.Write([]byte(long[50_000:] + "\nd"))
+	if got := lines(b); len(got) != 2 || got[1] != long {
+		t.Fatalf("second line has %d runes, want %d", len(b.Line(1).Text), len(long))
+	}
+	b.Finish(nil, false)
+	if got := lines(b); len(got) != 3 || got[2] != "d" {
+		t.Fatalf("lines after Finish = %d, want 3 ending in d", len(got))
+	}
+}
+
+// TestWriteCRLFAcrossWrites: the "\r" before a "\n" goes even when
+// they arrive apart; any other "\r" stays.
+func TestWriteCRLFAcrossWrites(t *testing.T) {
+	b := New()
+	b.Write([]byte("a\r"))
+	b.Write([]byte("\nb\rc\nd\r"))
+	b.Finish(nil, false)
+	if got := lines(b); strings.Join(got, "|") != "a|b\rc|d\r" {
+		t.Fatalf("lines = %q", got)
 	}
 }

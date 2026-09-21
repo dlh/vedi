@@ -1,42 +1,27 @@
 package buffer
 
-import (
-	"bufio"
-	"io"
+import "io"
 
-	"go.dlh.dev/vedi/internal/ansi"
-)
-
-// Fill splits r on "\n" (dropping a "\r" before it), parses each line
-// into buf, then calls buf.Finish with the read error. notify runs
-// after every line and after Finish; callers should coalesce.
+// Fill reads r into buf until EOF or an error, which it passes to
+// buf.Finish. notify runs after every read and after Finish; callers
+// should coalesce.
 func Fill(r io.Reader, buf *Buffer, notify func()) {
-	br := bufio.NewReaderSize(r, 64*1024)
-	p := ansi.NewParser()
-	var err error
+	p := make([]byte, 64*1024)
 	nl := false
 	for {
-		var raw []byte
-		raw, err = br.ReadBytes('\n')
-		if len(raw) > 0 {
-			nl = raw[len(raw)-1] == '\n'
-			if nl {
-				raw = raw[:len(raw)-1]
-				if len(raw) > 0 && raw[len(raw)-1] == '\r' {
-					raw = raw[:len(raw)-1]
-				}
-			}
-			text, runs := p.Parse(raw)
-			buf.Append(Line{Text: text, Runs: runs})
+		n, err := r.Read(p)
+		if n > 0 {
+			nl = p[n-1] == '\n'
+			buf.Write(p[:n])
 			notify()
 		}
 		if err != nil {
-			break
+			if err == io.EOF {
+				err = nil
+			}
+			buf.Finish(err, nl)
+			notify()
+			return
 		}
 	}
-	if err == io.EOF {
-		err = nil
-	}
-	buf.Finish(err, nl)
-	notify()
 }

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
@@ -41,7 +40,6 @@ type scenario struct {
 	t        *testing.T
 	scr      tcell.SimulationScreen
 	buf      *buffer.Buffer
-	parser   *ansi.Parser
 	app      *app.App
 	w, h     int
 	args     []string
@@ -63,7 +61,7 @@ func runScenario(t *testing.T, a archive) error {
 	if strings.TrimSpace(a.comment) == "" {
 		return fmt.Errorf("a scenario starts with prose describing the behavior")
 	}
-	s := &scenario{t: t, buf: buffer.New(), parser: ansi.NewParser(), w: 40, h: 6}
+	s := &scenario{t: t, buf: buffer.New(), w: 40, h: 6}
 	for _, sec := range a.sections {
 		if sec.name == "eof" {
 			s.hasEOF = true
@@ -199,21 +197,17 @@ func runScenario(t *testing.T, a archive) error {
 // quit.
 var actions = map[string]bool{"input": true, "eof": true, "keys": true, "mouse": true, "resize": true}
 
-// input appends the body's lines to the buffer through one ANSI parser
-// shared across sections. txtar's trailing newline is stripped; a
-// second one means the input itself ended with a newline.
+// input appends the body to the buffer. txtar's trailing newline is
+// stripped; a second one means the input itself ended with a newline,
+// which Finish is told. Every section's last line is ended, so the
+// buffer sees it as a line at once.
 func (s *scenario) input(body string) {
 	if body == "" {
 		return
 	}
 	text := strings.TrimSuffix(body, "\n")
 	s.nl = strings.HasSuffix(text, "\n")
-	text = strings.TrimSuffix(text, "\n")
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSuffix(line, "\r") // as buffer.Fill drops a "\r" before "\n"
-		t, runs := s.parser.Parse([]byte(line))
-		s.buf.Append(buffer.Line{Text: t, Runs: runs})
-	}
+	s.buf.Write([]byte(strings.TrimSuffix(text, "\n") + "\n"))
 }
 
 // start builds the screen and app the first time an action or

@@ -2,6 +2,7 @@
 package buffer
 
 import (
+	"bytes"
 	"sync"
 
 	"go.dlh.dev/vedi/internal/ansi"
@@ -24,11 +25,13 @@ type Line struct {
 
 // Buffer is safe for one writer and any number of readers.
 type Buffer struct {
-	mu    sync.RWMutex
-	lines []Line
-	eof   bool
-	err   error
-	nl    bool // the input ended with "\n"
+	mu      sync.RWMutex
+	lines   []Line
+	parser  ansi.Parser
+	pending []byte // bytes after the last "\n"
+	eof     bool
+	err     error
+	nl      bool // the input ended with "\n"
 }
 
 func New() *Buffer { return &Buffer{} }
@@ -49,16 +52,42 @@ func (b *Buffer) Line(i int) Line {
 	return b.lines[i]
 }
 
-func (b *Buffer) Append(l Line) {
+// Write appends input. Bytes up to the last "\n" become lines; the
+// rest wait for the next Write, or Finish.
+func (b *Buffer) Write(p []byte) {
 	b.mu.Lock()
-	b.lines = append(b.lines, l)
-	b.mu.Unlock()
+	defer b.mu.Unlock()
+	for {
+		i := bytes.IndexByte(p, '\n')
+		if i < 0 {
+			b.pending = append(b.pending, p...)
+			return
+		}
+		line := p[:i]
+		if len(b.pending) > 0 {
+			line = append(b.pending, line...)
+		}
+		b.add(bytes.TrimSuffix(line, []byte{'\r'}))
+		b.pending = b.pending[:0]
+		p = p[i+1:]
+	}
 }
 
-// Finish marks the end of input. err is the read error, or nil at EOF;
-// trailingNewline reports whether the input ended with "\n".
+// add appends one line, given without its "\n" or the "\r" before it.
+func (b *Buffer) add(raw []byte) {
+	text, runs := b.parser.Parse(raw)
+	b.lines = append(b.lines, Line{Text: text, Runs: runs})
+}
+
+// Finish marks the end of input: a partial last line becomes a line;
+// err is the read error, or nil at EOF; trailingNewline reports
+// whether the input ended with "\n".
 func (b *Buffer) Finish(err error, trailingNewline bool) {
 	b.mu.Lock()
+	if len(b.pending) > 0 {
+		b.add(b.pending)
+		b.pending = nil
+	}
 	b.eof, b.err, b.nl = true, err, trailingNewline
 	b.mu.Unlock()
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
@@ -109,7 +108,7 @@ func clip(scr tcell.SimulationScreen) string { return string(scr.GetClipboardDat
 
 func TestReadErrorInStatus(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "", Options{})
-	a.buf.Append(buffer.Line{Text: []rune("partial")})
+	a.buf.Write([]byte("partial"))
 	a.buf.Finish(fmt.Errorf("disk on fire"), false)
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Draw()
@@ -204,7 +203,7 @@ func BenchmarkLongLine(b *testing.B) {
 	defer scr.Fini()
 	scr.SetSize(80, 24)
 	buf := buffer.New()
-	buf.Append(buffer.Line{Text: []rune(strings.Repeat("a", 1<<20))})
+	buf.Write([]byte(strings.Repeat("a", 1<<20)))
 	buf.Finish(nil, true)
 	a := New(scr, buf, Options{})
 	a.Draw()
@@ -220,7 +219,7 @@ func TestNotifyFullQueue(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "", Options{})
 	for scr.PostEvent(key(tcell.KeyRune, 'j', 0)) == nil {
 	}
-	a.buf.Append(buffer.Line{Text: []rune("late")})
+	a.buf.Write([]byte("late"))
 	a.buf.Finish(fmt.Errorf("disk on fire"), false)
 	a.Notify()
 	for scr.HasPendingEvent() {
@@ -257,7 +256,7 @@ func TestTickFullQueue(t *testing.T) {
 }
 
 // benchApp builds an app on a 200×60 screen over lines, drawn once.
-func benchApp(b *testing.B, lines ...buffer.Line) *App {
+func benchApp(b *testing.B, lines ...string) *App {
 	scr := tcell.NewSimulationScreen("UTF-8")
 	if err := scr.Init(); err != nil {
 		b.Fatal(err)
@@ -266,7 +265,7 @@ func benchApp(b *testing.B, lines ...buffer.Line) *App {
 	scr.SetSize(200, 60)
 	buf := buffer.New()
 	for _, l := range lines {
-		buf.Append(l)
+		buf.Write([]byte(l + "\n"))
 	}
 	buf.Finish(nil, true)
 	a := New(scr, buf, Options{})
@@ -278,7 +277,7 @@ func benchApp(b *testing.B, lines ...buffer.Line) *App {
 // with search highlighting on, which must search the line once per
 // draw, not once per row.
 func BenchmarkDrawHighlight(b *testing.B) {
-	a := benchApp(b, buffer.Line{Text: []rune(strings.Repeat("abcdefgh ", 1<<17))})
+	a := benchApp(b, strings.Repeat("abcdefgh ", 1<<17))
 	a.matcher = search.New("zzz")
 	a.highlight = true
 	b.ResetTimer()
@@ -294,10 +293,9 @@ func BenchmarkDrawRuns(b *testing.B) {
 	for i := 0; i < 200; i++ {
 		sb.WriteString("\x1b[3" + string(rune('1'+i%7)) + "mx")
 	}
-	var lines []buffer.Line
-	for i := 0; i < 60; i++ {
-		text, runs := ansi.NewParser().Parse([]byte(sb.String()))
-		lines = append(lines, buffer.Line{Text: text, Runs: runs})
+	lines := make([]string, 60)
+	for i := range lines {
+		lines[i] = sb.String()
 	}
 	a := benchApp(b, lines...)
 	b.ResetTimer()
@@ -325,7 +323,7 @@ func TestPagingWhenTooLong(t *testing.T) {
 	paging := 0
 	a := newOnePageApp(t, &paging)
 	for _, s := range []string{"1", "2", "3"} {
-		a.buf.Append(buffer.Line{Text: []rune(s)})
+		a.buf.Write([]byte(s + "\n"))
 		if a.Handle(tcell.NewEventInterrupt(nil)) {
 			t.Fatal("quit before EOF")
 		}
@@ -355,7 +353,7 @@ func TestPagingOnKey(t *testing.T) {
 func TestPrintTextWhenFits(t *testing.T) {
 	paging := 0
 	a := newOnePageApp(t, &paging)
-	a.buf.Append(buffer.Line{Text: []rune("1")})
+	a.buf.Write([]byte("1\n"))
 	a.buf.Finish(nil, true)
 	if !a.Handle(tcell.NewEventInterrupt(nil)) || !a.PrintText() {
 		t.Error("did not quit to print")
@@ -369,7 +367,7 @@ func TestPrintTextWhenFits(t *testing.T) {
 func TestReadErrorKeepsPager(t *testing.T) {
 	paging := 0
 	a := newOnePageApp(t, &paging)
-	a.buf.Append(buffer.Line{Text: []rune("1")})
+	a.buf.Write([]byte("1\n"))
 	a.buf.Finish(fmt.Errorf("disk on fire"), true)
 	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
 		t.Error("quit despite the read error")
