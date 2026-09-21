@@ -1,0 +1,50 @@
+A row motion that extends the selection with no row left to take goes
+to the end of the text downward and to its start upward, as Shift+Down
+does on the last row.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- keys --
+Right Shift+Up y
+-- screen --
+[o]ne
+two
+three
+
+copied 1 line                     h help
+-- cursor --
+0 0
+-- clipboard --
+o
+-- keys --
+Esc End Shift+PgDn y
+-- screen --
+one[ ]
+[two ]
+[three]
+
+copied 3 lines                    h help
+-- cursor --
+2 5
+-- clipboard --
+
+two
+three
+-- keys --
+Esc Shift+PgUp y
+-- screen --
+[one ]
+[two ]
+[three]
+
+copied 3 lines                    h help
+-- cursor --
+0 0
+-- clipboard --
+one
+two
+three

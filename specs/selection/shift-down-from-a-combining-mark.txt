@@ -1,0 +1,21 @@
+Shift+Down on the last row extends to the end of the line even from a
+combining mark, where a search can leave the cursor: the mark has no
+cell of its own, so moving by rows would shift the column.
+
+-- size --
+40x5
+-- input --
+first
+ábc
+-- keys --
+/ "́b" Enter Shift+Down y
+-- screen --
+first
+á[bc]
+
+
+copied 1 line                     h help
+-- cursor --
+1 3
+-- clipboard --
+́bc

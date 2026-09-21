@@ -290,7 +290,7 @@ func (a *App) showScreen(s Screen) {
 	if a.buf.TrailingNewline() {
 		back--
 	}
-	top := a.snap(buffer.Pos{Line: n - 1, Col: len(a.line(n - 1))})
+	top := a.snap(a.endPos())
 	for i := 0; i < back; i++ {
 		top = a.prevRow(top)
 	}
@@ -319,11 +319,12 @@ func (a *App) handleKey(c input.Command) bool {
 			a.anchor = nil
 		}
 	}
+	left := 0 // rows a row motion had nowhere to take
 	switch c.Action {
 	case input.Up:
-		a.moveRows(-1)
+		left = a.moveRows(-1)
 	case input.Down:
-		a.moveRows(1)
+		left = a.moveRows(1)
 	case input.Left:
 		a.moveCol(-1)
 	case input.Right:
@@ -333,13 +334,13 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.End:
 		a.cur.Col = len(a.line(a.cur.Line))
 	case input.PageUp:
-		a.moveRows(-a.pageRows())
+		left = a.moveRows(-a.pageRows())
 	case input.PageDown:
-		a.moveRows(a.pageRows())
+		left = a.moveRows(a.pageRows())
 	case input.HalfPageUp:
-		a.moveRows(-a.halfPageRows())
+		left = a.moveRows(-a.halfPageRows())
 	case input.HalfPageDown:
-		a.moveRows(a.halfPageRows())
+		left = a.moveRows(a.halfPageRows())
 	case input.WordLeft:
 		a.wordLeft()
 	case input.WordRight:
@@ -388,6 +389,13 @@ func (a *App) handleKey(c input.Command) bool {
 		a.helping, a.dragging = true, false
 	case input.Quit:
 		return true
+	}
+	// Extending past the last row takes the rest of the last line; past
+	// the first, the start of the first.
+	if c.Extend && left > 0 {
+		a.cur = a.endPos()
+	} else if c.Extend && left < 0 {
+		a.cur = buffer.Pos{}
 	}
 	a.scrollToCursor()
 	return false
@@ -446,10 +454,11 @@ func (a *App) endPos() buffer.Pos {
 }
 
 // moveRows moves the cursor n visual rows (negative is up), keeping its
-// cell column where possible. Crossing a line resets the column first:
-// lineLayout opens a newline row for the cursor's line, and the old
-// column must not open one on the new line.
-func (a *App) moveRows(n int) {
+// cell column where possible, and returns the rows left when the text
+// ran out. Crossing a line resets the column first: lineLayout opens a
+// newline row for the cursor's line, and the old column must not open
+// one on the new line.
+func (a *App) moveRows(n int) int {
 	ln := a.lineLayout(a.cur.Line)
 	row, x := ln.Pos(a.cur.Col)
 	for n > 0 {
@@ -477,6 +486,7 @@ func (a *App) moveRows(n int) {
 		n++
 	}
 	a.cur.Col = ln.Col(row, x)
+	return n
 }
 
 // moveCol moves one rune left or right, crossing lines at the ends, and
