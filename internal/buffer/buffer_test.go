@@ -239,6 +239,77 @@ func TestReadFailureGivesEmptyLine(t *testing.T) {
 	if got := b.Text(0, nil); len(got) != 0 {
 		t.Fatalf("Text(0) = %q, want empty", string(got))
 	}
+	if _, err := b.Finished(); err == nil || err.Error() != "gone" {
+		t.Fatalf("err = %v, want gone: the source's error, not truncation", err)
+	}
+}
+
+// TestShortBlockKeepsItsLines: a line whose bytes are there reads
+// without error even when later lines of its block are gone; the
+// error comes with a line that is.
+func TestShortBlockKeepsItsLines(t *testing.T) {
+	src := &shrinking{data: []byte("one\ntwo\nthree\n")}
+	b := NewFrom(src)
+	b.Write(src.data)
+	src.data = src.data[:8]
+	if got := string(b.Line(0).Text); got != "one" {
+		t.Errorf("line 0 = %q, want one", got)
+	}
+	if _, err := b.Finished(); err != nil {
+		t.Errorf("err = %v after reading a line that is there, want nil", err)
+	}
+	if got := b.Line(2).Text; len(got) != 0 {
+		t.Errorf("line 2 = %q, want empty", string(got))
+	}
+	if _, err := b.Finished(); err != errTruncated {
+		t.Errorf("err = %v, want %v", err, errTruncated)
+	}
+}
+
+// TestRewrittenBlockIsError: bytes rewritten with fewer newlines read
+// in full, but the lines past the last newline are gone.
+func TestRewrittenBlockIsError(t *testing.T) {
+	src := &shrinking{data: []byte("a\nb\n")}
+	b := NewFrom(src)
+	b.Write(src.data)
+	src.data = []byte("abcd")
+	if got := b.Line(1).Text; len(got) != 0 {
+		t.Errorf("line 1 = %q, want empty", string(got))
+	}
+	if _, err := b.Finished(); err != errTruncated {
+		t.Errorf("err = %v, want %v", err, errTruncated)
+	}
+}
+
+// counting counts ReadAt calls on a shrinking source.
+type counting struct {
+	shrinking
+	reads int
+}
+
+func (c *counting) ReadAt(p []byte, off int64) (int, error) {
+	c.reads++
+	return c.shrinking.ReadAt(p, off)
+}
+
+// TestShortBlockIsScannedOnce: a block that stays short is not read
+// again for every line in it.
+func TestShortBlockIsScannedOnce(t *testing.T) {
+	src := &counting{}
+	for i := 0; i < 2*blockLines; i++ {
+		src.data = append(src.data, fmt.Sprintf("%d\n", i)...)
+	}
+	b := NewFrom(src)
+	b.Write(src.data)
+	src.data = src.data[:len(src.data)/4] // inside block 0
+	var text []rune
+	for i := 0; i < blockLines; i++ {
+		text = b.Text(i, text)
+		b.Line(i)
+	}
+	if src.reads > 2 {
+		t.Errorf("%d reads for one short block, want at most 2", src.reads)
+	}
 }
 
 // TestWriteToRoundTrip: -F prints the input as it came, from either
@@ -264,8 +335,9 @@ func styledLines(n int) []byte {
 }
 
 // TestMemoryPerLine: a memory-backed buffer keeps about its input plus
-// the index; a file-backed one the index alone. Retained heap, not
-// allocation: parsing escapes allocates and frees as it goes.
+// the index; a file-backed one the index alone, which samples every
+// blockLines lines, so it is small next to the lines. Retained heap,
+// not allocation: parsing escapes allocates and frees as it goes.
 func TestMemoryPerLine(t *testing.T) {
 	const n = 100_000
 	in := styledLines(n)
@@ -280,11 +352,25 @@ func TestMemoryPerLine(t *testing.T) {
 		runtime.KeepAlive(b)
 		return int64(m1.HeapAlloc) - int64(m0.HeapAlloc)
 	}
-	if got := retained(New(), bytes.NewReader(in)); got > size+64*n {
-		t.Errorf("memory-backed: keeps %d bytes for %d of input, want at most input + 64/line", got, size)
+	if got := retained(New(), bytes.NewReader(in)); got > size+2*n {
+		t.Errorf("memory-backed: keeps %d bytes for %d of input, want at most input + 2/line", got, size)
 	}
-	if got := retained(NewFrom(bytes.NewReader(in)), bytes.NewReader(in)); got > 64*n {
-		t.Errorf("file-backed: keeps %d bytes, want at most 64/line", got)
+	if got := retained(NewFrom(bytes.NewReader(in)), bytes.NewReader(in)); got > 2*n {
+		t.Errorf("file-backed: keeps %d bytes, want at most 2/line", got)
+	}
+}
+
+// TestIndexAllocation: indexing allocates about the index, not copies
+// of it: a growing slice would allocate several times its final size.
+func TestIndexAllocation(t *testing.T) {
+	const n = 100_000
+	in := styledLines(n)
+	var m0, m1 runtime.MemStats
+	runtime.ReadMemStats(&m0)
+	Fill(bytes.NewReader(in), NewFrom(bytes.NewReader(in)), func() {})
+	runtime.ReadMemStats(&m1)
+	if got := int64(m1.TotalAlloc - m0.TotalAlloc); got > 24*n {
+		t.Errorf("file-backed: allocates %d bytes, want at most 24/line", got)
 	}
 }
 
@@ -309,15 +395,74 @@ func BenchmarkFillFile(b *testing.B) {
 	}
 }
 
+// TestLinesAcrossBlocks: lines read in any order come back right on
+// both sides of a block edge, with the color set before the edge.
+func TestLinesAcrossBlocks(t *testing.T) {
+	var in strings.Builder
+	for i := 0; i < 3*blockLines+5; i++ {
+		if i == blockLines-1 {
+			fmt.Fprintf(&in, "\x1b[31m%d\n", i)
+		} else {
+			fmt.Fprintf(&in, "%d\n", i)
+		}
+	}
+	red := tcell.StyleDefault.Foreground(tcell.PaletteColor(1))
+	for name, src := range map[string]func() *Buffer{
+		"memory": New,
+		"file":   func() *Buffer { return NewFrom(strings.NewReader(in.String())) },
+	} {
+		b := src()
+		Fill(strings.NewReader(in.String()), b, func() {})
+		for _, i := range []int{2*blockLines + 1, 0, blockLines, 3*blockLines + 4, blockLines - 1, 2*blockLines - 1, blockLines + 1, 3 * blockLines} {
+			if got := string(b.Line(i).Text); got != fmt.Sprint(i) {
+				t.Errorf("%s: line %d = %q", name, i, got)
+			}
+			if runs := b.Line(i).Runs; i >= blockLines-1 && (len(runs) != 1 || runs[0].Style != red) {
+				t.Errorf("%s: line %d runs = %v, want red", name, i, runs)
+			}
+		}
+	}
+}
+
+// TestLastBlockGrows: the last line is readable as the block it is in
+// fills, and bytes after the last "\n" are not a line until Finish.
+func TestLastBlockGrows(t *testing.T) {
+	b := New()
+	for i := 0; i < blockLines+3; i++ {
+		b.Write([]byte(fmt.Sprint(i)))
+		if n := b.Len(); n != i {
+			t.Fatalf("before line %d's newline: Len = %d", i, n)
+		}
+		b.Write([]byte("\n"))
+		if n := b.Len(); n != i+1 {
+			t.Fatalf("after line %d: Len = %d", i, n)
+		}
+		if got := string(b.Line(i).Text); got != fmt.Sprint(i) {
+			t.Fatalf("line %d = %q", i, got)
+		}
+	}
+	b.Write([]byte("partial"))
+	if n := b.Len(); n != blockLines+3 {
+		t.Fatalf("Len = %d with a partial line pending", n)
+	}
+	b.Finish(nil, false)
+	if got := string(b.Line(blockLines + 3).Text); got != "partial" {
+		t.Fatalf("last line = %q, want partial", got)
+	}
+}
+
 // TestShortReadIsError: a line whose bytes are gone is empty, and the
 // read error says so, even after a clean Finish.
 func TestShortReadIsError(t *testing.T) {
 	src := &shrinking{data: []byte("one\ntwo\n")}
 	b := NewFrom(src)
 	b.Write(src.data)
-	src.data = src.data[:2]
+	src.data = src.data[:5]
 	if got := b.Line(1).Text; len(got) != 0 {
 		t.Errorf("line 1 = %q, want empty", string(got))
+	}
+	if got := b.Line(0).Text; string(got) != "one" {
+		t.Errorf("line 0 = %q, want one: its bytes are still there", string(got))
 	}
 	b.Finish(nil, true)
 	if _, err := b.Finished(); err != errTruncated {
