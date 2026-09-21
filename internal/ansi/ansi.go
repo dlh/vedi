@@ -22,7 +22,8 @@ type Run struct {
 // Parser converts bytes to text and style runs. The style carries
 // across calls: a color set on one line stays until a reset. The OSC 8
 // link is kept apart from the SGR style because a reset inside a link
-// (ls --hyperlink does this) must not end it.
+// (ls --hyperlink does this) must not end it. The zero value is ready,
+// and a Parser is a value: a copy holds the state at that point.
 type Parser struct {
 	sgr     tcell.Style
 	url, id string
@@ -48,10 +49,50 @@ func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 	// escape.
 	text := make([]rune, 0, len(line))
 	runs := make([]Run, 0, bytes.Count(line, []byte{0x1b})+1)
+	text, runs = p.parse(line, text, runs)
+	return trim(text), trim(runs)
+}
+
+// Text is Parse without the runs: line's runes, appended to dst[:0].
+func (p *Parser) Text(dst []rune, line []byte) []rune {
+	text, _ := p.parse(line, dst[:0], nil)
+	return text
+}
+
+// Skip applies line's escapes and reads nothing else; p ends where
+// Parse would leave it.
+func (p *Parser) Skip(line []byte) {
+	for {
+		i := bytes.IndexByte(line, 0x1b)
+		if i < 0 {
+			return
+		}
+		n, sgr, osc, ok := escape(line[i:])
+		if !ok {
+			return
+		}
+		p.apply(sgr, osc)
+		line = line[i+n:]
+	}
+}
+
+// apply takes an escape's effect: SGR on the style, OSC 8 on the link.
+func (p *Parser) apply(sgr, osc []byte) {
+	if sgr != nil {
+		p.sgr = applySGR(p.sgr, sgr)
+	}
+	if url, id, ok := link(osc); ok {
+		p.url, p.id = url, id
+	}
+}
+
+// parse appends line's runes to text, which starts empty, and its runs
+// to runs unless that is nil.
+func (p *Parser) parse(line []byte, text []rune, runs []Run) ([]rune, []Run) {
 	runStart := 0
 	style, url, id := p.style(), p.url, p.id
 	closeRun := func() {
-		if len(text) > runStart {
+		if runs != nil && len(text) > runStart {
 			runs = append(runs, Run{runStart, len(text), style, url, id})
 		}
 		runStart = len(text)
@@ -65,12 +106,7 @@ func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 				i = len(line)
 				continue
 			}
-			if sgr != nil {
-				p.sgr = applySGR(p.sgr, sgr)
-			}
-			if url, id, ok := link(osc); ok {
-				p.url, p.id = url, id
-			}
+			p.apply(sgr, osc)
 			if next := p.style(); next != style {
 				closeRun()
 				style, url, id = next, p.url, p.id
@@ -88,7 +124,7 @@ func (p *Parser) Parse(line []byte) ([]rune, []Run) {
 		}
 	}
 	closeRun()
-	return trim(text), trim(runs)
+	return text, runs
 }
 
 // trim copies s to a slice of its own length when most of its capacity

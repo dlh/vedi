@@ -158,3 +158,50 @@ func TestLinkCarriesAcrossLines(t *testing.T) {
 		t.Fatalf("line two runs = %v, want link", runs)
 	}
 }
+
+// TestSkipMatchesParse: Skip leaves the parser where Parse would, line
+// after line, escapes cut off at a line end included.
+func TestSkipMatchesParse(t *testing.T) {
+	lines := []string{
+		"plain", "\x1b[31mred", "still red",
+		"\x1b]8;;http://x\x1b\\link", "\x1b[1mbold in link", "\x1b[0mreset keeps link",
+		"\x1b]8;;\x07unlinked", "\x1b(Bcharset", "cut \x1b[3", "after cut",
+		"\x1b[38;2;1;2;3mrgb ü \x1b[4:0mno underline", "\x1b]0;title\x07other osc", "",
+	}
+	var byParse, bySkip Parser
+	for _, l := range lines {
+		byParse.Parse([]byte(l))
+		bySkip.Skip([]byte(l))
+		if byParse != bySkip {
+			t.Fatalf("after %q: Skip left %+v, Parse %+v", l, bySkip, byParse)
+		}
+	}
+}
+
+// TestTextMatchesParse: Text gives Parse's runes, into a reused slice,
+// and moves the state the same way.
+func TestTextMatchesParse(t *testing.T) {
+	lines := []string{"a\x1b[31mb", "c\td\x01e", "ü\x1b]8;;u\x07x", "cut \x1b[3", "after"}
+	var p, q Parser
+	var dst []rune
+	for _, l := range lines {
+		want, _ := p.Parse([]byte(l))
+		dst = q.Text(dst, []byte(l))
+		if string(dst) != string(want) || p != q {
+			t.Fatalf("%q: Text = %q, Parse = %q", l, string(dst), string(want))
+		}
+	}
+}
+
+// TestParserIsAValue: a copy keeps the state at the copy.
+func TestParserIsAValue(t *testing.T) {
+	var p Parser
+	p.Parse([]byte("\x1b[31m"))
+	q := p
+	p.Parse([]byte("\x1b[0m"))
+	_, runs := q.Parse([]byte("x"))
+	red := tcell.StyleDefault.Foreground(tcell.PaletteColor(1))
+	if len(runs) != 1 || runs[0].Style != red {
+		t.Fatalf("copy's runs = %v, want red", runs)
+	}
+}
