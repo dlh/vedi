@@ -24,8 +24,10 @@ less. `BENCHFLAGS='-lines N -runs R'` changes the input and the
 repetitions.
 
 Commit messages follow [Conventional
-Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`,
-`docs:`, `ci:`, `chore:`. The changelog is built from them.
+Commits](https://www.conventionalcommits.org/). The release changelog
+is built from them: `feat:`, `fix:` and `perf:` each get a section;
+`refactor:`, `test:`, `docs:`, `build:`, `ci:` and `chore:` are left
+out, since they change nothing a user sees.
 
 ## Releases
 
