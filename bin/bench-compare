@@ -1,0 +1,18 @@
+#!/bin/sh
+# Runs the Go benchmarks at BASE (default main) and in the working
+# tree, COUNT times each (default 10), and prints a benchstat table.
+# Usage: bin/bench-compare [BASE] [COUNT]
+set -eu
+base=${1:-main}
+count=${2:-10}
+root=$(git rev-parse --show-toplevel)
+tmp=$(mktemp -d)
+trap 'git -C "$root" worktree remove --force "$tmp/base" 2>/dev/null; rm -rf "$tmp"' EXIT
+git -C "$root" worktree add -q --detach "$tmp/base" "$base"
+bench() { go test -run '^$' -bench . -benchmem -count "$count" ./... ; }
+echo "benchmarking $base" >&2
+(cd "$tmp/base" && bench) > "$tmp/base.txt"
+echo "benchmarking working tree" >&2
+(cd "$root" && bench) > "$tmp/work.txt"
+(cd "$root" && go build -modfile=tools/go.mod -o "$tmp/benchstat" golang.org/x/perf/cmd/benchstat)
+cd "$tmp" && ./benchstat base.txt work.txt

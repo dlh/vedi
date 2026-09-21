@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -209,6 +210,7 @@ func BenchmarkLongLine(b *testing.B) {
 	buf.Finish(nil, true)
 	a := New(scr, buf, Options{})
 	a.Draw()
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		press(a, key(tcell.KeyRight, 0, 0))
@@ -282,6 +284,7 @@ func BenchmarkDrawHighlight(b *testing.B) {
 	a := benchApp(b, strings.Repeat("abcdefgh ", 1<<17))
 	a.matcher = search.New("zzz")
 	a.highlight = true
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		a.Draw()
@@ -300,9 +303,52 @@ func BenchmarkDrawRuns(b *testing.B) {
 		lines[i] = sb.String()
 	}
 	a := benchApp(b, lines...)
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		a.Draw()
+	}
+}
+
+// styledLines is n colored lines, about 80 bytes each.
+func styledLines(n int) []byte {
+	var in bytes.Buffer
+	for i := 0; i < n; i++ {
+		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
+	}
+	return in.Bytes()
+}
+
+// BenchmarkFirstDraw reads 100k styled lines and draws the first
+// screen: the wait for a large file.
+func BenchmarkFirstDraw(b *testing.B) {
+	in := styledLines(100_000)
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		b.Fatal(err)
+	}
+	b.Cleanup(scr.Fini)
+	scr.SetSize(200, 60)
+	b.SetBytes(int64(len(in)))
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		buf := buffer.New()
+		buffer.Fill(bytes.NewReader(in), buf, func() {})
+		a := New(scr, buf, Options{})
+		a.Handle(tcell.NewEventInterrupt(nil))
+		a.Draw()
+	}
+}
+
+// BenchmarkJumpEnd jumps to the last of 100k lines and back, drawing
+// each.
+func BenchmarkJumpEnd(b *testing.B) {
+	lines := strings.Split(strings.TrimSuffix(string(styledLines(100_000)), "\n"), "\n")
+	a := benchApp(b, lines...)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		press(a, key(tcell.KeyRune, 'G', 0), key(tcell.KeyRune, 'g', 0))
 	}
 }
 

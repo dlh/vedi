@@ -8,11 +8,20 @@ Requires Go and make.
     make fmt            list unformatted files (fails if any)
     make tidy           show what go mod tidy would change (fails if any)
     make bench          benchmarks
+    make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
+    make bench-pagers   vedi vs less on a large file; needs less on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
 run them before committing. Behaviors are specified and tested in
 `specs/`; see `specs/README.md`.
+
+`bench-pagers` runs each pager on a pty over a million generated
+lines and reports the median time to the first screen, to the end and
+back, for a failed search and to the first screen from stdin, with
+peak RSS. To the end is the rest of the index for vedi and a seek for
+less. `BENCHFLAGS='-lines N -runs R'` changes the input and the
+repetitions.
 
 Commit messages follow [Conventional
 Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`,

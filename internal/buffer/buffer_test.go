@@ -254,16 +254,22 @@ func TestWriteToRoundTrip(t *testing.T) {
 	}
 }
 
+// styledLines is n colored lines, about 80 bytes each.
+func styledLines(n int) []byte {
+	var in bytes.Buffer
+	for i := 0; i < n; i++ {
+		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
+	}
+	return in.Bytes()
+}
+
 // TestMemoryPerLine: a memory-backed buffer keeps about its input plus
 // the index; a file-backed one the index alone. Retained heap, not
 // allocation: parsing escapes allocates and frees as it goes.
 func TestMemoryPerLine(t *testing.T) {
 	const n = 100_000
-	var in bytes.Buffer
-	for i := 0; i < n; i++ {
-		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
-	}
-	size := int64(in.Len())
+	in := styledLines(n)
+	size := int64(len(in))
 	retained := func(b *Buffer, r io.Reader) int64 {
 		var m0, m1 runtime.MemStats
 		runtime.GC()
@@ -274,24 +280,32 @@ func TestMemoryPerLine(t *testing.T) {
 		runtime.KeepAlive(b)
 		return int64(m1.HeapAlloc) - int64(m0.HeapAlloc)
 	}
-	if got := retained(New(), bytes.NewReader(in.Bytes())); got > size+64*n {
+	if got := retained(New(), bytes.NewReader(in)); got > size+64*n {
 		t.Errorf("memory-backed: keeps %d bytes for %d of input, want at most input + 64/line", got, size)
 	}
-	if got := retained(NewFrom(bytes.NewReader(in.Bytes())), bytes.NewReader(in.Bytes())); got > 64*n {
+	if got := retained(NewFrom(bytes.NewReader(in)), bytes.NewReader(in)); got > 64*n {
 		t.Errorf("file-backed: keeps %d bytes, want at most 64/line", got)
 	}
 }
 
-// BenchmarkFill indexes 100k styled lines.
+// BenchmarkFill indexes 100k styled lines into memory.
 func BenchmarkFill(b *testing.B) {
-	var in bytes.Buffer
-	for i := 0; i < 100_000; i++ {
-		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
-	}
-	b.SetBytes(int64(in.Len()))
+	in := styledLines(100_000)
+	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		Fill(bytes.NewReader(in.Bytes()), New(), func() {})
+		Fill(bytes.NewReader(in), New(), func() {})
+	}
+}
+
+// BenchmarkFillFile indexes 100k styled lines already on disk, keeping
+// none.
+func BenchmarkFillFile(b *testing.B) {
+	in := styledLines(100_000)
+	b.SetBytes(int64(len(in)))
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		Fill(bytes.NewReader(in), NewFrom(bytes.NewReader(in)), func() {})
 	}
 }
 
