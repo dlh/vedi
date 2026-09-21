@@ -1,0 +1,38 @@
+Three clicks on the same cell within 400ms of each other select the
+line there with its newline, as Shift+Down from its start would; the
+last line is selected to its end.
+
+-- size --
+40x5
+-- input --
+foo bar
+baz qux
+-- mouse --
+tripleclick 0 5
+-- screen --
+[foo bar ]
+baz qux
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 0
+-- keys --
+y
+-- clipboard --
+foo bar
+
+-- mouse --
+tripleclick 1 2
+-- screen --
+foo bar
+[baz qux]
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 7
+-- keys --
+y
+-- clipboard --
+baz qux

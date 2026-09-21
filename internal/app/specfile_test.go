@@ -131,8 +131,8 @@ func parseKey(tok string) (*tcell.EventKey, error) {
 	return nil, fmt.Errorf("unknown key %q", tok)
 }
 
-// A mouse action from a "-- mouse --" body. For click, dblclick, press,
-// release and move only the first cell is used; drag presses at the
+// A mouse action from a "-- mouse --" body. For click, dblclick,
+// tripleclick, press, release and move only the first cell is used; drag presses at the
 // first and releases at the second; wheel uses n and up; tick uses n.
 type mouseAction struct {
 	kind   string
@@ -143,8 +143,9 @@ type mouseAction struct {
 }
 
 // parseMouse turns a "-- mouse --" body into actions: "click R C",
-// "dblclick R C", "press R C", "release R C", "move R C", "drag R C R C",
-// "wheel up|down [N]" and "tick [N]", rows and columns 0-based.
+// "dblclick R C", "tripleclick R C", "press R C", "release R C",
+// "move R C", "drag R C R C", "wheel up|down [N]" and "tick [N]", rows
+// and columns 0-based.
 func parseMouse(s string) ([]mouseAction, error) {
 	f := strings.Fields(s)
 	var acts []mouseAction
@@ -173,7 +174,7 @@ func parseMouse(s string) ([]mouseAction, error) {
 		a := mouseAction{kind: f[i]}
 		i++
 		switch a.kind {
-		case "click", "dblclick", "press", "release", "move":
+		case "click", "dblclick", "tripleclick", "press", "release", "move":
 			v, err := ints(i, 2)
 			if err != nil {
 				return nil, err
@@ -260,13 +261,14 @@ func TestParseKeys(t *testing.T) {
 }
 
 func TestParseMouse(t *testing.T) {
-	acts, err := parseMouse("click 1 2 dblclick 3 4 drag 0 1 2 3 wheel up wheel down 5 click 0 0 press 1 1 release 2 0 move 5 0 tick tick 3")
+	acts, err := parseMouse("click 1 2 dblclick 3 4 tripleclick 5 6 drag 0 1 2 3 wheel up wheel down 5 click 0 0 press 1 1 release 2 0 move 5 0 tick tick 3")
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := []mouseAction{
 		{kind: "click", y: 1, x: 2},
 		{kind: "dblclick", y: 3, x: 4},
+		{kind: "tripleclick", y: 5, x: 6},
 		{kind: "drag", y: 0, x: 1, y2: 2, x2: 3},
 		{kind: "wheel", up: true, n: 1},
 		{kind: "wheel", up: false, n: 5},

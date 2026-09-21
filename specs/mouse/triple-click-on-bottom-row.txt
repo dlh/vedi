@@ -1,0 +1,47 @@
+A triple-click on the bottom text row selects the line there without
+moving the view: the cursor, after the line's newline, is off the
+screen, and a fourth click there selects the same line again. The
+next key scrolls the cursor into view.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+four
+five
+six
+-- mouse --
+tripleclick 3 0
+-- screen --
+one
+two
+three
+[four ]
+<stdin>  line 5/6  wrap           h help
+-- cursor --
+hidden
+-- mouse --
+move 3 0
+-- screen --
+one
+two
+three
+[four ]
+<stdin>  line 5/6  wrap           h help
+-- cursor --
+hidden
+-- keys --
+y
+-- screen --
+two
+three
+[four ]
+five
+copied 1 line                     h help
+-- cursor --
+3 0
+-- clipboard --
+four
+

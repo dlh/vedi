@@ -240,18 +240,17 @@ func (s *scenario) start() error {
 // mouse delivers one action as the events a terminal would send, or
 // for tick the auto-scroll timer's, armed at the last motion. The clock
 // moves on a second before every click or press, so two in a row are
-// never a double-click; dblclick presses twice without moving it.
+// never a double-click; dblclick and tripleclick press two or three
+// times without moving it.
 func (s *scenario) mouse(a mouseAction) {
 	send := func(x, y int, btn tcell.ButtonMask) {
 		s.app.Handle(tcell.NewEventMouse(x, y, btn, 0))
 		s.app.Draw()
 	}
 	switch a.kind {
-	case "click", "dblclick":
+	case "click", "dblclick", "tripleclick":
 		s.now = s.now.Add(time.Second)
-		send(a.x, a.y, tcell.Button1)
-		send(a.x, a.y, tcell.ButtonNone)
-		if a.kind == "dblclick" {
+		for i := 0; i < map[string]int{"click": 1, "dblclick": 2, "tripleclick": 3}[a.kind]; i++ {
 			send(a.x, a.y, tcell.Button1)
 			send(a.x, a.y, tcell.ButtonNone)
 		}

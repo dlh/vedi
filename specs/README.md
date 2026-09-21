@@ -56,7 +56,7 @@ Actions:
 | Section | Content |
 |---|---|
 | `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, with `Shift+`, `Ctrl+` and `Alt+`; a single character as itself, optionally with `Alt+`; `"quoted text"` typed rune by rune. |
-| `-- mouse --` | `click R C`, `dblclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), `wheel up` or `wheel down`, optionally followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
+| `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), `wheel up` or `wheel down`, optionally followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
 
 Assertions, checked at that point:

@@ -7,8 +7,8 @@ import (
 	"go.dlh.dev/vedi/internal/buffer"
 )
 
-// doubleClick is how soon a second press on the same cell selects the
-// word there.
+// doubleClick is how soon a press on the same cell as the last one
+// counts as the next click of a double or triple click.
 const doubleClick = 400 * time.Millisecond
 
 // wheelRows is how far one wheel tick scrolls the view.
@@ -53,7 +53,7 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 
 // press returns from help, ignores the status line, and otherwise puts
 // the cursor on the cell; a second press there within doubleClick
-// selects the word.
+// selects the word, a third the line.
 func (a *App) press(x, y int) {
 	a.act()
 	if a.helping {
@@ -64,13 +64,22 @@ func (a *App) press(x, y int) {
 		return
 	}
 	now := a.now()
-	double := x == a.lastPress.x && y == a.lastPress.y && now.Sub(a.lastPress.at) <= doubleClick
+	n := 1
+	if x == a.lastPress.x && y == a.lastPress.y && now.Sub(a.lastPress.at) <= doubleClick {
+		n = a.lastPress.n + 1
+	}
 	a.dragging, a.ticking = true, false
 	a.cur = a.cellPos(x, y)
-	a.lastPress = click{now, x, y, a.cur}
+	a.lastPress = click{now, x, y, a.cur, n}
 	a.anchor = nil
-	if double {
+	switch {
+	case n == 2:
 		a.selectWord()
+	case n >= 3:
+		// The cursor lands after the line's newline, maybe below the
+		// screen; scrolling it in would move the line under the pointer.
+		a.selectLine()
+		return
 	}
 	a.scrollToCursor()
 }
@@ -144,6 +153,17 @@ func (a *App) selectWord() {
 	}
 	a.anchor = &buffer.Pos{Line: a.cur.Line, Col: i}
 	a.cur.Col = j
+}
+
+// selectLine selects the cursor's line with its newline, as Shift+Down
+// from its start would; the last line to its end.
+func (a *App) selectLine() {
+	a.anchor = &buffer.Pos{Line: a.cur.Line}
+	if a.cur.Line+1 < a.buf.Len() {
+		a.cur = buffer.Pos{Line: a.cur.Line + 1}
+	} else {
+		a.cur = a.endPos()
+	}
 }
 
 // cellPos maps a screen cell to the position drawn there: y rows down

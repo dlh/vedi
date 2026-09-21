@@ -74,7 +74,7 @@ type App struct {
 	highlight  bool
 
 	now       func() time.Time
-	lastPress click // the last button-1 press, for double-clicks and drags
+	lastPress click // the last button-1 press, for multiple clicks and drags
 	held      bool  // button 1 is down
 	dragging  bool  // and went down on the text, so motion selects
 	dragX     int   // the cell the drag last reached
@@ -97,6 +97,7 @@ type click struct {
 	at   time.Time
 	x, y int
 	pos  buffer.Pos // the text under the cell, as laid out at the press
+	n    int        // presses in a row on this cell: 2 is a double-click
 }
 
 func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
