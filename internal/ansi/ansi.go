@@ -3,8 +3,7 @@ package ansi
 
 import (
 	"bytes"
-	"strconv"
-	"strings"
+	"math"
 	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
@@ -202,10 +201,11 @@ func applySGR(s tcell.Style, params []byte) tcell.Style {
 	if len(params) == 0 {
 		return tcell.StyleDefault
 	}
-	groups := strings.Split(string(params), ";")
-	for gi := 0; gi < len(groups); gi++ {
-		sub := strings.Split(groups[gi], ":")
-		n := atoi(sub[0])
+	for more := true; more; {
+		var group []byte
+		group, params, more = cut(params, ';')
+		code, sub, hasSub := cut(group, ':')
+		n := atoi(code)
 		switch {
 		case n == 0:
 			s = tcell.StyleDefault
@@ -216,7 +216,8 @@ func applySGR(s tcell.Style, params []byte) tcell.Style {
 		case n == 3:
 			s = s.Italic(true)
 		case n == 4:
-			s = s.Underline(len(sub) < 2 || sub[1] != "0")
+			style, _, _ := cut(sub, ':')
+			s = s.Underline(!hasSub || string(style) != "0")
 		case n == 7:
 			s = s.Reverse(true)
 		case n == 9:
@@ -244,13 +245,12 @@ func applySGR(s tcell.Style, params []byte) tcell.Style {
 		case n >= 100 && n <= 107:
 			s = s.Background(tcell.PaletteColor(n - 100 + 8))
 		case n == 38 || n == 48 || n == 58:
-			var args []string
-			if len(sub) > 1 {
-				args = sub[1:]
-			} else {
-				args, gi = takeColorArgs(groups, gi)
+			args, sep := sub, byte(':')
+			if !hasSub && more {
+				args, params, more = takeColorArgs(params)
+				sep = ';'
 			}
-			c, ok := extendedColor(args)
+			c, ok := extendedColor(args, sep)
 			if !ok {
 				continue
 			}
@@ -265,46 +265,93 @@ func applySGR(s tcell.Style, params []byte) tcell.Style {
 	return s
 }
 
-// takeColorArgs reads the semicolon-form arguments of the 38/48/58 at
-// groups[gi] ("5;n" or "2;r;g;b") and the index of the last group
-// taken. A malformed tail takes the rest.
-func takeColorArgs(groups []string, gi int) ([]string, int) {
-	if gi+1 < len(groups) {
-		switch groups[gi+1] {
-		case "5":
-			if gi+2 < len(groups) {
-				return groups[gi+1 : gi+3], gi + 2
-			}
-		case "2":
-			if gi+4 < len(groups) {
-				return groups[gi+1 : gi+5], gi + 4
-			}
-		}
+// takeColorArgs cuts the semicolon-form arguments of a 38/48/58 from
+// the groups after it: "5;n" or "2;r;g;b". A malformed tail is taken
+// whole and yields nothing.
+func takeColorArgs(rest []byte) (args, tail []byte, more bool) {
+	k := 0
+	switch kind, _, _ := cut(rest, ';'); string(kind) {
+	case "5":
+		k = 2
+	case "2":
+		k = 4
 	}
-	return nil, len(groups) - 1
+	if k == 0 || bytes.Count(rest, []byte{';'})+1 < k {
+		return nil, nil, false
+	}
+	return cutAfter(rest, ';', k)
 }
 
-// extendedColor decodes "5 n" or "2 [colorspace] r g b" arguments.
-func extendedColor(args []string) (tcell.Color, bool) {
-	if len(args) == 0 {
-		return 0, false
-	}
-	switch args[0] {
+// extendedColor decodes "5 n" or "2 [colorspace] r g b" arguments,
+// separated by sep.
+func extendedColor(args []byte, sep byte) (tcell.Color, bool) {
+	kind, rest, _ := cut(args, sep)
+	n := bytes.Count(args, []byte{sep}) + 1
+	switch string(kind) {
 	case "5":
-		if len(args) >= 2 {
-			return tcell.PaletteColor(clamp(atoi(args[1]))), true
+		if n >= 2 {
+			return tcell.PaletteColor(clamp(atoi(rest))), true
 		}
 	case "2":
-		if len(args) >= 4 {
-			rgb := args[len(args)-3:]
-			return tcell.NewRGBColor(int32(clamp(atoi(rgb[0]))), int32(clamp(atoi(rgb[1]))), int32(clamp(atoi(rgb[2])))), true
+		if n >= 4 {
+			_, rgb, _ := cutAfter(args, sep, n-3)
+			r, gb, _ := cut(rgb, sep)
+			g, b, _ := cut(gb, sep)
+			return tcell.NewRGBColor(int32(clamp(atoi(r))), int32(clamp(atoi(g))), int32(clamp(atoi(b)))), true
 		}
 	}
 	return 0, false
 }
 
-func atoi(s string) int {
-	n, _ := strconv.Atoi(s)
+// cut splits b at the first sep: the field before it, the rest after,
+// and whether there was one.
+func cut(b []byte, sep byte) (head, tail []byte, found bool) {
+	if i := bytes.IndexByte(b, sep); i >= 0 {
+		return b[:i], b[i+1:], true
+	}
+	return b, nil, false
+}
+
+// cutAfter splits b after its k-th field, which must exist.
+func cutAfter(b []byte, sep byte, k int) (head, tail []byte, found bool) {
+	end := 0
+	for ; k > 0; k-- {
+		i := bytes.IndexByte(b[end:], sep)
+		if i < 0 {
+			return b, nil, false
+		}
+		end += i + 1
+	}
+	return b[:end-1], b[end:], true
+}
+
+// atoi is strconv.Atoi's result with the error dropped: 0 for anything
+// but digits, the nearest extreme out of range.
+func atoi(b []byte) int {
+	neg := false
+	if len(b) > 0 && (b[0] == '+' || b[0] == '-') {
+		neg = b[0] == '-'
+		b = b[1:]
+	}
+	if len(b) == 0 {
+		return 0
+	}
+	n := 0
+	for _, c := range b {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		if n > (math.MaxInt-9)/10 {
+			if neg {
+				return math.MinInt
+			}
+			return math.MaxInt
+		}
+		n = n*10 + int(c-'0')
+	}
+	if neg {
+		return -n
+	}
 	return n
 }
 

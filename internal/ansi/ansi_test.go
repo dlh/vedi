@@ -83,6 +83,9 @@ func TestParseStyles(t *testing.T) {
 		{"underline style off", "\x1b[4m\x1b[4:0mx", []Run{{0, 1, d, "", ""}}},
 		{"underline color ignored", "\x1b[58:2:1:2:3mx", []Run{{0, 1, d, "", ""}}},
 		{"malformed 256", "\x1b[38;5mx", []Run{{0, 1, d, "", ""}}},
+		{"malformed rgb takes the tail", "\x1b[38;2;1;1mx", []Run{{0, 1, d, "", ""}}},
+		{"rgb then bold", "\x1b[38;2;1;2;3;1mx", []Run{{0, 1, d.Foreground(tcell.NewRGBColor(1, 2, 3)).Bold(true), "", ""}}},
+		{"huge code ignored", "\x1b[31m\x1b[99999999999999999999mx", []Run{{0, 1, red, "", ""}}},
 		{"unknown code ignored", "\x1b[99mx", []Run{{0, 1, d, "", ""}}},
 		{"kitty line prefix", "\x1b[m\x1b[31mx", []Run{{0, 1, red, "", ""}}},
 	}
@@ -203,5 +206,16 @@ func TestParserIsAValue(t *testing.T) {
 	red := tcell.StyleDefault.Foreground(tcell.PaletteColor(1))
 	if len(runs) != 1 || runs[0].Style != red {
 		t.Fatalf("copy's runs = %v, want red", runs)
+	}
+}
+
+// TestApplySGRAllocatesNothing: styling is per escape on every line,
+// so it must not touch the heap.
+func TestApplySGRAllocatesNothing(t *testing.T) {
+	for _, params := range []string{"", "0", "1;4", "38;5;208", "38;2;1;2;3", "38:2::1:2:3", "4:0", "1;38;5;208;48;2;1;2;3;22"} {
+		p := []byte(params)
+		if n := testing.AllocsPerRun(100, func() { applySGR(tcell.StyleDefault, p) }); n > 0 {
+			t.Errorf("applySGR(%q) allocates %v times", params, n)
+		}
 	}
 }
