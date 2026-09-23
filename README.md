@@ -21,6 +21,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --cursor-row N          put the cursor on row N of the last screenful
       --cursor-col N          put the cursor in column N of the last screenful
       --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+      --config FILE           read key bindings from FILE, not ~/.config/vedi/vedi.conf
       -v, --version           print the version
 
 With no files, `vedi` reads stdin. The status line names the files
@@ -64,6 +65,10 @@ the pager.
 The ⌘ keys are macOS only, and reach vedi where the terminal passes
 them on: kitty does, ⌘C when it has no selection of its own;
 Terminal.app keeps them.
+
+Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
+named by `--config`; `h` shows the bindings in effect. See
+[docs/configuration.md](docs/configuration.md).
 
 The selection is drawn in reverse video and search matches in black
 on bright yellow, whatever the text's own colors.

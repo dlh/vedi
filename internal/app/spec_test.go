@@ -12,6 +12,8 @@ import (
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
+	"go.dlh.dev/vedi/internal/config"
+	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 )
 
@@ -44,6 +46,7 @@ type scenario struct {
 	w, h     int
 	args     []string
 	macOS    bool
+	config   []input.Binding
 	nl       bool // the last input section ended with a newline
 	hasEOF   bool // the file has an eof section, so input stays open
 	finished bool // an eof section has run
@@ -100,6 +103,15 @@ func runScenario(t *testing.T, a archive) error {
 			default:
 				return fail("want macos or linux, got %q", os)
 			}
+		case "config":
+			if s.started {
+				return fail("must come before the app starts")
+			}
+			cfg, err := config.Parse("config", []byte(sec.body))
+			if err != nil {
+				return fail("%v", err)
+			}
+			s.config = cfg.Keys
 		case "input":
 			if s.finished {
 				return fail("input after eof")
@@ -244,6 +256,7 @@ func (s *scenario) start() error {
 	appOpts := opts.App(s.scr, files)
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
+	appOpts.Keys = config.Default(s.macOS).Apply(s.config)
 	s.app = app.New(s.scr, s.buf, appOpts)
 	s.notify()
 	return nil
@@ -393,6 +406,8 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"unknown section", "T\n-- input --\nhi\n-- screeen --\nho\n", "line 4, -- screeen --: unknown section"},
 		{"bad os", "T\n-- os --\nwindows\n-- input --\nhi\n", `line 2, -- os --: want macos or linux, got "windows"`},
 		{"os after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- os --\nmacos\n", "line 6, -- os --: must come before the app starts"},
+		{"config after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- config --\nmap q none\n", "line 6, -- config --: must come before the app starts"},
+		{"bad config", "T\n-- config --\nmap q nope\n-- input --\nhi\n", `line 2, -- config --: config:1: unknown action "nope"`},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/input"
 )
 
 // A section of a scenario file: "-- name --" then its body, ending in
@@ -56,14 +56,8 @@ func parseArchive(data string) archive {
 	return a
 }
 
-var namedKeys = map[string]tcell.Key{
-	"Up": tcell.KeyUp, "Down": tcell.KeyDown, "Left": tcell.KeyLeft, "Right": tcell.KeyRight,
-	"Home": tcell.KeyHome, "End": tcell.KeyEnd, "PgUp": tcell.KeyPgUp, "PgDn": tcell.KeyPgDn,
-	"Enter": tcell.KeyEnter, "Esc": tcell.KeyEscape, "Backspace": tcell.KeyBackspace2,
-}
-
 // parseKeys turns a "-- keys --" body into key events: named keys with
-// optional Shift+/Ctrl+/Alt+/Cmd+ prefixes, single characters as themselves,
+// optional Shift+/Ctrl+/Alt+/Cmd+ prefixes (see input.ParseKey), single characters as themselves,
 // "quoted text" typed rune by rune.
 func parseKeys(s string) ([]*tcell.EventKey, error) {
 	var keys []*tcell.EventKey
@@ -85,50 +79,13 @@ func parseKeys(s string) ([]*tcell.EventKey, error) {
 		} else {
 			s = ""
 		}
-		ev, err := parseKey(tok)
+		k, err := input.ParseKey(tok)
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, ev)
+		keys = append(keys, k.Event())
 	}
 	return keys, nil
-}
-
-func parseKey(tok string) (*tcell.EventKey, error) {
-	var mod tcell.ModMask
-	prefixes := []struct {
-		name string
-		mod  tcell.ModMask
-	}{{"Shift+", tcell.ModShift}, {"Ctrl+", tcell.ModCtrl}, {"Alt+", tcell.ModAlt}, {"Cmd+", tcell.ModMeta}}
-	for again := true; again; {
-		again = false
-		for _, p := range prefixes {
-			if strings.HasPrefix(tok, p.name) {
-				mod |= p.mod
-				tok = tok[len(p.name):]
-				again = true
-			}
-		}
-	}
-	if tok == "Space" {
-		return tcell.NewEventKey(tcell.KeyRune, ' ', mod), nil
-	}
-	if k, ok := namedKeys[tok]; ok {
-		return tcell.NewEventKey(k, 0, mod), nil
-	}
-	if r, size := utf8.DecodeRuneInString(tok); size == len(tok) && size > 0 {
-		if mod&tcell.ModCtrl != 0 && r >= 'a' && r <= 'z' {
-			return tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(r-'a'), 0, mod), nil
-		}
-		if mod&tcell.ModCtrl != 0 && r >= 'A' && r <= 'Z' {
-			return tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(r-'A'), 0, mod), nil
-		}
-		if mod&tcell.ModCtrl != 0 || mod&(tcell.ModShift|tcell.ModMeta) == tcell.ModShift {
-			return nil, fmt.Errorf("%q: modifiers on a character key", tok)
-		}
-		return tcell.NewEventKey(tcell.KeyRune, r, mod), nil
-	}
-	return nil, fmt.Errorf("unknown key %q", tok)
 }
 
 // A mouse action from a "-- mouse --" body. For click, dblclick,
@@ -251,8 +208,8 @@ func TestParseKeys(t *testing.T) {
 		t.Fatalf("got %d keys, want %d", len(keys), len(want))
 	}
 	for i := range want {
-		if keys[i].Key() != want[i].Key() || keys[i].Rune() != want[i].Rune() || keys[i].Modifiers() != want[i].Modifiers() {
-			t.Errorf("key %d = (%v %q %v), want (%v %q %v)", i, keys[i].Key(), keys[i].Rune(), keys[i].Modifiers(), want[i].Key(), want[i].Rune(), want[i].Modifiers())
+		if got, w := input.Normalize(keys[i]), input.Normalize(want[i]); got != w {
+			t.Errorf("key %d = %s, want %s", i, got, w)
 		}
 	}
 	for _, bad := range []string{"Bogus", "Shift+y", `"unterminated`} {

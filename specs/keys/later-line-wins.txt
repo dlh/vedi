@@ -1,0 +1,16 @@
+When a key is mapped twice the later line wins.
+
+-- config --
+map x quit
+map x help
+-- size --
+60x4
+-- input --
+abc
+-- keys --
+x
+-- screen --
+↑, ↓, ←, →, Home, End, j, k  Move the cursor
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
+help  any key returns

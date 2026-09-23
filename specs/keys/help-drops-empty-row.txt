@@ -1,0 +1,38 @@
+A help row whose actions have no key left is not shown: with w
+unbound there is no wrap row, and the last row moves up.
+
+-- config --
+map w none
+-- size --
+80x26
+-- input --
+abc
+-- keys --
+h
+-- screen --
+↑, ↓, ←, →, Home, End, j, k  Move the cursor
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
+d, ⌃D                        Down half a page
+u, ⌃U                        Up half a page
+⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F       Move by word
+g, G, <, >                   First line, last line
+⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End  Extend the selection
+⇧⇞, ⇧⇟                       Extend by a page
+⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→           Extend by word
+Click, drag                  Move the cursor, select; held at an edge, scroll
+Double-, triple-click        Select the word, the line
+Wheel                        Scroll
+⌃A                           Select all
+⎋                            Clear the selection, then the search highlight
+⌃C, y                        Copy the selection as plain text
+⏎                            Copy the selection and quit; with none, down a line
+/                            Search; ignores case if lowercase; empty repeats
+?                            Search backward
+↑ ↓ at the prompt            Recall earlier searches
+n, N                         Next and previous match; ? swaps them
+:                            Go to a line number
+q                            Quit
+h                            Show the key bindings
+
+help  any key returns

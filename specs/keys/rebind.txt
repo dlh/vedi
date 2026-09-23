@@ -1,0 +1,19 @@
+A map line in the config binds a key to an action; what the key did
+before goes. Here h moves left instead of showing help, and the
+status line stops offering it.
+
+-- config --
+map h left
+-- input --
+abc
+-- keys --
+End h
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap
+-- cursor --
+0 2

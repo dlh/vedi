@@ -1,0 +1,17 @@
+The status line's hint names the key that shows help, whatever it is
+bound to; with help unbound there is no hint.
+
+-- config --
+map h left
+map Alt+h help
+-- input --
+abc
+-- keys --
+Right
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap          ⌥H help

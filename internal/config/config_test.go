@@ -1,6 +1,11 @@
 package config
 
 import (
+	"errors"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -82,97 +87,43 @@ func TestDefaultOS(t *testing.T) {
 	}
 }
 
+// TestLookup covers what Lookup adds to Parse: the event side of
+// Normalize. The defaults themselves are covered by TestDefaultOS and
+// the specs.
 func TestLookup(t *testing.T) {
 	k := func(key tcell.Key, r rune, mod tcell.ModMask) *tcell.EventKey {
 		return tcell.NewEventKey(key, r, mod)
 	}
 	tests := []struct {
-		name string
-		ev   *tcell.EventKey
-		want input.Command
+		name  string
+		macOS bool
+		ev    *tcell.EventKey
+		want  input.Command
 	}{
-		{"up", k(tcell.KeyUp, 0, 0), input.Command{Action: input.Up, Extend: false}},
-		{"shift up", k(tcell.KeyUp, 0, tcell.ModShift), input.Command{Action: input.Up, Extend: true}},
-		{"shift down", k(tcell.KeyDown, 0, tcell.ModShift), input.Command{Action: input.Down, Extend: true}},
-		{"left", k(tcell.KeyLeft, 0, 0), input.Command{Action: input.Left, Extend: false}},
-		{"ctrl left", k(tcell.KeyLeft, 0, tcell.ModCtrl), input.Command{Action: input.WordLeft, Extend: false}},
-		{"ctrl shift right", k(tcell.KeyRight, 0, tcell.ModCtrl|tcell.ModShift), input.Command{Action: input.WordRight, Extend: true}},
-		{"alt left", k(tcell.KeyLeft, 0, tcell.ModAlt), input.Command{Action: input.WordLeft, Extend: false}},
-		{"alt shift right", k(tcell.KeyRight, 0, tcell.ModAlt|tcell.ModShift), input.Command{Action: input.WordRight, Extend: true}},
-		{"alt b", k(tcell.KeyRune, 'b', tcell.ModAlt), input.Command{Action: input.WordLeft, Extend: false}},
-		{"alt f", k(tcell.KeyRune, 'f', tcell.ModAlt), input.Command{Action: input.WordRight, Extend: false}},
-		{"shift home", k(tcell.KeyHome, 0, tcell.ModShift), input.Command{Action: input.Home, Extend: true}},
-		{"end", k(tcell.KeyEnd, 0, 0), input.Command{Action: input.End, Extend: false}},
-		{"shift pgup", k(tcell.KeyPgUp, 0, tcell.ModShift), input.Command{Action: input.PageUp, Extend: true}},
-		{"pgdn", k(tcell.KeyPgDn, 0, 0), input.Command{Action: input.PageDown, Extend: false}},
-		{"space", k(tcell.KeyRune, ' ', 0), input.Command{Action: input.PageDown, Extend: false}},
-		{"b", k(tcell.KeyRune, 'b', 0), input.Command{Action: input.PageUp, Extend: false}},
-		{"j", k(tcell.KeyRune, 'j', 0), input.Command{Action: input.Down, Extend: false}},
-		{"k", k(tcell.KeyRune, 'k', 0), input.Command{Action: input.Up, Extend: false}},
-		{"f", k(tcell.KeyRune, 'f', 0), input.Command{Action: input.PageDown, Extend: false}},
-		{"ctrl f", k(tcell.KeyCtrlF, 0, tcell.ModCtrl), input.Command{Action: input.PageDown, Extend: false}},
-		{"ctrl b", k(tcell.KeyCtrlB, 0, tcell.ModCtrl), input.Command{Action: input.PageUp, Extend: false}},
-		{"ctrl v", k(tcell.KeyCtrlV, 0, tcell.ModCtrl), input.Command{Action: input.PageDown, Extend: false}},
-		{"alt v", k(tcell.KeyRune, 'v', tcell.ModAlt), input.Command{Action: input.PageUp, Extend: false}},
-		{"d", k(tcell.KeyRune, 'd', 0), input.Command{Action: input.HalfPageDown, Extend: false}},
-		{"ctrl d", k(tcell.KeyCtrlD, 0, tcell.ModCtrl), input.Command{Action: input.HalfPageDown, Extend: false}},
-		{"u", k(tcell.KeyRune, 'u', 0), input.Command{Action: input.HalfPageUp, Extend: false}},
-		{"ctrl u", k(tcell.KeyCtrlU, 0, tcell.ModCtrl), input.Command{Action: input.HalfPageUp, Extend: false}},
-		{"g", k(tcell.KeyRune, 'g', 0), input.Command{Action: input.First, Extend: false}},
-		{"<", k(tcell.KeyRune, '<', tcell.ModShift), input.Command{Action: input.First, Extend: false}},
-		{">", k(tcell.KeyRune, '>', tcell.ModShift), input.Command{Action: input.Last, Extend: false}},
-		{"G never extends", k(tcell.KeyRune, 'G', tcell.ModShift), input.Command{Action: input.Last, Extend: false}},
-		{"ctrl a", k(tcell.KeyCtrlA, 0, tcell.ModCtrl), input.Command{Action: input.SelectAll, Extend: false}},
-		{"esc", k(tcell.KeyEscape, 0, 0), input.Command{Action: input.ClearSelection, Extend: false}},
-		{"ctrl c", k(tcell.KeyCtrlC, 0, tcell.ModCtrl), input.Command{Action: input.Copy, Extend: false}},
-		{"y", k(tcell.KeyRune, 'y', 0), input.Command{Action: input.Copy, Extend: false}},
-		{"enter", k(tcell.KeyEnter, 0, 0), input.Command{Action: input.CopyAndQuit, Extend: false}},
-		{"slash", k(tcell.KeyRune, '/', 0), input.Command{Action: input.Search, Extend: false}},
-		{"question", k(tcell.KeyRune, '?', tcell.ModShift), input.Command{Action: input.SearchBack, Extend: false}},
-		{"n", k(tcell.KeyRune, 'n', 0), input.Command{Action: input.SearchNext, Extend: false}},
-		{"N", k(tcell.KeyRune, 'N', 0), input.Command{Action: input.SearchPrev, Extend: false}},
-		{"colon", k(tcell.KeyRune, ':', 0), input.Command{Action: input.GoToLine, Extend: false}},
-		{"w", k(tcell.KeyRune, 'w', 0), input.Command{Action: input.ToggleWrap, Extend: false}},
-		{"q", k(tcell.KeyRune, 'q', 0), input.Command{Action: input.Quit, Extend: false}},
-		{"h", k(tcell.KeyRune, 'h', 0), input.Command{Action: input.Help, Extend: false}},
-		{"ctrl f without mod", k(tcell.KeyCtrlF, 0, 0), input.Command{Action: input.PageDown, Extend: false}},
-		{"ctrl home is unbound", k(tcell.KeyHome, 0, tcell.ModCtrl), input.Command{}},
-		{"unbound", k(tcell.KeyRune, 'z', 0), input.Command{}},
-		{"unbound key", k(tcell.KeyF1, 0, 0), input.Command{}},
+		{"up", false, k(tcell.KeyUp, 0, 0), input.Command{Action: input.Up}},
+		{"shift up extends", false, k(tcell.KeyUp, 0, tcell.ModShift), input.Command{Action: input.Up, Extend: true}},
+		{"ctrl on a named key", false, k(tcell.KeyLeft, 0, tcell.ModCtrl), input.Command{Action: input.WordLeft}},
+		{"alt on a rune", false, k(tcell.KeyRune, 'b', tcell.ModAlt), input.Command{Action: input.WordLeft}},
+		{"ctrl f", false, k(tcell.KeyCtrlF, 0, tcell.ModCtrl), input.Command{Action: input.PageDown}},
+		{"ctrl f without mod", false, k(tcell.KeyCtrlF, 0, 0), input.Command{Action: input.PageDown}},
+		{"shift on a character", false, k(tcell.KeyRune, '<', tcell.ModShift), input.Command{Action: input.First}},
+		{"G never extends", false, k(tcell.KeyRune, 'G', tcell.ModShift), input.Command{Action: input.Last}},
+		{"enter", false, k(tcell.KeyEnter, 0, 0), input.Command{Action: input.CopyAndQuit}},
+		{"unbound rune", false, k(tcell.KeyRune, 'z', 0), input.Command{}},
+		{"unbound key", false, k(tcell.KeyF1, 0, 0), input.Command{}},
+		{"unlisted modifier is unbound", false, k(tcell.KeyHome, 0, tcell.ModCtrl), input.Command{}},
+		{"cmd c", true, k(tcell.KeyRune, 'c', tcell.ModMeta), input.Command{Action: input.Copy}},
+		{"cmd shift G as a capital", true, k(tcell.KeyRune, 'G', tcell.ModMeta|tcell.ModShift), input.Command{Action: input.SearchPrev}},
+		{"cmd shift up extends", true, k(tcell.KeyUp, 0, tcell.ModMeta|tcell.ModShift), input.Command{Action: input.First, Extend: true}},
+		{"cmd q is unbound", true, k(tcell.KeyRune, 'q', tcell.ModMeta), input.Command{}},
+		{"cmd c elsewhere", false, k(tcell.KeyRune, 'c', tcell.ModMeta), input.Command{}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Default(false).Lookup(tc.ev); got != tc.want {
+			if got := Default(tc.macOS).Lookup(tc.ev); got != tc.want {
 				t.Fatalf("Lookup = %+v, want %+v", got, tc.want)
 			}
 		})
-	}
-	mac := []struct {
-		name string
-		ev   *tcell.EventKey
-		want input.Command
-	}{
-		{"cmd c", k(tcell.KeyRune, 'c', tcell.ModMeta), input.Command{Action: input.Copy, Extend: false}},
-		{"cmd a", k(tcell.KeyRune, 'a', tcell.ModMeta), input.Command{Action: input.SelectAll, Extend: false}},
-		{"cmd g", k(tcell.KeyRune, 'g', tcell.ModMeta), input.Command{Action: input.SearchNext, Extend: false}},
-		{"cmd shift g", k(tcell.KeyRune, 'g', tcell.ModMeta|tcell.ModShift), input.Command{Action: input.SearchPrev, Extend: false}},
-		{"cmd shift G as a capital", k(tcell.KeyRune, 'G', tcell.ModMeta|tcell.ModShift), input.Command{Action: input.SearchPrev, Extend: false}},
-		{"cmd up", k(tcell.KeyUp, 0, tcell.ModMeta), input.Command{Action: input.First, Extend: false}},
-		{"cmd shift up", k(tcell.KeyUp, 0, tcell.ModMeta|tcell.ModShift), input.Command{Action: input.First, Extend: true}},
-		{"cmd down", k(tcell.KeyDown, 0, tcell.ModMeta), input.Command{Action: input.Last, Extend: false}},
-		{"cmd left", k(tcell.KeyLeft, 0, tcell.ModMeta), input.Command{Action: input.Home, Extend: false}},
-		{"cmd shift right", k(tcell.KeyRight, 0, tcell.ModMeta|tcell.ModShift), input.Command{Action: input.End, Extend: true}},
-		{"cmd q is unbound", k(tcell.KeyRune, 'q', tcell.ModMeta), input.Command{}},
-	}
-	for _, tc := range mac {
-		t.Run("macOS "+tc.name, func(t *testing.T) {
-			if got := Default(true).Lookup(tc.ev); got != tc.want {
-				t.Fatalf("Lookup = %+v, want %+v", got, tc.want)
-			}
-		})
-	}
-	if got := Default(false).Lookup(k(tcell.KeyRune, 'c', tcell.ModMeta)); got != (input.Command{}) {
-		t.Errorf("cmd c elsewhere = %+v, want unbound", got)
 	}
 }
 
@@ -206,5 +157,44 @@ func BenchmarkLookup(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		m.Lookup(ev)
+	}
+}
+
+func TestPath(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "/xdg")
+	if got := Path(); got != "/xdg/vedi/vedi.conf" {
+		t.Errorf("Path = %q", got)
+	}
+	t.Setenv("XDG_CONFIG_HOME", "")
+	t.Setenv("HOME", "/home/u")
+	if got := Path(); got != "/home/u/.config/vedi/vedi.conf" {
+		t.Errorf("Path = %q", got)
+	}
+}
+
+func TestLoad(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "vedi.conf")
+	c, err := Load(path)
+	if !errors.Is(err, fs.ErrNotExist) || !reflect.DeepEqual(c, Config{}) {
+		t.Errorf("missing file: %+v, %v", c, err)
+	}
+	if c, err := Load(""); err != nil || !reflect.DeepEqual(c, Config{}) {
+		t.Errorf("no path: %+v, %v", c, err)
+	}
+	os.WriteFile(path, []byte("map h left\n"), 0o644)
+	c, err = Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Default(false).Apply(c.Keys).Lookup(tcell.NewEventKey(tcell.KeyRune, 'h', 0)); got != (input.Command{Action: input.Left}) {
+		t.Errorf("h = %+v", got)
+	}
+	os.WriteFile(path, []byte("map h left\n\nmap x foo\n"), 0o644)
+	if _, err := Load(path); err == nil || err.Error() != path+`:3: unknown action "foo"` {
+		t.Errorf("bad file err = %v", err)
+	}
+	if _, err := Load(dir); err == nil {
+		t.Error("a directory reads without error")
 	}
 }

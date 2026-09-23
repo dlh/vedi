@@ -1,0 +1,15 @@
+The action none unbinds a key: q no longer quits.
+
+-- config --
+map q none
+-- input --
+abc
+-- keys --
+q
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap           h help

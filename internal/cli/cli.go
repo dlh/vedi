@@ -24,6 +24,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N          put the cursor on row N of the last screenful
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+  --config FILE           read key bindings from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
   -v, --version           print the version
 
@@ -38,6 +39,7 @@ type Options struct {
 	Follow        bool
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd  string
+	Config        string // "" for the default location
 	Help          bool
 	Version       bool
 }
@@ -57,9 +59,11 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 		Follow:        o.Follow,
 		Screen:        o.Screen,
 		Copier:        clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
-		MacOS:         runtime.GOOS == "darwin",
+		MacOS:         macOS,
 	}
 }
+
+var macOS = runtime.GOOS == "darwin"
 
 func inputName(files []string) string {
 	if len(files) == 0 {
@@ -81,6 +85,7 @@ var valueFlags = map[string]func(*Options, string) error{
 	"--cursor-row":    screenInt(1, func(s *app.Screen) *int { return &s.CursorRow }),
 	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
 	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
+	"--config":        func(o *Options, v string) error { o.Config = v; return nil },
 }
 
 // screenInt returns a setter that parses an integer of at least min

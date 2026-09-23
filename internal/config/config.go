@@ -4,6 +4,8 @@ package config
 import (
 	_ "embed"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -65,4 +67,32 @@ func Default(macOS bool) input.Keymap {
 		}
 	}
 	return m
+}
+
+// Path is where the file is looked for: $XDG_CONFIG_HOME/vedi/vedi.conf,
+// else ~/.config/vedi/vedi.conf. Empty when there is no home directory.
+func Path() string {
+	dir := os.Getenv("XDG_CONFIG_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		dir = filepath.Join(home, ".config")
+	}
+	return filepath.Join(dir, "vedi", "vedi.conf")
+}
+
+// Load reads and parses the file at path; no path is an empty Config.
+// A missing file is an fs.ErrNotExist, for the caller to forgive or
+// not; a bad line names the file and line.
+func Load(path string) (Config, error) {
+	if path == "" {
+		return Config{}, nil
+	}
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return Config{}, err
+	}
+	return Parse(path, src)
 }

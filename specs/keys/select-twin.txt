@@ -1,0 +1,18 @@
+Every movement has a select_ twin that extends the selection, so a
+letter can extend: L is select_right.
+
+-- config --
+map L select_right
+-- input --
+abc
+-- keys --
+L L y
+-- screen --
+[ab]c
+
+
+
+
+copied 1 line                     h help
+-- clipboard --
+ab

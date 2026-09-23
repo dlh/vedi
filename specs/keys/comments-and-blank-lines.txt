@@ -1,0 +1,11 @@
+Blank lines and lines starting with # are skipped.
+
+-- config --
+# x quits
+
+map x quit
+-- input --
+abc
+-- keys --
+x
+-- quit --

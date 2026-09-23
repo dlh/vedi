@@ -2,8 +2,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"runtime/debug"
 
@@ -11,6 +13,7 @@ import (
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
+	"go.dlh.dev/vedi/internal/config"
 )
 
 // openInput is the files, or stdin when there are none; "-" names
@@ -80,6 +83,16 @@ func main() {
 		fmt.Println("vedi", version)
 		return
 	}
+	// The default config may be missing; one named with --config may not.
+	path := config.Path()
+	if opts.Config != "" {
+		path = opts.Config
+	}
+	cfg, err := config.Load(path)
+	if err != nil && (opts.Config != "" || !errors.Is(err, fs.ErrNotExist)) {
+		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
+		os.Exit(1)
+	}
 	in, src, closeInput, err := openInput(files)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
@@ -105,7 +118,9 @@ func main() {
 	if src != nil {
 		buf = buffer.NewFrom(src)
 	}
-	a := app.New(scr, buf, opts.App(scr, files))
+	appOpts := opts.App(scr, files)
+	appOpts.Keys = config.Default(appOpts.MacOS).Apply(cfg.Keys)
+	a := app.New(scr, buf, appOpts)
 	go buffer.Fill(in, buf, a.Notify)
 	a.Run()
 	if a.PrintText() {

@@ -1,0 +1,41 @@
+The help screen lists the keys in effect: a rebound key moves to its
+new action's row, at the end; a row too wide for the key column goes
+on below, keys only.
+
+-- config --
+map h left
+map Alt+h help
+-- size --
+80x27
+-- input --
+abc
+-- keys --
+Alt+h
+-- screen --
+↑, ↓, ←, →, Home, End, j, k  Move the cursor
+h
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
+d, ⌃D                        Down half a page
+u, ⌃U                        Up half a page
+⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F       Move by word
+g, G, <, >                   First line, last line
+⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End  Extend the selection
+⇧⇞, ⇧⇟                       Extend by a page
+⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→           Extend by word
+Click, drag                  Move the cursor, select; held at an edge, scroll
+Double-, triple-click        Select the word, the line
+Wheel                        Scroll
+⌃A                           Select all
+⎋                            Clear the selection, then the search highlight
+⌃C, y                        Copy the selection as plain text
+⏎                            Copy the selection and quit; with none, down a line
+/                            Search; ignores case if lowercase; empty repeats
+?                            Search backward
+↑ ↓ at the prompt            Recall earlier searches
+n, N                         Next and previous match; ? swaps them
+:                            Go to a line number
+w                            Toggle wrap / nowrap
+q                            Quit
+⌥H                           Show the key bindings
+help  any key returns
