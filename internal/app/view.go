@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/ansi"
@@ -131,30 +132,62 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	return curX, ok
 }
 
-// drawHelp draws the key bindings, keys in a column as wide as the
-// widest, as many as fit above the status line.
+// helpKeyWidth is the least the help's key column is narrowed to: the
+// widest default row, so the defaults never wrap for want of room.
+const helpKeyWidth = 27
+
+// drawHelp draws the key bindings: keys in a column, what they do
+// beside. The column is as wide as the widest keys, but no wider than
+// leaves room for the widest doc, down to helpKeyWidth; keys that
+// overflow it continue on the next row.
 func (a *App) drawHelp() {
 	w, _ := a.scr.Size()
-	bindings := input.Bindings(a.macOS)
-	keyw := 0
-	for _, b := range bindings {
-		keyw = max(keyw, len([]rune(b.Keys)))
+	rows := a.keys.Help()
+	keyw, docw := 0, 0
+	for _, r := range rows {
+		keyw = max(keyw, len([]rune(strings.Join(r.Keys, ", "))))
+		docw = max(docw, len([]rune(r.Doc)))
 	}
-	for y, b := range bindings {
-		if y >= a.textRows() {
-			break
-		}
-		row := []rune(fmt.Sprintf("%-*s  %s", keyw, b.Keys, b.Doc))
-		for x, r := range row {
-			put(a.scr, x, y, w, r, tcell.StyleDefault)
+	keyw = min(keyw, max(w-2-docw, helpKeyWidth))
+	y := 0
+	for _, r := range rows {
+		doc := r.Doc
+		for _, keys := range wrapKeys(r.Keys, keyw) {
+			if y >= a.textRows() {
+				return
+			}
+			for x, c := range []rune(fmt.Sprintf("%-*s  %s", keyw, keys, doc)) {
+				put(a.scr, x, y, w, c, tcell.StyleDefault)
+			}
+			doc = ""
+			y++
 		}
 	}
 }
 
+// wrapKeys joins keys with ", " into lines of at most width runes; a
+// key wider than that gets a line of its own.
+func wrapKeys(keys []string, width int) []string {
+	var lines []string
+	line := ""
+	for _, k := range keys {
+		switch {
+		case line == "":
+			line = k
+		case len([]rune(line))+2+len([]rune(k)) <= width:
+			line += ", " + k
+		default:
+			lines = append(lines, line)
+			line = k
+		}
+	}
+	return append(lines, line)
+}
+
 // drawStatus draws statusText in reverse video on the bottom row, which
-// needs two rows to exist, with "h help" at the right edge unless help
-// is up, a prompt is open, or it would come within two spaces of the
-// text.
+// needs two rows to exist, with "h help", naming whatever key shows
+// help, at the right edge unless help is unbound or up, a prompt is
+// open, or it would come within two spaces of the text.
 func (a *App) drawStatus() {
 	w, h := a.scr.Size()
 	if h < 2 {
@@ -166,8 +199,9 @@ func (a *App) drawStatus() {
 	}
 	text := []rune(a.statusText())
 	width := drawRunes(a.scr, 0, h-1, w, text, st)
-	hint := []rune("h help")
-	if !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
+	k, ok := a.keys.Find(input.Command{Action: input.Help})
+	hint := []rune(k.String() + " help")
+	if ok && !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
 		drawRunes(a.scr, w-len(hint), h-1, w, hint, st)
 	}
 }

@@ -8,9 +8,9 @@ abc
 -- keys --
 h
 -- screen --
-↑ ↓ ← →, Home, End        Move the cursor
-j, k                      Down a line, up a line
-⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
-⌃V, ⌥V                    Down a page, up a page
-d, ⌃D, u, ⌃U              Move by half a page
+↑, ↓, ←, →, Home, End, j, k  Move the cursor
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
+d, ⌃D                        Down half a page
+u, ⌃U                        Up half a page
 help  any key returns

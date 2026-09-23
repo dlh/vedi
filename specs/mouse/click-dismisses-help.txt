@@ -11,9 +11,9 @@ Down h
 -- mouse --
 wheel down
 -- screen --
-↑ ↓ ← →, Home, End        Move the curso
-j, k                      Down a line, u
-⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
+↑, ↓, ←, →, Home, End, j, k  Move the cu
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
 help  any key returns
 -- mouse --
 click 0 0

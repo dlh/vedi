@@ -35,15 +35,14 @@ the pager.
 
 | Key | Action |
 |---|---|
-| ↑ ↓ ← →, Home, End | Move the cursor |
-| j, k | Down a line, up a line |
-| ⇞ ⇟, Space, f, ⌃F, b, ⌃B | Move by a page |
-| ⌃V, ⌥V | Down a page, up a page |
-| d, ⌃D, u, ⌃U | Move by half a page |
+| ↑, ↓, ←, →, Home, End, j, k, ⌘←, ⌘→ | Move the cursor |
+| ⇟, Space, f, ⌃F, ⌃V | Down a page |
+| ⇞, b, ⌃B, ⌥V | Up a page |
+| d, ⌃D | Down half a page |
+| u, ⌃U | Up half a page |
 | ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F | Move by word |
-| g, G, <, > | First line, last line |
-| ⌘←, ⌘→, ⌘↑, ⌘↓ | Line start and end, first and last line |
-| ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
+| g, G, <, >, ⌘↑, ⌘↓ | First line, last line |
+| ⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End, ⇧⌘←, ⇧⌘→, ⇧⌘↑, ⇧⌘↓ | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
 | Click, drag | Move the cursor, select; held at an edge, scroll |
@@ -53,7 +52,7 @@ the pager.
 | ⎋ | Clear the selection, then the search highlight |
 | ⌃C, ⌘C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
-| / | Search; ignores case unless capitalized; empty repeats |
+| / | Search; ignores case if lowercase; empty repeats |
 | ? | Search backward |
 | ↑ ↓ at the prompt | Recall earlier searches |
 | n, N, ⌘G, ⇧⌘G | Next and previous match; ? swaps them |

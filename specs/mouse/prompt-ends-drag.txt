@@ -61,10 +61,10 @@ h
 -- mouse --
 tick 2
 -- screen --
-↑ ↓ ← →, Home, End        Move the curso
-j, k                      Down a line, u
-⇞ ⇟, Space, f, ⌃F, b, ⌃B  Move by a page
-⌃V, ⌥V                    Down a page, u
+↑, ↓, ←, →, Home, End, j, k  Move the cu
+⇟, Space, f, ⌃F, ⌃V          Down a page
+⇞, b, ⌃B, ⌥V                 Up a page
+d, ⌃D                        Down half a
 help  any key returns
 -- mouse --
 release 4 0
