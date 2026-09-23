@@ -18,8 +18,8 @@ const wheelRows = 3
 const autoScrollTick = 50 * time.Millisecond
 
 // handleMouse: button 1 places the cursor and drags the selection, the
-// wheel scrolls. A press dismisses help like any key; the wheel is
-// ignored there. The mouse is ignored at the / and : prompts, and a
+// wheel scrolls, the bindings too. A press returns from help like any
+// key. The mouse is ignored at the / and : prompts, and a
 // press from before one is forgotten.
 func (a *App) handleMouse(ev *tcell.EventMouse) {
 	if a.searching || a.gotoing {
@@ -29,14 +29,14 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 	x, y := ev.Position()
 	btn := ev.Buttons()
 	switch {
+	case btn&tcell.WheelUp != 0 && a.helping:
+		a.scrollHelp(-wheelRows)
+	case btn&tcell.WheelDown != 0 && a.helping:
+		a.scrollHelp(wheelRows)
 	case btn&tcell.WheelUp != 0:
-		if !a.helping {
-			a.scrollView(-wheelRows)
-		}
+		a.scrollView(-wheelRows)
 	case btn&tcell.WheelDown != 0:
-		if !a.helping {
-			a.scrollView(wheelRows)
-		}
+		a.scrollView(wheelRows)
 	case btn&tcell.Button1 == 0:
 		a.held, a.dragging = false, false
 	case a.held:
@@ -57,7 +57,7 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 func (a *App) press(x, y int) {
 	a.act()
 	if a.helping {
-		a.helping = false
+		a.hideHelp()
 		return
 	}
 	if y >= a.textRows() {

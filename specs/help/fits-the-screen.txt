@@ -1,5 +1,5 @@
-The bindings are cut at the status line when the screen is too short
-for them all.
+The bindings are laid out 80 columns wide whatever the screen, and
+cut at the right edge and the status line when the screen is smaller.
 
 -- size --
 60x6
@@ -8,9 +8,9 @@ abc
 -- keys --
 h
 -- screen --
-↑, ↓, ←, →, Home, End, j, k  Move the cursor
-⇟, Space, f, ⌃F, ⌃V          Down a page
-⇞, b, ⌃B, ⌥V                 Up a page
-d, ⌃D                        Down half a page
-u, ⌃U                        Up half a page
-help  any key returns
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  h                                       Show the key bindi
+help  motion scrolls, any other key returns

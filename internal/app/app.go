@@ -63,10 +63,11 @@ type App struct {
 
 	status string // one-shot message, cleared by the next key or click
 
-	helping    bool // the key bindings are shown instead of the text
-	searching  bool // the / or ? prompt is open
-	promptBack bool // it is ?
-	backward   bool // the last search was ?, and so n goes up and N down
+	helping    bool      // the key bindings are shown instead of the text
+	text       *textView // the text and its view, set aside while help is up
+	searching  bool      // the / or ? prompt is open
+	promptBack bool      // it is ?
+	backward   bool      // the last search was ?, and so n goes up and N down
 	query      []rune
 	history    [][]rune // queries searched for, oldest first
 	histPos    int      // the entry query shows; len(history) is the draft
@@ -204,11 +205,16 @@ func (a *App) Handle(ev tcell.Event) bool {
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
 		a.scr.Sync()
-		a.scrollToCursor()
+		if a.helping {
+			a.scrollHelp(0)
+			a.scrollHelpSideways(0)
+		} else {
+			a.scrollToCursor()
+		}
 	case *tcell.EventKey:
 		a.act()
 		if a.helping {
-			a.helping = false
+			a.helpKey(a.keys.Lookup(ev))
 			return false
 		}
 		if a.searching {
@@ -396,7 +402,7 @@ func (a *App) handleKey(c input.Command) bool {
 		}
 		a.xoff = 0
 	case input.Help:
-		a.helping, a.dragging = true, false
+		a.showHelp()
 	case input.Quit:
 		return true
 	}
@@ -810,4 +816,99 @@ func (a *App) scrollToCursor() {
 	} else {
 		a.xoff = 0
 	}
+}
+
+// textView is what help sets aside: the text and how it was shown.
+type textView struct {
+	buf       *buffer.Buffer
+	cur, top  buffer.Pos
+	anchor    *buffer.Pos
+	xoff      int
+	mode      layout.Mode
+	highlight bool
+}
+
+// showHelp puts the bindings in the text's place, laid out as text
+// in NoWrap mode, so drawing and scrolling are the text's.
+func (a *App) showHelp() {
+	a.helping, a.dragging = true, false
+	a.text = &textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight}
+	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight = a.helpBuffer(), buffer.Pos{}, buffer.Pos{}, nil, 0, layout.NoWrap, false
+	a.laidOut = nil
+}
+
+// helpStep is how far Left and Right scroll the bindings sideways.
+const helpStep = 8
+
+// helpBuffer is the bindings laid out as text.
+func (a *App) helpBuffer() *buffer.Buffer {
+	b := buffer.New()
+	b.Write([]byte(helpText(a.keys.Help())))
+	b.Finish(nil, true)
+	return b
+}
+
+// hideHelp puts the text back as it was.
+func (a *App) hideHelp() {
+	t := a.text
+	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight = t.buf, t.cur, t.top, t.anchor, t.xoff, t.mode, t.highlight
+	a.helping, a.text, a.laidOut = false, nil, nil
+}
+
+// helpKey scrolls the bindings by a motion; any other key returns.
+func (a *App) helpKey(c input.Command) {
+	if c.Extend || !input.IsMovement(c.Action) {
+		a.hideHelp()
+		return
+	}
+	n := a.buf.Len()
+	switch c.Action {
+	case input.Up:
+		a.scrollHelp(-1)
+	case input.Down:
+		a.scrollHelp(1)
+	case input.PageUp:
+		a.scrollHelp(-a.pageRows())
+	case input.PageDown:
+		a.scrollHelp(a.pageRows())
+	case input.HalfPageUp:
+		a.scrollHelp(-a.halfPageRows())
+	case input.HalfPageDown:
+		a.scrollHelp(a.halfPageRows())
+	case input.First:
+		a.scrollHelp(-n)
+	case input.Last:
+		a.scrollHelp(n)
+	case input.Left, input.WordLeft:
+		a.scrollHelpSideways(-helpStep)
+	case input.Right, input.WordRight:
+		a.scrollHelpSideways(helpStep)
+	case input.Home:
+		a.scrollHelpSideways(-a.helpWidth())
+	case input.End:
+		a.scrollHelpSideways(a.helpWidth())
+	}
+}
+
+// scrollHelp moves the bindings by n rows, no further than the last
+// page; each line is a row, the mode being NoWrap.
+func (a *App) scrollHelp(n int) {
+	a.top = buffer.Pos{Line: max(0, min(a.top.Line+n, a.buf.Len()-a.textRows()))}
+}
+
+// scrollHelpSideways moves the bindings by n columns, no further than
+// brings the widest line's end to the right edge.
+func (a *App) scrollHelpSideways(n int) {
+	w, _ := a.scr.Size()
+	a.xoff = max(0, min(a.xoff+n, a.helpWidth()-w))
+}
+
+// helpWidth is the widest line of the bindings, in cells.
+func (a *App) helpWidth() int {
+	width := 0
+	for i := 0; i < a.buf.Len(); i++ {
+		xs := a.lineLayout(i).Cells()
+		width = max(width, xs[len(xs)-1])
+	}
+	return width
 }

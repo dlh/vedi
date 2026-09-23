@@ -14,4 +14,4 @@ abc
 
 
 
-<stdin>  line 1/1  wrap          ⌥H help
+<stdin>  line 1/1  wrap       Alt+h help

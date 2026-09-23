@@ -103,15 +103,16 @@ func TestParseKey(t *testing.T) {
 	}
 }
 
+// TestKeyString: the help name is the config spelling.
 func TestKeyString(t *testing.T) {
 	tests := []struct{ name, want string }{
-		{"Up", "↑"}, {"Down", "↓"}, {"Left", "←"}, {"Right", "→"},
-		{"Home", "Home"}, {"End", "End"}, {"PgUp", "⇞"}, {"PgDn", "⇟"},
-		{"Enter", "⏎"}, {"Esc", "⎋"}, {"Backspace", "Backspace"}, {"Space", "Space"},
+		{"Up", "Up"}, {"Down", "Down"}, {"Left", "Left"}, {"Right", "Right"},
+		{"Home", "Home"}, {"End", "End"}, {"PgUp", "PgUp"}, {"PgDn", "PgDn"},
+		{"Enter", "Enter"}, {"Esc", "Esc"}, {"Backspace", "Backspace"}, {"Space", "Space"},
 		{"j", "j"}, {"G", "G"}, {"<", "<"},
-		{"Ctrl+f", "⌃F"}, {"Ctrl+a", "⌃A"}, {"Alt+v", "⌥V"}, {"Alt+b", "⌥B"},
-		{"Shift+Up", "⇧↑"}, {"Ctrl+Shift+Left", "⌃⇧←"}, {"Alt+Shift+Right", "⌥⇧→"},
-		{"Cmd+c", "⌘C"}, {"Cmd+Shift+g", "⇧⌘G"}, {"Cmd+G", "⇧⌘G"}, {"Cmd+Left", "⌘←"},
+		{"Ctrl+f", "Ctrl+f"}, {"Ctrl+F", "Ctrl+f"}, {"Alt+v", "Alt+v"}, {"Alt+V", "Alt+V"},
+		{"Shift+Up", "Shift+Up"}, {"Ctrl+Shift+Left", "Ctrl+Shift+Left"}, {"Shift+Alt+Right", "Alt+Shift+Right"},
+		{"Cmd+c", "Cmd+c"}, {"Cmd+Shift+g", "Cmd+Shift+g"}, {"Cmd+G", "Cmd+Shift+g"}, {"Cmd+Left", "Cmd+Left"},
 	}
 	for _, tc := range tests {
 		k, err := ParseKey(tc.name)
@@ -120,6 +121,9 @@ func TestKeyString(t *testing.T) {
 		}
 		if got := k.String(); got != tc.want {
 			t.Errorf("%s: String = %q, want %q", tc.name, got, tc.want)
+		}
+		if back, err := ParseKey(k.String()); err != nil || back != k {
+			t.Errorf("%s: ParseKey(%q) = %+v, %v; want %+v", tc.name, k.String(), back, err, k)
 		}
 	}
 }

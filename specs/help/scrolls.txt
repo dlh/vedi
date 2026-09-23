@@ -1,0 +1,61 @@
+The motions scroll the bindings by the keys bound to them: a row, a
+page, half a page, to the ends, and no further than the last page.
+
+-- size --
+60x6
+-- input --
+abc
+-- keys --
+h Down
+-- screen --
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  h                                       Show the key bindi
+  q                                       Quit.
+help  motion scrolls, any other key returns
+-- keys --
+PgDn
+-- screen --
+  w                                       Toggle wrap / nowr
+ -----------------------------------------------------------
+
+                                     MOVING
+
+help  motion scrolls, any other key returns
+-- keys --
+G
+-- screen --
+                                          empty repeats.
+  ?                                       Search backward.
+  Up, Down at the prompt                  Recall earlier sea
+  n  N                                    Next and previous
+ -----------------------------------------------------------
+help  motion scrolls, any other key returns
+-- keys --
+Down
+-- screen --
+                                          empty repeats.
+  ?                                       Search backward.
+  Up, Down at the prompt                  Recall earlier sea
+  n  N                                    Next and previous
+ -----------------------------------------------------------
+help  motion scrolls, any other key returns
+-- keys --
+u
+-- screen --
+
+  /                                       Search; ignores ca
+                                          empty repeats.
+  ?                                       Search backward.
+  Up, Down at the prompt                  Recall earlier sea
+help  motion scrolls, any other key returns
+-- keys --
+g k
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  h                                       Show the key bindi
+help  motion scrolls, any other key returns

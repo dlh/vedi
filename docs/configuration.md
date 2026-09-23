@@ -37,7 +37,7 @@ of clearing it: `left` and `select_left`, `page_down` and
 
 ```
 # vedi's default bindings: "map <key> <action>", later lines winning.
-# ⌘ lines are macOS only. See docs/configuration.md.
+# Cmd+ lines are macOS only. See docs/configuration.md.
 
 # Move the cursor
 map Up up
@@ -89,14 +89,14 @@ map Cmd+Up first
 map Cmd+Down last
 
 # Extend the selection
+map J select_down
+map K select_up
 map Shift+Up select_up
 map Shift+Down select_down
 map Shift+Left select_left
 map Shift+Right select_right
 map Shift+Home select_home
 map Shift+End select_end
-map J select_down
-map K select_up
 map Cmd+Shift+Left select_home
 map Cmd+Shift+Right select_end
 map Cmd+Shift+Up select_first

@@ -1,4 +1,4 @@
-On macOS ⌘G and ⇧⌘G go to the next and previous match, like n and N.
+On macOS Cmd+g and Cmd+Shift+g go to the next and previous match, like n and N.
 
 -- os --
 macos

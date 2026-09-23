@@ -9,8 +9,10 @@ import (
 // its binding would vanish from the help screen.
 func TestHelpCoversActions(t *testing.T) {
 	var covered []Command
-	for _, h := range helpRows {
-		covered = append(covered, h.cmds...)
+	for _, s := range helpSections {
+		for _, h := range s.rows {
+			covered = append(covered, h.cmds...)
+		}
 	}
 	for a := Up; a <= Help; a++ {
 		if !slices.Contains(covered, Command{Action: a}) {

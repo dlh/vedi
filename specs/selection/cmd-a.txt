@@ -1,4 +1,4 @@
-On macOS ⌘A selects everything, like ⌃A.
+On macOS Cmd+a selects everything, like Ctrl+a.
 
 -- os --
 macos

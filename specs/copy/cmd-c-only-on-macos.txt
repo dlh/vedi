@@ -1,4 +1,4 @@
-Off macOS there is no ⌘ key, so ⌘C is a plain c: unbound. Nothing is
+Off macOS there is no Cmd key, so Cmd+c is a plain c: unbound. Nothing is
 copied and the selection stays.
 
 -- os --

@@ -74,9 +74,9 @@ var namedKeys = map[string]tcell.Key{
 }
 
 var keyNames = map[tcell.Key]string{
-	tcell.KeyUp: "↑", tcell.KeyDown: "↓", tcell.KeyLeft: "←", tcell.KeyRight: "→",
-	tcell.KeyHome: "Home", tcell.KeyEnd: "End", tcell.KeyPgUp: "⇞", tcell.KeyPgDn: "⇟",
-	tcell.KeyEnter: "⏎", tcell.KeyEscape: "⎋", tcell.KeyBackspace: "Backspace",
+	tcell.KeyUp: "Up", tcell.KeyDown: "Down", tcell.KeyLeft: "Left", tcell.KeyRight: "Right",
+	tcell.KeyHome: "Home", tcell.KeyEnd: "End", tcell.KeyPgUp: "PgUp", tcell.KeyPgDn: "PgDn",
+	tcell.KeyEnter: "Enter", tcell.KeyEscape: "Esc", tcell.KeyBackspace: "Backspace",
 }
 
 // ParseKey reads a key name: Up Down Left Right Home End PgUp PgDn
@@ -116,38 +116,37 @@ func ParseKey(name string) (Key, error) {
 	return Normalize(tcell.NewEventKey(tcell.KeyRune, r, mod)), nil
 }
 
-// String is the help name: ⌃ ⌥ ⇧ ⌘, then the key. A character is
-// upper case under a modifier, as ⌥V.
+// String is the help name, spelled as the config file spells the
+// key: Ctrl+ Alt+ Cmd+ Shift+, then the key, so ParseKey reads it
+// back.
 func (k Key) String() string {
 	ctrl := k.Mod&tcell.ModCtrl != 0
 	var name string
 	switch {
 	case k.Key == tcell.KeyRune && k.Rune == ' ':
 		name = "Space"
-	case k.Key == tcell.KeyRune && k.Mod != 0:
-		name = strings.ToUpper(string(k.Rune))
 	case k.Key == tcell.KeyRune:
 		name = string(k.Rune)
 	case keyNames[k.Key] != "":
 		name = keyNames[k.Key]
 	case k.Key >= tcell.KeyCtrlA && k.Key <= tcell.KeyCtrlZ:
 		ctrl = true
-		name = string(rune('A' + k.Key - tcell.KeyCtrlA))
+		name = string(rune('a' + k.Key - tcell.KeyCtrlA))
 	default:
 		name = tcell.KeyNames[k.Key]
 	}
 	var sb strings.Builder
 	if ctrl {
-		sb.WriteString("⌃")
+		sb.WriteString("Ctrl+")
 	}
 	if k.Mod&tcell.ModAlt != 0 {
-		sb.WriteString("⌥")
-	}
-	if k.Mod&tcell.ModShift != 0 {
-		sb.WriteString("⇧")
+		sb.WriteString("Alt+")
 	}
 	if k.Mod&tcell.ModMeta != 0 {
-		sb.WriteString("⌘")
+		sb.WriteString("Cmd+")
+	}
+	if k.Mod&tcell.ModShift != 0 {
+		sb.WriteString("Shift+")
 	}
 	sb.WriteString(name)
 	return sb.String()

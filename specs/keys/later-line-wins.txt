@@ -4,13 +4,15 @@ When a key is mapped twice the later line wins.
 map x quit
 map x help
 -- size --
-60x4
+60x6
 -- input --
 abc
 -- keys --
 x
 -- screen --
-↑, ↓, ←, →, Home, End, j, k  Move the cursor
-⇟, Space, f, ⌃F, ⌃V          Down a page
-⇞, b, ⌃B, ⌥V                 Up a page
-help  any key returns
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  h  x                                    Show the key bindi
+help  motion scrolls, any other key returns

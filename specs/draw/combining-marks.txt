@@ -1,4 +1,4 @@
-A combining mark draws on the cell of the rune before it, and ← →
+A combining mark draws on the cell of the rune before it, and Left, Right
 step over it with that rune: a Shift+Right over an accented letter
 selects both runes. The mark counts as a rune in the copied text.
 

@@ -23,16 +23,17 @@ var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background
 // Draw renders the text from top, the selection in selStyle, search
 // matches in MatchStyle, and the status line. While a Screen waits
 // for EOF only the status line is drawn: the view is not known until
-// then. While help is up the bindings take the text's place.
+// then. While help is up the bindings are the text, and no cursor is
+// shown.
 func (a *App) Draw() {
 	a.scr.Clear()
 	a.top = a.snap(a.top)
 	curX, curY := -1, -1
-	switch {
-	case a.helping:
-		a.drawHelp()
-	case a.screen == nil:
+	if a.screen == nil {
 		curX, curY = a.drawText()
+	}
+	if a.helping {
+		curX = -1
 	}
 	a.drawStatus()
 	if curX >= 0 {
@@ -132,53 +133,102 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	return curX, ok
 }
 
-// helpKeyWidth is the least the help's key column is narrowed to: the
-// widest default row, so the defaults never wrap for want of room.
-const helpKeyWidth = 27
+// helpCols is how wide the help is laid out, whatever the screen:
+// less's help is likewise fixed. A narrower screen cuts it at the
+// edge and scrolls sideways.
+const helpCols = 80
 
-// drawHelp draws the key bindings: keys in a column, what they do
-// beside. The column is as wide as the widest keys, but no wider than
-// leaves room for the widest doc, down to helpKeyWidth; keys that
-// overflow it continue on the next row.
-func (a *App) drawHelp() {
-	w, _ := a.scr.Size()
-	rows := a.keys.Help()
-	keyw, docw := 0, 0
-	for _, r := range rows {
-		keyw = max(keyw, len([]rune(strings.Join(r.Keys, ", "))))
-		docw = max(docw, len([]rune(r.Doc)))
+// helpText lays out the help screen as text, after less's help: a
+// centered title, a note on the modifier glyphs, the first section's
+// rows with no heading, then each section's name centered in capitals
+// between dashed rules. Rows are indented two, the keys two spaces
+// apart in a column as wide as the widest list but at most half the
+// room, the doc beside with a period; a list or a doc wider than its
+// column continues on the next line, in its column, and a key wider
+// than the column has a line to itself.
+func helpText(secs []input.Section) string {
+	glyphs := func(keys []string) []string {
+		var out []string
+		for _, k := range keys {
+			out = append(out, helpGlyphs(k))
+		}
+		return out
 	}
-	keyw = min(keyw, max(w-2-docw, helpKeyWidth))
-	y := 0
-	for _, r := range rows {
-		doc := r.Doc
-		for _, keys := range wrapKeys(r.Keys, keyw) {
-			if y >= a.textRows() {
-				return
-			}
-			for x, c := range []rune(fmt.Sprintf("%-*s  %s", keyw, keys, doc)) {
-				put(a.scr, x, y, w, c, tcell.StyleDefault)
-			}
-			doc = ""
-			y++
+	keyw := 0
+	for _, s := range secs {
+		for _, r := range s.Rows {
+			keyw = max(keyw, len([]rune(strings.Join(glyphs(r.Keys), "  "))))
 		}
 	}
+	keyw = min(keyw, (helpCols-4)/2)
+	docw := helpCols - 4 - keyw
+	rule := " " + strings.Repeat("-", helpCols-2) + "\n"
+	var sb strings.Builder
+	sb.WriteString(helpCenter("SUMMARY OF VEDI COMMANDS") + "\n\n")
+	sb.WriteString("      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.\n\n")
+	for _, s := range secs {
+		if s.Name != "" {
+			sb.WriteString("\n" + helpCenter(strings.ToUpper(s.Name)) + "\n\n")
+		}
+		for _, r := range s.Rows {
+			kl := wrapWords(glyphs(r.Keys), "  ", keyw)
+			dl := wrapWords(strings.Fields(r.Doc+"."), " ", docw)
+			for j := 0; j < max(len(kl), len(dl)); j++ {
+				k, d := "", ""
+				if j < len(kl) {
+					k = kl[j]
+				}
+				if j < len(dl) {
+					d = dl[j]
+				}
+				sb.WriteString(strings.TrimRight(fmt.Sprintf("  %-*s  %s", keyw, k, d), " ") + "\n")
+			}
+		}
+		sb.WriteString(rule)
+	}
+	return sb.String()
 }
 
-// wrapKeys joins keys with ", " into lines of at most width runes; a
-// key wider than that gets a line of its own.
-func wrapKeys(keys []string, width int) []string {
+// helpCenter centers text in helpCols.
+func helpCenter(text string) string {
+	return strings.Repeat(" ", max(helpCols-len([]rune(text)), 0)/2) + text
+}
+
+// helpGlyphs is a key's help name: Ctrl+, Alt+ and Cmd+ as ⌃ ⌥ ⌘,
+// and a letter under them a capital, as ⌃F.
+func helpGlyphs(name string) string {
+	glyphs := ""
+	for again := true; again; {
+		again = false
+		for _, m := range []struct{ word, glyph string }{{"Ctrl+", "⌃"}, {"Alt+", "⌥"}, {"Cmd+", "⌘"}} {
+			if strings.HasPrefix(name, m.word) {
+				glyphs += m.glyph
+				name = name[len(m.word):]
+				again = true
+			}
+		}
+	}
+	if glyphs != "" && len([]rune(strings.TrimPrefix(name, "Shift+"))) == 1 {
+		name = strings.ToUpper(name)
+		name = strings.Replace(name, "SHIFT+", "Shift+", 1)
+	}
+	return glyphs + name
+}
+
+// wrapWords joins words with sep into lines of at most width runes;
+// a word wider than that gets a line of its own.
+func wrapWords(words []string, sep string, width int) []string {
 	var lines []string
 	line := ""
-	for _, k := range keys {
+	for _, w := range words {
 		switch {
 		case line == "":
-			line = k
-		case len([]rune(line))+2+len([]rune(k)) <= width:
-			line += ", " + k
+			line = w
+		case len([]rune(line))+len([]rune(sep))+len([]rune(w)) <= width:
+			line += sep + w
 		default:
 			lines = append(lines, line)
-			line = k
+			line = w
 		}
 	}
 	return append(lines, line)
@@ -224,7 +274,7 @@ func drawRunes(scr tcell.Screen, x, y, w int, text []rune, st tcell.Style) int {
 func (a *App) statusText() string {
 	switch {
 	case a.helping:
-		return "help  any key returns"
+		return "help  motion scrolls, any other key returns"
 	case a.searching && a.promptBack:
 		return "?" + string(a.query)
 	case a.searching:

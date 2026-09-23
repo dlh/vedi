@@ -1,4 +1,4 @@
-J and K extend the selection by a line, as ⇧↓ and ⇧↑ do: j and k move
+J and K extend the selection by a line, as Shift+Down and Shift+Up do: j and k move
 by a line, and the capital is the shifted form a terminal can send.
 
 -- size --

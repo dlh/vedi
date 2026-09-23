@@ -1,0 +1,22 @@
+The wheel scrolls the bindings as it scrolls the text.
+
+-- size --
+40x4
+-- input --
+abc
+-- keys --
+h
+-- mouse --
+wheel down
+-- screen --
+
+  h
+  q
+help  motion scrolls, any other key retu
+-- mouse --
+wheel up 2
+-- screen --
+                            SUMMARY OF V
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is
+help  motion scrolls, any other key retu

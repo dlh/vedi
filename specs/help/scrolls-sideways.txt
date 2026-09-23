@@ -1,0 +1,65 @@
+On a screen narrower than the bindings, Left and Right scroll them
+sideways by eight columns and Home and End to the edges; on one wide
+enough they do nothing. A resize keeps the layout and the scroll
+within it.
+
+-- size --
+40x6
+-- input --
+abc
+-- keys --
+h Right
+-- screen --
+                    SUMMARY OF VEDI COMM
+
+⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
+
+                                  Show t
+help  motion scrolls, any other key retu
+-- keys --
+End
+-- screen --
+EDI COMMANDS
+
+ Ctrl+f in the config file.
+
+  Show the key bindings.
+help  motion scrolls, any other key retu
+-- keys --
+Left
+-- screen --
+ARY OF VEDI COMMANDS
+
+d: ⌃F is Ctrl+f in the config file.
+
+          Show the key bindings.
+help  motion scrolls, any other key retu
+-- resize --
+60x6
+-- screen --
+        SUMMARY OF VEDI COMMANDS
+
+, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+
+                      Show the key bindings.
+help  motion scrolls, any other key returns
+-- keys --
+Home
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  h                                       Show the key bindi
+help  motion scrolls, any other key returns
+-- resize --
+80x6
+-- keys --
+Right End
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+
+  h                                       Show the key bindings.
+help  motion scrolls, any other key returns

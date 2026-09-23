@@ -9,29 +9,56 @@ import (
 	"go.dlh.dev/vedi/internal/input"
 )
 
+func rows(secs []input.Section) []input.Row {
+	var all []input.Row
+	for _, s := range secs {
+		all = append(all, s.Rows...)
+	}
+	return all
+}
+
 func TestHelpDefault(t *testing.T) {
-	rows := Default(false).Help()
+	secs := Default(false).Help()
+	top := secs[0]
+	if top.Name != "" || len(top.Rows) != 3 || top.Rows[0].Doc != "Show the key bindings" || !slices.Equal(top.Rows[0].Keys, []string{"h"}) {
+		t.Errorf("top section = %+v", top)
+	}
+	moving := secs[1]
+	if moving.Name != "Moving" {
+		t.Errorf("second section = %q", moving.Name)
+	}
 	want := []input.Row{
-		{Keys: []string{"↑", "↓", "←", "→", "Home", "End", "j", "k"}, Doc: "Move the cursor"},
-		{Keys: []string{"⇟", "Space", "f", "⌃F", "⌃V"}, Doc: "Down a page"},
-		{Keys: []string{"⇞", "b", "⌃B", "⌥V"}, Doc: "Up a page"},
+		{Keys: []string{"Up", "Down", "Left", "Right", "Home", "End", "j", "k"}, Doc: "Move the cursor"},
+		{Keys: []string{"PgDn", "Space", "f", "Ctrl+f", "Ctrl+v"}, Doc: "Down a page"},
+		{Keys: []string{"PgUp", "b", "Ctrl+b", "Alt+v"}, Doc: "Up a page"},
 	}
 	for i, w := range want {
-		if !slices.Equal(rows[i].Keys, w.Keys) || rows[i].Doc != w.Doc {
-			t.Errorf("row %d = %+v, want %+v", i, rows[i], w)
+		if !slices.Equal(moving.Rows[i].Keys, w.Keys) || moving.Rows[i].Doc != w.Doc {
+			t.Errorf("row %d = %+v, want %+v", i, moving.Rows[i], w)
 		}
 	}
-	for _, r := range rows {
+	if last := moving.Rows[len(moving.Rows)-1]; last.Doc != "Go to a line number" {
+		t.Errorf("last moving row = %+v", last)
+	}
+	var names []string
+	for _, s := range secs {
+		names = append(names, s.Name)
+	}
+	if want := []string{"", "Moving", "Selecting", "Mouse", "Copying", "Searching"}; !slices.Equal(names, want) {
+		t.Errorf("sections = %v", names)
+	}
+	all := rows(secs)
+	for _, r := range all {
 		if r.Doc == "Extend by half a page" {
 			t.Error("a row with no keys is shown")
 		}
 	}
-	last := rows[len(rows)-1]
-	if !slices.Equal(last.Keys, []string{"h"}) || last.Doc != "Show the key bindings" {
+	last := all[len(all)-1]
+	if !slices.Equal(last.Keys, []string{"n", "N"}) || last.Doc != "Next and previous match; ? swaps them" {
 		t.Errorf("last row = %+v", last)
 	}
 	mac := Default(true).Help()
-	if got := mac[0].Keys; !slices.Equal(got, []string{"↑", "↓", "←", "→", "Home", "End", "j", "k", "⌘←", "⌘→"}) {
+	if got := mac[1].Rows[0].Keys; !slices.Equal(got, []string{"Up", "Down", "Left", "Right", "Home", "End", "j", "k", "Cmd+Left", "Cmd+Right"}) {
 		t.Errorf("macOS cursor row = %v", got)
 	}
 }
@@ -42,17 +69,32 @@ func TestHelpApplied(t *testing.T) {
 		{Key: key("Alt+h"), Cmd: input.Command{Action: input.Help}},
 		{Key: key("w"), Cmd: input.Command{}},
 	})
-	rows := m.Help()
-	if got := rows[0].Keys; !slices.Equal(got, []string{"↑", "↓", "←", "→", "Home", "End", "j", "k", "h"}) {
+	secs := m.Help()
+	if got := secs[1].Rows[0].Keys; !slices.Equal(got, []string{"Up", "Down", "Left", "Right", "Home", "End", "j", "k", "h"}) {
 		t.Errorf("cursor row = %v", got)
 	}
-	for _, r := range rows {
+	for _, r := range rows(secs) {
 		if r.Doc == "Toggle wrap / nowrap" {
 			t.Error("unbound action still has a row")
 		}
 	}
-	if last := rows[len(rows)-1]; !slices.Equal(last.Keys, []string{"⌥H"}) {
-		t.Errorf("help row = %v", last.Keys)
+	if got := secs[0].Rows[0].Keys; !slices.Equal(got, []string{"Alt+h"}) {
+		t.Errorf("help row = %v", got)
+	}
+}
+
+// TestHelpEmptySection: a section none of whose rows has a key is
+// left out.
+func TestHelpEmptySection(t *testing.T) {
+	m := Default(false).Apply([]input.Binding{
+		{Key: key("Ctrl+c"), Cmd: input.Command{}},
+		{Key: key("y"), Cmd: input.Command{}},
+		{Key: key("Enter"), Cmd: input.Command{}},
+	})
+	for _, s := range m.Help() {
+		if s.Name == "Copying" {
+			t.Error("Copying is shown with nothing in it")
+		}
 	}
 }
 
@@ -60,7 +102,7 @@ func TestHelpApplied(t *testing.T) {
 // screen the same list: each row of the table is a input.Row, in order,
 // with the macOS keys.
 func TestHelpMatchesREADME(t *testing.T) {
-	rows := Default(true).Help()
+	all := rows(Default(true).Help())
 	data, err := os.ReadFile("../../README.md")
 	if err != nil {
 		t.Fatal(err)
@@ -85,13 +127,13 @@ func TestHelpMatchesREADME(t *testing.T) {
 		}
 		got = append(got, input.Row{Keys: []string{keys}, Doc: doc})
 	}
-	if len(got) != len(rows) {
-		t.Fatalf("README has %d rows, input.Help has %d", len(got), len(rows))
+	if len(got) != len(all) {
+		t.Fatalf("README has %d rows, input.Help has %d", len(got), len(all))
 	}
-	for i := range rows {
+	for i := range all {
 		// Fixed rows hold a comma themselves, so compare the joined text.
-		if keys := strings.Join(rows[i].Keys, ", "); got[i].Keys[0] != keys || got[i].Doc != rows[i].Doc {
-			t.Errorf("row %d: README %q %q, input.Help %q %q", i, got[i].Keys[0], got[i].Doc, keys, rows[i].Doc)
+		if keys := strings.Join(all[i].Keys, ", "); got[i].Keys[0] != keys || got[i].Doc != all[i].Doc {
+			t.Errorf("row %d: README %q %q, input.Help %q %q", i, got[i].Keys[0], got[i].Doc, keys, all[i].Doc)
 		}
 	}
 }

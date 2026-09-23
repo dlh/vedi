@@ -1,5 +1,5 @@
 A click returns from the help screen like any key, and does nothing
-else. The wheel is ignored while help is up.
+else.
 
 -- size --
 40x4
@@ -8,13 +8,11 @@ abc
 def
 -- keys --
 Down h
--- mouse --
-wheel down
 -- screen --
-↑, ↓, ←, →, Home, End, j, k  Move the cu
-⇟, Space, f, ⌃F, ⌃V          Down a page
-⇞, b, ⌃B, ⌥V                 Up a page
-help  any key returns
+                            SUMMARY OF V
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is
+help  motion scrolls, any other key retu
 -- mouse --
 click 0 0
 -- screen --

@@ -1,0 +1,25 @@
+The text is back as it was on return: its scroll, selection and
+mode.
+
+-- size --
+60x4
+-- args --
+-S
+-- input --
+abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz
+-- keys --
+End Shift+Left h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+help  motion scrolls, any other key returns
+-- keys --
+Down Right q
+-- screen --
+vwxyz abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxy[z]
+
+
+<stdin>  line 1/1  nowrap                             h help
+-- cursor --
+0 58
