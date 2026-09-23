@@ -4,6 +4,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -56,6 +57,7 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 		Follow:        o.Follow,
 		Screen:        o.Screen,
 		Copier:        clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
+		MacOS:         runtime.GOOS == "darwin",
 	}
 }
 

@@ -66,10 +66,37 @@ func TestDecode(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Decode(tc.ev); got != tc.want {
+			if got := Decode(tc.ev, false); got != tc.want {
 				t.Fatalf("Decode = %+v, want %+v", got, tc.want)
 			}
 		})
+	}
+	mac := []struct {
+		name string
+		ev   *tcell.EventKey
+		want Command
+	}{
+		{"cmd c", k(tcell.KeyRune, 'c', tcell.ModMeta), Command{Copy, false}},
+		{"cmd a", k(tcell.KeyRune, 'a', tcell.ModMeta), Command{SelectAll, false}},
+		{"cmd g", k(tcell.KeyRune, 'g', tcell.ModMeta), Command{SearchNext, false}},
+		{"cmd shift g", k(tcell.KeyRune, 'g', tcell.ModMeta|tcell.ModShift), Command{SearchPrev, false}},
+		{"cmd shift G as a capital", k(tcell.KeyRune, 'G', tcell.ModMeta|tcell.ModShift), Command{SearchPrev, false}},
+		{"cmd up", k(tcell.KeyUp, 0, tcell.ModMeta), Command{First, false}},
+		{"cmd shift up", k(tcell.KeyUp, 0, tcell.ModMeta|tcell.ModShift), Command{First, true}},
+		{"cmd down", k(tcell.KeyDown, 0, tcell.ModMeta), Command{Last, false}},
+		{"cmd left", k(tcell.KeyLeft, 0, tcell.ModMeta), Command{Home, false}},
+		{"cmd shift right", k(tcell.KeyRight, 0, tcell.ModMeta|tcell.ModShift), Command{End, true}},
+		{"cmd q is unbound", k(tcell.KeyRune, 'q', tcell.ModMeta), Command{}},
+	}
+	for _, tc := range mac {
+		t.Run("macOS "+tc.name, func(t *testing.T) {
+			if got := Decode(tc.ev, true); got != tc.want {
+				t.Fatalf("Decode = %+v, want %+v", got, tc.want)
+			}
+		})
+	}
+	if got := Decode(k(tcell.KeyRune, 'c', tcell.ModMeta), false); got != (Command{}) {
+		t.Errorf("cmd c elsewhere = %+v, want unbound", got)
 	}
 }
 
@@ -86,9 +113,42 @@ func TestIsMovement(t *testing.T) {
 	}
 }
 
+// TestBindings checks that the OSes differ only by ⌘ keys: none
+// elsewhere, and on macOS the same rows once the ⌘ keys are dropped.
+func TestBindings(t *testing.T) {
+	var stripped []Binding
+	for _, b := range Bindings(true) {
+		var keys []string
+		for _, k := range strings.Split(b.Keys, ", ") {
+			if !strings.Contains(k, "⌘") {
+				keys = append(keys, k)
+			}
+		}
+		if len(keys) > 0 {
+			stripped = append(stripped, Binding{strings.Join(keys, ", "), b.Doc})
+		}
+	}
+	other := Bindings(false)
+	for _, b := range other {
+		if strings.Contains(b.Keys, "⌘") {
+			t.Errorf("row %+v has ⌘ off macOS", b)
+		}
+	}
+	if len(stripped) != len(other) {
+		t.Fatalf("macOS has %d rows without ⌘, want %d", len(stripped), len(other))
+	}
+	for i := range other {
+		if stripped[i] != other[i] {
+			t.Errorf("row %d: macOS without ⌘ %+v, want %+v", i, stripped[i], other[i])
+		}
+	}
+}
+
 // TestBindingsMatchREADME keeps the help screen and the README's Keys
-// table the same list: each row of the table is a Binding, in order.
+// table the same list: each row of the table is a Binding, in order,
+// with the macOS keys.
 func TestBindingsMatchREADME(t *testing.T) {
+	bindings := Bindings(true)
 	data, err := os.ReadFile("../../README.md")
 	if err != nil {
 		t.Fatal(err)
@@ -113,12 +173,12 @@ func TestBindingsMatchREADME(t *testing.T) {
 		}
 		rows = append(rows, Binding{key, doc})
 	}
-	if len(rows) != len(Bindings) {
-		t.Fatalf("README has %d bindings, Bindings has %d", len(rows), len(Bindings))
+	if len(rows) != len(bindings) {
+		t.Fatalf("README has %d bindings, Bindings has %d", len(rows), len(bindings))
 	}
 	for i := range rows {
-		if rows[i] != Bindings[i] {
-			t.Errorf("row %d: README %+v, Bindings %+v", i, rows[i], Bindings[i])
+		if rows[i] != bindings[i] {
+			t.Errorf("row %d: README %+v, Bindings %+v", i, rows[i], bindings[i])
 		}
 	}
 }

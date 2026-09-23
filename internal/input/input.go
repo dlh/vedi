@@ -1,7 +1,11 @@
 // Package input maps key events to pager actions.
 package input
 
-import "github.com/gdamore/tcell/v2"
+import (
+	"slices"
+
+	"github.com/gdamore/tcell/v2"
+)
 
 type Action int
 
@@ -41,9 +45,23 @@ type Binding struct {
 	Keys, Doc string
 }
 
-// Bindings is the help screen, in order. The README's Keys table is the
-// same list.
-var Bindings = []Binding{
+// Bindings is the help screen, in order; on macOS with the ⌘ keys. The
+// README's Keys table is the macOS list.
+func Bindings(macOS bool) []Binding {
+	b := slices.Clone(bindings)
+	if !macOS {
+		return b
+	}
+	row := func(keys string) int {
+		return slices.IndexFunc(b, func(b Binding) bool { return b.Keys == keys })
+	}
+	b[row("⌃A")].Keys = "⌃A, ⌘A"
+	b[row("⌃C, y")].Keys = "⌃C, ⌘C, y"
+	b[row("n, N")].Keys = "n, N, ⌘G, ⇧⌘G"
+	return slices.Insert(b, row("g, G, <, >")+1, Binding{"⌘←, ⌘→, ⌘↑, ⌘↓", "Line start and end, first and last line"})
+}
+
+var bindings = []Binding{
 	{"↑ ↓ ← →, Home, End", "Move the cursor"},
 	{"j, k", "Down a line, up a line"},
 	{"⇞ ⇟, Space, f, ⌃F, b, ⌃B", "Move by a page"},
@@ -86,11 +104,40 @@ type Command struct {
 // a letter is another letter, and Shift+Space is indistinguishable.
 // Alt+arrow is Ctrl+arrow, and Alt+b/Alt+f are the emacs word motions,
 // which Terminal.app sends for Option+arrow. Ctrl+V/Alt+v page as in
-// emacs; less has Alt+v too.
-func Decode(ev *tcell.EventKey) Command {
+// emacs; less has Alt+v too. On macOS the ⌘ keys are the text-view
+// ones, and every other ⌘ key is unbound; elsewhere there is no ⌘,
+// and Meta is ignored. The kitty protocol sends ⇧⌘G as g with Shift.
+func Decode(ev *tcell.EventKey, macOS bool) Command {
 	shift := ev.Modifiers()&tcell.ModShift != 0
 	word := ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0
 	alt := ev.Modifiers()&tcell.ModAlt != 0
+	if macOS && ev.Modifiers()&tcell.ModMeta != 0 {
+		switch ev.Key() {
+		case tcell.KeyUp:
+			return Command{First, shift}
+		case tcell.KeyDown:
+			return Command{Last, shift}
+		case tcell.KeyLeft:
+			return Command{Home, shift}
+		case tcell.KeyRight:
+			return Command{End, shift}
+		case tcell.KeyRune:
+			switch ev.Rune() {
+			case 'c':
+				return Command{Action: Copy}
+			case 'a':
+				return Command{Action: SelectAll}
+			case 'g':
+				if shift {
+					return Command{Action: SearchPrev}
+				}
+				return Command{Action: SearchNext}
+			case 'G':
+				return Command{Action: SearchPrev}
+			}
+		}
+		return Command{}
+	}
 	switch ev.Key() {
 	case tcell.KeyUp:
 		return Command{Up, shift}

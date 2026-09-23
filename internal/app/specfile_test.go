@@ -63,7 +63,7 @@ var namedKeys = map[string]tcell.Key{
 }
 
 // parseKeys turns a "-- keys --" body into key events: named keys with
-// optional Shift+/Ctrl+/Alt+ prefixes, single characters as themselves,
+// optional Shift+/Ctrl+/Alt+/Cmd+ prefixes, single characters as themselves,
 // "quoted text" typed rune by rune.
 func parseKeys(s string) ([]*tcell.EventKey, error) {
 	var keys []*tcell.EventKey
@@ -99,7 +99,7 @@ func parseKey(tok string) (*tcell.EventKey, error) {
 	prefixes := []struct {
 		name string
 		mod  tcell.ModMask
-	}{{"Shift+", tcell.ModShift}, {"Ctrl+", tcell.ModCtrl}, {"Alt+", tcell.ModAlt}}
+	}{{"Shift+", tcell.ModShift}, {"Ctrl+", tcell.ModCtrl}, {"Alt+", tcell.ModAlt}, {"Cmd+", tcell.ModMeta}}
 	for again := true; again; {
 		again = false
 		for _, p := range prefixes {
@@ -123,7 +123,7 @@ func parseKey(tok string) (*tcell.EventKey, error) {
 		if mod&tcell.ModCtrl != 0 && r >= 'A' && r <= 'Z' {
 			return tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(r-'A'), 0, mod), nil
 		}
-		if mod&^tcell.ModAlt != 0 {
+		if mod&tcell.ModCtrl != 0 || mod&(tcell.ModShift|tcell.ModMeta) == tcell.ModShift {
 			return nil, fmt.Errorf("%q: modifiers on a character key", tok)
 		}
 		return tcell.NewEventKey(tcell.KeyRune, r, mod), nil
@@ -226,7 +226,7 @@ func TestParseArchive(t *testing.T) {
 }
 
 func TestParseKeys(t *testing.T) {
-	keys, err := parseKeys(`Down Shift+Right Ctrl+Shift+Left Alt+Shift+Right Alt+b Ctrl+C y "a b" Esc Backspace Space`)
+	keys, err := parseKeys(`Down Shift+Right Ctrl+Shift+Left Alt+Shift+Right Alt+b Ctrl+C Cmd+c Cmd+Shift+g y "a b" Esc Backspace Space`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,6 +237,8 @@ func TestParseKeys(t *testing.T) {
 		tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModAlt|tcell.ModShift),
 		tcell.NewEventKey(tcell.KeyRune, 'b', tcell.ModAlt),
 		tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModCtrl),
+		tcell.NewEventKey(tcell.KeyRune, 'c', tcell.ModMeta),
+		tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModMeta|tcell.ModShift),
 		tcell.NewEventKey(tcell.KeyRune, 'y', 0),
 		tcell.NewEventKey(tcell.KeyRune, 'a', 0),
 		tcell.NewEventKey(tcell.KeyRune, ' ', 0),

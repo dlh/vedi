@@ -27,6 +27,7 @@ type Options struct {
 	Screen        *Screen
 	Copier        clipboard.Copier
 	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
+	MacOS         bool             // there is a ⌘ key
 }
 
 // Screen is the view the terminal was showing, so the pager can open on
@@ -74,6 +75,7 @@ type App struct {
 	highlight  bool
 
 	now       func() time.Time
+	macOS     bool
 	lastPress click // the last button-1 press, for multiple clicks and drags
 	held      bool  // button 1 is down
 	dragging  bool  // and went down on the text, so motion selects
@@ -112,6 +114,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		screen:    opts.Screen,
 		onePage:   opts.QuitIfOnePage,
 		now:       opts.Now,
+		macOS:     opts.MacOS,
 	}
 	if a.now == nil {
 		a.now = time.Now
@@ -209,7 +212,7 @@ func (a *App) Handle(ev tcell.Event) bool {
 			a.handleGotoKey(ev)
 			return false
 		}
-		return a.handleKey(input.Decode(ev))
+		return a.handleKey(input.Decode(ev, a.macOS))
 	case *tcell.EventMouse:
 		a.handleMouse(ev)
 	case *Tick:

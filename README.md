@@ -42,24 +42,29 @@ the pager.
 | d, ⌃D, u, ⌃U | Move by half a page |
 | ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F | Move by word |
 | g, G, <, > | First line, last line |
+| ⌘←, ⌘→, ⌘↑, ⌘↓ | Line start and end, first and last line |
 | ⇧ + ↑ ↓ ← →, Home, End | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
 | Click, drag | Move the cursor, select; held at an edge, scroll |
 | Double-, triple-click | Select the word, the line |
 | Wheel | Scroll |
-| ⌃A | Select all |
+| ⌃A, ⌘A | Select all |
 | ⎋ | Clear the selection, then the search highlight |
-| ⌃C, y | Copy the selection as plain text |
+| ⌃C, ⌘C, y | Copy the selection as plain text |
 | ⏎ | Copy the selection and quit; with none, down a line |
 | / | Search; ignores case unless capitalized; empty repeats |
 | ? | Search backward |
 | ↑ ↓ at the prompt | Recall earlier searches |
-| n, N | Next and previous match; ? swaps them |
+| n, N, ⌘G, ⇧⌘G | Next and previous match; ? swaps them |
 | : | Go to a line number |
 | w | Toggle wrap / nowrap |
 | q | Quit |
 | h | Show the key bindings |
+
+The ⌘ keys are macOS only, and reach vedi where the terminal passes
+them on: kitty does, ⌘C when it has no selection of its own;
+Terminal.app keeps them.
 
 The selection is drawn in reverse video and search matches in black
 on bright yellow, whatever the text's own colors.

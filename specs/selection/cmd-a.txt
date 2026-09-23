@@ -1,0 +1,22 @@
+On macOS ⌘A selects everything, like ⌃A.
+
+-- os --
+macos
+-- size --
+40x5
+-- input --
+hello world
+second
+-- keys --
+Cmd+a y
+-- screen --
+[hello world ]
+[second]
+
+
+copied 2 lines                    h help
+-- cursor --
+1 6
+-- clipboard --
+hello world
+second

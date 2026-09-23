@@ -1,0 +1,18 @@
+Off macOS there is no ⌘ key, so ⌘C is a plain c: unbound. Nothing is
+copied and the selection stays.
+
+-- os --
+linux
+-- size --
+40x5
+-- input --
+hello
+-- keys --
+Shift+Right Cmd+c
+-- screen --
+[h]ello
+
+
+
+<stdin>  line 1/1  wrap           h help
+-- clipboard --

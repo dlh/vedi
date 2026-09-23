@@ -43,6 +43,7 @@ type scenario struct {
 	app      *app.App
 	w, h     int
 	args     []string
+	macOS    bool
 	nl       bool // the last input section ended with a newline
 	hasEOF   bool // the file has an eof section, so input stays open
 	finished bool // an eof section has run
@@ -89,6 +90,16 @@ func runScenario(t *testing.T, a archive) error {
 				return fail("must come before the app starts")
 			}
 			s.args = strings.Fields(sec.body)
+		case "os":
+			if s.started {
+				return fail("must come before the app starts")
+			}
+			switch os := strings.TrimSpace(sec.body); os {
+			case "macos", "linux":
+				s.macOS = os == "macos"
+			default:
+				return fail("want macos or linux, got %q", os)
+			}
 		case "input":
 			if s.finished {
 				return fail("input after eof")
@@ -232,6 +243,7 @@ func (s *scenario) start() error {
 	s.scr.SetSize(s.w, s.h)
 	appOpts := opts.App(s.scr, files)
 	appOpts.Now = func() time.Time { return s.now }
+	appOpts.MacOS = s.macOS
 	s.app = app.New(s.scr, s.buf, appOpts)
 	s.notify()
 	return nil
@@ -379,6 +391,8 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"mouse after quit", "T\n-- input --\nhi\n-- keys --\nq\n-- quit --\n-- mouse --\nclick 0 0\n", "line 7, -- mouse --: mouse after the app quit"},
 		{"bad mouse action", "T\n-- input --\nhi\n-- mouse --\ntap 0 0\n", `line 4, -- mouse --: unknown mouse action "tap"`},
 		{"unknown section", "T\n-- input --\nhi\n-- screeen --\nho\n", "line 4, -- screeen --: unknown section"},
+		{"bad os", "T\n-- os --\nwindows\n-- input --\nhi\n", `line 2, -- os --: want macos or linux, got "windows"`},
+		{"os after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- os --\nmacos\n", "line 6, -- os --: must come before the app starts"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

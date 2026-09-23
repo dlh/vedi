@@ -1,0 +1,31 @@
+On macOS ⌘G and ⇧⌘G go to the next and previous match, like n and N.
+
+-- os --
+macos
+-- input --
+foo
+bar foo
+foo
+-- keys --
+/ "foo" Enter
+-- cursor --
+0 0
+-- keys --
+Cmd+g
+-- cursor --
+1 4
+-- keys --
+Cmd+g Cmd+Shift+g
+-- cursor --
+1 4
+-- keys --
+Cmd+Shift+g
+-- screen --
+{foo}
+bar {foo}
+{foo}
+
+
+<stdin>  line 1/3  wrap           h help
+-- cursor --
+0 0

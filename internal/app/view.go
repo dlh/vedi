@@ -131,15 +131,16 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	return curX, ok
 }
 
-// drawHelp draws input.Bindings, keys in a column as wide as the
+// drawHelp draws the key bindings, keys in a column as wide as the
 // widest, as many as fit above the status line.
 func (a *App) drawHelp() {
 	w, _ := a.scr.Size()
+	bindings := input.Bindings(a.macOS)
 	keyw := 0
-	for _, b := range input.Bindings {
+	for _, b := range bindings {
 		keyw = max(keyw, len([]rune(b.Keys)))
 	}
-	for y, b := range input.Bindings {
+	for y, b := range bindings {
 		if y >= a.textRows() {
 			break
 		}
