@@ -13,6 +13,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
+	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 	"go.dlh.dev/vedi/internal/search"
@@ -28,6 +29,7 @@ type Options struct {
 	Copier        clipboard.Copier
 	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
 	MacOS         bool             // there is a ⌘ key
+	Keys          input.Keymap     // nil for the defaults
 }
 
 // Screen is the view the terminal was showing, so the pager can open on
@@ -76,6 +78,7 @@ type App struct {
 
 	now       func() time.Time
 	macOS     bool
+	keys      input.Keymap
 	lastPress click // the last button-1 press, for multiple clicks and drags
 	held      bool  // button 1 is down
 	dragging  bool  // and went down on the text, so motion selects
@@ -118,6 +121,10 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 	}
 	if a.now == nil {
 		a.now = time.Now
+	}
+	a.keys = opts.Keys
+	if a.keys == nil {
+		a.keys = config.Default(opts.MacOS)
 	}
 	if opts.StartLine <= 0 {
 		a.startLine = -1
@@ -212,7 +219,7 @@ func (a *App) Handle(ev tcell.Event) bool {
 			a.handleGotoKey(ev)
 			return false
 		}
-		return a.handleKey(input.Decode(ev, a.macOS))
+		return a.handleKey(a.keys.Lookup(ev))
 	case *tcell.EventMouse:
 		a.handleMouse(ev)
 	case *Tick:
@@ -363,7 +370,7 @@ func (a *App) handleKey(c input.Command) bool {
 		}
 	case input.Copy:
 		a.copy()
-	case input.Enter:
+	case input.CopyAndQuit:
 		if _, _, ok := a.selection(); ok {
 			return a.copy()
 		}

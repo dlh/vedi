@@ -1,11 +1,7 @@
 // Package input maps key events to pager actions.
 package input
 
-import (
-	"slices"
-
-	"github.com/gdamore/tcell/v2"
-)
+import "slices"
 
 type Action int
 
@@ -29,7 +25,7 @@ const (
 	SelectAll
 	ClearSelection
 	Copy
-	Enter
+	CopyAndQuit
 	Search
 	SearchBack
 	SearchNext
@@ -40,28 +36,28 @@ const (
 	Help
 )
 
-// Binding is one row of the help screen: the keys and what they do.
-type Binding struct {
+// HelpRow is one row of the help screen: the keys and what they do.
+type HelpRow struct {
 	Keys, Doc string
 }
 
 // Bindings is the help screen, in order; on macOS with the ⌘ keys. The
 // README's Keys table is the macOS list.
-func Bindings(macOS bool) []Binding {
+func Bindings(macOS bool) []HelpRow {
 	b := slices.Clone(bindings)
 	if !macOS {
 		return b
 	}
 	row := func(keys string) int {
-		return slices.IndexFunc(b, func(b Binding) bool { return b.Keys == keys })
+		return slices.IndexFunc(b, func(b HelpRow) bool { return b.Keys == keys })
 	}
 	b[row("⌃A")].Keys = "⌃A, ⌘A"
 	b[row("⌃C, y")].Keys = "⌃C, ⌘C, y"
 	b[row("n, N")].Keys = "n, N, ⌘G, ⇧⌘G"
-	return slices.Insert(b, row("g, G, <, >")+1, Binding{"⌘←, ⌘→, ⌘↑, ⌘↓", "Line start and end, first and last line"})
+	return slices.Insert(b, row("g, G, <, >")+1, HelpRow{"⌘←, ⌘→, ⌘↑, ⌘↓", "Line start and end, first and last line"})
 }
 
-var bindings = []Binding{
+var bindings = []HelpRow{
 	{"↑ ↓ ← →, Home, End", "Move the cursor"},
 	{"j, k", "Down a line, up a line"},
 	{"⇞ ⇟, Space, f, ⌃F, b, ⌃B", "Move by a page"},
@@ -97,136 +93,4 @@ func IsMovement(a Action) bool { return a >= Up && a <= Last }
 type Command struct {
 	Action Action
 	Extend bool
-}
-
-// Decode maps a key event to a Command; unbound keys give Command{}.
-// Only arrows, Home/End, PgUp/PgDn and Ctrl/Alt+arrows extend: Shift on
-// a letter is another letter, and Shift+Space is indistinguishable.
-// Alt+arrow is Ctrl+arrow, and Alt+b/Alt+f are the emacs word motions,
-// which Terminal.app sends for Option+arrow. Ctrl+V/Alt+v page as in
-// emacs; less has Alt+v too. On macOS the ⌘ keys are the text-view
-// ones, and every other ⌘ key is unbound; elsewhere there is no ⌘,
-// and Meta is ignored. The kitty protocol sends ⇧⌘G as g with Shift.
-func Decode(ev *tcell.EventKey, macOS bool) Command {
-	shift := ev.Modifiers()&tcell.ModShift != 0
-	word := ev.Modifiers()&(tcell.ModCtrl|tcell.ModAlt) != 0
-	alt := ev.Modifiers()&tcell.ModAlt != 0
-	if macOS && ev.Modifiers()&tcell.ModMeta != 0 {
-		switch ev.Key() {
-		case tcell.KeyUp:
-			return Command{First, shift}
-		case tcell.KeyDown:
-			return Command{Last, shift}
-		case tcell.KeyLeft:
-			return Command{Home, shift}
-		case tcell.KeyRight:
-			return Command{End, shift}
-		case tcell.KeyRune:
-			switch ev.Rune() {
-			case 'c':
-				return Command{Action: Copy}
-			case 'a':
-				return Command{Action: SelectAll}
-			case 'g':
-				if shift {
-					return Command{Action: SearchPrev}
-				}
-				return Command{Action: SearchNext}
-			case 'G':
-				return Command{Action: SearchPrev}
-			}
-		}
-		return Command{}
-	}
-	switch ev.Key() {
-	case tcell.KeyUp:
-		return Command{Up, shift}
-	case tcell.KeyDown:
-		return Command{Down, shift}
-	case tcell.KeyLeft:
-		if word {
-			return Command{WordLeft, shift}
-		}
-		return Command{Left, shift}
-	case tcell.KeyRight:
-		if word {
-			return Command{WordRight, shift}
-		}
-		return Command{Right, shift}
-	case tcell.KeyHome:
-		return Command{Home, shift}
-	case tcell.KeyEnd:
-		return Command{End, shift}
-	case tcell.KeyPgUp:
-		return Command{PageUp, shift}
-	case tcell.KeyPgDn:
-		return Command{PageDown, shift}
-	case tcell.KeyCtrlF:
-		return Command{Action: PageDown}
-	case tcell.KeyCtrlB:
-		return Command{Action: PageUp}
-	case tcell.KeyCtrlV:
-		return Command{Action: PageDown}
-	case tcell.KeyCtrlD:
-		return Command{Action: HalfPageDown}
-	case tcell.KeyCtrlU:
-		return Command{Action: HalfPageUp}
-	case tcell.KeyCtrlA:
-		return Command{Action: SelectAll}
-	case tcell.KeyEscape:
-		return Command{Action: ClearSelection}
-	case tcell.KeyCtrlC:
-		return Command{Action: Copy}
-	case tcell.KeyEnter:
-		return Command{Action: Enter}
-	case tcell.KeyRune:
-		if alt {
-			switch ev.Rune() {
-			case 'b':
-				return Command{Action: WordLeft}
-			case 'f':
-				return Command{Action: WordRight}
-			case 'v':
-				return Command{Action: PageUp}
-			}
-			return Command{}
-		}
-		switch ev.Rune() {
-		case 'j':
-			return Command{Action: Down}
-		case 'k':
-			return Command{Action: Up}
-		case ' ', 'f':
-			return Command{Action: PageDown}
-		case 'b':
-			return Command{Action: PageUp}
-		case 'd':
-			return Command{Action: HalfPageDown}
-		case 'u':
-			return Command{Action: HalfPageUp}
-		case 'g', '<':
-			return Command{Action: First}
-		case 'G', '>':
-			return Command{Action: Last}
-		case 'y':
-			return Command{Action: Copy}
-		case '/':
-			return Command{Action: Search}
-		case '?':
-			return Command{Action: SearchBack}
-		case 'n':
-			return Command{Action: SearchNext}
-		case 'N':
-			return Command{Action: SearchPrev}
-		case ':':
-			return Command{Action: GoToLine}
-		case 'w':
-			return Command{Action: ToggleWrap}
-		case 'q':
-			return Command{Action: Quit}
-		case 'h':
-			return Command{Action: Help}
-		}
-	}
-	return Command{}
 }
