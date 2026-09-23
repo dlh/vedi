@@ -4,7 +4,7 @@ does nothing else, so q returns rather than quits and the cursor is
 where it was.
 
 -- size --
-80x26
+80x27
 -- input --
 abc
 def
@@ -19,6 +19,7 @@ u, ⌃U                        Up half a page
 ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F       Move by word
 g, G, <, >                   First line, last line
 ⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End  Extend the selection
+J, K
 ⇧⇞, ⇧⇟                       Extend by a page
 ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→           Extend by word
 Click, drag                  Move the cursor, select; held at an edge, scroll
@@ -44,6 +45,7 @@ q
 -- screen --
 abc
 def
+
 
 
 

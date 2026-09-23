@@ -1,0 +1,29 @@
+J and K extend the selection by a line, as ⇧↓ and ⇧↑ do: j and k move
+by a line, and the capital is the shifted form a terminal can send.
+
+-- size --
+40x5
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+J J y
+-- screen --
+[line 1 ]
+[line 2 ]
+line 3
+
+copied 2 lines                    h help
+-- cursor --
+2 0
+-- keys --
+K y
+-- screen --
+[line 1 ]
+line 2
+line 3
+
+copied 1 line                     h help
+-- cursor --
+1 0

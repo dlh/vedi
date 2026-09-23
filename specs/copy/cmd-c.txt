@@ -53,7 +53,7 @@ u, ⌃U                        Up half a page
 ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F       Move by word
 g, G, <, >, ⌘↑, ⌘↓           First line, last line
 ⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End  Extend the selection
-⇧⌘←, ⇧⌘→, ⇧⌘↑, ⇧⌘↓
+J, K, ⇧⌘←, ⇧⌘→, ⇧⌘↑, ⇧⌘↓
 ⇧⇞, ⇧⇟                       Extend by a page
 ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→           Extend by word
 Click, drag                  Move the cursor, select; held at an edge, scroll

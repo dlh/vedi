@@ -43,7 +43,7 @@ the pager.
 | u, ⌃U | Up half a page |
 | ⌃←, ⌃→, ⌥←, ⌥→, ⌥B, ⌥F | Move by word |
 | g, G, <, >, ⌘↑, ⌘↓ | First line, last line |
-| ⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End, ⇧⌘←, ⇧⌘→, ⇧⌘↑, ⇧⌘↓ | Extend the selection |
+| ⇧↑, ⇧↓, ⇧←, ⇧→, ⇧Home, ⇧End, J, K, ⇧⌘←, ⇧⌘→, ⇧⌘↑, ⇧⌘↓ | Extend the selection |
 | ⇧⇞, ⇧⇟ | Extend by a page |
 | ⌃⇧←, ⌃⇧→, ⌥⇧←, ⌥⇧→ | Extend by word |
 | Click, drag | Move the cursor, select; held at an edge, scroll |
