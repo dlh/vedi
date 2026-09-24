@@ -54,6 +54,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{sel(PageDown), sel(PageUp)}, doc: "Extend by a page"},
 		{cmds: []Command{sel(HalfPageDown), sel(HalfPageUp)}, doc: "Extend by half a page"},
 		{cmds: []Command{sel(WordLeft), sel(WordRight)}, doc: "Extend by word"},
+		{cmds: []Command{act(SetMark)}, doc: "Start a selection that motions extend; again, end it"},
 		{cmds: []Command{act(SelectAll)}, doc: "Select all"},
 		{cmds: []Command{act(ClearSelection)}, doc: "Clear the selection, then the search highlight"},
 	}},

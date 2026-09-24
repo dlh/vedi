@@ -1,0 +1,19 @@
+clear_selection ends a selection the mark started: motions after it
+move alone.
+
+-- config --
+map v set_mark
+-- input --
+abc
+def
+-- keys --
+v Down Esc Right
+-- screen --
+abc
+def
+
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 1

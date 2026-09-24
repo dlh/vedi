@@ -1,0 +1,22 @@
+A click ends a selection the mark started, as it clears any other.
+
+-- config --
+map v set_mark
+-- input --
+abc
+def
+-- keys --
+v Down
+-- mouse --
+click 0 1
+-- keys --
+Right
+-- screen --
+abc
+def
+
+
+
+<stdin>  line 1/2  wrap           h help
+-- cursor --
+0 2

@@ -1,0 +1,18 @@
+Ctrl+Space is a key: the terminal sends NUL for it. Here it sets the
+mark, as in emacs.
+
+-- config --
+map Ctrl+Space set_mark
+-- input --
+abc
+-- keys --
+Ctrl+Space Right Right
+-- screen --
+[ab]c
+
+
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 2

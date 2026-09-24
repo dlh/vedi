@@ -71,7 +71,7 @@ func (a *App) press(x, y int) {
 	a.dragging, a.ticking = true, false
 	a.cur = a.cellPos(x, y)
 	a.lastPress = click{now, x, y, a.cur, n}
-	a.anchor = nil
+	a.anchor, a.marking = nil, false
 	switch {
 	case n == 2:
 		a.selectWord()

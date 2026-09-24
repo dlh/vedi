@@ -27,8 +27,9 @@ var shifted = map[rune]rune{
 }
 
 // Normalize makes a key event comparable to a parsed name. A control
-// key (Ctrl+letter, Enter, Esc) names itself, so Ctrl is dropped from
-// it, and a raw control character becomes its letter's control key.
+// key (Ctrl+letter, Ctrl+Space, Enter, Esc) names itself, so Ctrl is
+// dropped from it, and a raw control character becomes its letter's
+// control key; NUL is Ctrl+Space.
 // Shift on a character that has a shifted form is that form, as a
 // legacy terminal sends it: , with Shift is <. Otherwise Shift is
 // dropped from a character: Shift+g is G. Under ⌘ the kitty protocol
@@ -37,6 +38,8 @@ var shifted = map[rune]rune{
 func Normalize(ev *tcell.EventKey) Key {
 	k := Key{ev.Key(), ev.Rune(), ev.Modifiers()}
 	switch {
+	case k.Key == tcell.KeyNUL || k.Key == tcell.KeyCtrlSpace || k.Key == tcell.KeyRune && k.Rune == ' ' && k.Mod&tcell.ModCtrl != 0:
+		k.Key, k.Rune, k.Mod = tcell.KeyCtrlSpace, 0, k.Mod&^tcell.ModCtrl
 	case k.Key == tcell.KeyRune && k.Mod&tcell.ModShift != 0 && shifted[k.Rune] != 0:
 		k.Rune, k.Mod = shifted[k.Rune], k.Mod&^tcell.ModShift
 	case k.Key == tcell.KeyRune && k.Mod&tcell.ModMeta == 0:
@@ -77,13 +80,14 @@ var keyNames = map[tcell.Key]string{
 	tcell.KeyUp: "Up", tcell.KeyDown: "Down", tcell.KeyLeft: "Left", tcell.KeyRight: "Right",
 	tcell.KeyHome: "Home", tcell.KeyEnd: "End", tcell.KeyPgUp: "PgUp", tcell.KeyPgDn: "PgDn",
 	tcell.KeyEnter: "Enter", tcell.KeyEscape: "Esc", tcell.KeyBackspace: "Backspace",
+	tcell.KeyCtrlSpace: "Ctrl+Space",
 }
 
 // ParseKey reads a key name: Up Down Left Right Home End PgUp PgDn
 // Enter Esc Backspace Space or one character, with any of Shift+
 // Ctrl+ Alt+ Cmd+ in front. Ctrl+letter is the control key, either
-// case. Shift on a character needs Cmd: without it Shift is another
-// character, or nothing, as Shift+Space.
+// case, and Ctrl+Space the NUL key. Shift on a character needs Cmd:
+// without it Shift is another character, or nothing, as Shift+Space.
 func ParseKey(name string) (Key, error) {
 	tok := name
 	var mod tcell.ModMask
@@ -99,6 +103,9 @@ func ParseKey(name string) (Key, error) {
 	}
 	if k, ok := namedKeys[tok]; ok {
 		return Normalize(tcell.NewEventKey(k, 0, mod)), nil
+	}
+	if tok == "Space" && mod&tcell.ModCtrl != 0 {
+		return Normalize(tcell.NewEventKey(tcell.KeyCtrlSpace, 0, mod)), nil
 	}
 	if tok == "Space" {
 		tok = " "

@@ -32,6 +32,9 @@ func TestActionNames(t *testing.T) {
 	if got := (Command{Action: CopyAndQuit}).String(); got != "copy_and_quit" {
 		t.Errorf("CopyAndQuit = %q", got)
 	}
+	if got := (Command{Action: SetMark}).String(); got != "set_mark" {
+		t.Errorf("SetMark = %q", got)
+	}
 	if got := (Command{Action: SelectAll}).String(); got != "select_all" {
 		t.Errorf("SelectAll = %q", got)
 	}

@@ -43,7 +43,7 @@ func TestHelpText(t *testing.T) {
 func TestHelpGlyphs(t *testing.T) {
 	tests := []struct{ name, want string }{
 		{"j", "j"}, {"G", "G"}, {"Space", "Space"}, {"Shift+Left", "Shift+Left"},
-		{"Ctrl+f", "⌃F"}, {"Ctrl+Left", "⌃Left"}, {"Alt+v", "⌥V"}, {"Alt+<", "⌥<"},
+		{"Ctrl+f", "⌃F"}, {"Ctrl+Left", "⌃Left"}, {"Ctrl+Space", "⌃Space"}, {"Alt+v", "⌥V"}, {"Alt+<", "⌥<"},
 		{"Cmd+c", "⌘C"}, {"Cmd+Shift+g", "⌘Shift+G"}, {"Ctrl+Shift+Left", "⌃Shift+Left"},
 		{"Ctrl+Alt+Cmd+Shift+Up", "⌃⌥⌘Shift+Up"}, {"Up, Down at the prompt", "Up, Down at the prompt"},
 	}

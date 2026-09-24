@@ -10,7 +10,7 @@ var actionNames = [...]string{
 	Home: "home", End: "end", PageUp: "page_up", PageDown: "page_down",
 	HalfPageUp: "half_page_up", HalfPageDown: "half_page_down",
 	WordLeft: "word_left", WordRight: "word_right", First: "first", Last: "last",
-	SelectAll: "select_all", ClearSelection: "clear_selection", Copy: "copy",
+	SelectAll: "select_all", ClearSelection: "clear_selection", SetMark: "set_mark", Copy: "copy",
 	CopyAndQuit: "copy_and_quit", Search: "search", SearchBack: "search_back",
 	SearchNext: "search_next", SearchPrev: "search_prev", GoToLine: "go_to_line",
 	ToggleWrap: "toggle_wrap", Quit: "quit", Help: "help",

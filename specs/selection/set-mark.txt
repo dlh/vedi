@@ -1,0 +1,43 @@
+set_mark starts a selection at the cursor that every motion then
+extends, Shift or not, as v does in vim and Ctrl+Space in emacs.
+set_mark again ends it, the cursor staying, and motions move alone.
+
+-- config --
+map v set_mark
+-- input --
+abc
+def
+ghi
+-- keys --
+Right v Down Right
+-- screen --
+a[bc ]
+[de]f
+ghi
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 2
+-- keys --
+v
+-- screen --
+abc
+def
+ghi
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 2
+-- keys --
+Down
+-- screen --
+abc
+def
+ghi
+
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+2 2

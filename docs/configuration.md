@@ -27,7 +27,8 @@ it. Blank lines and lines starting with `#` are skipped.
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or
 a single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in
-front. `Ctrl+f` and `Ctrl+F` are the same key. `Shift+` on a character
+front. `Ctrl+f` and `Ctrl+F` are the same key, and `Ctrl+Space` is a
+key too. `Shift+` on a character
 needs `Cmd+`: without it Shift is another character, and `Shift+Space`
 is not a key a terminal can send. `Cmd+G` is `Cmd+Shift+g`. `Cmd+`
 keys reach vedi only on macOS and only where the terminal passes them
@@ -39,7 +40,10 @@ bindings in effect.
 
 Each movement has a `select_` twin that extends the selection instead
 of clearing it: `left` and `select_left`, `page_down` and
-`select_page_down`. The defaults below name every action.
+`select_page_down`. `set_mark` starts a selection that every motion
+then extends, Shift or not, until `set_mark` again, `clear_selection`
+or a click ends it: vim's `v`, emacs's `Ctrl+Space`. The defaults
+below name every action.
 
 ## Defaults
 
@@ -117,6 +121,9 @@ map Shift+PgDn select_page_down
 # Extend by half a page: select_half_page_up, select_half_page_down;
 # unbound by default
 
+# Start a selection that motions extend; again, end it: set_mark, as
+# v in vim or Ctrl+Space in emacs; unbound by default
+
 # Extend by word
 map Ctrl+Shift+Left select_word_left
 map Ctrl+Shift+Right select_word_right
@@ -182,6 +189,8 @@ map H select_left
 map L select_right
 map W select_word_right
 map B select_word_left
+# v starts a selection that motions extend, and ends it
+map v set_mark
 ```
 
 ## emacs
@@ -205,4 +214,6 @@ map Ctrl+r search_back
 # Alt+w copies; Ctrl+g clears the selection, like Esc
 map Alt+w copy
 map Ctrl+g clear_selection
+# Ctrl+Space sets the mark: motions extend the selection until Ctrl+g
+map Ctrl+Space set_mark
 ```

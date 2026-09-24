@@ -50,10 +50,11 @@ type App struct {
 	name   string
 	mode   layout.Mode
 
-	cur    buffer.Pos
-	anchor *buffer.Pos // selection anchor; nil when there is no selection
-	top    buffer.Pos  // first visible row: a line and the start of one of its segments
-	xoff   int         // horizontal scroll in NoWrap mode
+	cur     buffer.Pos
+	anchor  *buffer.Pos // selection anchor; nil when there is no selection
+	marking bool        // the mark is set: motions extend the selection
+	top     buffer.Pos  // first visible row: a line and the start of one of its segments
+	xoff    int         // horizontal scroll in NoWrap mode
 
 	follow    bool
 	startLine int     // 0-based +N target; -1 once applied
@@ -327,12 +328,9 @@ func (a *App) showScreen(s Screen) {
 func (a *App) handleKey(c input.Command) bool {
 	if input.IsMovement(c.Action) {
 		if c.Extend {
-			if a.anchor == nil {
-				p := a.cur
-				a.anchor = &p
-			}
+			a.extend()
 		} else {
-			a.anchor = nil
+			a.drop()
 		}
 	}
 	left := 0 // rows a row motion had nowhere to take
@@ -370,9 +368,16 @@ func (a *App) handleKey(c input.Command) bool {
 		a.cur = a.endPos()
 	case input.ClearSelection:
 		if a.anchor != nil {
-			a.anchor = nil
+			a.anchor, a.marking = nil, false
 		} else {
 			a.highlight = false
+		}
+	case input.SetMark:
+		if a.marking {
+			a.anchor, a.marking = nil, false
+		} else {
+			a.marking = true
+			a.extend()
 		}
 	case input.Copy:
 		a.copy()
@@ -380,7 +385,7 @@ func (a *App) handleKey(c input.Command) bool {
 		if _, _, ok := a.selection(); ok {
 			return a.copy()
 		}
-		a.anchor = nil
+		a.drop()
 		a.moveRows(1)
 	case input.Search, input.SearchBack:
 		a.searching, a.dragging = true, false
@@ -696,7 +701,7 @@ func (a *App) handleGotoKey(ev *tcell.EventKey) {
 		}
 		n, _ := strconv.Atoi(string(a.lineNo))
 		a.cur = buffer.Pos{Line: n - 1}
-		a.anchor = nil
+		a.drop()
 		a.scrollToCursor()
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if len(a.lineNo) > 0 {
@@ -729,12 +734,27 @@ func (a *App) jumpTo(pos buffer.Pos, wrapped, found bool) {
 		return
 	}
 	a.cur = pos
-	a.anchor = nil
+	a.drop()
 	a.highlight = true
 	if wrapped {
 		a.status = "search wrapped"
 	}
 	a.scrollToCursor()
+}
+
+// extend anchors the selection at the cursor if there is none, so a
+// motion extends it; drop clears it, unless the mark is set.
+func (a *App) extend() {
+	if a.anchor == nil {
+		p := a.cur
+		a.anchor = &p
+	}
+}
+
+func (a *App) drop() {
+	if !a.marking {
+		a.anchor = nil
+	}
 }
 
 // snap clamps p to the buffer and moves it back to the start of its

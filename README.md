@@ -68,9 +68,10 @@ Terminal.app keeps them.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
 named by `--config`, and `clear_all_shortcuts` there starts the map
-from nothing; `h` shows the bindings in effect, and the motions
-scroll them when they do not fit. See
-[docs/configuration.md](docs/configuration.md).
+from nothing. The `set_mark` action, unbound by default, starts a
+selection that every motion extends, as `v` does in vim; `h` shows
+the bindings in effect, and the motions scroll them when they do not
+fit. See [docs/configuration.md](docs/configuration.md).
 
 The selection is drawn in reverse video and search matches in black
 on bright yellow, whatever the text's own colors.

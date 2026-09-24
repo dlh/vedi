@@ -22,6 +22,7 @@ const (
 	Last
 	SelectAll
 	ClearSelection
+	SetMark
 	Copy
 	CopyAndQuit
 	Search

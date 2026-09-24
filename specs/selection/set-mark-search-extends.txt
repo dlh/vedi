@@ -1,0 +1,19 @@
+With the mark set, a search extends the selection to the match, as
+in vim's visual mode; without it a search clears the selection.
+
+-- config --
+map v set_mark
+-- input --
+foo
+bar foo
+-- keys --
+Right v / "foo" Enter
+-- screen --
+{f[}oo ]
+[bar ]{foo}
+
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 4
