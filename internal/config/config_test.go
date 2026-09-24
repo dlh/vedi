@@ -45,6 +45,7 @@ func TestParse(t *testing.T) {
 	}
 	bad := []struct{ src, err string }{
 		{"map h left\nbind j down\n", `vedi.conf:2: unknown verb "bind"`},
+		{"clear_all_shortcuts yes\n", "vedi.conf:1: clear_all_shortcuts takes nothing"},
 		{"map h\n", "vedi.conf:1: map takes a key and an action"},
 		{"map h left now\n", "vedi.conf:1: map takes a key and an action"},
 		{"\n\nmap F1 help\n", `vedi.conf:3: unknown key "F1"`},
@@ -56,6 +57,30 @@ func TestParse(t *testing.T) {
 		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
 			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
 		}
+	}
+}
+
+// TestClearAllShortcuts: clear_all_shortcuts drops what was bound
+// before it, the defaults included; map lines after it build the map
+// from nothing.
+func TestClearAllShortcuts(t *testing.T) {
+	c, err := Parse("vedi.conf", []byte("map j quit\nclear_all_shortcuts\nmap x quit\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []input.Binding{{Key: key("x"), Cmd: input.Command{Action: input.Quit}}}
+	if !c.Clear || !reflect.DeepEqual(c.Keys, want) {
+		t.Errorf("Parse = %+v, want Clear and %+v", c, want)
+	}
+	if got := c.Keymap(true); !reflect.DeepEqual(got, input.Keymap(want)) {
+		t.Errorf("Keymap = %+v, want %+v", got, want)
+	}
+	c, err = Parse("vedi.conf", []byte("map x quit\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := c.Keymap(false), Default(false).Apply(c.Keys); !reflect.DeepEqual(got, want) {
+		t.Errorf("Keymap without clear = %+v, want %+v", got, want)
 	}
 }
 

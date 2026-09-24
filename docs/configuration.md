@@ -8,12 +8,20 @@ opens, naming the file and line.
 
 One directive per line. `map <key> <action>` binds a key; a later
 line wins over an earlier one and over the defaults, and the action
-`none` unbinds. Blank lines and lines starting with `#` are skipped.
+`none` unbinds. `clear_all_shortcuts` drops every binding so far, the
+defaults included, for a map built from nothing by the lines after
+it. Blank lines and lines starting with `#` are skipped.
 
     # vim-style horizontal motion
     map h left
     map l right
     map Alt+h help
+
+    # or, from nothing
+    clear_all_shortcuts
+    map q quit
+    map j down
+    map k up
 
 ## Keys
 

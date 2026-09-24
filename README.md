@@ -67,8 +67,9 @@ them on: kitty does, Cmd+c when it has no selection of its own;
 Terminal.app keeps them.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
-named by `--config`; `h` shows the bindings in effect, and the
-motions scroll them when they do not fit. See
+named by `--config`, and `clear_all_shortcuts` there starts the map
+from nothing; `h` shows the bindings in effect, and the motions
+scroll them when they do not fit. See
 [docs/configuration.md](docs/configuration.md).
 
 The selection is drawn in reverse video and search matches in black

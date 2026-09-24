@@ -1,0 +1,21 @@
+clear_all_shortcuts drops the default bindings, so a config can
+build its own from nothing: q no longer quits, the status line has no
+help to offer, and x quits because the file says so.
+
+-- config --
+clear_all_shortcuts
+map x quit
+-- input --
+abc
+-- keys --
+q h
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap
+-- keys --
+x
+-- quit --

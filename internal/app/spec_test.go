@@ -13,7 +13,6 @@ import (
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
 	"go.dlh.dev/vedi/internal/config"
-	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 )
 
@@ -46,7 +45,7 @@ type scenario struct {
 	w, h     int
 	args     []string
 	macOS    bool
-	config   []input.Binding
+	config   config.Config
 	nl       bool // the last input section ended with a newline
 	hasEOF   bool // the file has an eof section, so input stays open
 	finished bool // an eof section has run
@@ -111,7 +110,7 @@ func runScenario(t *testing.T, a archive) error {
 			if err != nil {
 				return fail("%v", err)
 			}
-			s.config = cfg.Keys
+			s.config = cfg
 		case "input":
 			if s.finished {
 				return fail("input after eof")
@@ -256,7 +255,7 @@ func (s *scenario) start() error {
 	appOpts := opts.App(s.scr, files)
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
-	appOpts.Keys = config.Default(s.macOS).Apply(s.config)
+	appOpts.Keys = s.config.Keymap(s.macOS)
 	s.app = app.New(s.scr, s.buf, appOpts)
 	s.notify()
 	return nil

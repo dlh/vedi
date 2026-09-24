@@ -119,7 +119,7 @@ func main() {
 		buf = buffer.NewFrom(src)
 	}
 	appOpts := opts.App(scr, files)
-	appOpts.Keys = config.Default(appOpts.MacOS).Apply(cfg.Keys)
+	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
 	a := app.New(scr, buf, appOpts)
 	go buffer.Fill(in, buf, a.Notify)
 	a.Run()

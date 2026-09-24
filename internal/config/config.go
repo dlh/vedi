@@ -14,11 +14,12 @@ import (
 
 // Config is what a file sets.
 type Config struct {
-	Keys []input.Binding // map lines, in order
+	Keys  []input.Binding // map lines, in order
+	Clear bool            // clear_all_shortcuts: the map starts empty
 }
 
-// Parse reads a config: "map <key> <action>" lines, blank lines and #
-// comments. Errors read name:line: message.
+// Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
+// blank lines and # comments. Errors read name:line: message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
@@ -43,11 +44,25 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("%v", err)
 			}
 			c.Keys = append(c.Keys, input.Binding{Key: k, Cmd: cmd})
+		case "clear_all_shortcuts":
+			if len(f) != 1 {
+				return c, fail("clear_all_shortcuts takes nothing")
+			}
+			c.Keys, c.Clear = nil, true
 		default:
 			return c, fail("unknown verb %q", f[0])
 		}
 	}
 	return c, nil
+}
+
+// Keymap is the bindings in effect: the defaults, or none after
+// clear_all_shortcuts, with the map lines laid over.
+func (c Config) Keymap(macOS bool) input.Keymap {
+	if c.Clear {
+		return input.Keymap(nil).Apply(c.Keys)
+	}
+	return Default(macOS).Apply(c.Keys)
 }
 
 //go:embed defaults.conf

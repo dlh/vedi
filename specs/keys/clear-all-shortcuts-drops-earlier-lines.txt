@@ -1,0 +1,20 @@
+clear_all_shortcuts drops the map lines before it too.
+
+-- config --
+map j quit
+clear_all_shortcuts
+map x quit
+-- input --
+abc
+-- keys --
+j
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap
+-- keys --
+x
+-- quit --
