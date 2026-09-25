@@ -46,6 +46,7 @@ type Screen struct {
 type App struct {
 	scr    tcell.Screen
 	buf    *buffer.Buffer
+	first  *buffer.Buffer // the startup buffer, whose reader Notify serves
 	copier clipboard.Copier
 	name   string
 	mode   layout.Mode
@@ -90,7 +91,7 @@ type App struct {
 
 	pending atomic.Bool               // the reader has data to take up
 	owed    atomic.Uint64             // the held post's generation; 0 for none
-	gen     uint64                    // the last generation; Notify's alone
+	gen     atomic.Uint64             // the last generation
 	posted  atomic.Pointer[time.Time] // when the last post was
 
 	laid    layout.Layout       // what laidOut was laid out for
@@ -111,6 +112,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 	a := &App{
 		scr:       scr,
 		buf:       buf,
+		first:     buf,
 		copier:    opts.Copier,
 		name:      opts.Name,
 		mode:      opts.Mode,
@@ -137,15 +139,23 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 // redrawEvery bounds how often the reader's data is drawn.
 const redrawEvery = 50 * time.Millisecond
 
-// Notify asks for a redraw. It is safe to call from the reader
-// goroutine; repeated calls before the next draw are coalesced, and
-// one within redrawEvery of the last is held until that has passed,
-// unless the input has finished. When the queue is full the event is
-// dropped but the work stays pending, and Handle does it on whatever
-// event drains the queue.
-func (a *App) Notify() {
+// Notify asks for a redraw on the startup buffer's behalf. It is safe
+// to call from the reader goroutine.
+func (a *App) Notify() { a.notify(a.first) }
+
+// notify is Notify for buf, the startup buffer or one a reload reads;
+// nil counts as not finished. It reads buf, never a.buf, which the
+// loop goroutine swaps. Repeated calls before the next draw are
+// coalesced, and one within redrawEvery of the last is held until
+// that has passed, unless buf has finished. When the queue is full
+// the event is dropped but the work stays pending, and Handle does it
+// on whatever event drains the queue.
+func (a *App) notify(buf *buffer.Buffer) {
 	first := a.pending.CompareAndSwap(false, true)
-	eof, _ := a.buf.Finished()
+	eof := false
+	if buf != nil {
+		eof, _ = buf.Finished()
+	}
 	if eof {
 		if first || a.owed.Swap(0) != 0 {
 			a.post()
@@ -165,8 +175,7 @@ func (a *App) Notify() {
 	}
 	// A held post's timer stays scheduled when a key takes the data up
 	// first, so only the latest generation may post.
-	a.gen++
-	g := a.gen
+	g := a.gen.Add(1)
 	a.owed.Store(g)
 	time.AfterFunc(wait, func() {
 		if a.owed.CompareAndSwap(g, 0) {

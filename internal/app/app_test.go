@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -521,4 +522,29 @@ func TestTruncatedFileDraws(t *testing.T) {
 	if a.cur != (buffer.Pos{}) {
 		t.Errorf("cursor = %v, want 0 0", a.cur)
 	}
+}
+
+// TestNotifyFromTwoReaders: the startup reader and a reload's notify
+// at once, as when a file changes during its first read. Run with
+// -race.
+func TestNotifyFromTwoReaders(t *testing.T) {
+	a, _ := newTestApp(t, 10, 4, "x", Options{})
+	unfinished := buffer.New()
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 200; j++ {
+				a.notify(unfinished)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 200; j++ {
+				a.notify(nil)
+			}
+		}()
+	}
+	wg.Wait()
 }
