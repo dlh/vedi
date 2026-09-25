@@ -84,6 +84,7 @@ h
   h                                       Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  R                                       Reload the file.
  ------------------------------------------------------------------------------
 
                                      MOVING
@@ -135,5 +136,4 @@ h
   ?                                       Search backward.
   Up, Down at the prompt                  Recall earlier searches.
   n  N  ⌘G  ⌘Shift+G                      Next and previous match; ? swaps them.
- ------------------------------------------------------------------------------
 help  motion scrolls, any other key returns

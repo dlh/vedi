@@ -163,6 +163,9 @@ map : go_to_line
 # Toggle wrap / nowrap
 map w toggle_wrap
 
+# Reload the file
+map R reload
+
 # Quit
 map q quit
 

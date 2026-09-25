@@ -670,3 +670,12 @@ func TestReloadDuringFirstRead(t *testing.T) {
 		t.Errorf("status = %q: the old reader's state must not show", got)
 	}
 }
+
+func TestReloadKeyReportsFailure(t *testing.T) {
+	o := &opener{err: fmt.Errorf("boom")}
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	press(a, key(tcell.KeyRune, 'R', 0))
+	if got := row(scr, 3); !strings.HasPrefix(got, "reload failed: boom") {
+		t.Errorf("status = %q", got)
+	}
+}

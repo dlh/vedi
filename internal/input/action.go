@@ -13,7 +13,7 @@ var actionNames = [...]string{
 	SelectAll: "select_all", ClearSelection: "clear_selection", SetMark: "set_mark", Copy: "copy",
 	CopyAndQuit: "copy_and_quit", Search: "search", SearchBack: "search_back",
 	SearchNext: "search_next", SearchPrev: "search_prev", GoToLine: "go_to_line",
-	ToggleWrap: "toggle_wrap", Quit: "quit", Help: "help",
+	ToggleWrap: "toggle_wrap", Quit: "quit", Help: "help", Reload: "reload",
 }
 
 // String is the config name.

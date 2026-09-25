@@ -432,6 +432,8 @@ func (a *App) handleKey(c input.Command) bool {
 			a.mode = layout.Wrap
 		}
 		a.xoff = 0
+	case input.Reload:
+		a.reload(true)
 	case input.Help:
 		a.showHelp()
 	case input.Quit:

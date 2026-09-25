@@ -18,10 +18,10 @@ help  motion scrolls, any other key returns
 PgDn
 -- screen --
   w                                       Toggle wrap / nowr
+  R                                       Reload the file.
  -----------------------------------------------------------
 
                                      MOVING
-
 help  motion scrolls, any other key returns
 -- keys --
 G

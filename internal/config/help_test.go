@@ -20,7 +20,7 @@ func rows(secs []input.Section) []input.Row {
 func TestHelpDefault(t *testing.T) {
 	secs := Default(false).Help()
 	top := secs[0]
-	if top.Name != "" || len(top.Rows) != 3 || top.Rows[0].Doc != "Show the key bindings" || !slices.Equal(top.Rows[0].Keys, []string{"h"}) {
+	if top.Name != "" || len(top.Rows) != 4 || top.Rows[0].Doc != "Show the key bindings" || !slices.Equal(top.Rows[0].Keys, []string{"h"}) {
 		t.Errorf("top section = %+v", top)
 	}
 	moving := secs[1]

@@ -27,6 +27,10 @@ page](https://github.com/dlh/vedi/releases), or build from source:
 With no files, `vedi` reads stdin. The status line names the files
 being viewed, or `<stdin>`.
 
+A file that changes on disk is read again, the cursor keeping its
+line, or the last line if it was on it: a log that grows is followed.
+`R` reads it again by hand. A pipe is read once.
+
 `-F` is for a pager that should get out of the way: when all the text
 fits on one screen it is printed as if by `cat`, and the pager only
 opens for more. Pressing a key while the input is still coming keeps
@@ -39,6 +43,7 @@ the pager.
 | h | Show the key bindings |
 | q | Quit |
 | w | Toggle wrap / nowrap |
+| R | Reload the file |
 | Up, Down, Left, Right, Home, End, j, k, Cmd+Left, Cmd+Right | Move the cursor |
 | PgDn, Space, f, Ctrl+f, Ctrl+v | Down a page |
 | PgUp, b, Ctrl+b, Alt+v | Up a page |

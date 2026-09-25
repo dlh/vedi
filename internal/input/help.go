@@ -38,6 +38,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{act(Help)}, doc: "Show the key bindings"},
 		{cmds: []Command{act(Quit)}, doc: "Quit"},
 		{cmds: []Command{act(ToggleWrap)}, doc: "Toggle wrap / nowrap"},
+		{cmds: []Command{act(Reload)}, doc: "Reload the file"},
 	}},
 	{"Moving", []helpRow{
 		{cmds: []Command{act(Up), act(Down), act(Left), act(Right), act(Home), act(End)}, doc: "Move the cursor"},

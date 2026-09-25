@@ -8,12 +8,14 @@ import (
 	"io/fs"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
 	"go.dlh.dev/vedi/internal/config"
+	"go.dlh.dev/vedi/internal/watch"
 )
 
 // openInput is the files, or stdin when there are none; "-" names
@@ -58,6 +60,36 @@ func openInput(files []string) (in io.Reader, src io.ReaderAt, closeInput func()
 		return c, nil, closeInput, nil
 	}
 	return c, c, closeInput, nil
+}
+
+// reopen is the app's Open: the files read again by name, the input
+// paged from disk when it still can be.
+func reopen(files []string) func(func()) (*buffer.Buffer, func(), error) {
+	return func(notify func()) (*buffer.Buffer, func(), error) {
+		in, src, closeInput, err := openInput(files)
+		if err != nil {
+			return nil, nil, err
+		}
+		buf := buffer.New()
+		if src != nil {
+			buf = buffer.NewFrom(src)
+		}
+		go buffer.Fill(in, buf, notify)
+		return buf, closeInput, nil
+	}
+}
+
+// postChanged posts the watcher's change to the loop, trying again
+// shortly when the queue is full so none is lost.
+func postChanged(scr tcell.Screen) func() {
+	ev := &app.Changed{}
+	var post func()
+	post = func() {
+		if scr.PostEvent(ev) != nil {
+			time.AfterFunc(50*time.Millisecond, post)
+		}
+	}
+	return post
 }
 
 // version is set by the linker for releases; otherwise the module
@@ -120,8 +152,15 @@ func main() {
 	}
 	appOpts := opts.App(scr, files)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
+	if src != nil {
+		appOpts.Open = reopen(files)
+	}
 	a := app.New(scr, buf, appOpts)
 	go buffer.Fill(in, buf, a.Notify)
+	if src != nil {
+		stop := watch.Files(files, postChanged(scr))
+		defer stop()
+	}
 	a.Run()
 	if a.PrintText() {
 		scr.Fini()

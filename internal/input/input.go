@@ -33,6 +33,7 @@ const (
 	ToggleWrap
 	Quit
 	Help
+	Reload
 )
 
 // IsMovement reports whether a moves the cursor.

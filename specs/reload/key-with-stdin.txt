@@ -1,0 +1,13 @@
+R with stdin says so: a pipe cannot be read again.
+
+-- input --
+text
+-- keys --
+R
+-- screen --
+text
+
+
+
+
+not a file                        h help

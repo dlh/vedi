@@ -14,7 +14,7 @@ func TestHelpCoversActions(t *testing.T) {
 			covered = append(covered, h.cmds...)
 		}
 	}
-	for a := Up; a <= Help; a++ {
+	for a := Up; a <= Reload; a++ {
 		if !slices.Contains(covered, Command{Action: a}) {
 			t.Errorf("%s has no help row", a)
 		}

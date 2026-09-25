@@ -1,0 +1,24 @@
+R reads the file again, whether or not it changed.
+
+-- args --
+f.txt
+-- input --
+old
+-- file --
+new
+-- screen --
+old
+
+
+
+
+f.txt  line 1/1  wrap             h help
+-- keys --
+R
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help

@@ -19,6 +19,7 @@ Alt+h
   ⌥H                                      Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  R                                       Reload the file.
  ------------------------------------------------------------------------------
 
                                      MOVING
@@ -68,5 +69,4 @@ Alt+h
   ?                                       Search backward.
   Up, Down at the prompt                  Recall earlier searches.
   n  N                                    Next and previous match; ? swaps them.
- ------------------------------------------------------------------------------
 help  motion scrolls, any other key returns
