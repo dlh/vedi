@@ -1,0 +1,22 @@
+A selection survives a reload, clamped to the new text.
+
+-- args --
+f.txt
+-- input --
+line one
+line two
+line three
+-- keys --
+Shift+Down Shift+Down Shift+End
+-- reload --
+short
+lines
+-- screen --
+[short ]
+[lines]
+
+
+
+f.txt  line 2/2  wrap             h help
+-- cursor --
+1 5

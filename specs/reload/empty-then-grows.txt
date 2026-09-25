@@ -1,0 +1,31 @@
+A file emptied on disk draws nothing, and counts as the cursor being
+on the last line: when text comes back the cursor is on its last
+line.
+
+-- size --
+40x4
+-- args --
+f.txt
+-- input --
+one
+two
+-- reload --
+-- screen --
+
+
+
+f.txt  line 1/0  wrap             h help
+-- cursor --
+hidden
+-- reload --
+a
+b
+c
+d
+-- screen --
+b
+c
+d
+f.txt  line 4/4  wrap             h help
+-- cursor --
+2 0

@@ -30,6 +30,11 @@ type Options struct {
 	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
 	MacOS         bool             // there is a ⌘ key
 	Keys          input.Keymap     // nil for the defaults
+	// Open reads the input again for a reload: it returns a buffer
+	// being filled, whose reader calls notify as buffer.Fill does,
+	// and a close for the files under it. Nil when the input cannot
+	// be read again, as a pipe cannot.
+	Open func(notify func()) (buf *buffer.Buffer, close func(), err error)
 }
 
 // Screen is the view the terminal was showing, so the pager can open on
@@ -64,6 +69,12 @@ type App struct {
 	printText bool    // -F quit, so the caller prints the text
 
 	status string // one-shot message, cleared by the next key or click
+
+	open      func(func()) (*buffer.Buffer, func(), error)
+	closeBuf  func()         // closes buf's files; nil for the startup buffer
+	next      *buffer.Buffer // a reload being read; nil for none
+	closeNext func()
+	dirty     bool // a change came during the reload: one more after it
 
 	helping    bool      // the key bindings are shown instead of the text
 	text       *textView // the text and its view, set aside while help is up
@@ -120,6 +131,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
 		onePage:   opts.QuitIfOnePage,
+		open:      opts.Open,
 		now:       opts.Now,
 		macOS:     opts.MacOS,
 	}
@@ -209,8 +221,11 @@ func (a *App) PrintText() bool { return a.printText }
 // reader notified of is taken up first, whatever the event.
 func (a *App) Handle(ev tcell.Event) bool {
 	_, interrupt := ev.(*tcell.EventInterrupt)
-	if (a.pending.Swap(false) || interrupt) && a.onData() {
-		return true
+	if a.pending.Swap(false) || interrupt {
+		a.swapIfDone()
+		if a.onData() {
+			return true
+		}
 	}
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
@@ -240,6 +255,8 @@ func (a *App) Handle(ev tcell.Event) bool {
 		a.handleMouse(ev)
 	case *Tick:
 		a.tick(ev)
+	case *Changed:
+		a.reload(false)
 	}
 	return false
 }
@@ -877,11 +894,13 @@ func (a *App) helpBuffer() *buffer.Buffer {
 	return b
 }
 
-// hideHelp puts the text back as it was.
+// hideHelp puts the text back as it was, scrolled to the cursor: a
+// reload meanwhile may have moved it.
 func (a *App) hideHelp() {
 	t := a.text
 	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight = t.buf, t.cur, t.top, t.anchor, t.xoff, t.mode, t.highlight
 	a.helping, a.text, a.laidOut = false, nil, nil
+	a.scrollToCursor()
 }
 
 // helpKey scrolls the bindings by a motion; any other key returns.

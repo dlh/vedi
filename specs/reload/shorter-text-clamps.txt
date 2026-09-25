@@ -1,0 +1,24 @@
+When the text read again is shorter, a cursor past its end goes to
+the last line, and a column past the line's end to its end.
+
+-- args --
+f.txt
+-- input --
+line one
+line two
+line three
+line four
+-- keys --
+Down Down End
+-- reload --
+ab
+cd
+-- screen --
+ab
+cd
+
+
+
+f.txt  line 2/2  wrap             h help
+-- cursor --
+1 2

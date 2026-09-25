@@ -1,0 +1,31 @@
+A reload while the bindings are shown leaves them up; returning shows
+the new text, the cursor where it was.
+
+-- size --
+40x4
+-- args --
+f.txt
+-- input --
+one
+two
+three
+-- keys --
+Down h
+-- reload --
+uno
+dos
+tres
+-- screen --
+                            SUMMARY OF V
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is
+help  motion scrolls, any other key retu
+-- keys --
+Esc
+-- screen --
+uno
+dos
+tres
+f.txt  line 2/3  wrap             h help
+-- cursor --
+1 0

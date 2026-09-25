@@ -1,0 +1,28 @@
+The text grows under a cursor on its last line while the bindings are
+shown: returning shows the new last line.
+
+-- size --
+40x4
+-- args --
+f.txt
+-- input --
+one
+two
+-- keys --
+G h
+-- reload --
+one
+two
+three
+four
+five
+six
+-- keys --
+Esc
+-- screen --
+four
+five
+six
+f.txt  line 6/6  wrap             h help
+-- cursor --
+2 0

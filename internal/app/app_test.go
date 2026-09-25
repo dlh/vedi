@@ -548,3 +548,125 @@ func TestNotifyFromTwoReaders(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// opener is a test Open: each call makes a new buffer, left for the
+// test to finish, and counts opens and closes.
+type opener struct {
+	bufs   []*buffer.Buffer
+	closed int
+	err    error
+}
+
+func (o *opener) open(notify func()) (*buffer.Buffer, func(), error) {
+	if o.err != nil {
+		return nil, nil, o.err
+	}
+	b := buffer.New()
+	o.bufs = append(o.bufs, b)
+	return b, func() { o.closed++ }, nil
+}
+
+// finish ends buffer i with text and delivers its reader's
+// notification.
+func (o *opener) finish(a *App, i int, text string) {
+	o.bufs[i].Write([]byte(text))
+	o.bufs[i].Finish(nil, true)
+	a.notify(o.bufs[i])
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Draw()
+}
+
+func TestReloadPendingStatus(t *testing.T) {
+	o := &opener{}
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a.Handle(&Changed{})
+	a.Draw()
+	if got := row(scr, 3); !strings.HasSuffix(got, "  reloading…") {
+		t.Errorf("status while pending = %q", got)
+	}
+	if got := row(scr, 0); got != "old" {
+		t.Errorf("text while pending = %q", got)
+	}
+	o.finish(a, 0, "new\n")
+	if got := row(scr, 0); got != "new" {
+		t.Errorf("text after reload = %q", got)
+	}
+	if got := row(scr, 3); strings.Contains(got, "reloading") {
+		t.Errorf("status after reload = %q", got)
+	}
+}
+
+// TestReloadCoalesces: changes during a reload start exactly one more
+// after it, and each swapped-out buffer's close runs.
+func TestReloadCoalesces(t *testing.T) {
+	o := &opener{}
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a.Handle(&Changed{})
+	a.Handle(&Changed{})
+	a.Handle(&Changed{})
+	if len(o.bufs) != 1 {
+		t.Fatalf("opens during a reload = %d, want 1", len(o.bufs))
+	}
+	o.finish(a, 0, "one\n")
+	if len(o.bufs) != 2 {
+		t.Fatalf("opens after the first swap = %d, want 2", len(o.bufs))
+	}
+	if o.closed != 0 {
+		t.Errorf("closes after the first swap = %d, want 0: the startup buffer has none", o.closed)
+	}
+	o.finish(a, 1, "two\n")
+	if len(o.bufs) != 2 {
+		t.Errorf("opens after the second swap = %d, want 2", len(o.bufs))
+	}
+	if o.closed != 1 {
+		t.Errorf("closes after the second swap = %d, want 1", o.closed)
+	}
+	if got := row(scr, 0); got != "two" {
+		t.Errorf("text = %q", got)
+	}
+}
+
+func TestReloadOpenFailsOnChange(t *testing.T) {
+	o := &opener{err: fmt.Errorf("boom")}
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a.Handle(&Changed{})
+	a.Draw()
+	if a.status != "" {
+		t.Errorf("status = %q, want none: only the key reports", a.status)
+	}
+	if got := row(scr, 0); got != "old" {
+		t.Errorf("text = %q", got)
+	}
+}
+
+// TestReloadDuringFirstRead: a reload lands while the startup buffer
+// is still being read; the old reader's later data does not come back.
+func TestReloadDuringFirstRead(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(scr.Fini)
+	scr.SetSize(30, 4)
+	first := buffer.New()
+	first.Write([]byte("one\n"))
+	o := &opener{}
+	a := New(scr, first, Options{Copier: clipboard.OSC52{Screen: scr}, Open: o.open})
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Handle(&Changed{})
+	o.finish(a, 0, "two\n")
+	if got := row(scr, 0); got != "two" {
+		t.Fatalf("text after reload = %q", got)
+	}
+	first.Write([]byte("more\n"))
+	first.Finish(nil, true)
+	a.Notify()
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Draw()
+	if got := row(scr, 0); got != "two" {
+		t.Errorf("text after the old reader's data = %q, want two", got)
+	}
+	if got := row(scr, 3); strings.Contains(got, "reading") {
+		t.Errorf("status = %q: the old reader's state must not show", got)
+	}
+}

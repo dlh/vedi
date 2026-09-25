@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -46,9 +47,12 @@ type scenario struct {
 	args     []string
 	macOS    bool
 	config   config.Config
-	nl       bool // the last input section ended with a newline
-	hasEOF   bool // the file has an eof section, so input stays open
-	finished bool // an eof section has run
+	nl       bool   // the last input section ended with a newline
+	file     bool   // the args name files, so the app has an Open
+	disk     string // what the file holds: the input, then each file or reload body
+	diskNL   bool   // and it ended with a newline
+	hasEOF   bool   // the file has an eof section, so input stays open
+	finished bool   // an eof section has run
 	started  bool
 	quit     bool
 	now      time.Time // the app's clock, advanced by mouse actions
@@ -135,6 +139,18 @@ func runScenario(t *testing.T, a archive) error {
 			}
 			s.buf.Finish(nil, s.nl)
 			s.notify()
+		case "file", "reload":
+			if err := s.start(); err != nil {
+				return err
+			}
+			if !s.file {
+				return fail("%s needs a file in -- args --", sec.name)
+			}
+			s.disk, s.diskNL = lines(sec.body)
+			if sec.name == "reload" {
+				s.app.Handle(&app.Changed{})
+				s.app.Draw()
+			}
 		case "keys":
 			if err := s.start(); err != nil {
 				return err
@@ -217,19 +233,30 @@ func runScenario(t *testing.T, a archive) error {
 
 // actions are the sections that drive the app, so none may follow a
 // quit.
-var actions = map[string]bool{"input": true, "eof": true, "keys": true, "mouse": true, "resize": true}
+var actions = map[string]bool{"input": true, "eof": true, "file": true, "reload": true, "keys": true, "mouse": true, "resize": true}
 
-// input appends the body to the buffer. txtar's trailing newline is
-// stripped; a second one means the input itself ended with a newline,
-// which Finish is told. Every section's last line is ended, so the
-// buffer sees it as a line at once.
+// input appends the body to the buffer and to the disk text.
 func (s *scenario) input(body string) {
-	if body == "" {
+	text, nl := lines(body)
+	if text == "" {
 		return
 	}
-	text := strings.TrimSuffix(body, "\n")
-	s.nl = strings.HasSuffix(text, "\n")
-	s.buf.Write([]byte(strings.TrimSuffix(text, "\n") + "\n"))
+	s.nl = nl
+	s.buf.Write([]byte(text))
+	s.disk, s.diskNL = s.disk+text, nl
+}
+
+// lines is a section body as file bytes. txtar's trailing newline is
+// stripped; a second one means the text itself ended with a newline,
+// which Finish is told. Every line is ended, so the buffer sees each
+// as a line at once.
+func lines(body string) (text string, nl bool) {
+	if body == "" {
+		return "", false
+	}
+	text = strings.TrimSuffix(body, "\n")
+	nl = strings.HasSuffix(text, "\n")
+	return strings.TrimSuffix(text, "\n") + "\n", nl
 }
 
 // start builds the screen and app the first time an action or
@@ -256,6 +283,15 @@ func (s *scenario) start() error {
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
 	appOpts.Keys = s.config.Keymap(s.macOS)
+	if s.file = len(files) > 0 && !slices.Contains(files, "-"); s.file {
+		// Open is the disk text, finished: a reload lands at once.
+		appOpts.Open = func(func()) (*buffer.Buffer, func(), error) {
+			b := buffer.New()
+			b.Write([]byte(s.disk))
+			b.Finish(nil, s.diskNL)
+			return b, func() {}, nil
+		}
+	}
 	s.app = app.New(s.scr, s.buf, appOpts)
 	s.notify()
 	return nil
@@ -407,6 +443,7 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"os after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- os --\nmacos\n", "line 6, -- os --: must come before the app starts"},
 		{"config after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- config --\nmap q none\n", "line 6, -- config --: must come before the app starts"},
 		{"bad config", "T\n-- config --\nmap q nope\n-- input --\nhi\n", `line 2, -- config --: config:1: unknown action "nope"`},
+		{"reload without file", "T\n-- input --\nhi\n-- reload --\nho\n", "line 4, -- reload --: reload needs a file in -- args --"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

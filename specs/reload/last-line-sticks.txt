@@ -1,0 +1,24 @@
+A cursor on the last line stays on the last line when the text read
+again is longer: a log that grows is followed.
+
+-- size --
+40x4
+-- args --
+f.txt
+-- input --
+one
+two
+-- keys --
+G
+-- reload --
+one
+two
+three
+four
+-- screen --
+two
+three
+four
+f.txt  line 4/4  wrap             h help
+-- cursor --
+2 0

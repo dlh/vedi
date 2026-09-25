@@ -296,6 +296,9 @@ func (a *App) statusText() string {
 	if !eof {
 		reading = "  reading…"
 	}
+	if a.next != nil {
+		reading += "  reloading…"
+	}
 	return fmt.Sprintf("%s  line %d/%d  %s%s", a.name, a.cur.Line+1, a.buf.Len(), mode, reading)
 }
 

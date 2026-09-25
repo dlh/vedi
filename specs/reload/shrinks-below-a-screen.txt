@@ -1,0 +1,29 @@
+When the text read again is shorter than the screen, the view fills
+from the top: not the last line over blank rows.
+
+-- size --
+40x4
+-- args --
+f.txt
+-- input --
+aaa
+bbb
+ccc
+ddd
+eee
+fff
+ggg
+hhh
+-- keys --
+G
+-- reload --
+aaa
+bbb
+ccc
+-- screen --
+aaa
+bbb
+ccc
+f.txt  line 3/3  wrap             h help
+-- cursor --
+2 0
