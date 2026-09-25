@@ -3,6 +3,7 @@ module go.dlh.dev/vedi
 go 1.27.1
 
 require (
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gdamore/tcell/v2 v2.13.10
 	github.com/rivo/uniseg v0.4.7
 )
