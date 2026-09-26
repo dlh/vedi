@@ -254,3 +254,48 @@ func TestAutoReload(t *testing.T) {
 		}
 	}
 }
+
+// TestWrap: wrap no starts in nowrap mode; yes, the default, in wrap;
+// anything else is an error.
+func TestWrap(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"", false},
+		{"wrap no\n", true},
+		{"wrap yes\n", false},
+		{"wrap no\nwrap yes\n", false},
+		{"wrap yes\nmap x quit\nwrap no\n", true},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.NoWrap != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want NoWrap %v", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"wrap\n", "wrap maybe\n", "wrap no yes\n"} {
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != "vedi.conf:1: wrap takes yes or no" {
+			t.Errorf("Parse(%q) err = %v, want wrap takes yes or no", src, err)
+		}
+	}
+}
+
+// TestClipboardCmd: clipboard_cmd takes the rest of the line, spaces
+// and all; the last line wins; a bare verb is an error.
+func TestClipboardCmd(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{"", ""},
+		{"clipboard_cmd pbcopy\n", "pbcopy"},
+		{"clipboard_cmd  xclip -selection clipboard  \n", "xclip -selection clipboard"},
+		{"\tclipboard_cmd\twl-copy\n", "wl-copy"},
+		{"clipboard_cmd pbcopy\nclipboard_cmd wl-copy\n", "wl-copy"},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.ClipboardCmd != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want ClipboardCmd %q", tc.src, c, err, tc.want)
+		}
+	}
+	if _, err := Parse("vedi.conf", []byte("clipboard_cmd\n")); err == nil || err.Error() != "vedi.conf:1: clipboard_cmd takes a command" {
+		t.Errorf("Parse(\"clipboard_cmd\") err = %v, want clipboard_cmd takes a command", err)
+	}
+}

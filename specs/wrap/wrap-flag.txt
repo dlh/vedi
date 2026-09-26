@@ -1,0 +1,16 @@
+--wrap starts in wrap mode despite wrap no in the config.
+
+-- size --
+26x5
+-- args --
+--wrap
+-- config --
+wrap no
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+0123
+
+
+<stdin>  line 1/1  wrap

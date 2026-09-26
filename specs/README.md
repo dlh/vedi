@@ -41,7 +41,7 @@ Setup:
 | `-- size --` | `WxH`. Default `40x6`. |
 | `-- args --` | The command line: `-S +G`, `--scrolled-by 1 --cursor-row 3`, `--clipboard-cmd false`. Split on whitespace, no quoting, so a `--clipboard-cmd` value cannot contain spaces. File names only name the input in the status line; the text still comes from `-- input --`. |
 | `-- os --` | `macos` or `linux`, for the keys that exist on one and not the other. Default `linux`. |
-| `-- config --` | A config file body, laid over the default bindings: `map h left`, `map q none`. |
+| `-- config --` | A config file body, laid over the default bindings: `map h left`, `map q none`, `wrap no`, `clipboard_cmd sh -c false`. |
 | `-- input --` | Text for the buffer. A section ending with a blank line is input that ends with a newline. Repeats append later. |
 | `-- eof --` | Ends the input. Without one, input is complete before the first draw. |
 

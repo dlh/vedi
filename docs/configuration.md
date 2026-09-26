@@ -29,6 +29,14 @@ it. Blank lines and lines starting with `#` are skipped.
 `R` still reloads it. `auto_reload yes` is the default. On the command
 line `--no-auto-reload` and `--auto-reload` override it for one run.
 
+`wrap no` starts in nowrap mode; `w` still toggles. `wrap yes` is the
+default. `-S` and `--wrap` override it for one run.
+
+`clipboard_cmd <command>` pipes copied text to the command instead of
+OSC 52; the command is the rest of the line, so `clipboard_cmd xclip
+-selection clipboard` works. `--clipboard-cmd` overrides it for one
+run.
+
 ## Keys
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or

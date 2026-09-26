@@ -1,0 +1,19 @@
+--clipboard-cmd overrides clipboard_cmd in the config for one run:
+the config's `false` would fail, the flag's `true` succeeds.
+
+-- size --
+40x5
+-- args --
+--clipboard-cmd true
+-- config --
+clipboard_cmd false
+-- input --
+hello
+-- keys --
+Shift+Right y
+-- screen --
+[h]ello
+
+
+
+copied 1 line                     h help

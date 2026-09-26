@@ -14,6 +14,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
 
     vedi [flags] [file...]
       -S, --nowrap            start in nowrap mode
+      --wrap                  start in wrap mode (the default)
       -F, --quit-if-one-page  print the text and quit if it fits the screen
       --auto-reload           read a file again when it changes on disk (the default)
       --no-auto-reload        leave a changed file as it was read; R still reloads
@@ -33,6 +34,9 @@ A file that changes on disk is read again, the cursor keeping its
 line, or the last line if it was on it: a log that grows is followed.
 `R` reads it again by hand. A pipe is read once. `--no-auto-reload`,
 or `auto_reload no` in the config, leaves a changed file to `R`.
+
+`-S`, or `wrap no` in the config, starts in nowrap mode; `w` toggles
+it either way.
 
 `-F` is for a pager that should get out of the way: when all the text
 fits on one screen it is printed as if by `cat`, and the pager only
@@ -89,7 +93,8 @@ on bright yellow, whatever the text's own colors.
 Copy uses OSC 52, which works in kitty, xterm, tmux (`set-clipboard on`)
 and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
 `--clipboard-cmd wl-copy` (Wayland) or
-`--clipboard-cmd 'xclip -selection clipboard'` (X11).
+`--clipboard-cmd 'xclip -selection clipboard'` (X11), or
+`clipboard_cmd xclip -selection clipboard` in the config.
 
 ## Terminal.app
 

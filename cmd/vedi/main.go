@@ -150,7 +150,7 @@ func main() {
 	if src != nil {
 		buf = buffer.NewFrom(src)
 	}
-	appOpts := opts.App(scr, files)
+	appOpts := opts.App(scr, files, cfg)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
 	if src != nil {
 		appOpts.Open = reopen(files)

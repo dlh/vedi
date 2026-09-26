@@ -1,0 +1,18 @@
+clipboard_cmd in the config is --clipboard-cmd for every run; the
+command is the rest of the line, spaces included. `sh -c false` always
+fails, so the status line shows the failure.
+
+-- size --
+40x5
+-- config --
+clipboard_cmd sh -c false
+-- input --
+hello
+-- keys --
+Shift+Right y
+-- screen --
+[h]ello
+
+
+
+copy failed: exit status 1        h help

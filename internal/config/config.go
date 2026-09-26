@@ -17,11 +17,13 @@ type Config struct {
 	Keys         []input.Binding // map lines, in order
 	Clear        bool            // clear_all_shortcuts: the map starts empty
 	NoAutoReload bool            // auto_reload no: a changed file is not read again
+	NoWrap       bool            // wrap no: start in nowrap mode
+	ClipboardCmd string          // clipboard_cmd: copy pipes to this, not OSC 52
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
-// "auto_reload yes|no", blank lines and # comments. Errors read
-// name:line: message.
+// "auto_reload yes|no", "wrap yes|no", "clipboard_cmd <command>", blank
+// lines and # comments. Errors read name:line: message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
@@ -56,6 +58,16 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("auto_reload takes yes or no")
 			}
 			c.NoAutoReload = f[1] == "no"
+		case "wrap":
+			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+				return c, fail("wrap takes yes or no")
+			}
+			c.NoWrap = f[1] == "no"
+		case "clipboard_cmd":
+			if len(f) < 2 {
+				return c, fail("clipboard_cmd takes a command")
+			}
+			c.ClipboardCmd = strings.TrimSpace(strings.TrimSpace(line)[len(f[0]):])
 		default:
 			return c, fail("unknown verb %q", f[0])
 		}

@@ -1,0 +1,14 @@
+wrap no in the config starts every run in nowrap mode, as -S does.
+
+-- size --
+26x5
+-- config --
+wrap no
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+
+
+
+<stdin>  line 1/1  nowrap

@@ -21,8 +21,10 @@ func TestParse(t *testing.T) {
 	}{
 		{"none", nil, Options{}, nil, false},
 		{"file", []string{"a.txt"}, Options{}, []string{"a.txt"}, false},
-		{"nowrap short", []string{"-S", "a"}, Options{NoWrap: true}, []string{"a"}, false},
-		{"nowrap long", []string{"--nowrap"}, Options{NoWrap: true}, nil, false},
+		{"nowrap short", []string{"-S", "a"}, Options{Wrap: ptr(false)}, []string{"a"}, false},
+		{"nowrap long", []string{"--nowrap"}, Options{Wrap: ptr(false)}, nil, false},
+		{"wrap", []string{"--wrap"}, Options{Wrap: ptr(true)}, nil, false},
+		{"last wrap wins", []string{"-S", "--wrap"}, Options{Wrap: ptr(true)}, nil, false},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
@@ -48,7 +50,7 @@ func TestParse(t *testing.T) {
 		{"screen conflicts with plus N", []string{"+5", "--scrolled-by", "0"}, Options{}, nil, true},
 		{"screen conflicts with plus G", []string{"--cursor-row", "1", "+G"}, Options{}, nil, true},
 		{"plus G conflicts with plus N", []string{"+G", "+5"}, Options{}, nil, true},
-		{"flag after file", []string{"a", "-S"}, Options{NoWrap: true}, []string{"a"}, false},
+		{"flag after file", []string{"a", "-S"}, Options{Wrap: ptr(false)}, []string{"a"}, false},
 		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{}, nil, false},
 		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
 		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: ptr(false)}, []string{"f"}, false},
@@ -92,18 +94,47 @@ func TestReloads(t *testing.T) {
 func TestApp(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
 	scr := tcell.NewSimulationScreen("UTF-8")
-	got := Options{NoWrap: true, StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil)
+	none := config.Config{}
+	got := Options{Wrap: ptr(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil, none)
 	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 || !got.QuitIfOnePage {
 		t.Errorf("App() = %+v", got)
 	}
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {
 		t.Errorf("default copier = %T, want OSC52", got.Copier)
 	}
-	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr, nil).Copier).(clipboard.Command); !ok {
+	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr, nil, none).Copier).(clipboard.Command); !ok {
 		t.Error("--clipboard-cmd should give a Command copier")
 	}
 	t.Setenv("TERM_PROGRAM", "Apple_Terminal")
-	if c, ok := (Options{}.App(scr, nil).Copier).(clipboard.Command); !ok || c.Cmd != "pbcopy" {
+	if c, ok := (Options{}.App(scr, nil, none).Copier).(clipboard.Command); !ok || c.Cmd != "pbcopy" {
 		t.Error("Terminal.app should default to pbcopy")
+	}
+}
+
+// TestAppConfig: the flag decides the wrap mode and clipboard command;
+// without one the config does.
+func TestAppConfig(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "")
+	scr := tcell.NewSimulationScreen("UTF-8")
+	cfg := config.Config{NoWrap: true, ClipboardCmd: "wl-copy"}
+	for _, tc := range []struct {
+		opts Options
+		cfg  config.Config
+		mode layout.Mode
+		cmd  string
+	}{
+		{Options{}, config.Config{}, layout.Wrap, ""},
+		{Options{}, cfg, layout.NoWrap, "wl-copy"},
+		{Options{Wrap: ptr(true), ClipboardCmd: "pbcopy"}, cfg, layout.Wrap, "pbcopy"},
+		{Options{Wrap: ptr(false)}, config.Config{}, layout.NoWrap, ""},
+	} {
+		got := tc.opts.App(scr, nil, tc.cfg)
+		cmd := ""
+		if c, ok := got.Copier.(clipboard.Command); ok {
+			cmd = c.Cmd
+		}
+		if got.Mode != tc.mode || cmd != tc.cmd {
+			t.Errorf("%+v.App(%+v) = mode %v cmd %q, want %v %q", tc.opts, tc.cfg, got.Mode, cmd, tc.mode, tc.cmd)
+		}
 	}
 }

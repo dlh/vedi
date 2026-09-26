@@ -280,7 +280,7 @@ func (s *scenario) start() error {
 	}
 	s.t.Cleanup(s.scr.Fini)
 	s.scr.SetSize(s.w, s.h)
-	appOpts := opts.App(s.scr, files)
+	appOpts := opts.App(s.scr, files, s.config)
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
 	appOpts.Keys = s.config.Keymap(s.macOS)

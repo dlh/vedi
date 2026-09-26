@@ -18,6 +18,7 @@ import (
 const Usage = `usage: vedi [flags] [file...]
 
   -S, --nowrap            start in nowrap mode
+  --wrap                  start in wrap mode (the default)
   -F, --quit-if-one-page  print the text and quit if it fits the screen
   --auto-reload           read a file again when it changes on disk (the default)
   --no-auto-reload        leave a changed file as it was read; R still reloads
@@ -36,24 +37,29 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	NoWrap        bool
+	Wrap          *bool // --wrap, -S; nil leaves it to the config
 	QuitIfOnePage bool
 	StartLine     int // 1-based; 0 for none
 	Follow        bool
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd  string
-	Config        string // "" for the default location
-	AutoReload    *bool  // --auto-reload, --no-auto-reload; nil leaves it to the config
+	ClipboardCmd  string      // --clipboard-cmd; "" leaves it to the config
+	Config        string      // "" for the default location
+	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
 	Help          bool
 	Version       bool
 }
 
-// App converts the options to the app's. The input is named after
-// files, each as given; "-" and no files are "<stdin>".
-func (o Options) App(scr tcell.Screen, files []string) app.Options {
+// App converts the options to the app's: a flag, else the config,
+// decides the wrap mode and the clipboard command. The input is named
+// after files, each as given; "-" and no files are "<stdin>".
+func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
 	mode := layout.Wrap
-	if o.NoWrap {
+	if o.Wrap != nil && !*o.Wrap || o.Wrap == nil && cfg.NoWrap {
 		mode = layout.NoWrap
+	}
+	cmd := o.ClipboardCmd
+	if cmd == "" {
+		cmd = cfg.ClipboardCmd
 	}
 	return app.Options{
 		Name:          inputName(files),
@@ -62,7 +68,7 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 		StartLine:     o.StartLine,
 		Follow:        o.Follow,
 		Screen:        o.Screen,
-		Copier:        clipboard.New(scr, o.ClipboardCmd, os.Getenv("TERM_PROGRAM")),
+		Copier:        clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
 		MacOS:         macOS,
 	}
 }
@@ -142,7 +148,9 @@ func Parse(args []string) (Options, []string, error) {
 		}
 		switch {
 		case a == "-S" || a == "--nowrap":
-			o.NoWrap = true
+			o.Wrap = ptr(false)
+		case a == "--wrap":
+			o.Wrap = ptr(true)
 		case a == "-F" || a == "--quit-if-one-page":
 			o.QuitIfOnePage = true
 		case a == "--auto-reload":
