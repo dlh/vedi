@@ -1,0 +1,18 @@
+-F measures tabs at the terminal's stops, every 8 cells, whatever
+tab_width says: the printed text is laid out by the terminal, not by
+vedi. Two lines that fit at tab_width 1 would print as four rows, so
+the pager stays.
+
+-- size --
+10x3
+-- args --
+-F
+-- config --
+tab_width 1
+-- input --
+aaaa	bbbb
+aaaa	bbbb
+-- screen --
+aaaa bbbb
+aaaa bbbb
+<stdin>  l

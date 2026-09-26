@@ -310,11 +310,12 @@ func (a *App) onData() bool {
 }
 
 // fits reports whether every line's rows fit in the text rows. The
-// printed text wraps in the terminal whatever the mode, so it is
-// measured wrapped.
+// printed text is the terminal's to lay out: it wraps whatever the
+// mode and its tabs stop every 8 cells whatever tab_width says, so it
+// is measured that way.
 func (a *App) fits() bool {
 	w, _ := a.scr.Size()
-	l := layout.Layout{Width: w, Mode: layout.Wrap, Tab: a.tab}
+	l := layout.Layout{Width: w, Mode: layout.Wrap}
 	rows := 0
 	for i := 0; i < a.buf.Len(); i++ {
 		if rows += l.Rows(a.line(i)); rows > a.textRows() {
