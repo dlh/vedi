@@ -276,8 +276,13 @@ func (a *App) act() {
 
 // onData runs after the reader appended lines: it applies a pending +N,
 // follows for +G and applies a Screen at EOF. It reports whether to
-// quit, for -F.
+// quit, for -F. While the bindings are shown there is nothing to do:
+// the h key ended startup positioning, and the text view is placed
+// when it comes back.
 func (a *App) onData() bool {
+	if a.helping {
+		return false
+	}
 	eof, err := a.buf.Finished()
 	if a.onePage {
 		if !a.fits() || err != nil {

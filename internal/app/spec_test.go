@@ -150,7 +150,8 @@ func runScenario(t *testing.T, a archive) error {
 			s.disk, s.diskNL = lines(sec.body)
 			if sec.name == "reload" && s.reloads {
 				s.app.Handle(&app.Changed{})
-				s.app.Draw()
+				// The reload's reader notifies at EOF, as the real one does.
+				s.notify()
 			}
 		case "keys":
 			if err := s.start(); err != nil {

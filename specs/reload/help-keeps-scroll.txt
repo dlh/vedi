@@ -1,0 +1,29 @@
+A reload while the bindings are shown leaves them scrolled where they
+were, down and sideways.
+
+-- size --
+40x6
+-- args --
+f.txt
+-- input --
+one
+two
+-- keys --
+h Down Right
+-- screen --
+
+⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
+
+                                  Show t
+                                  Quit.
+help  motion scrolls, any other key retu
+-- reload --
+uno
+dos
+-- screen --
+
+⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
+
+                                  Show t
+                                  Quit.
+help  motion scrolls, any other key retu
