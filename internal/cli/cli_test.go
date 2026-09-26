@@ -7,6 +7,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
+	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/layout"
 )
 
@@ -49,6 +50,9 @@ func TestParse(t *testing.T) {
 		{"plus G conflicts with plus N", []string{"+G", "+5"}, Options{}, nil, true},
 		{"flag after file", []string{"a", "-S"}, Options{NoWrap: true}, []string{"a"}, false},
 		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{}, nil, false},
+		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
+		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: ptr(false)}, []string{"f"}, false},
+		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,6 +67,25 @@ func TestParse(t *testing.T) {
 				t.Fatalf("got %+v %v, want %+v %v", got, files, tc.want, tc.files)
 			}
 		})
+	}
+}
+
+// TestReloads: the flag decides; without one the config does; without
+// either a changed file is read again.
+func TestReloads(t *testing.T) {
+	for _, tc := range []struct {
+		flag *bool
+		cfg  config.Config
+		want bool
+	}{
+		{nil, config.Config{}, true},
+		{nil, config.Config{NoAutoReload: true}, false},
+		{ptr(false), config.Config{}, false},
+		{ptr(true), config.Config{NoAutoReload: true}, true},
+	} {
+		if got := (Options{AutoReload: tc.flag}).Reloads(tc.cfg); got != tc.want {
+			t.Errorf("Options{AutoReload: %v}.Reloads(%+v) = %v, want %v", tc.flag, tc.cfg, got, tc.want)
+		}
 	}
 }
 

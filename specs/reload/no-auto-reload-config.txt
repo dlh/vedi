@@ -1,0 +1,26 @@
+auto_reload no in the config is --no-auto-reload for every run.
+
+-- args --
+f.txt
+-- config --
+auto_reload no
+-- input --
+old
+-- reload --
+new
+-- screen --
+old
+
+
+
+
+f.txt  line 1/1  wrap             h help
+-- keys --
+R
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help

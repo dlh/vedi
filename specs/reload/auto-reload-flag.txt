@@ -1,0 +1,18 @@
+--auto-reload reads a changed file again despite auto_reload no in
+the config.
+
+-- args --
+--auto-reload f.txt
+-- config --
+auto_reload no
+-- input --
+old
+-- reload --
+new
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help

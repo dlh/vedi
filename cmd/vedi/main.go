@@ -157,7 +157,7 @@ func main() {
 	}
 	a := app.New(scr, buf, appOpts)
 	go buffer.Fill(in, buf, a.Notify)
-	if src != nil {
+	if src != nil && opts.Reloads(cfg) {
 		stop := watch.Files(files, postChanged(scr))
 		defer stop()
 	}

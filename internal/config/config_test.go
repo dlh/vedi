@@ -223,3 +223,34 @@ func TestLoad(t *testing.T) {
 		t.Error("a directory reads without error")
 	}
 }
+
+// TestAutoReload: auto_reload no turns off reading a changed file
+// again; yes, the default, turns it back on; anything else is an
+// error.
+func TestAutoReload(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"", false},
+		{"auto_reload no\n", true},
+		{"auto_reload yes\n", false},
+		{"auto_reload no\nauto_reload yes\n", false},
+		{"auto_reload yes\nmap x quit\nauto_reload no\n", true},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.NoAutoReload != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want NoAutoReload %v", tc.src, c, err, tc.want)
+		}
+	}
+	bad := []struct{ src, err string }{
+		{"auto_reload\n", "vedi.conf:1: auto_reload takes yes or no"},
+		{"auto_reload maybe\n", "vedi.conf:1: auto_reload takes yes or no"},
+		{"auto_reload no yes\n", "vedi.conf:1: auto_reload takes yes or no"},
+	}
+	for _, tc := range bad {
+		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
+			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
+		}
+	}
+}

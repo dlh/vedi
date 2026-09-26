@@ -23,6 +23,12 @@ it. Blank lines and lines starting with `#` are skipped.
     map j down
     map k up
 
+## Settings
+
+`auto_reload no` leaves a file that changes on disk as it was read;
+`R` still reloads it. `auto_reload yes` is the default. On the command
+line `--no-auto-reload` and `--auto-reload` override it for one run.
+
 ## Keys
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or

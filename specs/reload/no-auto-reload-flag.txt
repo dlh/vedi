@@ -1,0 +1,25 @@
+--no-auto-reload leaves a file that changes on disk as it was read.
+R still reads it again.
+
+-- args --
+--no-auto-reload f.txt
+-- input --
+old
+-- reload --
+new
+-- screen --
+old
+
+
+
+
+f.txt  line 1/1  wrap             h help
+-- keys --
+R
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help

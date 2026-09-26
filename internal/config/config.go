@@ -14,12 +14,14 @@ import (
 
 // Config is what a file sets.
 type Config struct {
-	Keys  []input.Binding // map lines, in order
-	Clear bool            // clear_all_shortcuts: the map starts empty
+	Keys         []input.Binding // map lines, in order
+	Clear        bool            // clear_all_shortcuts: the map starts empty
+	NoAutoReload bool            // auto_reload no: a changed file is not read again
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
-// blank lines and # comments. Errors read name:line: message.
+// "auto_reload yes|no", blank lines and # comments. Errors read
+// name:line: message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
@@ -49,6 +51,11 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("clear_all_shortcuts takes nothing")
 			}
 			c.Keys, c.Clear = nil, true
+		case "auto_reload":
+			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+				return c, fail("auto_reload takes yes or no")
+			}
+			c.NoAutoReload = f[1] == "no"
 		default:
 			return c, fail("unknown verb %q", f[0])
 		}

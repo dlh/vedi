@@ -11,6 +11,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
+	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/layout"
 )
 
@@ -18,6 +19,8 @@ const Usage = `usage: vedi [flags] [file...]
 
   -S, --nowrap            start in nowrap mode
   -F, --quit-if-one-page  print the text and quit if it fits the screen
+  --auto-reload           read a file again when it changes on disk (the default)
+  --no-auto-reload        leave a changed file as it was read; R still reloads
   +G                      start at the last line and follow until EOF
   +N                      start with line N at the top
   --scrolled-by N         start on the last screenful, scrolled N rows up
@@ -40,6 +43,7 @@ type Options struct {
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd  string
 	Config        string // "" for the default location
+	AutoReload    *bool  // --auto-reload, --no-auto-reload; nil leaves it to the config
 	Help          bool
 	Version       bool
 }
@@ -64,6 +68,17 @@ func (o Options) App(scr tcell.Screen, files []string) app.Options {
 }
 
 var macOS = runtime.GOOS == "darwin"
+
+func ptr(b bool) *bool { return &b }
+
+// Reloads says whether a file that changes on disk is read again: as
+// the flag says, else the config, else yes.
+func (o Options) Reloads(cfg config.Config) bool {
+	if o.AutoReload != nil {
+		return *o.AutoReload
+	}
+	return !cfg.NoAutoReload
+}
 
 func inputName(files []string) string {
 	if len(files) == 0 {
@@ -130,6 +145,10 @@ func Parse(args []string) (Options, []string, error) {
 			o.NoWrap = true
 		case a == "-F" || a == "--quit-if-one-page":
 			o.QuitIfOnePage = true
+		case a == "--auto-reload":
+			o.AutoReload = ptr(true)
+		case a == "--no-auto-reload":
+			o.AutoReload = ptr(false)
 		case a == "+G":
 			o.Follow = true
 		case strings.HasPrefix(a, "+"):

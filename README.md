@@ -15,6 +15,8 @@ page](https://github.com/dlh/vedi/releases), or build from source:
     vedi [flags] [file...]
       -S, --nowrap            start in nowrap mode
       -F, --quit-if-one-page  print the text and quit if it fits the screen
+      --auto-reload           read a file again when it changes on disk (the default)
+      --no-auto-reload        leave a changed file as it was read; R still reloads
       +G                      start at the last line and follow until EOF
       +N                      start with line N at the top
       --scrolled-by N         start on the last screenful, scrolled N rows up
@@ -29,7 +31,8 @@ being viewed, or `<stdin>`.
 
 A file that changes on disk is read again, the cursor keeping its
 line, or the last line if it was on it: a log that grows is followed.
-`R` reads it again by hand. A pipe is read once.
+`R` reads it again by hand. A pipe is read once. `--no-auto-reload`,
+or `auto_reload no` in the config, leaves a changed file to `R`.
 
 `-F` is for a pager that should get out of the way: when all the text
 fits on one screen it is printed as if by `cat`, and the pager only
