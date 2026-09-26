@@ -1,0 +1,35 @@
+With the mark set, a row motion with no row left to take goes to the
+end of the text downward and to its start upward, as it does with
+Shift.
+
+-- size --
+40x5
+-- config --
+map v set_mark
+-- input --
+one
+two
+-- keys --
+Down v Down y
+-- screen --
+one
+[two]
+
+
+copied 1 line                     h help
+-- cursor --
+1 3
+-- clipboard --
+two
+-- keys --
+Esc g Right v Up y
+-- screen --
+[o]ne
+two
+
+
+copied 1 line                     h help
+-- cursor --
+0 0
+-- clipboard --
+o

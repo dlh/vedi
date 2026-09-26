@@ -447,11 +447,12 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.Quit:
 		return true
 	}
-	// Extending past the last row takes the rest of the last line; past
-	// the first, the start of the first.
-	if c.Extend && left > 0 {
+	// Extending past the last row, by Shift or the mark, takes the rest
+	// of the last line; past the first, the start of the first.
+	extending := c.Extend || a.marking
+	if extending && left > 0 {
 		a.cur = a.endPos()
-	} else if c.Extend && left < 0 {
+	} else if extending && left < 0 {
 		a.cur = buffer.Pos{}
 	}
 	a.scrollToCursor()
