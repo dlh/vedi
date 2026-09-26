@@ -27,7 +27,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N          put the cursor on row N of the last screenful
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
-  --config FILE           read key bindings from FILE, not ~/.config/vedi/vedi.conf
+  --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
   -v, --version           print the version
 

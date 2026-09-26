@@ -23,7 +23,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --cursor-row N          put the cursor on row N of the last screenful
       --cursor-col N          put the cursor in column N of the last screenful
       --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
-      --config FILE           read key bindings from FILE, not ~/.config/vedi/vedi.conf
+      --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
       -v, --version           print the version
 
 With no files, `vedi` reads stdin. The status line names the files
