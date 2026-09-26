@@ -232,3 +232,39 @@ func TestRenameReplaceRewatches(t *testing.T) {
 		t.Fatal("a write to the new file did not fire")
 	}
 }
+
+// TestStopWaitsForCheck: stop returns only once a check under way is
+// over, so nothing fires after it.
+func TestStopWaitsForCheck(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "f")
+	write(t, name, "a\n")
+	age(t, name)
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	stop := Files([]string{name}, func() {
+		close(entered)
+		<-release
+	})
+	write(t, name, "ab\n")
+	select {
+	case <-entered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("a write did not fire")
+	}
+	stopped := make(chan struct{})
+	go func() {
+		stop()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+		t.Fatal("stop returned during a check")
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(release)
+	select {
+	case <-stopped:
+	case <-time.After(3 * time.Second):
+		t.Fatal("stop did not return after the check")
+	}
+}

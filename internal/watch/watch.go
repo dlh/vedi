@@ -52,7 +52,8 @@ func newWatcher(names []string, changed func()) *watcher {
 // fsnotify the check runs every half second. A file that cannot be
 // statted keeps its last stamp: one that vanishes fires nothing, one
 // that comes back fires if it came back different. stop ends the
-// watch.
+// watch, and returns once a check under way is over: changed is not
+// called after it.
 func Files(names []string, changed func()) (stop func()) {
 	w := newWatcher(names, changed)
 	every := time.Second
@@ -61,8 +62,15 @@ func Files(names []string, changed func()) (stop func()) {
 		every = 500 * time.Millisecond
 	}
 	done := make(chan struct{})
-	go w.run(fsw, every, done)
-	return func() { close(done) }
+	exited := make(chan struct{})
+	go func() {
+		defer close(exited)
+		w.run(fsw, every, done)
+	}()
+	return func() {
+		close(done)
+		<-exited
+	}
 }
 
 // notifier watches the files, or is nil when fsnotify cannot. A file
@@ -96,7 +104,9 @@ func (w *watcher) rewatch(fsw *fsnotify.Watcher) {
 // run checks on every tick and on every event for a file, until
 // done. An event that takes a file's inode away marks its watch lost.
 // An fsnotify error, an overflow say, is dropped: the ticker still
-// runs.
+// runs. A tick or event that is ready together with done loses to
+// it: select picks between ready cases at random, and nothing fires
+// after stop.
 func (w *watcher) run(fsw *fsnotify.Watcher, every time.Duration, done chan struct{}) {
 	var events chan fsnotify.Event
 	var errs chan error
@@ -111,6 +121,9 @@ func (w *watcher) run(fsw *fsnotify.Watcher, every time.Duration, done chan stru
 		case <-done:
 			return
 		case <-t.C:
+			if stopped(done) {
+				return
+			}
 			if fsw != nil {
 				w.rewatch(fsw)
 			}
@@ -119,6 +132,9 @@ func (w *watcher) run(fsw *fsnotify.Watcher, every time.Duration, done chan stru
 			if !ok {
 				events = nil
 				break
+			}
+			if stopped(done) {
+				return
 			}
 			i := slices.Index(w.names, filepath.Clean(ev.Name))
 			if i < 0 {
@@ -134,6 +150,16 @@ func (w *watcher) run(fsw *fsnotify.Watcher, every time.Duration, done chan stru
 				errs = nil
 			}
 		}
+	}
+}
+
+// stopped reports whether done is closed.
+func stopped(done chan struct{}) bool {
+	select {
+	case <-done:
+		return true
+	default:
+		return false
 	}
 }
 
