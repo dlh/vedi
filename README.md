@@ -24,6 +24,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --cursor-row N          put the cursor on row N of the last screenful
       --cursor-col N          put the cursor in column N of the last screenful
       --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+      --tab-width N           draw a tab as N cells (8)
       --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
       -v, --version           print the version
 
@@ -37,6 +38,9 @@ or `auto_reload no` in the config, leaves a changed file to `R`.
 
 `-S`, or `wrap no` in the config, starts in nowrap mode; `w` toggles
 it either way.
+
+A tab reaches the next multiple of 8 cells. `--tab-width 4`, or
+`tab_width 4` in the config, makes it 4.
 
 `-F` is for a pager that should get out of the way: when all the text
 fits on one screen it is printed as if by `cat`, and the pager only

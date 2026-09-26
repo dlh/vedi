@@ -28,6 +28,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N          put the cursor on row N of the last screenful
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+  --tab-width N           draw a tab as N cells (8)
   --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
   -v, --version           print the version
@@ -43,6 +44,7 @@ type Options struct {
 	Follow        bool
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd  string      // --clipboard-cmd; "" leaves it to the config
+	TabWidth      int         // --tab-width; 0 leaves it to the config
 	Config        string      // "" for the default location
 	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
 	Help          bool
@@ -50,8 +52,9 @@ type Options struct {
 }
 
 // App converts the options to the app's: a flag, else the config,
-// decides the wrap mode and the clipboard command. The input is named
-// after files, each as given; "-" and no files are "<stdin>".
+// decides the wrap mode, the clipboard command and the tab width. The
+// input is named after files, each as given; "-" and no files are
+// "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
 	mode := layout.Wrap
 	if o.Wrap != nil && !*o.Wrap || o.Wrap == nil && cfg.NoWrap {
@@ -60,6 +63,10 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 	cmd := o.ClipboardCmd
 	if cmd == "" {
 		cmd = cfg.ClipboardCmd
+	}
+	tab := o.TabWidth
+	if tab == 0 {
+		tab = cfg.TabWidth
 	}
 	return app.Options{
 		Name:          inputName(files),
@@ -70,6 +77,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		Screen:        o.Screen,
 		Copier:        clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
 		MacOS:         macOS,
+		TabWidth:      tab,
 	}
 }
 
@@ -107,6 +115,14 @@ var valueFlags = map[string]func(*Options, string) error{
 	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
 	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
 	"--config":        func(o *Options, v string) error { o.Config = v; return nil },
+	"--tab-width": func(o *Options, v string) error {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return fmt.Errorf("%q", v)
+		}
+		o.TabWidth = n
+		return nil
+	},
 }
 
 // screenInt returns a setter that parses an integer of at least min

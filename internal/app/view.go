@@ -259,7 +259,7 @@ func (a *App) drawStatus() {
 // drawRunes draws text from (x, y) glyph by glyph and returns its
 // width in cells.
 func drawRunes(scr tcell.Screen, x, y, w int, text []rune, st tcell.Style) int {
-	xs := layout.Cells(text)
+	xs := layout.Layout{}.Cells(text)
 	for i := 0; i < len(text); i++ {
 		j := i + 1
 		for j < len(text) && xs[j+1] == xs[j] {

@@ -1,0 +1,17 @@
+--tab-width overrides tab_width in the config for one run.
+
+-- size --
+40x5
+-- args --
+--tab-width 2
+-- config --
+tab_width 4
+-- input --
+a	b
+abcd	c
+-- screen --
+a b
+abcd  c
+
+
+<stdin>  line 1/2  wrap           h help

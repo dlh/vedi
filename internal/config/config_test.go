@@ -299,3 +299,28 @@ func TestClipboardCmd(t *testing.T) {
 		t.Errorf("Parse(\"clipboard_cmd\") err = %v, want clipboard_cmd takes a command", err)
 	}
 }
+
+// TestTabWidth: tab_width takes a positive number; zero, the default,
+// leaves the tab width to the app.
+func TestTabWidth(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want int
+	}{
+		{"", 0},
+		{"tab_width 4\n", 4},
+		{"tab_width 8\n", 8},
+		{"tab_width 2\ntab_width 4\n", 4},
+		{"tab_width 4\nmap x quit\n", 4},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.TabWidth != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want TabWidth %d", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"tab_width\n", "tab_width four\n", "tab_width 0\n", "tab_width -4\n", "tab_width 4 8\n"} {
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != "vedi.conf:1: tab_width takes a positive number" {
+			t.Errorf("Parse(%q) err = %v, want tab_width takes a positive number", src, err)
+		}
+	}
+}

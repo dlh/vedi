@@ -1,0 +1,16 @@
+tab_width in the config sets the cells per tab stop: a tab reaches the
+next multiple of it, not of 8.
+
+-- size --
+40x5
+-- config --
+tab_width 4
+-- input --
+a	b
+abcd	c
+-- screen --
+a   b
+abcd    c
+
+
+<stdin>  line 1/2  wrap           h help

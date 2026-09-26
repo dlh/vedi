@@ -30,6 +30,7 @@ type Options struct {
 	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
 	MacOS         bool             // there is a ⌘ key
 	Keys          input.Keymap     // nil for the defaults
+	TabWidth      int              // cells per tab stop; 0 for 8
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -55,6 +56,7 @@ type App struct {
 	copier clipboard.Copier
 	name   string
 	mode   layout.Mode
+	tab    int // cells per tab stop; 0 for the default
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -127,6 +129,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		copier:    opts.Copier,
 		name:      opts.Name,
 		mode:      opts.Mode,
+		tab:       opts.TabWidth,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
@@ -306,7 +309,7 @@ func (a *App) onData() bool {
 // measured wrapped.
 func (a *App) fits() bool {
 	w, _ := a.scr.Size()
-	l := layout.Layout{Width: w, Mode: layout.Wrap}
+	l := layout.Layout{Width: w, Mode: layout.Wrap, Tab: a.tab}
 	rows := 0
 	for i := 0; i < a.buf.Len(); i++ {
 		if rows += l.Rows(a.line(i)); rows > a.textRows() {
@@ -454,7 +457,7 @@ func (a *App) line(i int) []rune { return a.buf.Line(i).Text }
 
 func (a *App) layout() layout.Layout {
 	w, _ := a.scr.Size()
-	return layout.Layout{Width: w, Mode: a.mode}
+	return layout.Layout{Width: w, Mode: a.mode, Tab: a.tab}
 }
 
 // lineLayout is line i laid out for the current width and mode.

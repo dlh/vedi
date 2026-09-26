@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -19,11 +20,13 @@ type Config struct {
 	NoAutoReload bool            // auto_reload no: a changed file is not read again
 	NoWrap       bool            // wrap no: start in nowrap mode
 	ClipboardCmd string          // clipboard_cmd: copy pipes to this, not OSC 52
+	TabWidth     int             // tab_width: cells per tab stop; 0 for the default
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
-// "auto_reload yes|no", "wrap yes|no", "clipboard_cmd <command>", blank
-// lines and # comments. Errors read name:line: message.
+// "auto_reload yes|no", "wrap yes|no", "clipboard_cmd <command>",
+// "tab_width <n>", blank lines and # comments. Errors read name:line:
+// message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
@@ -68,6 +71,15 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("clipboard_cmd takes a command")
 			}
 			c.ClipboardCmd = strings.TrimSpace(strings.TrimSpace(line)[len(f[0]):])
+		case "tab_width":
+			if len(f) != 2 {
+				return c, fail("tab_width takes a positive number")
+			}
+			n, err := strconv.Atoi(f[1])
+			if err != nil || n < 1 {
+				return c, fail("tab_width takes a positive number")
+			}
+			c.TabWidth = n
 		default:
 			return c, fail("unknown verb %q", f[0])
 		}

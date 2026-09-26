@@ -37,6 +37,9 @@ OSC 52; the command is the rest of the line, so `clipboard_cmd xclip
 -selection clipboard` works. `--clipboard-cmd` overrides it for one
 run.
 
+`tab_width N` draws a tab as N cells: the next multiple of N from the
+row's start. 8 is the default. `--tab-width` overrides it for one run.
+
 ## Keys
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or

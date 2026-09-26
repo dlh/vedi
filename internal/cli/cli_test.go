@@ -55,6 +55,11 @@ func TestParse(t *testing.T) {
 		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
 		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: ptr(false)}, []string{"f"}, false},
 		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
+		{"tab width", []string{"--tab-width", "4", "f"}, Options{TabWidth: 4}, []string{"f"}, false},
+		{"tab width eq", []string{"--tab-width=2"}, Options{TabWidth: 2}, nil, false},
+		{"missing tab width", []string{"--tab-width"}, Options{}, nil, true},
+		{"bad tab width", []string{"--tab-width", "0"}, Options{}, nil, true},
+		{"bad tab width text", []string{"--tab-width", "four"}, Options{}, nil, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -135,6 +140,27 @@ func TestAppConfig(t *testing.T) {
 		}
 		if got.Mode != tc.mode || cmd != tc.cmd {
 			t.Errorf("%+v.App(%+v) = mode %v cmd %q, want %v %q", tc.opts, tc.cfg, got.Mode, cmd, tc.mode, tc.cmd)
+		}
+	}
+}
+
+// TestAppTabWidth: the flag decides the tab width; without one the
+// config does; without either it is zero, the app's default.
+func TestAppTabWidth(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "")
+	scr := tcell.NewSimulationScreen("UTF-8")
+	for _, tc := range []struct {
+		opts Options
+		cfg  config.Config
+		want int
+	}{
+		{Options{}, config.Config{}, 0},
+		{Options{}, config.Config{TabWidth: 4}, 4},
+		{Options{TabWidth: 2}, config.Config{TabWidth: 4}, 2},
+		{Options{TabWidth: 2}, config.Config{}, 2},
+	} {
+		if got := tc.opts.App(scr, nil, tc.cfg).TabWidth; got != tc.want {
+			t.Errorf("%+v.App(%+v).TabWidth = %d, want %d", tc.opts, tc.cfg, got, tc.want)
 		}
 	}
 }

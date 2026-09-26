@@ -369,7 +369,7 @@ func dump(scr tcell.SimulationScreen) string {
 			if len(c.Runes) == 0 {
 				continue
 			}
-			if layout.RuneWidth(c.Runes[0], 0) == 2 {
+			if (layout.Layout{}).RuneWidth(c.Runes[0], 0) == 2 {
 				x++ // the simulation leaves a wide rune's second cell as it was
 			}
 			if !status {

@@ -15,15 +15,20 @@ const (
 	NoWrap
 )
 
-const TabWidth = 8
+// DefaultTab is the tab width when Layout.Tab is zero.
+const DefaultTab = 8
 
 // RuneWidth is the cells r takes starting at cell x: a tab to the next
 // tab stop, a C0 control or DEL two (drawn as ^X), anything else as
 // uniseg measures it, 0 for combining marks.
-func RuneWidth(r rune, x int) int {
+func (l Layout) RuneWidth(r rune, x int) int {
 	switch {
 	case r == '\t':
-		return TabWidth - x%TabWidth
+		tab := l.Tab
+		if tab <= 0 {
+			tab = DefaultTab
+		}
+		return tab - x%tab
 	case r < 0x20 || r == 0x7f:
 		return 2
 	case r < 0x7f:
@@ -34,16 +39,16 @@ func RuneWidth(r rune, x int) int {
 
 // ZeroWidth reports whether r takes no cell of its own: a combining
 // mark, drawn on the rune before it.
-func ZeroWidth(r rune) bool { return RuneWidth(r, 0) == 0 }
+func ZeroWidth(r rune) bool { return Layout{}.RuneWidth(r, 0) == 0 }
 
 // Cells returns len(text)+1 entries: xs[i] is the cell column where rune
 // i starts and xs[len(text)] is the total width.
-func Cells(text []rune) []int {
+func (l Layout) Cells(text []rune) []int {
 	xs := make([]int, len(text)+1)
 	x := 0
 	for i, r := range text {
 		xs[i] = x
-		x += RuneWidth(r, x)
+		x += l.RuneWidth(r, x)
 	}
 	xs[len(text)] = x
 	return xs
@@ -55,6 +60,7 @@ type Segment struct{ Start, End int }
 type Layout struct {
 	Width int
 	Mode  Mode
+	Tab   int // cells per tab stop; zero is DefaultTab
 }
 
 // Line is text laid out once: its cell columns and visual rows. Lay a
@@ -68,7 +74,7 @@ type Line struct {
 // moves a rune that does not fit to the next row. An empty line is one
 // empty row.
 func (l Layout) Line(text []rune) Line {
-	xs := Cells(text)
+	xs := l.Cells(text)
 	n := len(text)
 	if l.Mode == NoWrap || l.Width <= 0 {
 		return Line{xs, []Segment{{0, n}}}

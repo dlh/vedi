@@ -19,7 +19,7 @@ func TestCells(t *testing.T) {
 		{"éx", []int{0, 1, 1, 2}}, // combining mark has zero width
 	}
 	for _, tc := range tests {
-		if got := Cells([]rune(tc.in)); !reflect.DeepEqual(got, tc.want) {
+		if got := (Layout{}).Cells([]rune(tc.in)); !reflect.DeepEqual(got, tc.want) {
 			t.Errorf("Cells(%q) = %v, want %v", tc.in, got, tc.want)
 		}
 	}
@@ -32,15 +32,15 @@ func TestSegments(t *testing.T) {
 		in   string
 		want []Segment
 	}{
-		{"wrap even", Layout{4, Wrap}, "abcdefghij", []Segment{{0, 4}, {4, 8}, {8, 10}}},
-		{"wrap exact", Layout{4, Wrap}, "abcdefgh", []Segment{{0, 4}, {4, 8}}},
-		{"wrap short", Layout{10, Wrap}, "abc", []Segment{{0, 3}}},
-		{"wrap empty", Layout{10, Wrap}, "", []Segment{{0, 0}}},
-		{"wide moves down", Layout{5, Wrap}, "日本語", []Segment{{0, 2}, {2, 3}}},
-		{"tab moves down", Layout{6, Wrap}, "abcd\tx", []Segment{{0, 4}, {4, 6}}},
-		{"rune wider than width", Layout{1, Wrap}, "日本", []Segment{{0, 1}, {1, 2}}},
-		{"nowrap", Layout{4, NoWrap}, "abcdefghij", []Segment{{0, 10}}},
-		{"zero width", Layout{0, Wrap}, "abc", []Segment{{0, 3}}},
+		{"wrap even", Layout{Width: 4, Mode: Wrap}, "abcdefghij", []Segment{{0, 4}, {4, 8}, {8, 10}}},
+		{"wrap exact", Layout{Width: 4, Mode: Wrap}, "abcdefgh", []Segment{{0, 4}, {4, 8}}},
+		{"wrap short", Layout{Width: 10, Mode: Wrap}, "abc", []Segment{{0, 3}}},
+		{"wrap empty", Layout{Width: 10, Mode: Wrap}, "", []Segment{{0, 0}}},
+		{"wide moves down", Layout{Width: 5, Mode: Wrap}, "日本語", []Segment{{0, 2}, {2, 3}}},
+		{"tab moves down", Layout{Width: 6, Mode: Wrap}, "abcd\tx", []Segment{{0, 4}, {4, 6}}},
+		{"rune wider than width", Layout{Width: 1, Mode: Wrap}, "日本", []Segment{{0, 1}, {1, 2}}},
+		{"nowrap", Layout{Width: 4, Mode: NoWrap}, "abcdefghij", []Segment{{0, 10}}},
+		{"zero width", Layout{Width: 0, Mode: Wrap}, "abc", []Segment{{0, 3}}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestPosColRoundTrip(t *testing.T) {
 		text := []rune(s)
 		for _, mode := range []Mode{Wrap, NoWrap} {
 			for width := 1; width <= 12; width++ {
-				l := Layout{width, mode}
+				l := Layout{Width: width, Mode: mode}
 				for col := 0; col <= len(text); col++ {
 					row, x := l.Pos(text, col)
 					got := l.Col(text, row, x)
@@ -77,11 +77,11 @@ func TestPosColRoundTrip(t *testing.T) {
 // zeroWidthAt reports whether the rune at col has zero width; Col cannot
 // land on such a rune, which is intended.
 func zeroWidthAt(text []rune, col int) bool {
-	return col < len(text) && RuneWidth(text[col], 0) == 0
+	return col < len(text) && Layout{}.RuneWidth(text[col], 0) == 0
 }
 
 func TestPos(t *testing.T) {
-	l := Layout{4, Wrap}
+	l := Layout{Width: 4, Mode: Wrap}
 	text := []rune("abcdefghij")
 	tests := []struct{ col, row, x int }{{0, 0, 0}, {3, 0, 3}, {4, 1, 0}, {9, 2, 1}, {10, 2, 2}}
 	for _, tc := range tests {
@@ -89,13 +89,13 @@ func TestPos(t *testing.T) {
 			t.Errorf("Pos(%d) = (%d,%d), want (%d,%d)", tc.col, row, x, tc.row, tc.x)
 		}
 	}
-	if row, x := (Layout{4, NoWrap}).Pos(text, 9); row != 0 || x != 9 {
+	if row, x := (Layout{Width: 4, Mode: NoWrap}).Pos(text, 9); row != 0 || x != 9 {
 		t.Errorf("nowrap Pos(9) = (%d,%d), want (0,9)", row, x)
 	}
 }
 
 func TestColNeverInsideWideRune(t *testing.T) {
-	l := Layout{10, NoWrap}
+	l := Layout{Width: 10, Mode: NoWrap}
 	text := []rune("日本")
 	for x, want := range []int{0, 0, 1, 1, 2, 2} {
 		if got := l.Col(text, 0, x); got != want {
@@ -105,7 +105,7 @@ func TestColNeverInsideWideRune(t *testing.T) {
 }
 
 func TestColPastRowEnd(t *testing.T) {
-	l := Layout{4, Wrap}
+	l := Layout{Width: 4, Mode: Wrap}
 	text := []rune("abcdefghij")
 	if got := l.Col(text, 0, 99); got != 3 {
 		t.Errorf("Col past end of wrapped row = %d, want 3", got)
@@ -131,13 +131,13 @@ func TestNewlineRow(t *testing.T) {
 		in   string
 		want []Segment
 	}{
-		{"full", Layout{4, Wrap}, "abcd", []Segment{{0, 4}, {4, 4}}},
-		{"full last row", Layout{4, Wrap}, "abcdefgh", []Segment{{0, 4}, {4, 8}, {8, 8}}},
-		{"wider than width", Layout{1, Wrap}, "日", []Segment{{0, 1}, {1, 1}}},
-		{"short", Layout{4, Wrap}, "abc", []Segment{{0, 3}}},
-		{"empty", Layout{4, Wrap}, "", []Segment{{0, 0}}},
-		{"nowrap", Layout{4, NoWrap}, "abcd", []Segment{{0, 4}}},
-		{"zero width", Layout{0, Wrap}, "abcd", []Segment{{0, 4}}},
+		{"full", Layout{Width: 4, Mode: Wrap}, "abcd", []Segment{{0, 4}, {4, 4}}},
+		{"full last row", Layout{Width: 4, Mode: Wrap}, "abcdefgh", []Segment{{0, 4}, {4, 8}, {8, 8}}},
+		{"wider than width", Layout{Width: 1, Mode: Wrap}, "日", []Segment{{0, 1}, {1, 1}}},
+		{"short", Layout{Width: 4, Mode: Wrap}, "abc", []Segment{{0, 3}}},
+		{"empty", Layout{Width: 4, Mode: Wrap}, "", []Segment{{0, 0}}},
+		{"nowrap", Layout{Width: 4, Mode: NoWrap}, "abcd", []Segment{{0, 4}}},
+		{"zero width", Layout{Width: 0, Mode: Wrap}, "abcd", []Segment{{0, 4}}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -155,11 +155,34 @@ func TestNewlineRow(t *testing.T) {
 }
 
 func TestSegmentAt(t *testing.T) {
-	l := Layout{4, Wrap}
+	l := Layout{Width: 4, Mode: Wrap}
 	text := []rune("abcdefghij")
 	for col, want := range map[int]int{0: 0, 3: 0, 4: 1, 8: 2, 10: 2} {
 		if got := l.SegmentAt(text, col); got != want {
 			t.Errorf("SegmentAt(%d) = %d, want %d", col, got, want)
 		}
+	}
+}
+
+// TestTabWidth: a tab reaches the next multiple of Tab; zero is 8.
+func TestTabWidth(t *testing.T) {
+	for _, tc := range []struct {
+		tab  int
+		in   string
+		want []int
+	}{
+		{4, "a\tb", []int{0, 1, 4, 5}},
+		{4, "\t\t", []int{0, 4, 8}},
+		{4, "abcd\tx", []int{0, 1, 2, 3, 4, 8, 9}},
+		{1, "a\tb", []int{0, 1, 2, 3}},
+		{0, "a\tb", []int{0, 1, 8, 9}},
+	} {
+		l := Layout{Width: 20, Mode: Wrap, Tab: tc.tab}
+		if got := l.Cells([]rune(tc.in)); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("Layout{Tab: %d}.Cells(%q) = %v, want %v", tc.tab, tc.in, got, tc.want)
+		}
+	}
+	if got := (Layout{Width: 6, Mode: Wrap, Tab: 4}).Segments([]rune("ab\tcdef")); !reflect.DeepEqual(got, []Segment{{0, 5}, {5, 7}}) {
+		t.Errorf("Segments = %v, want [{0 5} {5 7}]", got)
 	}
 }
