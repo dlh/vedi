@@ -91,7 +91,8 @@ func Parse(name string, src []byte) (Config, error) {
 // clear_all_shortcuts, with the map lines laid over.
 func (c Config) Keymap(macOS bool) input.Keymap {
 	if c.Clear {
-		return input.Keymap(nil).Apply(c.Keys)
+		// Empty, not nil: nil asks the app for the defaults.
+		return input.Keymap{}.Apply(c.Keys)
 	}
 	return Default(macOS).Apply(c.Keys)
 }

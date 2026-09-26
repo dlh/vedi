@@ -75,6 +75,14 @@ func TestClearAllShortcuts(t *testing.T) {
 	if got := c.Keymap(true); !reflect.DeepEqual(got, input.Keymap(want)) {
 		t.Errorf("Keymap = %+v, want %+v", got, want)
 	}
+	// Alone it leaves an empty map, not the nil that means the defaults.
+	c, err = Parse("vedi.conf", []byte("clear_all_shortcuts\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Keymap(true); got == nil || len(got) != 0 {
+		t.Errorf("Keymap = %#v, want an empty non-nil map", got)
+	}
 	c, err = Parse("vedi.conf", []byte("map x quit\n"))
 	if err != nil {
 		t.Fatal(err)

@@ -1,0 +1,16 @@
+clear_all_shortcuts with no map lines after it leaves no bindings at
+all, not the defaults: q and h do nothing.
+
+-- config --
+clear_all_shortcuts
+-- input --
+abc
+-- keys --
+q h
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap
