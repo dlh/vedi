@@ -48,6 +48,17 @@ func write(t *testing.T, name, text string) {
 	}
 }
 
+// age moves a file's mtime an hour back. Linux stamps mtimes from a
+// coarse clock, so a same-sized file written over it moments later
+// would otherwise get the same stamp.
+func age(t *testing.T, name string) {
+	t.Helper()
+	earlier := time.Now().Add(-time.Hour)
+	if err := os.Chtimes(name, earlier, earlier); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWriteFires(t *testing.T) {
 	name := filepath.Join(t.TempDir(), "f")
 	write(t, name, "a\n")
@@ -62,6 +73,7 @@ func TestRenameReplaceFires(t *testing.T) {
 	dir := t.TempDir()
 	name := filepath.Join(dir, "f")
 	write(t, name, "a\n")
+	age(t, name)
 	ch := start(t, name)
 	tmp := filepath.Join(dir, "f.tmp")
 	write(t, tmp, "b\n")
@@ -197,6 +209,7 @@ func TestRenameReplaceRewatches(t *testing.T) {
 	dir := t.TempDir()
 	name := filepath.Join(dir, "f")
 	write(t, name, "a\n")
+	age(t, name)
 	ch := make(chan struct{}, 16)
 	w := newWatcher([]string{name}, func() { ch <- struct{}{} })
 	fsw := w.notifier()
