@@ -90,19 +90,21 @@ func parseKeys(s string) ([]*tcell.EventKey, error) {
 
 // A mouse action from a "-- mouse --" body. For click, dblclick,
 // tripleclick, press, release and move only the first cell is used; drag presses at the
-// first and releases at the second; wheel uses n and up; tick uses n.
+// first and releases at the second; wheel uses dir, shift and n; tick
+// uses n.
 type mouseAction struct {
 	kind   string
 	y, x   int // row, col of the first cell
 	y2, x2 int
-	up     bool
+	dir    string // up, down, left or right
+	shift  bool
 	n      int
 }
 
 // parseMouse turns a "-- mouse --" body into actions: "click R C",
 // "dblclick R C", "tripleclick R C", "press R C", "release R C",
-// "move R C", "drag R C R C", "wheel up|down [N]" and "tick [N]", rows
-// and columns 0-based.
+// "move R C", "drag R C R C", "wheel [Shift+]up|down|left|right [N]"
+// and "tick [N]", rows and columns 0-based.
 func parseMouse(s string) ([]mouseAction, error) {
 	f := strings.Fields(s)
 	var acts []mouseAction
@@ -146,10 +148,14 @@ func parseMouse(s string) ([]mouseAction, error) {
 			a.y, a.x, a.y2, a.x2 = v[0], v[1], v[2], v[3]
 			i += 4
 		case "wheel":
-			if i >= len(f) || f[i] != "up" && f[i] != "down" {
-				return nil, fmt.Errorf("wheel: want up or down")
+			if i < len(f) {
+				a.dir, a.shift = strings.CutPrefix(f[i], "Shift+")
 			}
-			a.up = f[i] == "up"
+			switch a.dir {
+			case "up", "down", "left", "right":
+			default:
+				return nil, fmt.Errorf("wheel: want up, down, left or right")
+			}
 			i++
 			i, a.n = count(f, i)
 		case "tick":
@@ -220,7 +226,7 @@ func TestParseKeys(t *testing.T) {
 }
 
 func TestParseMouse(t *testing.T) {
-	acts, err := parseMouse("click 1 2 dblclick 3 4 tripleclick 5 6 drag 0 1 2 3 wheel up wheel down 5 click 0 0 press 1 1 release 2 0 move 5 0 tick tick 3")
+	acts, err := parseMouse("click 1 2 dblclick 3 4 tripleclick 5 6 drag 0 1 2 3 wheel up wheel down 5 wheel left wheel Shift+right 2 click 0 0 press 1 1 release 2 0 move 5 0 tick tick 3")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,8 +235,10 @@ func TestParseMouse(t *testing.T) {
 		{kind: "dblclick", y: 3, x: 4},
 		{kind: "tripleclick", y: 5, x: 6},
 		{kind: "drag", y: 0, x: 1, y2: 2, x2: 3},
-		{kind: "wheel", up: true, n: 1},
-		{kind: "wheel", up: false, n: 5},
+		{kind: "wheel", dir: "up", n: 1},
+		{kind: "wheel", dir: "down", n: 5},
+		{kind: "wheel", dir: "left", n: 1},
+		{kind: "wheel", dir: "right", shift: true, n: 2},
 		{kind: "click", y: 0, x: 0},
 		{kind: "press", y: 1, x: 1},
 		{kind: "release", y: 2, x: 0},

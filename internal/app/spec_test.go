@@ -332,12 +332,17 @@ func (s *scenario) mouse(a mouseAction) {
 		send(a.x2, a.y2, tcell.Button1)
 		send(a.x2, a.y2, tcell.ButtonNone)
 	case "wheel":
-		btn := tcell.WheelDown
-		if a.up {
-			btn = tcell.WheelUp
+		btn := map[string]tcell.ButtonMask{
+			"up": tcell.WheelUp, "down": tcell.WheelDown,
+			"left": tcell.WheelLeft, "right": tcell.WheelRight,
+		}[a.dir]
+		var mod tcell.ModMask
+		if a.shift {
+			mod = tcell.ModShift
 		}
 		for i := 0; i < a.n; i++ {
-			send(0, 0, btn)
+			s.app.Handle(tcell.NewEventMouse(0, 0, btn, mod))
+			s.app.Draw()
 		}
 	case "tick":
 		for i := 0; i < a.n; i++ {
