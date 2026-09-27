@@ -57,7 +57,7 @@ func TestReport(t *testing.T) {
 	}
 }
 
-// TestEndPoll: re-pressing G adds at most endPoll to "end ms", so it
+// TestEndPoll: re-pressing the end key adds at most endPoll to "end ms", so it
 // must be small next to the hundreds of ms a pager takes to read the
 // file.
 func TestEndPoll(t *testing.T) {
@@ -78,7 +78,7 @@ func TestToEndReady(t *testing.T) {
 		t.Fatal(err)
 	}
 	t0 := time.Now()
-	if err := toEnd(s, 3, "READY", 5*time.Second); err != nil {
+	if err := toEnd(s, pager{atEnd: "READY", end: "G"}, 3, 5*time.Second); err != nil {
 		s.kill()
 		t.Fatal(err)
 	}

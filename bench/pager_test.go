@@ -18,15 +18,14 @@ func TestSession(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.wait(marker(3), 0, 5*time.Second); err != nil {
+	if err := s.wait(marker(3), 5*time.Second); err != nil {
 		s.kill()
 		t.Fatal(err)
 	}
-	from := s.mark()
 	if err := s.send("\r"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.wait("bye", from, 5*time.Second); err != nil {
+	if err := s.wait("bye", 5*time.Second); err != nil {
 		s.kill()
 		t.Fatal(err)
 	}
@@ -50,7 +49,7 @@ func TestSessionStdin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.wait("hello", 0, 5*time.Second); err != nil {
+	if err := s.wait("hello", 5*time.Second); err != nil {
 		s.kill()
 		t.Fatal(err)
 	}
@@ -63,7 +62,7 @@ func TestWaitTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.kill()
-	if err := s.wait("never", 0, 50*time.Millisecond); err != errTimeout {
+	if err := s.wait("never", 50*time.Millisecond); err != errTimeout {
 		t.Errorf("err = %v, want errTimeout", err)
 	}
 }
@@ -74,7 +73,7 @@ func TestWaitExit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.wait("never", 0, 5*time.Second); err == nil || err == errTimeout {
+	if err := s.wait("never", 5*time.Second); err == nil || err == errTimeout {
 		t.Errorf("err = %v, want exit error", err)
 	}
 	s.finish(time.Second)

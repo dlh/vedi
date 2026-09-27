@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -18,17 +17,21 @@ import (
 // errTimeout is wait giving up.
 var errTimeout = errors.New("timeout")
 
-// session is a pager on an 80x24 pty. out is what it has written,
-// escape sequences stripped; cond is signaled on every append and at
-// exit.
+// session is a pager on an 80x24 pty. scr is what it has drawn; cond
+// is signaled on every write and at exit.
 type session struct {
 	cmd  *exec.Cmd
 	tty  *os.File
 	mu   sync.Mutex
 	cond *sync.Cond
-	out  []byte
+	scr  *screen
 	done bool
 }
+
+// da1Reply answers a primary device attributes request as a VT220
+// would. A pager that queries the terminal at startup waits on this
+// reply, since it comes after the answers to the other queries.
+const da1Reply = "\x1b[?62;22c"
 
 // start runs argv on a pty in dir, reading stdin from in when it is
 // not nil. The controlling terminal is named by stdout, since stdin
@@ -45,7 +48,7 @@ func start(dir string, argv []string, in *os.File) (*session, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &session{cmd: cmd, tty: tty}
+	s := &session{cmd: cmd, tty: tty, scr: newScreen(24, 80)}
 	s.cond = sync.NewCond(&s.mu)
 	go s.read()
 	return s, nil
@@ -65,30 +68,26 @@ func env() []string {
 }
 
 func (s *session) read() {
-	var st stripper
 	p := make([]byte, 64<<10)
 	for {
 		n, err := s.tty.Read(p)
 		s.mu.Lock()
 		if n > 0 {
-			s.out = st.strip(s.out, p[:n])
+			s.scr.write(p[:n])
 		}
+		asked := s.scr.askedDA1()
 		if err != nil {
 			s.done = true
 		}
 		s.cond.Broadcast()
 		s.mu.Unlock()
+		if asked {
+			s.send(da1Reply)
+		}
 		if err != nil {
 			return
 		}
 	}
-}
-
-// mark is how much output there is now: a from for wait.
-func (s *session) mark() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return len(s.out)
 }
 
 // send types keys.
@@ -97,9 +96,9 @@ func (s *session) send(keys string) error {
 	return err
 }
 
-// wait blocks until text appears in the output after from, the pager
-// exits, or timeout passes.
-func (s *session) wait(text string, from int, timeout time.Duration) error {
+// wait blocks until text shows on the screen, the pager exits, or
+// timeout passes.
+func (s *session) wait(text string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	t := time.AfterFunc(timeout, func() {
 		s.mu.Lock()
@@ -110,7 +109,7 @@ func (s *session) wait(text string, from int, timeout time.Duration) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for {
-		if bytes.Contains(s.out[from:], []byte(text)) {
+		if s.scr.contains(text) {
 			return nil
 		}
 		if s.done {

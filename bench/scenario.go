@@ -17,15 +17,23 @@ type pager struct {
 	argv     []string // {vedi} is the vedi binary, {file} the input
 	notFound string   // what a failed search prints
 	atEnd    string   // what shows once it is ready at the last of {n} lines
+	end      string   // the key for the last line
+	home     string   // the key for the first line
 }
 
+// moor searches as each character is typed, so its search-miss time
+// covers four searches, one per character. It prints nothing on a
+// miss; the status line's hint changes after any search. ov draws a
+// tilde row past the last line.
 var pagers = []pager{
-	{"vedi", []string{"{vedi}", "{file}"}, "not found:", "{n}/{n}"},
-	{"less", []string{"less", "-R", "{file}"}, "Pattern not found", "(END)"},
+	{"vedi", []string{"{vedi}", "{file}"}, "not found:", "{n}/{n}", "G", "g"},
+	{"less", []string{"less", "-R", "{file}"}, "Pattern not found", "(END)", "G", "g"},
+	{"moor", []string{"moor", "{file}"}, "n/p to search", "100%", "G", "<"},
+	{"ov", []string{"ov", "{file}"}, "not found:", "~", "\x1b[F", "\x1b[H"},
 }
 
-// end is the at-end text for n lines.
-func (p pager) end(n int) string { return strings.ReplaceAll(p.atEnd, "{n}", strconv.Itoa(n)) }
+// ready is the at-end text for n lines.
+func (p pager) ready(n int) string { return strings.ReplaceAll(p.atEnd, "{n}", strconv.Itoa(n)) }
 
 // command is the argv for file, or for stdin when file is "".
 func (p pager) command(vedi, file string) []string {
@@ -90,7 +98,7 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 		out["first-screen ms"] = cell{err: err}
 		return
 	}
-	if err := s.wait(marker(firstScreen), 0, timeout); err != nil {
+	if err := s.wait(marker(firstScreen), timeout); err != nil {
 		out["first-screen ms"] = cell{err: err}
 		s.kill()
 		return
@@ -98,14 +106,14 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 	out["first-screen ms"] = cell{v: ms(t0)}
 
 	t := time.Now()
-	if err := toEnd(s, n, p.end(n), timeout); err != nil {
+	if err := toEnd(s, p, n, timeout); err != nil {
 		out["end ms"] = cell{err: err}
 		s.kill()
 		return
 	}
 	out["end ms"] = cell{v: ms(t)}
 
-	out["home ms"] = home(s, timeout)
+	out["home ms"] = home(s, p, timeout)
 	if out["home ms"].err != nil {
 		s.kill()
 		return
@@ -123,11 +131,11 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 	out["rss file MB"] = cell{v: mb(rss), err: err}
 }
 
-// home times g, from the end to the first line.
-func home(s *session, timeout time.Duration) cell {
-	from, t := s.mark(), time.Now()
-	s.send("g")
-	if err := s.wait(marker(1), from, timeout); err != nil {
+// home times the home key, from the end to the first line.
+func home(s *session, p pager, timeout time.Duration) cell {
+	t := time.Now()
+	s.send(p.home)
+	if err := s.wait(marker(1), timeout); err != nil {
 		return cell{err: err}
 	}
 	return cell{v: ms(t)}
@@ -135,32 +143,31 @@ func home(s *session, timeout time.Duration) cell {
 
 // searchMiss times a search for text that is not there.
 func searchMiss(s *session, p pager, timeout time.Duration) cell {
-	from, t := s.mark(), time.Now()
+	t := time.Now()
 	s.send("/zzzz\r")
-	if err := s.wait(p.notFound, from, timeout); err != nil {
+	if err := s.wait(p.notFound, timeout); err != nil {
 		return cell{err: err}
 	}
 	return cell{v: ms(t)}
 }
 
-// endPoll is how often toEnd presses G again. It bounds how late the
-// last line is seen after the file is read, so it must be small next
-// to the time being measured.
+// endPoll is how often toEnd presses the end key again. It bounds how
+// late the last line is seen after the file is read, so it must be
+// small next to the time being measured.
 const endPoll = 5 * time.Millisecond
 
-// toEnd presses G until the last of n lines shows, then waits for
-// ready, the pager's at-end text: a pager can show the line and go on
-// working before it takes the next key. G jumps to the end of what a
-// pager has read so far, so it is pressed again until the file is
-// read.
-func toEnd(s *session, n int, ready string, timeout time.Duration) error {
-	from := s.mark()
+// toEnd presses the end key until the last of n lines shows, then
+// waits for the pager's at-end text: a pager can show the line and go
+// on working before it takes the next key. The end key jumps to the
+// end of what a pager has read so far, so it is pressed again until
+// the file is read.
+func toEnd(s *session, p pager, n int, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for {
-		if err := s.send("G"); err != nil {
+		if err := s.send(p.end); err != nil {
 			return err
 		}
-		err := s.wait(marker(n), from, endPoll)
+		err := s.wait(marker(n), endPoll)
 		if err == nil {
 			break
 		}
@@ -168,7 +175,7 @@ func toEnd(s *session, n int, ready string, timeout time.Duration) error {
 			return err
 		}
 	}
-	return s.wait(ready, from, time.Until(deadline))
+	return s.wait(p.ready(n), time.Until(deadline))
 }
 
 // runStdin pipes file into the pager and times the first screen; then
@@ -197,7 +204,7 @@ func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out samp
 		out["stdin ms"] = cell{err: err}
 		return
 	}
-	if err := s.wait(marker(firstScreen), 0, timeout); err != nil {
+	if err := s.wait(marker(firstScreen), timeout); err != nil {
 		out["stdin ms"] = cell{err: err}
 		s.kill()
 		return
@@ -205,9 +212,9 @@ func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out samp
 	out["stdin ms"] = cell{v: ms(t0)}
 	// The end and home are not timed again; a failure there lands on
 	// the search's row.
-	c := cell{err: toEnd(s, n, p.end(n), timeout)}
+	c := cell{err: toEnd(s, p, n, timeout)}
 	if c.err == nil {
-		c = home(s, timeout)
+		c = home(s, p, timeout)
 	}
 	if c.err == nil {
 		c = searchMiss(s, p, timeout)

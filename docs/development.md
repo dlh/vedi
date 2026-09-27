@@ -9,7 +9,7 @@ Requires Go and make.
     make tidy           show what go mod tidy would change (fails if any)
     make bench          benchmarks
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
-    make bench-pagers   vedi vs less on a large file; needs less on PATH
+    make bench-pagers   vedi, less, moor and ov on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
@@ -20,8 +20,11 @@ run them before committing. Behaviors are specified and tested in
 lines and reports the median time to the first screen from a file and
 from stdin, to the end and back, and for a failed search on each, with
 peak RSS. To the end is the rest of the index for vedi and a seek for
-less. `BENCHFLAGS='-lines N -runs R'` changes the input and the
-repetitions.
+less. The pty answers a device attributes query, as a terminal would,
+and the harness reads the screen, since a pager may redraw only the
+cells that changed. `BENCHFLAGS='-lines N -runs R'` changes the input
+and the repetitions; the table in `docs/comparison.md` comes from a
+run with the defaults.
 
 Commit messages follow [Conventional
 Commits](https://www.conventionalcommits.org/). The release changelog

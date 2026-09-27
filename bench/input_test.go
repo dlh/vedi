@@ -20,8 +20,9 @@ func TestWriteInput(t *testing.T) {
 	if len(lines) != 3 || !strings.HasPrefix(lines[2], marker(3)) {
 		t.Errorf("lines = %q", lines)
 	}
-	var s stripper
-	if w := len(s.strip(nil, []byte(lines[0]))); w != 54 {
+	scr := newScreen(1, 80)
+	scr.write([]byte(lines[0]))
+	if w := len(strings.TrimRight(scr.String(), " \n")); w != 54 {
 		t.Errorf("line width = %d, want 54", w)
 	}
 }
