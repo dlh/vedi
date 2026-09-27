@@ -46,12 +46,12 @@ opens only for more. To make vedi your pager:
 
 ## Documentation
 
-- [docs/keys.md](docs/keys.md): every key, for moving, selecting, copying and searching
-- [docs/configuration.md](docs/configuration.md): `vedi.conf`, settings and rebinding
-- [docs/pager.md](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
-- [docs/terminals.md](docs/terminals.md): the clipboard, Terminal.app's Shift keys and kitty's scrollback
-- [docs/comparison.md](docs/comparison.md): how less, moor, ov and tmux select text
-- [docs/development.md](docs/development.md): checks, commits and releases
+- [Keys](docs/keys.md): every key, for moving, selecting, copying and searching
+- [Configuration](docs/configuration.md): `vedi.conf`, settings and rebinding
+- [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
+- [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys and kitty's scrollback
+- [Comparison](docs/comparison.md): how vedi differs from less, moor, ov and tmux, with benchmarks
+- [Development](docs/development.md): checks, commits and releases
 
 ## License
 
