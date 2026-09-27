@@ -31,7 +31,7 @@ func act(a Action) Command { return Command{Action: a} }
 func sel(a Action) Command { return Command{a, true} }
 
 // helpSections is the help screen in order: the first, unnamed, is
-// shown at the top as less shows h and q. The README's Keys table is
+// shown at the top as less shows h and q. The table in docs/keys.md is
 // the same rows with the macOS keys.
 var helpSections = []helpSection{
 	{"", []helpRow{

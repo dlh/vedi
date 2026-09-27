@@ -1,7 +1,7 @@
 # vedi
 
-See it, select it, copy it. A pager that shows ANSI-colored text and
-lets you select it with the keyboard or mouse.
+See it, select it, copy it. A pager for colored terminal output:
+select text with the keyboard or mouse, and copy it to the clipboard.
 
 ## Install
 
@@ -28,129 +28,27 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
       -v, --version           print the version
 
-With no files, `vedi` reads stdin. The status line names the files
-being viewed, or `<stdin>`.
+With no files, `vedi` reads stdin. `h` shows the keys and `q` quits;
+Shift with the arrows, or the mouse, selects, and Ctrl+c or Cmd+c
+copies.
 
-A file that changes on disk is read again, the cursor keeping its
-line, or the last line if it was on it: a log that grows is followed.
-`R` reads it again by hand. A pipe is read once. `--no-auto-reload`,
-or `auto_reload no` in the config, leaves a changed file to `R`.
+SGR colors and attributes, including 24-bit color, and OSC 8
+hyperlinks are drawn as the terminal would. Copy sends plain text.
 
-`-S`, or `wrap no` in the config, starts in nowrap mode; `w` toggles
-it either way.
+A file that changes on disk is read again, so a log that grows is
+followed. `-F` is for a pager that should get out of the way: text
+that fits on one screen is printed as if by `cat`, and the pager
+opens only for more. To make vedi your pager:
 
-A tab reaches the next multiple of 8 cells. `--tab-width 4`, or
-`tab_width 4` in the config, makes it 4.
+    export PAGER="vedi -F"
 
-`-F` is for a pager that should get out of the way: when all the text
-fits on one screen it is printed as if by `cat`, and the pager only
-opens for more. Pressing a key while the input is still coming keeps
-the pager.
+## Documentation
 
-## Keys
-
-| Key | Action |
-|---|---|
-| h | Show the key bindings |
-| q | Quit |
-| w | Toggle wrap / nowrap |
-| R | Reload the file |
-| Up, Down, Left, Right, Home, End, j, k, Cmd+Left, Cmd+Right | Move the cursor |
-| PgDn, Space, f, Ctrl+f, Ctrl+v | Down a page |
-| PgUp, b, Ctrl+b, Alt+v | Up a page |
-| d, Ctrl+d | Down half a page |
-| u, Ctrl+u | Up half a page |
-| Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
-| g, G, <, >, Cmd+Up, Cmd+Down | First line, last line |
-| : | Go to a line number |
-| J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
-| Shift+PgUp, Shift+PgDn | Extend by a page |
-| Ctrl+Shift+Left, Ctrl+Shift+Right, Alt+Shift+Left, Alt+Shift+Right | Extend by word |
-| Ctrl+a, Cmd+a | Select all |
-| Esc | Clear the selection, then the search highlight |
-| Click, drag | Move the cursor, select; held at an edge, scroll |
-| Double-, triple-click | Select the word, the line |
-| Wheel | Scroll; with Shift, sideways |
-| Ctrl+c, Cmd+c, y | Copy the selection as plain text |
-| Enter | Copy the selection and quit; with none, down a line |
-| / | Search; ignores case if lowercase; empty repeats |
-| ? | Search backward |
-| Up, Down at the prompt | Recall earlier searches |
-| n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
-
-The Cmd+ keys are macOS only, and reach vedi where the terminal passes
-them on: kitty does, Cmd+c when it has no selection of its own;
-Terminal.app keeps them.
-
-Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
-named by `--config`, and `clear_all_shortcuts` there starts the map
-from nothing. The `set_mark` action, unbound by default, starts a
-selection that every motion extends, as `v` does in vim; `h` shows
-the bindings in effect, and the motions scroll them when they do not
-fit. See [docs/configuration.md](docs/configuration.md).
-
-The selection is drawn in reverse video and search matches in black
-on bright yellow, whatever the text's own colors.
-
-## Clipboard
-
-Copy uses OSC 52, which works in kitty, xterm, tmux (`set-clipboard on`)
-and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
-`--clipboard-cmd wl-copy` (Wayland) or
-`--clipboard-cmd 'xclip -selection clipboard'` (X11), or
-`clipboard_cmd xclip -selection clipboard` in the config.
-
-## Terminal.app
-
-Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞ or ⇧⇟, so
-the program sees them as unshifted. To select with them, add these
-under Settings → Profiles → Keyboard, action Send Text:
-
-| Key | Text |
-|-----|------|
-| ⇧↑ | `\033[1;2A` |
-| ⇧↓ | `\033[1;2B` |
-| ⇧Home | `\033[1;2H` |
-| ⇧End | `\033[1;2F` |
-| ⇧⇞ | `\033[5;2~` |
-| ⇧⇟ | `\033[6;2~` |
-
-It does not support OSC 52, so copy uses `pbcopy`.
-
-## kitty scrollback
-
-The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its
-scrollback to a pager. This binding in `kitty.conf` opens it in vedi,
-scrolled to the rows you were looking at, with the cursor where it was:
-
-    map <shortcut> launch --type overlay --stdin-source=@screen_scrollback --stdin-add-formatting vedi --scrolled-by @scrolled-by --cursor-row @cursor-y --cursor-col @cursor-x
-
-Or set vedi as the `scrollback_pager`. That gets one line per screen
-row — `-S` keeps them so, but a wrapped line then copies with a newline
-at each wrap:
-
-    scrollback_pager vedi -S +INPUT_LINE_NUMBER
-
-## bat
-
-[bat](https://github.com/sharkdp/bat) pipes its colored output through
-a pager. To make it vedi:
-
-    export BAT_PAGER="vedi -F"
-
-or put `--pager="vedi -F"` in `~/.config/bat/config`.
-
-## git-delta
-
-[delta](https://github.com/dandavison/delta) is a pager for git that
-pipes its colored diffs through a second pager. In `~/.gitconfig`:
-
-    [core]
-        pager = delta
-    [delta]
-        pager = vedi -F
-
-`DELTA_PAGER=vedi -F` in the environment does the same.
+- [docs/keys.md](docs/keys.md): every key, for moving, selecting, copying and searching
+- [docs/configuration.md](docs/configuration.md): `vedi.conf`, settings and rebinding
+- [docs/pager.md](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
+- [docs/terminals.md](docs/terminals.md): the clipboard, Terminal.app's Shift keys and kitty's scrollback
+- [docs/development.md](docs/development.md): checks, commits and releases
 
 ## License
 

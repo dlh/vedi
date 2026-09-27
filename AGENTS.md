@@ -2,13 +2,14 @@
 
 A pager: view ANSI-colored text, select with the keyboard, copy.
 
-- `README.md` says what it does.
+- `README.md` says what it does; `docs/` says how to use it: keys,
+  configuration, and setting it up as the pager.
 - `specs/` says exactly how, and enforces it: one plain-text scenario
   per behavior, run by `go test ./internal/app/ -run TestSpecs`. Format
   in `specs/README.md`.
 - A behavior change edits its scenario in the same commit; a new
-  behavior gets a new scenario and a README line. Expected output is
-  written by hand, never generated.
+  behavior gets a new scenario and a line in `README.md` or `docs/`.
+  Expected output is written by hand, never generated.
 - Colors, read errors and the event loop are tested in Go
   (`internal/app/app_test.go`); everything else belongs in `specs/`.
 - `go test ./...` must pass before every commit.

@@ -98,20 +98,20 @@ func TestHelpEmptySection(t *testing.T) {
 	}
 }
 
-// TestHelpMatchesREADME keeps the README's Keys table and the help
+// TestHelpMatchesKeysDoc keeps the table in docs/keys.md and the help
 // screen the same list: each row of the table is a input.Row, in order,
 // with the macOS keys.
-func TestHelpMatchesREADME(t *testing.T) {
+func TestHelpMatchesKeysDoc(t *testing.T) {
 	all := rows(Default(true).Help())
-	data, err := os.ReadFile("../../README.md")
+	data, err := os.ReadFile("../../docs/keys.md")
 	if err != nil {
 		t.Fatal(err)
 	}
 	var got []input.Row
 	inKeys := false
 	for _, line := range strings.Split(string(data), "\n") {
-		if strings.HasPrefix(line, "## ") {
-			inKeys = line == "## Keys"
+		if strings.HasPrefix(line, "#") {
+			inKeys = line == "# Keys"
 			continue
 		}
 		if !inKeys || !strings.HasPrefix(line, "|") {
@@ -119,7 +119,7 @@ func TestHelpMatchesREADME(t *testing.T) {
 		}
 		cells := strings.Split(strings.Trim(line, "|"), "|")
 		if len(cells) != 2 {
-			t.Fatalf("README row %q: want two cells", line)
+			t.Fatalf("docs/keys.md row %q: want two cells", line)
 		}
 		keys, doc := strings.TrimSpace(cells[0]), strings.TrimSpace(cells[1])
 		if keys == "Key" || keys == "---" {
@@ -128,12 +128,12 @@ func TestHelpMatchesREADME(t *testing.T) {
 		got = append(got, input.Row{Keys: []string{keys}, Doc: doc})
 	}
 	if len(got) != len(all) {
-		t.Fatalf("README has %d rows, input.Help has %d", len(got), len(all))
+		t.Fatalf("docs/keys.md has %d rows, input.Help has %d", len(got), len(all))
 	}
 	for i := range all {
 		// Fixed rows hold a comma themselves, so compare the joined text.
 		if keys := strings.Join(all[i].Keys, ", "); got[i].Keys[0] != keys || got[i].Doc != all[i].Doc {
-			t.Errorf("row %d: README %q %q, input.Help %q %q", i, got[i].Keys[0], got[i].Doc, keys, all[i].Doc)
+			t.Errorf("row %d: docs/keys.md %q %q, input.Help %q %q", i, got[i].Keys[0], got[i].Doc, keys, all[i].Doc)
 		}
 	}
 }
