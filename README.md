@@ -3,6 +3,8 @@
 See it, select it, copy it. A pager for colored terminal output:
 select text with the keyboard or mouse, and copy it to the clipboard.
 
+![vedi paging colored lorem ipsum: a search lights up its matches, three lines are selected and copied with Ctrl+c, and pbpaste prints them as plain text](docs/media/demo.gif)
+
 ## Install
 
 Download a binary for linux or macOS from the [releases

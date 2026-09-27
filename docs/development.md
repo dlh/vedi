@@ -11,6 +11,7 @@ Requires Go and make.
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
     make bench-pagers   vedi, less, moor and ov on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
+    make media          record the README gif; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
 run them before committing. Behaviors are specified and tested in
@@ -25,6 +26,11 @@ and the harness reads the screen, since a pager may redraw only the
 cells that changed. `BENCHFLAGS='-lines N -runs R'` changes the input
 and the repetitions; the table in `docs/comparison.md` comes from a
 run with the defaults.
+
+`media` runs `docs/media/demo.tape` with [vhs](https://github.com/charmbracelet/vhs)
+(`brew install vhs`, which brings ttyd and ffmpeg) over the checked-in
+`docs/media/sample.txt`, lorem ipsum with SGR colors and an OSC 8 link. Run it after a change
+to the drawing, and commit the gif it rewrites.
 
 Commit messages follow [Conventional
 Commits](https://www.conventionalcommits.org/). The release changelog

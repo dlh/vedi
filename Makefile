@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers vet staticcheck fmt tidy release-check clean
+.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fmt tidy release-check clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -23,6 +23,10 @@ bench-compare:
 # Needs less on PATH; takes a few minutes. BENCHFLAGS: -lines, -runs.
 bench-pagers: build
 	cd bench && go run . -vedi $(CURDIR)/vedi $(BENCHFLAGS)
+
+# Needs vhs on PATH (brew install vhs). Rewrites docs/media/demo.gif.
+media: build
+	vhs docs/media/demo.tape
 
 vet:
 	go vet ./...
