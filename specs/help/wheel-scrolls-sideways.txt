@@ -1,0 +1,23 @@
+A sideways wheel tick scrolls the bindings four columns, as Left and
+Right scroll them eight.
+
+-- size --
+40x4
+-- input --
+abc
+-- keys --
+h
+-- mouse --
+wheel right 2
+-- screen --
+                    SUMMARY OF VEDI COMM
+
+⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
+help  motion scrolls, any other key retu
+-- mouse --
+wheel Shift+up
+-- screen --
+                        SUMMARY OF VEDI
+
+  ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctr
+help  motion scrolls, any other key retu

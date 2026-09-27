@@ -24,7 +24,7 @@ var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background
 // matches in MatchStyle, and the status line. While a Screen waits
 // for EOF only the status line is drawn: the view is not known until
 // then. While help is up the bindings are the text, and no cursor is
-// shown.
+// shown; nor is one scrolled off the side.
 func (a *App) Draw() {
 	a.scr.Clear()
 	a.top = a.snap(a.top)
@@ -36,9 +36,8 @@ func (a *App) Draw() {
 		curX = -1
 	}
 	a.drawStatus()
-	if curX >= 0 {
-		w, _ := a.scr.Size()
-		a.scr.ShowCursor(max(0, min(curX, w-1)), curY)
+	if w, _ := a.scr.Size(); curX >= 0 && curX < w {
+		a.scr.ShowCursor(curX, curY)
 	} else {
 		a.scr.HideCursor()
 	}

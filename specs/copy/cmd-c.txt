@@ -119,7 +119,7 @@ h
   Click, drag                             Move the cursor, select; held at an
                                           edge, scroll.
   Double-, triple-click                   Select the word, the line.
-  Wheel                                   Scroll.
+  Wheel                                   Scroll; with Shift, sideways.
  ------------------------------------------------------------------------------
 
                                     COPYING

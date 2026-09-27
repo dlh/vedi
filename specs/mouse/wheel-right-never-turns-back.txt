@@ -1,0 +1,38 @@
+Scrolled down to rows narrower than the offset, a right tick has
+nothing more to show and stays put: it never jumps the view left. A
+left tick scrolls left as ever.
+
+-- size --
+6x3
+-- args --
+-S
+-- input --
+abcdefghijklmnopqrst
+b
+c
+abcdefghijklm
+xy
+-- mouse --
+wheel right 3
+-- screen --
+mnopqr
+
+<stdin
+-- mouse --
+wheel down
+-- screen --
+m
+
+<stdin
+-- mouse --
+wheel right
+-- screen --
+m
+
+<stdin
+-- mouse --
+wheel left
+-- screen --
+ijklm
+
+<stdin

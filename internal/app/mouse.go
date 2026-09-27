@@ -5,22 +5,26 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/buffer"
+	"go.dlh.dev/vedi/internal/layout"
 )
 
 // doubleClick is how soon a press on the same cell as the last one
 // counts as the next click of a double or triple click.
 const doubleClick = 400 * time.Millisecond
 
-// wheelRows is how far one wheel tick scrolls the view.
-const wheelRows = 3
+// wheelRows and wheelCols are how far one wheel tick scrolls the view.
+const (
+	wheelRows = 3
+	wheelCols = 4
+)
 
 // autoScrollTick is how often a drag held at an edge scrolls a row.
 const autoScrollTick = 50 * time.Millisecond
 
 // handleMouse: button 1 places the cursor and drags the selection, the
-// wheel scrolls, the bindings too. A press returns from help like any
-// key. The mouse is ignored at the / and : prompts, and a
-// press from before one is forgotten.
+// wheel scrolls, sideways too, the bindings as well. A press returns
+// from help like any key. The mouse is ignored at the / and : prompts,
+// and a press from before one is forgotten.
 func (a *App) handleMouse(ev *tcell.EventMouse) {
 	if a.searching || a.gotoing {
 		a.held, a.dragging = false, false
@@ -28,15 +32,16 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 	}
 	x, y := ev.Position()
 	btn := ev.Buttons()
+	rows, cols := wheel(ev)
 	switch {
-	case btn&tcell.WheelUp != 0 && a.helping:
-		a.scrollHelp(-wheelRows)
-	case btn&tcell.WheelDown != 0 && a.helping:
-		a.scrollHelp(wheelRows)
-	case btn&tcell.WheelUp != 0:
-		a.scrollView(-wheelRows)
-	case btn&tcell.WheelDown != 0:
-		a.scrollView(wheelRows)
+	case rows != 0 && a.helping:
+		a.scrollHelp(rows)
+	case cols != 0 && a.helping:
+		a.scrollHelpSideways(cols)
+	case rows != 0:
+		a.scrollView(rows)
+	case cols != 0:
+		a.scrollViewSideways(cols)
 	case btn&tcell.Button1 == 0:
 		a.held, a.dragging = false, false
 	case a.held:
@@ -49,6 +54,26 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 		a.held = true
 		a.press(x, y)
 	}
+}
+
+// wheel is the rows and columns a wheel event scrolls, zero for any
+// other event. Shift turns the wheel sideways: up is left, down right.
+func wheel(ev *tcell.EventMouse) (rows, cols int) {
+	btn := ev.Buttons()
+	switch {
+	case btn&tcell.WheelUp != 0:
+		rows = -wheelRows
+	case btn&tcell.WheelDown != 0:
+		rows = wheelRows
+	case btn&tcell.WheelLeft != 0:
+		cols = -wheelCols
+	case btn&tcell.WheelRight != 0:
+		cols = wheelCols
+	}
+	if rows != 0 && ev.Modifiers()&tcell.ModShift != 0 {
+		rows, cols = 0, rows/wheelRows*wheelCols
+	}
+	return rows, cols
 }
 
 // press returns from help, ignores the status line, and otherwise puts
@@ -215,6 +240,29 @@ func (a *App) scrollView(n int) {
 		row, _ := ln.Pos(edge.Col)
 		a.cur = buffer.Pos{Line: edge.Line, Col: ln.Col(row, x)}
 	}
+}
+
+// scrollViewSideways moves the view n columns (negative is left), no
+// further right than brings the widest row on screen and its newline
+// to the right edge; already past that, after scrolling down to
+// narrower rows, a right tick stays put rather than turn back.
+// Wrapped, nothing is off screen to the side. The cursor keeps its
+// place, hidden while off screen: the next motion brings the view
+// back to it.
+func (a *App) scrollViewSideways(n int) {
+	a.act()
+	l := a.layout()
+	rows := a.textRows()
+	if a.mode != layout.NoWrap || l.Width <= 0 || rows <= 0 || a.buf.Len() == 0 {
+		return
+	}
+	a.top = a.snap(a.top)
+	widest := 0
+	for i := a.top.Line; i < min(a.top.Line+rows, a.buf.Len()); i++ { // a row a line
+		xs := a.lineLayout(i).Cells()
+		widest = max(widest, xs[len(xs)-1]+1)
+	}
+	a.xoff = max(0, min(a.xoff+n, max(a.xoff, widest-l.Width)))
 }
 
 // Tick is the auto-scroll timer's event, timed when it was armed: a

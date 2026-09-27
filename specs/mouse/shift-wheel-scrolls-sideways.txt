@@ -1,0 +1,22 @@
+Shift with the wheel scrolls sideways: down is right, up is left.
+
+-- size --
+6x2
+-- args --
+-S
+-- input --
+abcdefghijkl
+-- mouse --
+wheel Shift+down
+-- screen --
+efghij
+<stdin
+-- cursor --
+hidden
+-- mouse --
+wheel Shift+up
+-- screen --
+abcdef
+<stdin
+-- cursor --
+0 0

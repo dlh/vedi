@@ -1,0 +1,62 @@
+With -S a sideways wheel tick scrolls the view four columns, no further
+than brings the widest row on screen and its newline to the right edge.
+The cursor keeps its place: off screen to either side it is hidden
+until a motion brings it back into view.
+
+-- size --
+6x3
+-- args --
+-S
+-- input --
+abcdefghijkl
+xy
+-- keys --
+Right Right
+-- mouse --
+wheel right
+-- screen --
+efghij
+
+<stdin
+-- cursor --
+hidden
+-- mouse --
+wheel right 3
+-- screen --
+hijkl
+
+<stdin
+-- cursor --
+hidden
+-- mouse --
+wheel left 4
+-- screen --
+abcdef
+xy
+<stdin
+-- cursor --
+0 2
+-- keys --
+End
+-- screen --
+hijkl
+
+<stdin
+-- cursor --
+0 5
+-- mouse --
+wheel left
+-- screen --
+defghi
+
+<stdin
+-- cursor --
+hidden
+-- keys --
+Left
+-- screen --
+ghijkl
+
+<stdin
+-- cursor --
+0 5

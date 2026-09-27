@@ -1,0 +1,16 @@
+Wrapped, nothing is off screen to the side, so a sideways wheel tick
+does nothing.
+
+-- size --
+6x4
+-- input --
+abcdefghijkl
+-- mouse --
+wheel right wheel Shift+down
+-- screen --
+abcdef
+ghijkl
+
+<stdin
+-- cursor --
+0 0

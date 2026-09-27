@@ -70,7 +70,7 @@ the pager.
 | Esc | Clear the selection, then the search highlight |
 | Click, drag | Move the cursor, select; held at an edge, scroll |
 | Double-, triple-click | Select the word, the line |
-| Wheel | Scroll |
+| Wheel | Scroll; with Shift, sideways |
 | Ctrl+c, Cmd+c, y | Copy the selection as plain text |
 | Enter | Copy the selection and quit; with none, down a line |
 | / | Search; ignores case if lowercase; empty repeats |

@@ -62,7 +62,7 @@ var helpSections = []helpSection{
 	{"Mouse", []helpRow{
 		{fixed: "Click, drag", doc: "Move the cursor, select; held at an edge, scroll"},
 		{fixed: "Double-, triple-click", doc: "Select the word, the line"},
-		{fixed: "Wheel", doc: "Scroll"},
+		{fixed: "Wheel", doc: "Scroll; with Shift, sideways"},
 	}},
 	{"Copying", []helpRow{
 		{cmds: []Command{act(Copy)}, doc: "Copy the selection as plain text"},
