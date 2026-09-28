@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fmt tidy release-check clean
+.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -6,7 +6,7 @@ build:
 install:
 	go install ./cmd/vedi
 
-test: vet staticcheck
+test: vet staticcheck fix
 	go test ./...
 	cd bench && go test ./...
 
@@ -35,6 +35,11 @@ vet:
 staticcheck:
 	go tool -modfile=tools/go.mod staticcheck ./...
 	cd bench && go tool -modfile=../tools/go.mod staticcheck ./...
+
+# Shows what go fix would change and fails; never rewrites.
+fix:
+	go fix -diff ./...
+	cd bench && go fix -diff ./...
 
 # Lists unformatted files and fails; never rewrites.
 fmt:

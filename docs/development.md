@@ -4,7 +4,7 @@ Requires Go and make.
 
 ## Checks
 
-    make test           vet, staticcheck, go test ./...
+    make test           vet, staticcheck, go fix -diff, go test ./...
     make fmt            list unformatted files (fails if any)
     make tidy           show what go mod tidy would change (fails if any)
     make bench          benchmarks
