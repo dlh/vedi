@@ -20,6 +20,11 @@ var selStyle = tcell.StyleDefault.Reverse(true)
 // tend to leave vivid.
 var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
 
+// edgeStyle draws the < and > that mark text off the side of the screen
+// in nowrap mode: reverse, as control characters are, so they read as
+// the pager's and not the text's.
+var edgeStyle = tcell.StyleDefault.Reverse(true)
+
 // Draw renders the text from top, the selection in selStyle, search
 // matches in MatchStyle, and the status line. While a Screen waits
 // for EOF only the status line is drawn: the view is not known until
@@ -90,11 +95,15 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	if segi == ln.Rows()-1 {
 		end++
 	}
+	curW := 1 // cells under the cursor
 	for i := seg.Start; i < end; i++ {
 		pos := buffer.Pos{Line: p.Line, Col: i}
 		x := xs[i] - x0
 		if pos == a.cur {
 			curX, ok = x, true
+			if i < len(line.Text) {
+				curW = max(1, xs[i+1]-xs[i])
+			}
 		}
 		selected := hasSel && !pos.Less(selStart) && pos.Less(selEnd)
 		if i == len(line.Text) {
@@ -128,6 +137,26 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		}
 		drawGlyph(a.scr, x, y, w, line.Text[i], line.Text[i+1:j], xs[i+1]-xs[i], st)
 		i = j - 1
+	}
+	// With edge markers on, text off either side of the screen is
+	// marked at that edge. A wide rune half under the > is dropped:
+	// the terminal would draw it over the marker. Motions keep the
+	// cursor clear of the markers; the wheel can scroll one over it,
+	// and then it is hidden as if off screen.
+	if width := xs[len(line.Text)]; a.marks && a.mode == layout.NoWrap {
+		if a.xoff > 0 && width > 0 {
+			put(a.scr, 0, y, w, '<', edgeStyle)
+			ok = ok && curX != 0
+		}
+		if width > a.xoff+w {
+			if w >= 2 {
+				if _, st, rw := a.scr.Get(w-2, y); rw == 2 {
+					a.scr.SetContent(w-2, y, ' ', nil, st)
+				}
+			}
+			put(a.scr, w-1, y, w, '>', edgeStyle)
+			ok = ok && curX+curW <= w-1
+		}
 	}
 	return curX, ok
 }

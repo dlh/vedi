@@ -1,0 +1,12 @@
+--edge-markers turns the markers on for one run.
+
+-- size --
+6x3
+-- args --
+-S --edge-markers
+-- input --
+abcdefghij
+-- screen --
+abcde[>]
+
+<stdin

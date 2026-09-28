@@ -1,0 +1,14 @@
+--no-edge-markers overrides edge_markers yes in the config for one run.
+
+-- size --
+6x3
+-- config --
+edge_markers yes
+-- args --
+-S --no-edge-markers
+-- input --
+abcdefghij
+-- screen --
+abcdef
+
+<stdin

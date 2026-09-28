@@ -1,0 +1,28 @@
+The wheel can scroll a marker over the cursor's cell; the cursor is
+then hidden, as it is off screen, until a motion brings its character
+back into view.
+
+-- size --
+6x3
+-- args --
+-S --edge-markers
+-- input --
+abcdefghij
+-- keys --
+Right Right Right Right
+-- mouse --
+wheel right
+-- screen --
+[<]fghij
+
+<stdin
+-- cursor --
+hidden
+-- keys --
+Left
+-- screen --
+[<]defg[>]
+
+<stdin
+-- cursor --
+0 1

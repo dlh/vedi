@@ -1,0 +1,51 @@
+With edge_markers yes, in nowrap mode a row whose line runs past the
+right edge ends in >, and one whose line has text scrolled off the
+left edge starts with <, both in reverse video. The cursor never sits
+on a marker: the view scrolls one more column so its character stays
+in view. Wrap mode shows neither.
+
+-- size --
+6x5
+-- config --
+edge_markers yes
+-- args --
+-S
+-- input --
+abcdefghij
+abc
+
+xyz
+-- screen --
+abcde[>]
+abc
+
+xyz
+<stdin
+-- keys --
+Right Right Right Right Right
+-- screen --
+[<]cdef[>]
+[<]c
+
+[<]z
+<stdin
+-- cursor --
+0 4
+-- keys --
+End
+-- screen --
+[<]ghij
+[<]
+
+[<]
+<stdin
+-- cursor --
+0 5
+-- keys --
+w
+-- screen --
+abcdef
+ghij
+abc
+
+<stdin

@@ -31,6 +31,7 @@ type Options struct {
 	MacOS         bool             // there is a ⌘ key
 	Keys          input.Keymap     // nil for the defaults
 	TabWidth      int              // cells per tab stop; 0 for 8
+	EdgeMarkers   bool             // nowrap marks text off the sides with < and >
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -56,7 +57,8 @@ type App struct {
 	copier clipboard.Copier
 	name   string
 	mode   layout.Mode
-	tab    int // cells per tab stop; 0 for the default
+	tab    int  // cells per tab stop; 0 for the default
+	marks  bool // nowrap marks text off the sides with < and >
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -130,6 +132,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		name:      opts.Name,
 		mode:      opts.Mode,
 		tab:       opts.TabWidth,
+		marks:     opts.EdgeMarkers,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
@@ -859,17 +862,32 @@ func (a *App) scrollToCursor() {
 	}
 	l := a.layout()
 	if a.mode == layout.NoWrap && l.Width > 0 {
-		// The cursor's whole rune must fit, not just its first cell.
+		// The cursor's whole rune must fit, not just its first cell,
+		// and clear of the < and > that mark text off either side.
 		ln := a.lineLayout(a.cur.Line)
+		xs := ln.Cells()
 		_, x := ln.Pos(a.cur.Col)
 		w := 1
-		if xs := ln.Cells(); a.cur.Col < len(xs)-1 {
+		if a.cur.Col < len(xs)-1 {
 			w = max(1, xs[a.cur.Col+1]-xs[a.cur.Col])
 		}
-		if x < a.xoff {
-			a.xoff = x
-		} else if x+w > a.xoff+l.Width {
-			a.xoff = min(x, x+w-l.Width)
+		width := xs[len(xs)-1]
+		mark := 0 // the column a marker takes at an edge
+		if a.marks {
+			mark = 1
+		}
+		right := func(xoff int) int {
+			if width > xoff+l.Width {
+				return mark
+			}
+			return 0
+		}
+		if x < a.xoff+mark {
+			a.xoff = max(0, x-mark)
+		} else if x+w > a.xoff+l.Width-right(a.xoff) {
+			xoff := x + w - l.Width
+			xoff += right(xoff)
+			a.xoff = min(max(0, x-mark), xoff)
 		}
 	} else {
 		a.xoff = 0

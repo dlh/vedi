@@ -21,11 +21,12 @@ type Config struct {
 	NoWrap       bool            // wrap no: start in nowrap mode
 	ClipboardCmd string          // clipboard_cmd: copy pipes to this, not OSC 52
 	TabWidth     int             // tab_width: cells per tab stop; 0 for the default
+	EdgeMarkers  bool            // edge_markers yes: nowrap marks text off the sides
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
 // "auto_reload yes|no", "wrap yes|no", "clipboard_cmd <command>",
-// "tab_width <n>", blank lines and # comments. Errors read name:line:
+// "tab_width <n>", "edge_markers yes|no", blank lines and # comments. Errors read name:line:
 // message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
@@ -80,6 +81,11 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("tab_width takes a positive number")
 			}
 			c.TabWidth = n
+		case "edge_markers":
+			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+				return c, fail("edge_markers takes yes or no")
+			}
+			c.EdgeMarkers = f[1] == "yes"
 		default:
 			return c, fail("unknown verb %q", f[0])
 		}

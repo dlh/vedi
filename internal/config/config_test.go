@@ -332,3 +332,34 @@ func TestTabWidth(t *testing.T) {
 		}
 	}
 }
+
+// TestEdgeMarkers: edge_markers yes marks text off the side of the
+// screen in nowrap mode; no, the default, does not; anything else is
+// an error.
+func TestEdgeMarkers(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"", false},
+		{"edge_markers yes\n", true},
+		{"edge_markers no\n", false},
+		{"edge_markers yes\nedge_markers no\n", false},
+		{"edge_markers no\nmap x quit\nedge_markers yes\n", true},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.EdgeMarkers != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want EdgeMarkers %v", tc.src, c, err, tc.want)
+		}
+	}
+	bad := []struct{ src, err string }{
+		{"edge_markers\n", "vedi.conf:1: edge_markers takes yes or no"},
+		{"edge_markers maybe\n", "vedi.conf:1: edge_markers takes yes or no"},
+		{"edge_markers yes no\n", "vedi.conf:1: edge_markers takes yes or no"},
+	}
+	for _, tc := range bad {
+		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
+			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
+		}
+	}
+}

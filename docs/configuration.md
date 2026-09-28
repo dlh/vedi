@@ -40,6 +40,12 @@ run.
 `tab_width N` draws a tab as N cells: the next multiple of N from the
 row's start. 8 is the default. `--tab-width` overrides it for one run.
 
+`edge_markers yes` marks text off the side of the screen in nowrap
+mode: a row whose line runs past the right edge ends in `>`, and one
+with text scrolled off the left edge starts with `<`, both in reverse
+video. `edge_markers no` is the default. `--edge-markers` and
+`--no-edge-markers` override it for one run.
+
 ## Keys
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or

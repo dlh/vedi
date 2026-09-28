@@ -1,0 +1,14 @@
+A wide character that would straddle the right marker is not drawn:
+its cell is left blank, so the > stays visible where the terminal
+would otherwise skip the marker as the character's second half.
+
+-- size --
+6x3
+-- args --
+-S --edge-markers
+-- input --
+abcd界gh
+-- screen --
+abcd [>]
+
+<stdin

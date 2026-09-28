@@ -38,7 +38,9 @@ Terminal.app keeps them. Terminal.app also sends some Shift+ keys
 unshifted; [terminals.md](terminals.md) has the fix.
 
 The selection is drawn in reverse video and search matches in black
-on bright yellow, whatever the text's own colors.
+on bright yellow, whatever the text's own colors. With `edge_markers
+yes` in the config, nowrap mode marks text off the screen with a `<`
+or `>` in reverse video at that edge of the row.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
 named by `--config`, and `clear_all_shortcuts` there starts the map

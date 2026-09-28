@@ -29,6 +29,8 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
   --tab-width N           draw a tab as N cells (8)
+  --edge-markers          in nowrap mode, mark text off the sides with < and >
+  --no-edge-markers       leave the edges bare (the default)
   --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
   -v, --version           print the version
@@ -47,12 +49,14 @@ type Options struct {
 	TabWidth      int         // --tab-width; 0 leaves it to the config
 	Config        string      // "" for the default location
 	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
+	EdgeMarkers   *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
 	Help          bool
 	Version       bool
 }
 
 // App converts the options to the app's: a flag, else the config,
-// decides the wrap mode, the clipboard command and the tab width. The
+// decides the wrap mode, the clipboard command, the tab width and the
+// edge markers. The
 // input is named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
@@ -68,6 +72,10 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 	if tab == 0 {
 		tab = cfg.TabWidth
 	}
+	marks := cfg.EdgeMarkers
+	if o.EdgeMarkers != nil {
+		marks = *o.EdgeMarkers
+	}
 	return app.Options{
 		Name:          inputName(files),
 		Mode:          mode,
@@ -78,6 +86,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		Copier:        clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
 		MacOS:         macOS,
 		TabWidth:      tab,
+		EdgeMarkers:   marks,
 	}
 }
 
@@ -173,6 +182,10 @@ func Parse(args []string) (Options, []string, error) {
 			o.AutoReload = ptr(true)
 		case a == "--no-auto-reload":
 			o.AutoReload = ptr(false)
+		case a == "--edge-markers":
+			o.EdgeMarkers = ptr(true)
+		case a == "--no-edge-markers":
+			o.EdgeMarkers = ptr(false)
 		case a == "+G":
 			o.Follow = true
 		case strings.HasPrefix(a, "+"):

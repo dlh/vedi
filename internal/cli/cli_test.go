@@ -164,3 +164,32 @@ func TestAppTabWidth(t *testing.T) {
 		}
 	}
 }
+
+// TestEdgeMarkersFlag: --edge-markers and --no-edge-markers decide;
+// without one the config does; without either the markers are off.
+func TestEdgeMarkersFlag(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	for _, tc := range []struct {
+		flag *bool
+		cfg  config.Config
+		want bool
+	}{
+		{nil, config.Config{}, false},
+		{nil, config.Config{EdgeMarkers: true}, true},
+		{ptr(true), config.Config{}, true},
+		{ptr(false), config.Config{EdgeMarkers: true}, false},
+	} {
+		if got := (Options{EdgeMarkers: tc.flag}).App(scr, nil, tc.cfg).EdgeMarkers; got != tc.want {
+			t.Errorf("Options{EdgeMarkers: %v}.App(%+v).EdgeMarkers = %v, want %v", tc.flag, tc.cfg, got, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		arg  string
+		want bool
+	}{{"--edge-markers", true}, {"--no-edge-markers", false}} {
+		o, _, err := Parse([]string{tc.arg})
+		if err != nil || o.EdgeMarkers == nil || *o.EdgeMarkers != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want EdgeMarkers %v", tc.arg, o, err, tc.want)
+		}
+	}
+}
