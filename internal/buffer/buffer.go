@@ -312,7 +312,7 @@ func (b *Buffer) scan(k int) {
 	b.block.n, b.block.known = 0, 1
 	b.block.state[0] = b.parsers[b.state[k]]
 	pos := 0
-	for j := 0; j < blockLines; j++ {
+	for j := range blockLines {
 		var lineEnd int
 		if nl := bytes.IndexByte(raw[pos:], '\n'); nl >= 0 {
 			lineEnd = pos + nl + 1

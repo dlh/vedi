@@ -199,7 +199,7 @@ func (a *App) cellPos(x, y int) buffer.Pos {
 		return buffer.Pos{}
 	}
 	p := a.snap(a.top)
-	for i := 0; i < y; i++ {
+	for range y {
 		p = a.nextRow(p)
 	}
 	ln := a.lineLayout(p.Line)

@@ -3,6 +3,7 @@
 package layout
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/rivo/uniseg"
@@ -81,7 +82,7 @@ func (l Layout) Line(text []rune) Line {
 	}
 	var segs []Segment
 	start, x0 := 0, 0
-	for i := 0; i < n; i++ {
+	for i := range n {
 		w := xs[i+1] - xs[i]
 		if xs[i]-x0+w > l.Width && i > start {
 			segs = append(segs, Segment{start, i})
@@ -100,7 +101,7 @@ func (l Layout) NewlineRow(ln Line) Line {
 	if l.Mode == NoWrap || l.Width <= 0 || ln.xs[n]-ln.xs[last.Start] < l.Width {
 		return ln
 	}
-	segs := append(ln.segs[:len(ln.segs):len(ln.segs)], Segment{n, n})
+	segs := append(slices.Clip(ln.segs), Segment{n, n})
 	return Line{ln.xs, segs}
 }
 

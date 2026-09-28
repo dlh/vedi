@@ -16,7 +16,7 @@ func blocks(t *testing.T, path string) map[string]string {
 	out := map[string]string{}
 	heading := ""
 	var body *strings.Builder
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		switch {
 		case strings.HasPrefix(line, "## "):
 			heading = strings.TrimPrefix(line, "## ")

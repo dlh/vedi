@@ -3,6 +3,7 @@ package search
 
 import (
 	"math"
+	"slices"
 	"unicode"
 
 	"go.dlh.dev/vedi/internal/buffer"
@@ -18,13 +19,7 @@ type Matcher struct {
 
 func New(pattern string) Matcher {
 	pat := []rune(pattern)
-	fold := true
-	for _, r := range pat {
-		if unicode.IsUpper(r) {
-			fold = false
-			break
-		}
-	}
+	fold := !slices.ContainsFunc(pat, unicode.IsUpper)
 	if fold {
 		for i, r := range pat {
 			pat[i] = unicode.ToLower(r)

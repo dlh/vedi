@@ -158,7 +158,7 @@ func TestPollingAlone(t *testing.T) {
 // hold up the caller, as watching the directory would on kqueue.
 func TestFilesReturnsAtOnce(t *testing.T) {
 	dir := t.TempDir()
-	for i := 0; i < 4000; i++ {
+	for i := range 4000 {
 		write(t, filepath.Join(dir, "f"+string(rune('a'+i%26))+string(rune('a'+i/26%26))+string(rune('a'+i/676))), "")
 	}
 	name := filepath.Join(dir, "f")
@@ -186,7 +186,7 @@ func openFDs(t *testing.T) int {
 // not on its directory, which on kqueue would open every sibling.
 func TestWatchesTheFileAlone(t *testing.T) {
 	dir := t.TempDir()
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		write(t, filepath.Join(dir, "sibling"+string(rune('a'+i%26))+string(rune('a'+i/26))), "")
 	}
 	name := filepath.Join(dir, "f")

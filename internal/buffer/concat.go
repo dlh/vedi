@@ -2,6 +2,7 @@ package buffer
 
 import (
 	"io"
+	"slices"
 	"sync"
 )
 
@@ -50,7 +51,7 @@ func (c *Concat) Read(p []byte) (int, error) {
 // ReadAt reads from the parts Read has finished and the one it is on.
 func (c *Concat) ReadAt(p []byte, off int64) (int, error) {
 	c.mu.Lock()
-	sizes := c.sizes[:len(c.sizes):len(c.sizes)]
+	sizes := slices.Clip(c.sizes)
 	if len(sizes) < len(c.parts) {
 		sizes = append(sizes, c.cur)
 	}

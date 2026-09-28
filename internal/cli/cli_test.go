@@ -21,10 +21,10 @@ func TestParse(t *testing.T) {
 	}{
 		{"none", nil, Options{}, nil, false},
 		{"file", []string{"a.txt"}, Options{}, []string{"a.txt"}, false},
-		{"nowrap short", []string{"-S", "a"}, Options{Wrap: ptr(false)}, []string{"a"}, false},
-		{"nowrap long", []string{"--nowrap"}, Options{Wrap: ptr(false)}, nil, false},
-		{"wrap", []string{"--wrap"}, Options{Wrap: ptr(true)}, nil, false},
-		{"last wrap wins", []string{"-S", "--wrap"}, Options{Wrap: ptr(true)}, nil, false},
+		{"nowrap short", []string{"-S", "a"}, Options{Wrap: new(false)}, []string{"a"}, false},
+		{"nowrap long", []string{"--nowrap"}, Options{Wrap: new(false)}, nil, false},
+		{"wrap", []string{"--wrap"}, Options{Wrap: new(true)}, nil, false},
+		{"last wrap wins", []string{"-S", "--wrap"}, Options{Wrap: new(true)}, nil, false},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
@@ -50,11 +50,11 @@ func TestParse(t *testing.T) {
 		{"screen conflicts with plus N", []string{"+5", "--scrolled-by", "0"}, Options{}, nil, true},
 		{"screen conflicts with plus G", []string{"--cursor-row", "1", "+G"}, Options{}, nil, true},
 		{"plus G conflicts with plus N", []string{"+G", "+5"}, Options{}, nil, true},
-		{"flag after file", []string{"a", "-S"}, Options{Wrap: ptr(false)}, []string{"a"}, false},
+		{"flag after file", []string{"a", "-S"}, Options{Wrap: new(false)}, []string{"a"}, false},
 		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{}, nil, false},
-		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
-		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: ptr(false)}, []string{"f"}, false},
-		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: ptr(true)}, nil, false},
+		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: new(true)}, nil, false},
+		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: new(false)}, []string{"f"}, false},
+		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: new(true)}, nil, false},
 		{"tab width", []string{"--tab-width", "4", "f"}, Options{TabWidth: 4}, []string{"f"}, false},
 		{"tab width eq", []string{"--tab-width=2"}, Options{TabWidth: 2}, nil, false},
 		{"missing tab width", []string{"--tab-width"}, Options{}, nil, true},
@@ -87,8 +87,8 @@ func TestReloads(t *testing.T) {
 	}{
 		{nil, config.Config{}, true},
 		{nil, config.Config{NoAutoReload: true}, false},
-		{ptr(false), config.Config{}, false},
-		{ptr(true), config.Config{NoAutoReload: true}, true},
+		{new(false), config.Config{}, false},
+		{new(true), config.Config{NoAutoReload: true}, true},
 	} {
 		if got := (Options{AutoReload: tc.flag}).Reloads(tc.cfg); got != tc.want {
 			t.Errorf("Options{AutoReload: %v}.Reloads(%+v) = %v, want %v", tc.flag, tc.cfg, got, tc.want)
@@ -100,7 +100,7 @@ func TestApp(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
 	scr := tcell.NewSimulationScreen("UTF-8")
 	none := config.Config{}
-	got := Options{Wrap: ptr(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil, none)
+	got := Options{Wrap: new(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil, none)
 	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 || !got.QuitIfOnePage {
 		t.Errorf("App() = %+v", got)
 	}
@@ -130,8 +130,8 @@ func TestAppConfig(t *testing.T) {
 	}{
 		{Options{}, config.Config{}, layout.Wrap, ""},
 		{Options{}, cfg, layout.NoWrap, "wl-copy"},
-		{Options{Wrap: ptr(true), ClipboardCmd: "pbcopy"}, cfg, layout.Wrap, "pbcopy"},
-		{Options{Wrap: ptr(false)}, config.Config{}, layout.NoWrap, ""},
+		{Options{Wrap: new(true), ClipboardCmd: "pbcopy"}, cfg, layout.Wrap, "pbcopy"},
+		{Options{Wrap: new(false)}, config.Config{}, layout.NoWrap, ""},
 	} {
 		got := tc.opts.App(scr, nil, tc.cfg)
 		cmd := ""
@@ -176,8 +176,8 @@ func TestEdgeMarkersFlag(t *testing.T) {
 	}{
 		{nil, config.Config{}, false},
 		{nil, config.Config{EdgeMarkers: true}, true},
-		{ptr(true), config.Config{}, true},
-		{ptr(false), config.Config{EdgeMarkers: true}, false},
+		{new(true), config.Config{}, true},
+		{new(false), config.Config{EdgeMarkers: true}, false},
 	} {
 		if got := (Options{EdgeMarkers: tc.flag}).App(scr, nil, tc.cfg).EdgeMarkers; got != tc.want {
 			t.Errorf("Options{EdgeMarkers: %v}.App(%+v).EdgeMarkers = %v, want %v", tc.flag, tc.cfg, got, tc.want)

@@ -109,7 +109,7 @@ func TestHelpMatchesKeysDoc(t *testing.T) {
 	}
 	var got []input.Row
 	inKeys := false
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		if strings.HasPrefix(line, "#") {
 			inKeys = line == "# Keys"
 			continue

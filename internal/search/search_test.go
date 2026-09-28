@@ -114,15 +114,14 @@ func TestSingleMatchWrapsToItself(t *testing.T) {
 // there, which must not allocate a line at a time.
 func BenchmarkNextMiss(b *testing.B) {
 	var in strings.Builder
-	for i := 0; i < 100_000; i++ {
+	for i := range 100_000 {
 		fmt.Fprintf(&in, "\x1b[32mline %d\x1b[0m of some text\n", i)
 	}
 	buf := buffer.New()
 	buffer.Fill(strings.NewReader(in.String()), buf, func() {})
 	m := New("zzz")
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, _, found := Next(buf, m, buffer.Pos{}, false); found {
 			b.Fatal("found")
 		}

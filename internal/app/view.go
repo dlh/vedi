@@ -225,22 +225,22 @@ func helpCenter(text string) string {
 // helpGlyphs is a key's help name: Ctrl+, Alt+ and Cmd+ as ⌃ ⌥ ⌘,
 // and a letter under them a capital, as ⌃F.
 func helpGlyphs(name string) string {
-	glyphs := ""
+	var glyphs strings.Builder
 	for again := true; again; {
 		again = false
 		for _, m := range []struct{ word, glyph string }{{"Ctrl+", "⌃"}, {"Alt+", "⌥"}, {"Cmd+", "⌘"}} {
 			if strings.HasPrefix(name, m.word) {
-				glyphs += m.glyph
+				glyphs.WriteString(m.glyph)
 				name = name[len(m.word):]
 				again = true
 			}
 		}
 	}
-	if glyphs != "" && len([]rune(strings.TrimPrefix(name, "Shift+"))) == 1 {
+	if glyphs.Len() > 0 && len([]rune(strings.TrimPrefix(name, "Shift+"))) == 1 {
 		name = strings.ToUpper(name)
 		name = strings.Replace(name, "SHIFT+", "Shift+", 1)
 	}
-	return glyphs + name
+	return glyphs.String() + name
 }
 
 // wrapWords joins words with sep into lines of at most width runes;
@@ -272,7 +272,7 @@ func (a *App) drawStatus() {
 		return
 	}
 	st := tcell.StyleDefault.Reverse(true)
-	for x := 0; x < w; x++ {
+	for x := range w {
 		a.scr.SetContent(x, h-1, ' ', nil, st)
 	}
 	text := []rune(a.statusText())
@@ -341,7 +341,7 @@ func isControl(r rune) bool {
 func drawGlyph(scr tcell.Screen, x, y, w int, r rune, comb []rune, width int, st tcell.Style) {
 	switch {
 	case r == '\t':
-		for k := 0; k < width; k++ {
+		for k := range width {
 			put(scr, x+k, y, w, ' ', st)
 		}
 	case r == 0x7f:

@@ -366,7 +366,7 @@ func (s *scenario) notify() {
 func dump(scr tcell.SimulationScreen) string {
 	cells, w, h := scr.GetContents()
 	var sb strings.Builder
-	for y := 0; y < h; y++ {
+	for y := range h {
 		var row strings.Builder
 		status := h >= 2 && y == h-1
 		rev, match := false, false

@@ -187,7 +187,7 @@ func link(osc []byte) (url, id string, ok bool) {
 	if !found {
 		return "", "", false
 	}
-	for _, kv := range bytes.Split(params, []byte{':'}) {
+	for kv := range bytes.SplitSeq(params, []byte{':'}) {
 		if v, found := bytes.CutPrefix(kv, []byte("id=")); found {
 			id = string(v)
 		}

@@ -176,11 +176,11 @@ func TestStateCarriesOutOfOrder(t *testing.T) {
 func TestCacheResets(t *testing.T) {
 	b := New()
 	var in strings.Builder
-	for i := 0; i < cacheLines+5; i++ {
+	for i := range cacheLines + 5 {
 		fmt.Fprintf(&in, "%d\n", i)
 	}
 	Fill(strings.NewReader(in.String()), b, func() {})
-	for pass := 0; pass < 2; pass++ {
+	for pass := range 2 {
 		for i := 0; i < b.Len(); i++ {
 			if got := string(b.Line(i).Text); got != fmt.Sprint(i) {
 				t.Fatalf("pass %d line %d = %q", pass, i, got)
@@ -296,14 +296,14 @@ func (c *counting) ReadAt(p []byte, off int64) (int, error) {
 // again for every line in it.
 func TestShortBlockIsScannedOnce(t *testing.T) {
 	src := &counting{}
-	for i := 0; i < 2*blockLines; i++ {
+	for i := range 2 * blockLines {
 		src.data = append(src.data, fmt.Sprintf("%d\n", i)...)
 	}
 	b := NewFrom(src)
 	b.Write(src.data)
 	src.data = src.data[:len(src.data)/4] // inside block 0
 	var text []rune
-	for i := 0; i < blockLines; i++ {
+	for i := range blockLines {
 		text = b.Text(i, text)
 		b.Line(i)
 	}
@@ -328,7 +328,7 @@ func TestWriteToRoundTrip(t *testing.T) {
 // styledLines is n colored lines, about 80 bytes each.
 func styledLines(n int) []byte {
 	var in bytes.Buffer
-	for i := 0; i < n; i++ {
+	for i := range n {
 		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
 	}
 	return in.Bytes()
@@ -379,7 +379,7 @@ func BenchmarkFill(b *testing.B) {
 	in := styledLines(100_000)
 	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Fill(bytes.NewReader(in), New(), func() {})
 	}
 }
@@ -390,7 +390,7 @@ func BenchmarkFillFile(b *testing.B) {
 	in := styledLines(100_000)
 	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Fill(bytes.NewReader(in), NewFrom(bytes.NewReader(in)), func() {})
 	}
 }
@@ -399,7 +399,7 @@ func BenchmarkFillFile(b *testing.B) {
 // both sides of a block edge, with the color set before the edge.
 func TestLinesAcrossBlocks(t *testing.T) {
 	var in strings.Builder
-	for i := 0; i < 3*blockLines+5; i++ {
+	for i := range 3*blockLines + 5 {
 		if i == blockLines-1 {
 			fmt.Fprintf(&in, "\x1b[31m%d\n", i)
 		} else {
@@ -428,7 +428,7 @@ func TestLinesAcrossBlocks(t *testing.T) {
 // fills, and bytes after the last "\n" are not a line until Finish.
 func TestLastBlockGrows(t *testing.T) {
 	b := New()
-	for i := 0; i < blockLines+3; i++ {
+	for i := range blockLines + 3 {
 		b.Write([]byte(fmt.Sprint(i)))
 		if n := b.Len(); n != i {
 			t.Fatalf("before line %d's newline: Len = %d", i, n)

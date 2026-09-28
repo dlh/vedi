@@ -92,8 +92,6 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 
 var macOS = runtime.GOOS == "darwin"
 
-func ptr(b bool) *bool { return &b }
-
 // Reloads says whether a file that changes on disk is read again: as
 // the flag says, else the config, else yes.
 func (o Options) Reloads(cfg config.Config) bool {
@@ -173,19 +171,19 @@ func Parse(args []string) (Options, []string, error) {
 		}
 		switch {
 		case a == "-S" || a == "--nowrap":
-			o.Wrap = ptr(false)
+			o.Wrap = new(false)
 		case a == "--wrap":
-			o.Wrap = ptr(true)
+			o.Wrap = new(true)
 		case a == "-F" || a == "--quit-if-one-page":
 			o.QuitIfOnePage = true
 		case a == "--auto-reload":
-			o.AutoReload = ptr(true)
+			o.AutoReload = new(true)
 		case a == "--no-auto-reload":
-			o.AutoReload = ptr(false)
+			o.AutoReload = new(false)
 		case a == "--edge-markers":
-			o.EdgeMarkers = ptr(true)
+			o.EdgeMarkers = new(true)
 		case a == "--no-edge-markers":
-			o.EdgeMarkers = ptr(false)
+			o.EdgeMarkers = new(false)
 		case a == "+G":
 			o.Follow = true
 		case strings.HasPrefix(a, "+"):

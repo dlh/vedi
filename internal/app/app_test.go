@@ -57,7 +57,7 @@ func press(a *App, keys ...*tcell.EventKey) bool {
 func row(scr tcell.SimulationScreen, y int) string {
 	cells, w, _ := scr.GetContents()
 	var sb strings.Builder
-	for x := 0; x < w; x++ {
+	for x := range w {
 		c := cells[y*w+x]
 		if len(c.Runes) == 0 {
 			continue
@@ -286,8 +286,7 @@ func BenchmarkLongLine(b *testing.B) {
 	a := New(scr, buf, Options{})
 	a.Draw()
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		press(a, key(tcell.KeyRight, 0, 0))
 	}
 }
@@ -360,8 +359,7 @@ func BenchmarkDrawHighlight(b *testing.B) {
 	a.matcher = search.New("zzz")
 	a.highlight = true
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		a.Draw()
 	}
 }
@@ -370,7 +368,7 @@ func BenchmarkDrawHighlight(b *testing.B) {
 // scan every run for every rune.
 func BenchmarkDrawRuns(b *testing.B) {
 	var sb strings.Builder
-	for i := 0; i < 200; i++ {
+	for i := range 200 {
 		sb.WriteString("\x1b[3" + string(rune('1'+i%7)) + "mx")
 	}
 	lines := make([]string, 60)
@@ -379,8 +377,7 @@ func BenchmarkDrawRuns(b *testing.B) {
 	}
 	a := benchApp(b, lines...)
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		a.Draw()
 	}
 }
@@ -388,7 +385,7 @@ func BenchmarkDrawRuns(b *testing.B) {
 // styledLines is n colored lines, about 80 bytes each.
 func styledLines(n int) []byte {
 	var in bytes.Buffer
-	for i := 0; i < n; i++ {
+	for i := range n {
 		fmt.Fprintf(&in, "\x1b[32m%08d\x1b[0m some plain text, about eighty bytes wide, \x1b[1mbold\x1b[0m end\n", i)
 	}
 	return in.Bytes()
@@ -406,7 +403,7 @@ func BenchmarkFirstDraw(b *testing.B) {
 	scr.SetSize(200, 60)
 	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		buf := buffer.New()
 		buffer.Fill(bytes.NewReader(in), buf, func() {})
 		a := New(scr, buf, Options{})
@@ -421,8 +418,7 @@ func BenchmarkJumpEnd(b *testing.B) {
 	lines := strings.Split(strings.TrimSuffix(string(styledLines(100_000)), "\n"), "\n")
 	a := benchApp(b, lines...)
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		press(a, key(tcell.KeyRune, 'G', 0), key(tcell.KeyRune, 'g', 0))
 	}
 }
@@ -486,7 +482,7 @@ func TestTruncatedFileDraws(t *testing.T) {
 	scr.SetSize(30, 4)
 	name := filepath.Join(t.TempDir(), "f")
 	var sb strings.Builder
-	for i := 0; i < 2000; i++ {
+	for i := range 2000 {
 		fmt.Fprintf(&sb, "line %d\n", i)
 	}
 	if err := os.WriteFile(name, []byte(sb.String()), 0o644); err != nil {
@@ -531,17 +527,17 @@ func TestNotifyFromTwoReaders(t *testing.T) {
 	a, _ := newTestApp(t, 10, 4, "x", Options{})
 	unfinished := buffer.New()
 	var wg sync.WaitGroup
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 200; j++ {
+			for range 200 {
 				a.notify(unfinished)
 			}
 		}()
 		go func() {
 			defer wg.Done()
-			for j := 0; j < 200; j++ {
+			for range 200 {
 				a.notify(nil)
 			}
 		}()
