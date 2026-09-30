@@ -1,11 +1,11 @@
-# vedi and other pagers
+# vedi and other tools
 
 vedi has a cursor. The arrows move it through the text, Shift extends
 a selection from it, and copy sends the selected text, plain, to the
 clipboard. A selection can run past the screen, and a wrapped line
 copies as one line. That is the reason vedi exists; for paging,
-selecting and searching colored text. The pagers below do as well,
-each in its own way and with strengths of its own.
+selecting and searching colored text. Each tool below does part of
+that, in its own way, and has strengths of its own.
 
 vedi also stops there. It draws the colors it is given and adds none.
 Syntax highlighting, diff formatting, column layout and the like
@@ -47,31 +47,55 @@ copies whole, but a line that a full-screen program drew across rows,
 as most pagers do, copies with a newline at each row. vedi selects
 the text's own lines, in any terminal.
 
+## vim and other editors
+
+`vim -R`, or `view`, has most of what vedi has: a cursor, a selection
+that `v` starts and every motion extends, and `"+y` to copy it to the
+clipboard, wrapped lines whole. Two things are missing. vim shows
+escape sequences as text, so `git log --color | vim -` reads `^[[33m`
+where a pager shows yellow. A plugin can color them. AnsiEsc conceals
+them in vim with syntax rules, which vim applies only to the lines it
+draws, after one pass over the file. neovim no longer runs AnsiEsc,
+and its own plugins, baleia.nvim among them, mark up the whole buffer
+before the first screen; the table below has the time and memory for
+that. And vim reads its input to the end before it draws, so a pipe
+shows nothing until the command feeding it exits, and a command that
+never exits shows nothing at all. The copy also needs a vim built with
+clipboard support, or a neovim with a provider such as `pbcopy`, and
+over ssh a plugin for OSC 52, which neovim 0.10 turns on by itself.
+emacs in view-mode is the same shape, with the region and the kill
+ring, and its ansi-color library can color a buffer after the fact.
+
 ## Speed and memory
 
 `make bench-pagers` runs each pager on a pty over a million generated
 lines, 54 columns of colored text each, and reports the median of
 five runs.
 
-| | vedi | less | moor | ov |
-|---|---:|---:|---:|---:|
-| first screen from a file, ms | 5.1 | 4.9 | 79.6 | 64.5 |
-| then to the last line, ms | 100.3 | 233.0 | 105.7 | 2.3 |
-| then back to the first, ms | 0.3 | 0.3 | 0.4 | 0.2 |
-| a search that finds nothing, ms | 453.1 | 937.5 | 112.2 | 1712.8 |
-| first screen from stdin, ms | 4.9 | 4.9 | 76.4 | 62.6 |
-| that search, from stdin, ms | 441.5 | 912.8 | 112.2 | 1708.5 |
-| peak memory, file, MB | 12.1 | 2.4 | 345.8 | 75.6 |
-| peak memory, stdin, MB | 81.8 | 94.2 | 335.6 | 228.9 |
+| | vedi | less | moor | ov | vim | neovim |
+|---|---:|---:|---:|---:|---:|---:|
+| first screen from a file, ms | 6.7 | 6.7 | 39.1 | 65.5 | 553.1 | 7625.4 |
+| then to the last line, ms | 101.9 | 242.5 | 111.7 | 2.3 | 9.8 | 0.3 |
+| then back to the first, ms | 0.3 | 0.3 | 0.4 | 0.2 | 5.0 | 0.3 |
+| a search that finds nothing, ms | 473.7 | 1026.3 | 120.8 | 1760.6 | 24.5 | 37.7 |
+| first screen from stdin, ms | 5.2 | 4.9 | 28.7 | 63.0 | 680.6 | 7816.8 |
+| that search, from stdin, ms | 467.0 | 1008.9 | 119.0 | 1745.2 | 21.8 | 35.9 |
+| peak memory, file, MB | 12.3 | 2.4 | 350.1 | 75.9 | 99.1 | 2227.5 |
+| peak memory, stdin, MB | 81.8 | 94.2 | 337.5 | 229.1 | 174.7 | 2306.1 |
 
 The search covers the whole input, which is read by then. moor
 searches as each character is typed, so its time is four searches.
+The editors run with their plugins and no other configuration, and
+baleia strips the escapes from neovim's buffer, so that search is
+over plain text.
 
 | Run | |
 |---|---|
-| Date | 2026-09-27 |
+| Date | 2026-09-29 |
 | Machine | Apple M3 Max, macOS 26.3 |
 | vedi | 1.5.2 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
+| vim | 9.2, AnsiEsc 13i, powerman's fork of 2019-04-07 |
+| neovim | 0.12.5, baleia.nvim of 2026-06-01 |

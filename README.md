@@ -52,7 +52,7 @@ opens only for more. To make vedi your pager:
 - [Configuration](docs/configuration.md): `vedi.conf`, settings and rebinding
 - [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
 - [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys and kitty's scrollback
-- [Comparison](docs/comparison.md): how vedi differs from less, moor, ov and tmux, with benchmarks
+- [Comparison](docs/comparison.md): how vedi differs from less, moor, ov, tmux, vim and neovim, with benchmarks
 - [Development](docs/development.md): checks, commits and releases
 
 ## License
