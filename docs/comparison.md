@@ -1,5 +1,12 @@
 # vedi and other tools
 
+- [less](#less)
+- [moor](#moor)
+- [ov](#ov)
+- [tmux copy mode](#tmux-copy-mode)
+- [vim and other editors](#vim-and-other-editors)
+- [Speed and memory](#speed-and-memory)
+
 vedi has a cursor. The arrows move it through the text, Shift extends
 a selection from it, and copy sends the selected text, plain, to the
 clipboard. A selection can run past the screen, and a wrapped line

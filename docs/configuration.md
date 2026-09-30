@@ -1,5 +1,12 @@
 # Configuration
 
+- [Settings](#settings)
+- [Keys](#keys)
+- [Actions](#actions)
+- [Defaults](#defaults)
+- [vim](#vim)
+- [emacs](#emacs)
+
 vedi reads `$XDG_CONFIG_HOME/vedi/vedi.conf`, or
 `~/.config/vedi/vedi.conf` when `XDG_CONFIG_HOME` is unset. Without
 the file it uses the defaults below. `--config FILE` reads FILE
