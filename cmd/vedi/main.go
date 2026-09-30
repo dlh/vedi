@@ -7,7 +7,11 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/signal"
 	"runtime/debug"
+	"strconv"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -16,6 +20,7 @@ import (
 	"go.dlh.dev/vedi/internal/cli"
 	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/watch"
+	"golang.org/x/term"
 )
 
 // openInput is the files, or stdin when there are none; "-" names
@@ -92,6 +97,60 @@ func postChanged(scr tcell.Screen) func() {
 	return post
 }
 
+// notifier is the reader's notify, which changes hands: -F listens
+// first, then the app once it exists.
+type notifier struct{ f atomic.Pointer[func()] }
+
+func (n *notifier) set(f func()) { n.f.Store(&f) }
+func (n *notifier) notify()      { (*n.f.Load())() }
+
+// termSize is the size of the terminal open on tty, /dev/tty as tcell
+// will use before there is a screen; falling back to the environment
+// and then 80×25 as tcell does. A pager's stdin is the pipe and its
+// stdout may be too, so neither is asked.
+func termSize(tty *os.File) (w, h int) {
+	w, h, err := term.GetSize(int(tty.Fd()))
+	if err != nil {
+		w, h = 0, 0
+	}
+	if w == 0 {
+		w, _ = strconv.Atoi(os.Getenv("COLUMNS"))
+	}
+	if h == 0 {
+		h, _ = strconv.Atoi(os.Getenv("LINES"))
+	}
+	if w == 0 {
+		w = 80
+	}
+	if h == 0 {
+		h = 25
+	}
+	return w, h
+}
+
+// waitOnePage is -F before any screen exists: it waits on data, the
+// reader's notifications, until the text outgrows the screen or ends,
+// and reports whether to print it instead of paging. Deciding first
+// is what keeps short text from flashing through the terminal's
+// alternate screen on its way out. The terminal may be resized while
+// it waits, so size is asked at every decision and a resize makes
+// one.
+func waitOnePage(buf *buffer.Buffer, data <-chan struct{}, resize <-chan os.Signal, size func() (w, h int)) bool {
+	for {
+		w, h := size()
+		switch app.OnePage(buf, w, h) {
+		case app.Print:
+			return true
+		case app.Page:
+			return false
+		}
+		select {
+		case <-data:
+		case <-resize:
+		}
+	}
+}
+
 // version is set by the linker for releases; otherwise the module
 // version, which go install fills in.
 var version string
@@ -135,6 +194,34 @@ func main() {
 	}
 	defer closeInput()
 
+	buf := buffer.New()
+	if src != nil {
+		buf = buffer.NewFrom(src)
+	}
+	data := make(chan struct{}, 1)
+	n := new(notifier)
+	n.set(func() {
+		select {
+		case data <- struct{}{}:
+		default:
+		}
+	})
+	go buffer.Fill(in, buf, n.notify)
+	if opts.QuitIfOnePage {
+		// Without a terminal to size, the screen below fails the same way.
+		if tty, err := os.Open("/dev/tty"); err == nil {
+			resize := make(chan os.Signal, 1)
+			signal.Notify(resize, syscall.SIGWINCH)
+			printText := waitOnePage(buf, data, resize, func() (int, int) { return termSize(tty) })
+			signal.Stop(resize)
+			tty.Close()
+			if printText {
+				buf.WriteTo(os.Stdout)
+				return
+			}
+		}
+	}
+
 	scr, err := tcell.NewScreen()
 	if err == nil {
 		err = scr.Init()
@@ -146,24 +233,17 @@ func main() {
 	defer scr.Fini()
 	scr.EnableMouse(tcell.MouseDragEvents)
 
-	buf := buffer.New()
-	if src != nil {
-		buf = buffer.NewFrom(src)
-	}
 	appOpts := opts.App(scr, files, cfg)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
 	if src != nil {
 		appOpts.Open = reopen(files)
 	}
 	a := app.New(scr, buf, appOpts)
-	go buffer.Fill(in, buf, a.Notify)
+	n.set(a.Notify)
+	a.Notify() // for what was read, or ended, before the app existed
 	if src != nil && opts.Reloads(cfg) {
 		stop := watch.Files(files, postChanged(scr))
 		defer stop()
 	}
 	a.Run()
-	if a.PrintText() {
-		scr.Fini()
-		buf.WriteTo(os.Stdout)
-	}
 }

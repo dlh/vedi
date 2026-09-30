@@ -54,7 +54,10 @@ type scenario struct {
 	diskNL   bool   // and it ended with a newline
 	hasEOF   bool   // the file has an eof section, so input stays open
 	finished bool   // an eof section has run
-	started  bool
+	started  bool   // the setup is frozen: an action or assertion has run
+	onePage  bool   // -F: the pager opens only once the text is known not to fit
+	opts     cli.Options
+	files    []string
 	quit     bool
 	now      time.Time // the app's clock, advanced by mouse actions
 	moved    time.Time // the last motion, which arms the auto-scroll timer
@@ -129,7 +132,9 @@ func runScenario(t *testing.T, a archive) error {
 				return err
 			}
 			s.input(sec.body)
-			s.notify()
+			if err := s.deliver(); err != nil {
+				return err
+			}
 		case "eof":
 			if s.finished {
 				return fail("input already finished")
@@ -139,10 +144,12 @@ func runScenario(t *testing.T, a archive) error {
 				return err
 			}
 			s.buf.Finish(nil, s.nl)
-			s.notify()
-		case "file", "reload":
-			if err := s.start(); err != nil {
+			if err := s.deliver(); err != nil {
 				return err
+			}
+		case "file", "reload":
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			if !s.file {
 				return fail("%s needs a file in -- args --", sec.name)
@@ -154,8 +161,8 @@ func runScenario(t *testing.T, a archive) error {
 				s.notify()
 			}
 		case "keys":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			keys, err := parseKeys(sec.body)
 			if err != nil {
@@ -166,8 +173,8 @@ func runScenario(t *testing.T, a archive) error {
 				s.app.Draw()
 			}
 		case "mouse":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			acts, err := parseMouse(sec.body)
 			if err != nil {
@@ -177,8 +184,8 @@ func runScenario(t *testing.T, a archive) error {
 				s.mouse(a)
 			}
 		case "resize":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			var w, h int
 			if _, err := fmt.Sscanf(strings.TrimSpace(sec.body), "%dx%d", &w, &h); err != nil {
@@ -188,15 +195,15 @@ func runScenario(t *testing.T, a archive) error {
 			s.app.Handle(tcell.NewEventResize(w, h))
 			s.app.Draw()
 		case "screen":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			if got := dump(s.scr); got != sec.body {
 				return fail("screen differs\n%s", sideBySide(sec.body, got))
 			}
 		case "cursor":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			want := strings.TrimSpace(sec.body)
 			x, y, vis := s.scr.GetCursor()
@@ -208,8 +215,8 @@ func runScenario(t *testing.T, a archive) error {
 				return fail("cursor = %s, want %s", got, want)
 			}
 		case "clipboard":
-			if err := s.start(); err != nil {
-				return err
+			if err := s.ready(); err != nil {
+				return fail("%v", err)
 			}
 			want := strings.TrimSuffix(sec.body, "\n")
 			if got := string(s.scr.GetClipboardData()); got != want {
@@ -261,8 +268,10 @@ func lines(body string) (text string, nl bool) {
 	return strings.TrimSuffix(text, "\n") + "\n", nl
 }
 
-// start builds the screen and app the first time an action or
-// assertion needs them. Without an eof section the input is complete.
+// start freezes the setup the first time an action or assertion needs
+// the app, and opens the pager. Without an eof section the input is
+// complete. With -F the pager opens only once the text is known not
+// to fit, so it may not open yet: see deliver.
 func (s *scenario) start() error {
 	if s.started {
 		return nil
@@ -271,10 +280,53 @@ func (s *scenario) start() error {
 	if !s.hasEOF {
 		s.buf.Finish(nil, s.nl)
 	}
-	opts, files, err := cli.Parse(s.args)
-	if err != nil {
+	var err error
+	if s.opts, s.files, err = cli.Parse(s.args); err != nil {
 		return fmt.Errorf("args %q: %v", s.args, err)
 	}
+	s.onePage = s.opts.QuitIfOnePage
+	return s.deliver()
+}
+
+// deliver is the reader's notification, as main handles it: to the app
+// once the pager is open, else to -F, which opens the pager when the
+// text outgrows the screen and quits to print it when the input ends
+// first.
+func (s *scenario) deliver() error {
+	if s.app != nil {
+		s.notify()
+		return nil
+	}
+	if s.onePage {
+		switch app.OnePage(s.buf, s.w, s.h) {
+		case app.Undecided:
+			return nil
+		case app.Print:
+			s.quit = true
+			return nil
+		}
+	}
+	return s.open()
+}
+
+// ready starts the scenario and reports an error when there is no
+// pager to act on or assert about.
+func (s *scenario) ready() error {
+	if err := s.start(); err != nil {
+		return err
+	}
+	switch {
+	case s.app != nil:
+		return nil
+	case s.quit:
+		return fmt.Errorf("-F printed the text; the pager never opened")
+	}
+	return fmt.Errorf("-F is waiting for EOF; the pager has not opened")
+}
+
+// open builds the screen and app and delivers the first notification.
+func (s *scenario) open() error {
+	opts, files := s.opts, s.files
 	s.scr = tcell.NewSimulationScreen("UTF-8")
 	if err := s.scr.Init(); err != nil {
 		return err
@@ -452,6 +504,9 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"config after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- config --\nmap q none\n", "line 6, -- config --: must come before the app starts"},
 		{"bad config", "T\n-- config --\nmap q nope\n-- input --\nhi\n", `line 2, -- config --: config:1: unknown action "nope"`},
 		{"reload without file", "T\n-- input --\nhi\n-- reload --\nho\n", "line 4, -- reload --: reload needs a file in -- args --"},
+		{"screen before -F opens", "T\n-- args --\n-F\n-- input --\nhi\n-- screen --\nhi\n-- eof --\n", "line 6, -- screen --: -F is waiting for EOF; the pager has not opened"},
+		{"keys before -F opens", "T\n-- args --\n-F\n-- input --\nhi\n-- keys --\nDown\n-- eof --\n", "line 6, -- keys --: -F is waiting for EOF; the pager has not opened"},
+		{"screen after -F prints", "T\n-- args --\n-F\n-- input --\nhi\n-- quit --\n-- screen --\nhi\n", "line 7, -- screen --: -F printed the text; the pager never opened"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

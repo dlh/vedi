@@ -100,8 +100,8 @@ func TestApp(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
 	scr := tcell.NewSimulationScreen("UTF-8")
 	none := config.Config{}
-	got := Options{Wrap: new(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}, QuitIfOnePage: true}.App(scr, nil, none)
-	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 || !got.QuitIfOnePage {
+	got := Options{Wrap: new(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr, nil, none)
+	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
 		t.Errorf("App() = %+v", got)
 	}
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {

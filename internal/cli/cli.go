@@ -77,16 +77,15 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		marks = *o.EdgeMarkers
 	}
 	return app.Options{
-		Name:          inputName(files),
-		Mode:          mode,
-		QuitIfOnePage: o.QuitIfOnePage,
-		StartLine:     o.StartLine,
-		Follow:        o.Follow,
-		Screen:        o.Screen,
-		Copier:        clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
-		MacOS:         macOS,
-		TabWidth:      tab,
-		EdgeMarkers:   marks,
+		Name:        inputName(files),
+		Mode:        mode,
+		StartLine:   o.StartLine,
+		Follow:      o.Follow,
+		Screen:      o.Screen,
+		Copier:      clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
+		MacOS:       macOS,
+		TabWidth:    tab,
+		EdgeMarkers: marks,
 	}
 }
 

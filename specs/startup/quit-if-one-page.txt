@@ -1,5 +1,5 @@
--F quits at EOF when the text fits the screen; main then prints it, so
-a short input shows as if by cat.
+-F prints text that fits the screen at EOF, as if by cat: the pager
+never opens, so the terminal never switches to its screen and back.
 
 -- size --
 40x4

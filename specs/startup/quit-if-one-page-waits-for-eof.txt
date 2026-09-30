@@ -1,4 +1,6 @@
--F decides at EOF, not before: text that fits so far may grow.
+-F decides at EOF, not before: text that fits so far may grow. Until
+it outgrows the screen there is no pager to show it in; the pager
+opens once it does, and the text is still being read.
 
 -- size --
 40x4
@@ -6,10 +8,18 @@
 -F
 -- input --
 line 1
+-- input --
+line 2
+line 3
+line 4
 -- screen --
 line 1
-
-
-<stdin>  line 1/1  wrap  reading…
+line 2
+line 3
+<stdin>  line 1/4  wrap  reading…
 -- eof --
--- quit --
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/4  wrap           h help

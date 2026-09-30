@@ -20,18 +20,17 @@ import (
 )
 
 type Options struct {
-	Name          string // what the status line calls the input
-	Mode          layout.Mode
-	QuitIfOnePage bool // quit at EOF if the text fits the screen (-F)
-	StartLine     int  // 1-based line to put at the top; 0 for none
-	Follow        bool // keep the cursor on the last line until EOF (+G)
-	Screen        *Screen
-	Copier        clipboard.Copier
-	Now           func() time.Time // the clock double-clicks are timed by; nil for time.Now
-	MacOS         bool             // there is a ⌘ key
-	Keys          input.Keymap     // nil for the defaults
-	TabWidth      int              // cells per tab stop; 0 for 8
-	EdgeMarkers   bool             // nowrap marks text off the sides with < and >
+	Name        string // what the status line calls the input
+	Mode        layout.Mode
+	StartLine   int  // 1-based line to put at the top; 0 for none
+	Follow      bool // keep the cursor on the last line until EOF (+G)
+	Screen      *Screen
+	Copier      clipboard.Copier
+	Now         func() time.Time // the clock double-clicks are timed by; nil for time.Now
+	MacOS       bool             // there is a ⌘ key
+	Keys        input.Keymap     // nil for the defaults
+	TabWidth    int              // cells per tab stop; 0 for 8
+	EdgeMarkers bool             // nowrap marks text off the sides with < and >
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -69,8 +68,6 @@ type App struct {
 	follow    bool
 	startLine int     // 0-based +N target; -1 once applied
 	screen    *Screen // applied at EOF, then nil; no text is drawn until then
-	onePage   bool    // -F: quit at EOF if the text fits
-	printText bool    // -F quit, so the caller prints the text
 
 	status string // one-shot message, cleared by the next key or click
 
@@ -136,7 +133,6 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
-		onePage:   opts.QuitIfOnePage,
 		open:      opts.Open,
 		now:       opts.Now,
 		macOS:     opts.MacOS,
@@ -219,19 +215,13 @@ func (a *App) Run() {
 	}
 }
 
-// PrintText reports that the app quit for -F: the text fit the screen,
-// and the caller should print it.
-func (a *App) PrintText() bool { return a.printText }
-
 // Handle processes one event and reports whether to quit. Data the
 // reader notified of is taken up first, whatever the event.
 func (a *App) Handle(ev tcell.Event) bool {
 	_, interrupt := ev.(*tcell.EventInterrupt)
 	if a.pending.Swap(false) || interrupt {
 		a.swapIfDone()
-		if a.onData() {
-			return true
-		}
+		a.onData()
 	}
 	switch ev := ev.(type) {
 	case *tcell.EventResize:
@@ -273,28 +263,18 @@ func (a *App) act() {
 	a.follow = false
 	a.startLine = -1
 	a.screen = nil
-	a.onePage = false
 	a.status = ""
 }
 
 // onData runs after the reader appended lines: it applies a pending +N,
-// follows for +G and applies a Screen at EOF. It reports whether to
-// quit, for -F. While the bindings are shown there is nothing to do:
-// the h key ended startup positioning, and the text view is placed
-// when it comes back.
-func (a *App) onData() bool {
+// follows for +G and applies a Screen at EOF. While the bindings are
+// shown there is nothing to do: the h key ended startup positioning,
+// and the text view is placed when it comes back.
+func (a *App) onData() {
 	if a.helping {
-		return false
+		return
 	}
-	eof, err := a.buf.Finished()
-	if a.onePage {
-		if !a.fits() || err != nil {
-			a.onePage = false
-		} else if eof {
-			a.printText = true
-			return true
-		}
-	}
+	eof, _ := a.buf.Finished()
 	n := a.buf.Len()
 	if a.startLine >= 0 && (n > a.startLine || eof) {
 		a.cur = buffer.Pos{Line: min(a.startLine, max(n-1, 0))}
@@ -309,23 +289,55 @@ func (a *App) onData() bool {
 		a.screen = nil
 	}
 	a.scrollToCursor()
-	return false
 }
 
-// fits reports whether every line's rows fit in the text rows. The
-// printed text is the terminal's to lay out: it wraps whatever the
-// mode and its tabs stop every 8 cells whatever tab_width says, so it
-// is measured that way.
-func (a *App) fits() bool {
-	w, _ := a.scr.Size()
+// Verdict is -F's decision about the text read so far.
+type Verdict int
+
+const (
+	Undecided Verdict = iota // the text fits so far but has not ended: it may grow
+	Print                    // it ended fitting the screen: print it; the pager never opens
+	Page                     // it outgrew the screen, or ended with a read error to show
+)
+
+// text is what OnePage measures: a buffer being filled, or a test's
+// stand-in that grows at a chosen moment.
+type text interface {
+	Len() int
+	Line(i int) buffer.Line
+	Finished() (bool, error)
+}
+
+// OnePage is -F's decision for the text buf holds so far, on a w×h
+// screen with a status line: text that fits the rows above it at EOF
+// is printed instead of paged. The printed text is the terminal's to
+// lay out: it wraps whatever the mode and its tabs stop every 8 cells
+// whatever tab_width says, so it is measured that way.
+func OnePage(buf text, w, h int) Verdict {
+	// EOF is read before measuring: the reader may append and finish
+	// at any moment, and an EOF seen afterwards would vouch for lines
+	// the measuring missed.
+	eof, err := buf.Finished()
+	if err != nil {
+		return Page
+	}
 	l := layout.Layout{Width: w, Mode: layout.Wrap}
 	rows := 0
-	for i := 0; i < a.buf.Len(); i++ {
-		if rows += l.Rows(a.line(i)); rows > a.textRows() {
-			return false
+	for i := 0; i < buf.Len(); i++ {
+		if rows += l.Rows(buf.Line(i).Text); rows > textRows(h) {
+			return Page
 		}
 	}
-	return true
+	// The error is read again after: a line whose bytes are gone from
+	// a file that shrank is found by reading it, and is paged so it
+	// is seen.
+	if _, err := buf.Finished(); err != nil {
+		return Page
+	}
+	if eof {
+		return Print
+	}
+	return Undecided
 }
 
 // showScreen puts the view where the terminal had it. The buffer's last
@@ -497,6 +509,12 @@ func (a *App) lineLayout(i int) layout.Line {
 // needs two rows to exist.
 func (a *App) textRows() int {
 	_, h := a.scr.Size()
+	return textRows(h)
+}
+
+// textRows is the rows left for text on a screen h rows tall: all but
+// the status line's, which a one-row screen does without.
+func textRows(h int) int {
 	if h >= 2 {
 		return h - 1
 	}

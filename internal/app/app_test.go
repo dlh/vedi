@@ -423,51 +423,105 @@ func BenchmarkJumpEnd(b *testing.B) {
 	}
 }
 
-// newOnePageApp is a -F app on a 40×3 screen whose input is still
-// open.
-func newOnePageApp(t *testing.T) *App {
-	t.Helper()
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
+// TestOnePageUndecidedBeforeEOF: -F does not decide while text that
+// fits is still being read; it may grow.
+func TestOnePageUndecidedBeforeEOF(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n2\n"))
+	if v := OnePage(buf, 40, 3); v != Undecided {
+		t.Errorf("OnePage = %v, want Undecided", v)
+	}
+}
+
+// TestOnePagePagesWhenTooLong: text that outgrows the screen is paged
+// as soon as it does, before EOF.
+func TestOnePagePagesWhenTooLong(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n2\n3\n"))
+	if v := OnePage(buf, 40, 3); v != Page {
+		t.Errorf("OnePage = %v, want Page", v)
+	}
+}
+
+func TestOnePagePrintsWhenFits(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n2\n"))
+	buf.Finish(nil, true)
+	if v := OnePage(buf, 40, 3); v != Print {
+		t.Errorf("OnePage = %v, want Print", v)
+	}
+}
+
+// TestOnePagePagesOnReadError: -F pages on a read error, so it is seen.
+func TestOnePagePagesOnReadError(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n"))
+	buf.Finish(fmt.Errorf("disk on fire"), true)
+	if v := OnePage(buf, 40, 3); v != Page {
+		t.Errorf("OnePage = %v, want Page", v)
+	}
+}
+
+// growsAtEOF is a buffer whose reader appends 100 lines and finishes
+// at the moment EOF is first checked: the narrowest interleaving of a
+// read with the measuring.
+type growsAtEOF struct {
+	*buffer.Buffer
+	grown *bool
+}
+
+func (g growsAtEOF) Finished() (bool, error) {
+	if !*g.grown {
+		*g.grown = true
+		g.Write([]byte(strings.Repeat("line\n", 100)))
+		g.Finish(nil, true)
+	}
+	return g.Buffer.Finished()
+}
+
+// TestOnePageMeasuresAllThatEnded: EOF vouches only for text that was
+// measured after it, never for lines that landed with it.
+func TestOnePageMeasuresAllThatEnded(t *testing.T) {
+	if v := OnePage(growsAtEOF{buffer.New(), new(bool)}, 40, 3); v != Page {
+		t.Errorf("OnePage = %v, want Page for 100 lines on a three-row screen", v)
+	}
+}
+
+// TestOnePagePagesOnErrorFoundMeasuring: a file that shrank after it
+// was read has no bytes for its lines. Measuring is what finds that,
+// after the reader reported no error; -F pages so the error is shown
+// rather than printing what is left.
+func TestOnePagePagesOnErrorFoundMeasuring(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "f")
+	if err := os.WriteFile(name, []byte("1\n2\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(scr.Fini)
-	scr.SetSize(40, 3)
-	return New(scr, buffer.New(), Options{QuitIfOnePage: true})
-}
-
-// TestPagingWhenTooLong: -F does not quit before EOF, and not at EOF
-// when the text outgrew the screen.
-func TestPagingWhenTooLong(t *testing.T) {
-	a := newOnePageApp(t)
-	for _, s := range []string{"1", "2", "3"} {
-		a.buf.Write([]byte(s + "\n"))
-		if a.Handle(tcell.NewEventInterrupt(nil)) {
-			t.Fatal("quit before EOF")
-		}
+	f, err := os.Open(name)
+	if err != nil {
+		t.Fatal(err)
 	}
-	a.buf.Finish(nil, true)
-	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
-		t.Error("quit at EOF though the text does not fit")
+	t.Cleanup(func() { f.Close() })
+	buf := buffer.NewFrom(f)
+	buffer.Fill(f, buf, func() {})
+	if err := os.Truncate(name, 0); err != nil {
+		t.Fatal(err)
+	}
+	if v := OnePage(buf, 40, 3); v != Page {
+		t.Errorf("OnePage = %v, want Page for a truncated file", v)
+	}
+	if _, err := buf.Finished(); err == nil {
+		t.Error("the truncation was not found while measuring, so the test proves nothing")
 	}
 }
 
-func TestPrintTextWhenFits(t *testing.T) {
-	a := newOnePageApp(t)
-	a.buf.Write([]byte("1\n"))
-	a.buf.Finish(nil, true)
-	if !a.Handle(tcell.NewEventInterrupt(nil)) || !a.PrintText() {
-		t.Error("did not quit to print")
-	}
-}
-
-// TestReadErrorKeepsPager: -F stays on a read error, so it is seen.
-func TestReadErrorKeepsPager(t *testing.T) {
-	a := newOnePageApp(t)
-	a.buf.Write([]byte("1\n"))
-	a.buf.Finish(fmt.Errorf("disk on fire"), true)
-	if a.Handle(tcell.NewEventInterrupt(nil)) || a.PrintText() {
-		t.Error("quit despite the read error")
+// TestOnePageOneRowScreen: a one-row screen has no status line, so
+// its one row is the text's.
+func TestOnePageOneRowScreen(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n"))
+	buf.Finish(nil, true)
+	if v := OnePage(buf, 40, 1); v != Print {
+		t.Errorf("OnePage = %v, want Print", v)
 	}
 }
 

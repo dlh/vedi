@@ -53,6 +53,12 @@ each later `input` appends and delivers the reader's notification. An
 draw, so a file may end with a bare `-- eof --` to say "input was
 still being read" (see `startup/follow-stops-on-key.txt`).
 
+With `-F` the pager opens only once the text is known not to fit,
+as `main` opens it: an `input` that outgrows the screen opens it, and
+an `eof` with the text still fitting quits to print instead. Until
+one or the other there is no screen to act on or assert about, and
+a section that tries fails.
+
 Actions:
 
 | Section | Content |
@@ -70,6 +76,6 @@ Assertions, checked at that point:
 | `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`; the status row plain; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
-| `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it. |
+| `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |
 
 Colors are not covered; those tests stay in `internal/app/app_test.go`.
