@@ -2,6 +2,7 @@ package layout
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -197,5 +198,26 @@ func TestGlyph(t *testing.T) {
 		if i, j := ln.Glyph(col); i != want[0] || j != want[1] {
 			t.Errorf("Glyph(%d) = [%d,%d), want [%d,%d)", col, i, j, want[0], want[1])
 		}
+	}
+}
+
+// BenchmarkCells lays out an 80-cell line of each kind of text: ASCII
+// skips the segmenter, the rest run it.
+func BenchmarkCells(b *testing.B) {
+	for _, in := range []struct{ name, text string }{
+		{"ascii", strings.Repeat("some plain text, about eighty bytes wide, ", 2)},
+		{"latin", strings.Repeat("café naïve résumé façade coöperate ", 2)},
+		{"cjk", strings.Repeat("日本語のテキスト、中文文本 ", 4)},
+		{"emoji", strings.Repeat("👨\u200d👩\u200d👧\u200d👦 🇺🇸 👍🏽 ", 6)},
+		{"marks", strings.Repeat("e\u0301a\u0308o\u0302 ", 10)},
+		{"tabs", strings.Repeat("a\tbb\tccc\t", 6)},
+	} {
+		text := []rune(in.text)
+		b.Run(in.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				Layout{}.Cells(text)
+			}
+		})
 	}
 }

@@ -423,6 +423,43 @@ func BenchmarkJumpEnd(b *testing.B) {
 	}
 }
 
+// unicodeLines is n lines of accented, CJK and emoji text, each under
+// 200 cells however clusters are measured.
+func unicodeLines(n int) []string {
+	lines := make([]string, n)
+	for i := range lines {
+		switch i % 3 {
+		case 0:
+			lines[i] = strings.Repeat("café naïve résumé façade coöperate ", 3)
+		case 1:
+			lines[i] = strings.Repeat("日本語のテキスト、中文文本 ", 4)
+		default:
+			lines[i] = strings.Repeat("👨\u200d👩\u200d👧\u200d👦 🇺🇸 👍🏽 e\u0301 ", 6)
+		}
+	}
+	return lines
+}
+
+// BenchmarkDrawUnicode redraws a screen of accented, CJK and emoji
+// text: every glyph goes to tcell with its cluster.
+func BenchmarkDrawUnicode(b *testing.B) {
+	a := benchApp(b, unicodeLines(60)...)
+	b.ReportAllocs()
+	for b.Loop() {
+		a.Draw()
+	}
+}
+
+// BenchmarkMoveColUnicode steps right and back over marked text,
+// redrawing each time.
+func BenchmarkMoveColUnicode(b *testing.B) {
+	a := benchApp(b, unicodeLines(3)...)
+	b.ReportAllocs()
+	for b.Loop() {
+		press(a, key(tcell.KeyRight, 0, 0), key(tcell.KeyLeft, 0, 0))
+	}
+}
+
 // TestOnePageUndecidedBeforeEOF: -F does not decide while text that
 // fits is still being read; it may grow.
 func TestOnePageUndecidedBeforeEOF(t *testing.T) {
