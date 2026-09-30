@@ -93,7 +93,7 @@ over plain text.
 |---|---|
 | Date | 2026-09-29 |
 | Machine | Apple M3 Max, macOS 26.3 |
-| vedi | 1.5.2 |
+| vedi | 1.6.0 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
