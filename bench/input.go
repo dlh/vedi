@@ -1,6 +1,6 @@
-// Command bench compares vedi with less, moor and ov on a large file:
-// time to the first screen, to the end and back, for a failed search,
-// to the first screen from stdin, and peak memory.
+// Command bench compares vedi with less, moor, ov and neovim on a
+// large file: time to the first screen, to the end and back, for a
+// failed search, to the first screen from stdin, and peak memory.
 package main
 
 import (
@@ -13,6 +13,10 @@ import (
 // The colon keeps "00000001:" from matching inside a longer number,
 // and is never skipped as a blank cell the way a space is.
 func marker(i int) string { return fmt.Sprintf("%08d:", i) }
+
+// filler is the plain text of every line, and follows the marker once
+// the escapes are gone.
+const filler = "some plain text about sixty bold columns wide"
 
 // writeInput writes n lines to path: a marker, then colored filler, 54
 // columns in all so nothing wraps at 80.

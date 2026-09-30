@@ -9,7 +9,7 @@ Requires Go and make.
     make tidy           show what go mod tidy would change (fails if any)
     make bench          benchmarks
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
-    make bench-pagers   vedi, less, moor and ov on a large file; needs them on PATH
+    make bench-pagers   vedi, less, moor, ov, vim and neovim on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
     make media          record the README gif; needs vhs on PATH
 
@@ -24,8 +24,16 @@ peak RSS. To the end is the rest of the index for vedi and a seek for
 less. The pty answers a device attributes query, as a terminal would,
 and the harness reads the screen, since a pager may redraw only the
 cells that changed. `BENCHFLAGS='-lines N -runs R'` changes the input
-and the repetitions; the table in `docs/comparison.md` comes from a
-run with the defaults.
+and the repetitions. The editors run with `-plugins DIR`, a directory
+holding checkouts of
+[vim-plugin-AnsiEsc](https://github.com/powerman/vim-plugin-AnsiEsc)
+and [baleia.nvim](https://github.com/m00qek/baleia.nvim) under those
+names, which color the escapes for vim and neovim, and are left out
+without it. The pty also answers neovim's status and background
+color queries, and the file is read through before each pager, since
+neovim's run leaves it out of the page cache. The table in
+`docs/comparison.md` comes from a run with the defaults and the
+plugins.
 
 `media` runs `docs/media/demo.tape` with [vhs](https://github.com/charmbracelet/vhs)
 (`brew install vhs`, which brings ttyd and ffmpeg) over the checked-in

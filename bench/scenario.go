@@ -14,29 +14,66 @@ import (
 // there is none.
 type pager struct {
 	name     string
-	argv     []string // {vedi} is the vedi binary, {file} the input
+	argv     []string // {vedi} is the vedi binary, {file} the input, {plugins} the plugins
+	stdin    string   // what stands in for {file} to read stdin; "" drops it
+	drawn    string   // what follows a marker once its line is drawn
 	notFound string   // what a failed search prints
 	atEnd    string   // what shows once it is ready at the last of {n} lines
 	end      string   // the key for the last line
 	home     string   // the key for the first line
+	quit     string   // the keys that exit
 }
+
+// plugins is a directory of plugin checkouts, which the editors need
+// to show the colors; empty leaves them out.
+var plugins string
 
 // moor searches as each character is typed, so its search-miss time
 // covers four searches, one per character. It prints nothing on a
 // miss; the status line's hint changes after any search. ov draws a
-// tilde row past the last line.
+// tilde row past the last line. neovim runs without the user's
+// configuration, with the ruler in place of the status line, and
+// baleia colors the buffer before the first draw and strips the
+// escapes from it, so a drawn line has the plain text; the buffer is
+// then modified, and quitting takes a bang.
 var pagers = []pager{
-	{"vedi", []string{"{vedi}", "{file}"}, "not found:", "{n}/{n}", "G", "g"},
-	{"less", []string{"less", "-R", "{file}"}, "Pattern not found", "(END)", "G", "g"},
-	{"moor", []string{"moor", "{file}"}, "n/p to search", "100%", "G", "<"},
-	{"ov", []string{"ov", "{file}"}, "not found:", "~", "\x1b[F", "\x1b[H"},
+	{"vedi", []string{"{vedi}", "{file}"}, "", "", "not found:", "{n}/{n}", "G", "g", "q"},
+	{"less", []string{"less", "-R", "{file}"}, "", "", "Pattern not found", "(END)", "G", "g", "q"},
+	{"moor", []string{"moor", "{file}"}, "", "", "n/p to search", "100%", "G", "<", "q"},
+	{"ov", []string{"ov", "{file}"}, "", "", "not found:", "~", "\x1b[F", "\x1b[H", "q"},
+	{"vim", []string{"vim", "-N", "-u", "NONE", "-i", "NONE", "-n", "-R",
+		"--cmd", "set rtp^={plugins}/vim-plugin-AnsiEsc ruler",
+		"-c", "runtime! plugin/cecutil.vim plugin/AnsiEscPlugin.vim", "-c", "AnsiEsc", "{file}"},
+		"-", filler[:10], "Pattern not found", "{n},1", "G", "gg", ":q!\r"},
+	{"neovim", []string{"nvim", "-u", "NONE", "-i", "NONE", "-n",
+		"--cmd", "set rtp^={plugins}/baleia.nvim ruler laststatus=0",
+		"-c", "lua require('baleia').setup({async = false}).once(vim.api.nvim_get_current_buf())", "{file}"},
+		"-", filler[:10], "Pattern not found", "{n},1", "G", "gg", ":q!\r"},
+}
+
+// needsPlugins is whether p runs a plugin.
+func (p pager) needsPlugins() bool {
+	for _, a := range p.argv {
+		if strings.Contains(a, "{plugins}") {
+			return true
+		}
+	}
+	return false
 }
 
 // ready is the at-end text for n lines.
 func (p pager) ready(n int) string { return strings.ReplaceAll(p.atEnd, "{n}", strconv.Itoa(n)) }
 
-// command is the argv for file, or for stdin when file is "".
+// command is the argv for file, or for stdin when file is "". The
+// plugins directory is made absolute, since the editors start in the
+// input's directory.
 func (p pager) command(vedi, file string) []string {
+	dir := plugins
+	if dir != "" {
+		if abs, err := filepath.Abs(dir); err == nil {
+			dir = abs
+		}
+	}
 	var argv []string
 	for _, a := range p.argv {
 		switch a {
@@ -45,9 +82,11 @@ func (p pager) command(vedi, file string) []string {
 		case "{file}":
 			if file != "" {
 				argv = append(argv, file)
+			} else if p.stdin != "" {
+				argv = append(argv, p.stdin)
 			}
 		default:
-			argv = append(argv, a)
+			argv = append(argv, strings.ReplaceAll(a, "{plugins}", dir))
 		}
 	}
 	return argv
@@ -82,9 +121,27 @@ func run(p pager, vedi, file string, n int, timeout time.Duration) sample {
 			vedi = abs
 		}
 	}
+	// A pager that took the machine's memory, as neovim does, leaves
+	// the file out of the page cache, so the next one would read it
+	// from disk.
+	if err := warm(file); err != nil {
+		out["first-screen ms"] = cell{err: err}
+		return out
+	}
 	runFile(p, vedi, file, n, timeout, out)
 	runStdin(p, vedi, file, n, timeout, out)
 	return out
+}
+
+// warm reads file through, so it is in the page cache.
+func warm(file string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(io.Discard, f)
+	return err
 }
 
 func ms(since time.Time) float64 { return float64(time.Since(since)) / float64(time.Millisecond) }
@@ -98,7 +155,7 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 		out["first-screen ms"] = cell{err: err}
 		return
 	}
-	if err := s.wait(marker(firstScreen), timeout); err != nil {
+	if err := s.wait(marker(firstScreen)+p.drawn, timeout); err != nil {
 		out["first-screen ms"] = cell{err: err}
 		s.kill()
 		return
@@ -126,7 +183,7 @@ func runFile(p pager, vedi, file string, n int, timeout time.Duration, out sampl
 		return
 	}
 
-	s.send("q")
+	s.send(p.quit)
 	rss, err := s.finish(timeout)
 	out["rss file MB"] = cell{v: mb(rss), err: err}
 }
@@ -204,7 +261,7 @@ func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out samp
 		out["stdin ms"] = cell{err: err}
 		return
 	}
-	if err := s.wait(marker(firstScreen), timeout); err != nil {
+	if err := s.wait(marker(firstScreen)+p.drawn, timeout); err != nil {
 		out["stdin ms"] = cell{err: err}
 		s.kill()
 		return
@@ -224,7 +281,7 @@ func runStdin(p pager, vedi, file string, n int, timeout time.Duration, out samp
 		s.kill()
 		return
 	}
-	s.send("q")
+	s.send(p.quit)
 	rss, err := s.finish(timeout)
 	out["rss stdin MB"] = cell{v: mb(rss), err: err}
 }

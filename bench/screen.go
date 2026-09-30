@@ -17,9 +17,10 @@ type screen struct {
 	top, bot   int // the scroll region, inclusive
 	sr, sc     int // the saved cursor
 	state      int
-	seq        []byte // the CSI parameters and intermediates so far
-	pend       []byte // an incomplete rune
-	da1        bool   // the pager asked for the terminal's identity
+	seq        []byte   // the CSI parameters and intermediates, or the OSC, so far
+	pend       []byte   // an incomplete rune
+	osc        bool     // the string being skipped is an OSC
+	queries    []string // what the pager asked that a terminal answers, in order
 }
 
 const (
@@ -68,12 +69,13 @@ func (s *screen) String() string {
 	return b.String()
 }
 
-// askedDA1 reports, once, that the pager sent a primary device
-// attributes request and is waiting for the reply.
-func (s *screen) askedDA1() bool {
-	asked := s.da1
-	s.da1 = false
-	return asked
+// asked returns, once, the terminal queries the pager has sent that
+// a terminal answers, in order: "da1" for the primary device
+// attributes, "dsr" for the status, and "bg" for the background color.
+func (s *screen) asked() []string {
+	q := s.queries
+	s.queries = nil
+	return q
 }
 
 // write takes p as a terminal would.
@@ -95,12 +97,14 @@ func (s *screen) write(p []byte) {
 			}
 		case sOSC:
 			if b == 7 {
-				s.state = sText
+				s.endOSC()
 			} else if b == 0x1b {
 				s.state = sOSCEsc
+			} else {
+				s.seq = append(s.seq, b)
 			}
 		case sOSCEsc:
-			s.state = sText
+			s.endOSC()
 		}
 	}
 }
@@ -183,6 +187,8 @@ func (s *screen) esc(b byte) {
 		s.seq = s.seq[:0]
 	case ']', 'P', '_', '^', 'X':
 		s.state = sOSC
+		s.osc = b == ']'
+		s.seq = s.seq[:0]
 	case '(', ')', '*', '+', '#', '%':
 		s.state = sEsc2
 	case '7':
@@ -298,8 +304,21 @@ func (s *screen) csi(final byte) {
 		s.r, s.c = s.sr, s.sc
 	case 'c':
 		if !private {
-			s.da1 = true
+			s.queries = append(s.queries, "da1")
 		}
+	case 'n':
+		if !private && n == 5 {
+			s.queries = append(s.queries, "dsr")
+		}
+	}
+}
+
+// endOSC ends a control string; an OSC 11 query asks the background
+// color.
+func (s *screen) endOSC() {
+	s.state = sText
+	if s.osc && string(s.seq) == "11;?" {
+		s.queries = append(s.queries, "bg")
 	}
 }
 

@@ -16,6 +16,7 @@ func main() {
 	lines := flag.Int("lines", 1_000_000, "lines of input")
 	runs := flag.Int("runs", 5, "runs per pager; the median is reported")
 	timeout := flag.Duration("timeout", time.Minute, "give up on a screen after this long")
+	flag.StringVar(&plugins, "plugins", "", "a directory of plugin checkouts; the editors run when given")
 	flag.Parse()
 
 	dir, err := os.MkdirTemp("", "vedi-bench")
@@ -30,6 +31,9 @@ func main() {
 	results := map[string][]sample{}
 	for i := 1; i <= *runs; i++ {
 		for _, p := range pagers {
+			if p.needsPlugins() && plugins == "" {
+				continue
+			}
 			fmt.Fprintf(os.Stderr, "%s run %d/%d\n", p.name, i, *runs)
 			results[p.name] = append(results[p.name], run(p, *vedi, file, *lines, *timeout))
 		}
@@ -47,13 +51,17 @@ func fatal(err error) {
 func report(w io.Writer, results map[string][]sample) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	for _, p := range pagers {
-		fmt.Fprintf(tw, "\t%s", p.name)
+		if results[p.name] != nil {
+			fmt.Fprintf(tw, "\t%s", p.name)
+		}
 	}
 	fmt.Fprintln(tw)
 	for _, row := range rows {
 		fmt.Fprint(tw, row)
 		for _, p := range pagers {
-			fmt.Fprintf(tw, "\t%s", summarize(results[p.name], row))
+			if results[p.name] != nil {
+				fmt.Fprintf(tw, "\t%s", summarize(results[p.name], row))
+			}
 		}
 		fmt.Fprintln(tw)
 	}

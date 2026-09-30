@@ -64,16 +64,19 @@ func TestScreenScroll(t *testing.T) {
 	}
 }
 
-// TestScreenDA1: a primary device attributes request is reported once,
-// and a private-mode query is not one.
-func TestScreenDA1(t *testing.T) {
+// TestScreenAsked: the queries a terminal answers are reported once,
+// in order, and private-mode queries and other strings are not.
+func TestScreenAsked(t *testing.T) {
 	s := newScreen(1, 4)
-	s.write([]byte("\x1b[?u\x1b[>q"))
-	if s.askedDA1() {
-		t.Error("private query taken for DA1")
+	s.write([]byte("\x1b[?u\x1b[>q\x1b]10;?\x07\x1bP$qm\x1b\\\x1b[6n"))
+	if q := s.asked(); q != nil {
+		t.Errorf("asked = %q, want none", q)
 	}
-	s.write([]byte("\x1b[c"))
-	if !s.askedDA1() || s.askedDA1() {
-		t.Error("DA1 not reported exactly once")
+	s.write([]byte("\x1b[c\x1b]11;?\x07\x1b]11;?\x1b\\\x1b[5n"))
+	if q := s.asked(); strings.Join(q, " ") != "da1 bg bg dsr" {
+		t.Errorf("asked = %q", q)
+	}
+	if q := s.asked(); q != nil {
+		t.Errorf("asked again = %q, want none", q)
 	}
 }

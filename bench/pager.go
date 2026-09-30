@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -28,10 +29,15 @@ type session struct {
 	done bool
 }
 
-// da1Reply answers a primary device attributes request as a VT220
-// would. A pager that queries the terminal at startup waits on this
-// reply, since it comes after the answers to the other queries.
-const da1Reply = "\x1b[?62;22c"
+// replies answer the queries a pager sends at startup as a terminal
+// would: the primary device attributes as a VT220, the status as OK,
+// and the background color as black. A pager waits on these, since
+// they come after the answers to its other queries.
+var replies = map[string]string{
+	"da1": "\x1b[?62;22c",
+	"dsr": "\x1b[0n",
+	"bg":  "\x1b]11;rgb:0000/0000/0000\x1b\\",
+}
 
 // start runs argv on a pty in dir, reading stdin from in when it is
 // not nil. The controlling terminal is named by stdout, since stdin
@@ -75,14 +81,14 @@ func (s *session) read() {
 		if n > 0 {
 			s.scr.write(p[:n])
 		}
-		asked := s.scr.askedDA1()
+		asked := s.scr.asked()
 		if err != nil {
 			s.done = true
 		}
 		s.cond.Broadcast()
 		s.mu.Unlock()
-		if asked {
-			s.send(da1Reply)
+		for _, q := range asked {
+			s.send(replies[q])
 		}
 		if err != nil {
 			return
@@ -131,7 +137,7 @@ func (s *session) finish(timeout time.Duration) (int64, error) {
 	select {
 	case err = <-done:
 	case <-time.After(timeout):
-		s.cmd.Process.Kill()
+		s.killGroup()
 		<-done
 		err = errors.New("did not quit")
 	}
@@ -152,7 +158,23 @@ func (s *session) finish(timeout time.Duration) (int64, error) {
 
 // kill ends a pager after a failure.
 func (s *session) kill() {
-	s.cmd.Process.Kill()
+	s.killGroup()
 	s.cmd.Wait()
 	s.tty.Close()
+}
+
+// killGroup kills the pager and what it started: neovim runs the
+// editor in a child process, in a session of its own, that would go
+// on without its terminal. The pager leads its own process group,
+// since start set Setsid.
+func (s *session) killGroup() {
+	pid := s.cmd.Process.Pid
+	if out, err := exec.Command("pgrep", "-P", strconv.Itoa(pid)).Output(); err == nil {
+		for f := range strings.FieldsSeq(string(out)) {
+			if child, err := strconv.Atoi(f); err == nil {
+				syscall.Kill(child, syscall.SIGKILL)
+			}
+		}
+	}
+	syscall.Kill(-pid, syscall.SIGKILL)
 }

@@ -10,9 +10,11 @@ import (
 	"time"
 )
 
-// TestRun: every row is measured on vedi built from this tree, and on
-// less when it is installed.
+// TestRun: every row is measured on vedi built from this tree, on the
+// other pagers that are installed, and on neovim when BALEIA names
+// the plugin's checkout.
 func TestRun(t *testing.T) {
+	plugins = os.Getenv("PLUGINS")
 	dir := t.TempDir()
 	build := exec.Command("go", "build", "-C", "..", "-o", filepath.Join(dir, "vedi"), "./cmd/vedi")
 	if out, err := build.CombinedOutput(); err != nil {
@@ -29,6 +31,10 @@ func TestRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, p := range pagers {
+		if p.needsPlugins() && plugins == "" {
+			t.Logf("skipping %s: PLUGINS is not set", p.name)
+			continue
+		}
 		if _, err := exec.LookPath(p.command(bin, "in")[0]); err != nil {
 			t.Logf("skipping %s: %v", p.name, err)
 			continue
@@ -86,4 +92,34 @@ func TestToEndReady(t *testing.T) {
 		t.Errorf("toEnd returned after %v, before READY", d)
 	}
 	s.kill()
+}
+
+// TestCommandPlugins: a relative -plugins is made absolute, since the
+// editors start in the input's directory.
+func TestCommandPlugins(t *testing.T) {
+	plugins = "rel"
+	defer func() { plugins = "" }()
+	want := filepath.Join(must(os.Getwd()), "rel")
+	for _, p := range pagers {
+		if !p.needsPlugins() {
+			continue
+		}
+		found := false
+		for _, a := range p.command("vedi", "in") {
+			if strings.Contains(a, "{plugins}") || strings.Contains(a, "rtp^=rel") {
+				t.Errorf("%s: %q not resolved", p.name, a)
+			}
+			found = found || strings.Contains(a, want)
+		}
+		if !found {
+			t.Errorf("%s: %q lacks %q", p.name, p.command("vedi", "in"), want)
+		}
+	}
+}
+
+func must(s string, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
