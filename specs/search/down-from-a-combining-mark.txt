@@ -1,0 +1,18 @@
+Down from a match on a combining mark, where a search leaves the
+cursor, keeps the letter's column, not the mark's: the mark has no cell
+of its own.
+
+-- size --
+40x4
+-- input --
+ábc
+defgh
+-- keys --
+/ "́b" Enter Down
+-- screen --
+{áb}c
+defgh
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 0

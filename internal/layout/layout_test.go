@@ -186,3 +186,13 @@ func TestTabWidth(t *testing.T) {
 		t.Errorf("Segments = %v, want [{0 5} {5 7}]", got)
 	}
 }
+
+func TestGlyph(t *testing.T) {
+	// x e ́ y: glyphs [0,1) [1,3) [3,4), then the newline.
+	ln := Layout{}.Line([]rune("xe\u0301y"))
+	for col, want := range [][2]int{{0, 1}, {1, 3}, {1, 3}, {3, 4}, {4, 5}} {
+		if i, j := ln.Glyph(col); i != want[0] || j != want[1] {
+			t.Errorf("Glyph(%d) = [%d,%d), want [%d,%d)", col, i, j, want[0], want[1])
+		}
+	}
+}

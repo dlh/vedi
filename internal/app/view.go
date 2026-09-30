@@ -97,14 +97,17 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	}
 	curW := 1 // cells under the cursor
 	for i := seg.Start; i < end; i++ {
-		pos := buffer.Pos{Line: p.Line, Col: i}
 		x := xs[i] - x0
-		if pos == a.cur {
+		// The cursor or a match on any rune of the glyph shows on the
+		// glyph, which has no smaller part to show it on.
+		_, j := ln.Glyph(i)
+		if a.cur.Line == p.Line && i <= a.cur.Col && a.cur.Col < j {
 			curX, ok = x, true
 			if i < len(line.Text) {
 				curW = max(1, xs[i+1]-xs[i])
 			}
 		}
+		pos := buffer.Pos{Line: p.Line, Col: i}
 		selected := hasSel && !pos.Less(selStart) && pos.Less(selEnd)
 		if i == len(line.Text) {
 			if selected {
@@ -123,17 +126,13 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		switch {
 		case selected:
 			st = linkAt(selStyle, runs, ri, i)
-		case mi < len(matches) && matches[mi] <= i:
+		case mi < len(matches) && matches[mi] < j:
 			st = linkAt(MatchStyle, runs, ri, i)
 		default:
 			st = styleAt(runs, ri, i)
 			if isControl(line.Text[i]) {
 				st = st.Reverse(true)
 			}
-		}
-		j := i + 1
-		for j < len(line.Text) && xs[j+1] == xs[j] {
-			j++
 		}
 		drawGlyph(a.scr, x, y, w, line.Text[i], line.Text[i+1:j], xs[i+1]-xs[i], st)
 		i = j - 1

@@ -540,7 +540,7 @@ func (a *App) endPos() buffer.Pos {
 // one on the new line.
 func (a *App) moveRows(n int) int {
 	ln := a.lineLayout(a.cur.Line)
-	row, x := ln.Pos(a.cur.Col)
+	row, x := a.cursorPos(ln)
 	for n > 0 {
 		if row+1 < ln.Rows() {
 			row++
@@ -567,6 +567,14 @@ func (a *App) moveRows(n int) int {
 	}
 	a.cur.Col = ln.Col(row, x)
 	return n
+}
+
+// cursorPos is the cursor's row and cell x on its line ln, at the
+// glyph that shows it: a rune inside a cluster, where a search can
+// leave the cursor, has no cell of its own.
+func (a *App) cursorPos(ln layout.Line) (row, x int) {
+	g, _ := ln.Glyph(a.cur.Col)
+	return ln.Pos(g)
 }
 
 // moveCol moves one rune left or right, crossing lines at the ends, and
@@ -880,14 +888,15 @@ func (a *App) scrollToCursor() {
 	}
 	l := a.layout()
 	if a.mode == layout.NoWrap && l.Width > 0 {
-		// The cursor's whole rune must fit, not just its first cell,
+		// The cursor's whole glyph must fit, not just its first cell,
 		// and clear of the < and > that mark text off either side.
 		ln := a.lineLayout(a.cur.Line)
 		xs := ln.Cells()
-		_, x := ln.Pos(a.cur.Col)
+		g, _ := ln.Glyph(a.cur.Col)
+		_, x := ln.Pos(g)
 		w := 1
-		if a.cur.Col < len(xs)-1 {
-			w = max(1, xs[a.cur.Col+1]-xs[a.cur.Col])
+		if g < len(xs)-1 {
+			w = max(1, xs[g+1]-xs[g])
 		}
 		width := xs[len(xs)-1]
 		mark := 0 // the column a marker takes at an edge

@@ -1,0 +1,25 @@
+The wheel pulling the cursor from a match on a combining mark keeps the
+letter's column, not the mark's.
+
+-- size --
+40x4
+-- input --
+ábc
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+/ "́b" Enter
+-- mouse --
+wheel down
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  wrap           h help
+-- cursor --
+0 0

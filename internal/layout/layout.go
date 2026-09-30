@@ -108,6 +108,22 @@ func (l Layout) NewlineRow(ln Line) Line {
 // Cells is the line's cell columns, as the Cells function gives them.
 func (ln Line) Cells() []int { return ln.xs }
 
+// Glyph returns the runes [i, j) drawn as one glyph with rune col: it
+// and the combining marks after it, which take no cells of their own.
+// The newline after the last rune is a glyph of its own.
+func (ln Line) Glyph(col int) (i, j int) {
+	n := len(ln.xs) - 1
+	i = col
+	for i > 0 && i < n && ln.xs[i+1] == ln.xs[i] {
+		i--
+	}
+	j = i + 1
+	for j < n && ln.xs[j+1] == ln.xs[j] {
+		j++
+	}
+	return i, j
+}
+
 // Segments is the line's visual rows.
 func (ln Line) Segments() []Segment { return ln.segs }
 

@@ -228,7 +228,7 @@ func (a *App) scrollView(n int) {
 		bottom = a.nextRow(bottom)
 	}
 	crow := a.snap(a.cur)
-	_, x := a.lineLayout(a.cur.Line).Pos(a.cur.Col)
+	_, x := a.cursorPos(a.lineLayout(a.cur.Line))
 	edge := crow
 	if crow.Less(a.top) {
 		edge = a.top

@@ -1,0 +1,16 @@
+A match beginning on a combining mark shows on the letter the mark is
+drawn on, and the cursor rests there: the mark has no cell of its own.
+
+-- size --
+40x4
+-- input --
+ábc
+-- keys --
+/ "́b" Enter
+-- screen --
+{áb}c
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 0
