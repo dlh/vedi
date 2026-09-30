@@ -427,8 +427,8 @@ func dump(scr tcell.SimulationScreen) string {
 			if len(c.Runes) == 0 {
 				continue
 			}
-			if (layout.Layout{}).RuneWidth(c.Runes[0], 0) == 2 {
-				x++ // the simulation leaves a wide rune's second cell as it was
+			if xs := (layout.Layout{}).Cells(c.Runes); xs[len(xs)-1] == 2 {
+				x++ // the simulation leaves a wide cell's second half as it was
 			}
 			if !status {
 				_, _, attr := c.Style.Decompose()

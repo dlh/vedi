@@ -1,0 +1,16 @@
+A match inside an emoji sequence puts the cursor on the sequence, which
+is highlighted whole: it has no cells of its own to mark.
+
+-- size --
+40x4
+-- input --
+👨‍👩‍👧x
+-- keys --
+/ "👩" Enter
+-- screen --
+{👨‍👩‍👧}x
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 0

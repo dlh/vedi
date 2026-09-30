@@ -1,0 +1,18 @@
+Without wrap, a match inside an emoji sequence off the left edge scrolls
+the whole sequence into view and puts the cursor on it.
+
+-- size --
+10x4
+-- args --
+-S
+-- input --
+👨‍👩‍👧abcdefghijk
+-- keys --
+End / "👩" Enter
+-- screen --
+{👨‍👩‍👧}abcdefgh
+
+
+search wra
+-- cursor --
+0 0

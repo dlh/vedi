@@ -1,0 +1,27 @@
+An emoji sequence joined with ZWJ is one character on screen: it takes
+one pair of cells, Left and Right step over it whole, and a selection
+takes all of its runes.
+
+-- size --
+40x4
+-- input --
+👨‍👩‍👧x
+-- keys --
+Shift+Right Shift+Right y
+-- screen --
+[👨‍👩‍👧x]
+
+
+copied 1 line                     h help
+-- cursor --
+0 3
+-- clipboard --
+👨‍👩‍👧x
+-- keys --
+End Left Left
+-- cursor --
+0 0
+-- keys --
+Home Shift+Right y
+-- clipboard --
+👨‍👩‍👧

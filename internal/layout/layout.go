@@ -5,6 +5,7 @@ package layout
 import (
 	"slices"
 	"sort"
+	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 )
@@ -19,9 +20,10 @@ const (
 // DefaultTab is the tab width when Layout.Tab is zero.
 const DefaultTab = 8
 
-// RuneWidth is the cells r takes starting at cell x: a tab to the next
-// tab stop, a C0 control or DEL two (drawn as ^X), anything else as
-// uniseg measures it, 0 for combining marks.
+// RuneWidth is the cells r takes on its own starting at cell x: a tab
+// to the next tab stop, a C0 control or DEL two (drawn as ^X), anything
+// else as uniseg measures it, 0 for combining marks. Cells measures
+// runes in their clusters; this is for a rune known to stand alone.
 func (l Layout) RuneWidth(r rune, x int) int {
 	switch {
 	case r == '\t':
@@ -38,20 +40,47 @@ func (l Layout) RuneWidth(r rune, x int) int {
 	return uniseg.StringWidth(string(r))
 }
 
-// ZeroWidth reports whether r takes no cell of its own: a combining
-// mark, drawn on the rune before it.
-func ZeroWidth(r rune) bool { return Layout{}.RuneWidth(r, 0) == 0 }
-
 // Cells returns len(text)+1 entries: xs[i] is the cell column where rune
-// i starts and xs[len(text)] is the total width.
+// i starts and xs[len(text)] is the total width. A grapheme cluster (a
+// letter with its marks, an emoji sequence, a flag) is measured whole
+// as tcell draws it: its first rune takes the cells, the rest take none.
 func (l Layout) Cells(text []rune) []int {
-	xs := make([]int, len(text)+1)
+	n := len(text)
+	xs := make([]int, n+1)
 	x := 0
-	for i, r := range text {
-		xs[i] = x
-		x += l.RuneWidth(r, x)
+	for i := 0; i < n; {
+		// Two ASCII runes in a row never share a cluster, so a run of
+		// ASCII is measured rune by rune without the segmenter.
+		if text[i] < 0x80 && (i+1 == n || text[i+1] < 0x80) {
+			xs[i] = x
+			x += l.RuneWidth(text[i], x)
+			i++
+			continue
+		}
+		// The run text[i:k] ends after the first ASCII pair, or at the
+		// end: every cluster in it lies within it.
+		k := i + 1
+		for k < n && !(text[k-1] < 0x80 && text[k] < 0x80) {
+			k++
+		}
+		s, state := string(text[i:k]), -1
+		for len(s) > 0 {
+			var g string
+			var w int
+			g, s, w, state = uniseg.FirstGraphemeClusterInString(s, state)
+			m := utf8.RuneCountInString(g)
+			if r := text[i]; r < 0x20 || r == 0x7f {
+				w = l.RuneWidth(r, x) // a control is its own cluster: ^X, or the tab stop
+			}
+			xs[i] = x
+			x += w
+			for j := i + 1; j < i+m; j++ {
+				xs[j] = x
+			}
+			i += m
+		}
 	}
-	xs[len(text)] = x
+	xs[n] = x
 	return xs
 }
 
@@ -109,8 +138,8 @@ func (l Layout) NewlineRow(ln Line) Line {
 func (ln Line) Cells() []int { return ln.xs }
 
 // Glyph returns the runes [i, j) drawn as one glyph with rune col: it
-// and the combining marks after it, which take no cells of their own.
-// The newline after the last rune is a glyph of its own.
+// and the rest of its cluster, which take no cells of their own. The
+// newline after the last rune is a glyph of its own.
 func (ln Line) Glyph(col int) (i, j int) {
 	n := len(ln.xs) - 1
 	i = col

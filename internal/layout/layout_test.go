@@ -16,7 +16,10 @@ func TestCells(t *testing.T) {
 		{"\t\t", []int{0, 8, 16}},
 		{"日本", []int{0, 2, 4}},
 		{"a\rb", []int{0, 1, 3, 4}},
-		{"éx", []int{0, 1, 1, 2}}, // combining mark has zero width
+		{"éx", []int{0, 1, 1, 2}},                       // combining mark has zero width
+		{"👨\u200d👩\u200d👧x", []int{0, 2, 2, 2, 2, 2, 3}}, // a ZWJ sequence is one cell pair
+		{"🇺🇸x", []int{0, 2, 2, 3}},                       // so is a flag
+		{"❤\ufe0fx", []int{0, 2, 2, 3}},                  // an emoji presentation selector widens its base
 	}
 	for _, tc := range tests {
 		if got := (Layout{}).Cells([]rune(tc.in)); !reflect.DeepEqual(got, tc.want) {
@@ -188,9 +191,9 @@ func TestTabWidth(t *testing.T) {
 }
 
 func TestGlyph(t *testing.T) {
-	// x e ́ y: glyphs [0,1) [1,3) [3,4), then the newline.
-	ln := Layout{}.Line([]rune("xe\u0301y"))
-	for col, want := range [][2]int{{0, 1}, {1, 3}, {1, 3}, {3, 4}, {4, 5}} {
+	// 👨ZWJ👩ZWJ👧 x e ́ : glyphs [0,5) [5,6) [6,8), then the newline.
+	ln := Layout{}.Line([]rune("👨‍👩‍👧xé"))
+	for col, want := range [][2]int{{0, 5}, {0, 5}, {0, 5}, {0, 5}, {0, 5}, {5, 6}, {6, 8}, {6, 8}, {8, 9}} {
 		if i, j := ln.Glyph(col); i != want[0] || j != want[1] {
 			t.Errorf("Glyph(%d) = [%d,%d), want [%d,%d)", col, i, j, want[0], want[1])
 		}

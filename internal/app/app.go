@@ -578,16 +578,18 @@ func (a *App) cursorPos(ln layout.Line) (row, x int) {
 }
 
 // moveCol moves one rune left or right, crossing lines at the ends, and
-// on over any combining marks so the cursor rests on a rune with a cell.
+// on over the rest of a cluster (combining marks, an emoji sequence) so
+// the cursor rests on a rune with a cell.
 // A line that shrank leaves the cursor past its end; it comes back
 // first.
 func (a *App) moveCol(d int) {
 	text := a.line(a.cur.Line)
 	a.cur.Col = min(a.cur.Col, len(text))
+	xs := a.lineLayout(a.cur.Line).Cells()
 	switch {
 	case d < 0 && a.cur.Col > 0:
 		a.cur.Col--
-		for a.cur.Col > 0 && layout.ZeroWidth(text[a.cur.Col]) {
+		for a.cur.Col > 0 && xs[a.cur.Col+1] == xs[a.cur.Col] {
 			a.cur.Col--
 		}
 	case d < 0 && a.cur.Line > 0:
@@ -595,7 +597,7 @@ func (a *App) moveCol(d int) {
 		a.cur.Col = len(a.line(a.cur.Line))
 	case d > 0 && a.cur.Col < len(text):
 		a.cur.Col++
-		for a.cur.Col < len(text) && layout.ZeroWidth(text[a.cur.Col]) {
+		for a.cur.Col < len(text) && xs[a.cur.Col+1] == xs[a.cur.Col] {
 			a.cur.Col++
 		}
 	case d > 0 && a.cur.Line+1 < a.buf.Len():
