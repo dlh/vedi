@@ -134,7 +134,7 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 				st = st.Reverse(true)
 			}
 		}
-		drawGlyph(a.scr, x, y, w, line.Text[i], line.Text[i+1:j], xs[i+1]-xs[i], st)
+		drawGlyph(a.scr, x, y, w, line.Text[i:j], xs[i+1]-xs[i], st)
 		i = j - 1
 	}
 	// With edge markers on, text off either side of the screen is
@@ -292,7 +292,7 @@ func drawRunes(scr tcell.Screen, x, y, w int, text []rune, st tcell.Style) int {
 		for j < len(text) && xs[j+1] == xs[j] {
 			j++
 		}
-		drawGlyph(scr, x+xs[i], y, w, text[i], text[i+1:j], xs[i+1]-xs[i], st)
+		drawGlyph(scr, x+xs[i], y, w, text[i:j], xs[i+1]-xs[i], st)
 		i = j - 1
 	}
 	return xs[len(text)]
@@ -335,9 +335,11 @@ func isControl(r rune) bool {
 	return r < 0x20 && r != '\t' || r == 0x7f
 }
 
-// drawGlyph draws r at (x, y): a tab as width spaces, a control char as
-// ^X (DEL as ^?), anything else as itself with its combining marks.
-func drawGlyph(scr tcell.Screen, x, y, w int, r rune, comb []rune, width int, st tcell.Style) {
+// drawGlyph draws the cluster text at (x, y): a tab as width spaces, a
+// control char as ^X (DEL as ^?), anything else as itself with its
+// combining marks.
+func drawGlyph(scr tcell.Screen, x, y, w int, text []rune, width int, st tcell.Style) {
+	r := text[0]
 	switch {
 	case r == '\t':
 		for k := range width {
@@ -349,8 +351,12 @@ func drawGlyph(scr tcell.Screen, x, y, w int, r rune, comb []rune, width int, st
 	case r < 0x20:
 		put(scr, x, y, w, '^', st)
 		put(scr, x+1, y, w, r+0x40, st)
-	case x >= 0 && x < w:
-		scr.SetContent(x, y, r, comb, st)
+	case x < 0 || x >= w:
+	case len(text) > 1:
+		// One string for tcell instead of a rune slice and a string.
+		scr.Put(x, y, string(text), st)
+	default:
+		scr.SetContent(x, y, r, nil, st)
 	}
 }
 
