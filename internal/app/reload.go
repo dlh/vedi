@@ -3,7 +3,7 @@ package app
 import (
 	"sync/atomic"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/buffer"
 )
 

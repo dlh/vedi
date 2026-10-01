@@ -6,12 +6,12 @@ import (
 	"math"
 	"unicode/utf8"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // Run is a maximal range of runes [Start, End) drawn in one style.
-// Url and UrlId are the style's OSC 8 link, which tcell.Style does not
-// expose.
+// Url and UrlId are its OSC 8 link, kept off Style: tcell compares a
+// style's link by pointer, so two styles with one link differ.
 type Run struct {
 	Start, End int
 	Style      tcell.Style
@@ -29,15 +29,6 @@ type Parser struct {
 }
 
 func NewParser() *Parser { return &Parser{sgr: tcell.StyleDefault} }
-
-// style is the SGR style with the link on it.
-func (p *Parser) style() tcell.Style {
-	s := p.sgr.Url(p.url)
-	if p.id != "" {
-		s = s.UrlId(p.id)
-	}
-	return s
-}
 
 // Parse takes one line without its ending and returns the visible runes
 // and runs covering them. SGR changes the style and OSC 8 the link;
@@ -89,7 +80,7 @@ func (p *Parser) apply(sgr, osc []byte) {
 // to runs unless that is nil.
 func (p *Parser) parse(line []byte, text []rune, runs []Run) ([]rune, []Run) {
 	runStart := 0
-	style, url, id := p.style(), p.url, p.id
+	style, url, id := p.sgr, p.url, p.id
 	closeRun := func() {
 		if runs != nil && len(text) > runStart {
 			runs = append(runs, Run{runStart, len(text), style, url, id})
@@ -106,9 +97,9 @@ func (p *Parser) parse(line []byte, text []rune, runs []Run) ([]rune, []Run) {
 				continue
 			}
 			p.apply(sgr, osc)
-			if next := p.style(); next != style {
+			if p.sgr != style || p.url != url || p.id != id {
 				closeRun()
-				style, url, id = next, p.url, p.id
+				style, url, id = p.sgr, p.url, p.id
 			}
 			i += n
 		case c == '\t' || c == '\r':

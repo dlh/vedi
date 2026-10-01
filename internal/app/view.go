@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/input"
@@ -125,14 +125,17 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		var st tcell.Style
 		switch {
 		case selected:
-			st = linkAt(selStyle, runs, ri, i)
+			st = selStyle
 		case mi < len(matches) && matches[mi] < j:
-			st = linkAt(MatchStyle, runs, ri, i)
+			st = MatchStyle
 		default:
 			st = styleAt(runs, ri, i)
 			if isControl(line.Text[i]) {
 				st = st.Reverse(true)
 			}
+		}
+		if ri < len(runs) && runs[ri].Start <= i && runs[ri].Url != "" {
+			st = a.linked(st, runs[ri].Url, runs[ri].UrlId)
 		}
 		drawGlyph(a.scr, x, y, w, line.Text[i:j], xs[i+1]-xs[i], st)
 		i = j - 1
@@ -376,13 +379,34 @@ func styleAt(runs []ansi.Run, ri, i int) tcell.Style {
 	return tcell.StyleDefault
 }
 
-// linkAt is st with the link of rune i on it; see styleAt.
-func linkAt(st tcell.Style, runs []ansi.Run, ri, i int) tcell.Style {
-	if ri < len(runs) && runs[ri].Start <= i {
-		st = st.Url(runs[ri].Url)
-		if runs[ri].UrlId != "" {
-			st = st.UrlId(runs[ri].UrlId)
+// linkKey is a style and the link on it.
+type linkKey struct {
+	st      tcell.Style
+	url, id string
+}
+
+// maxLinks bounds the styles linked keeps.
+const maxLinks = 4096
+
+// linked is st with the link on it. tcell compares a style's link by
+// pointer and sends a cell again when its style differs, so each
+// style and link gets one Style, kept: a cell drawn again is then
+// unchanged.
+func (a *App) linked(st tcell.Style, url, id string) tcell.Style {
+	k := linkKey{st, url, id}
+	s, ok := a.links[k]
+	if !ok {
+		if len(a.links) >= maxLinks {
+			clear(a.links)
 		}
+		s = st.Url(url)
+		if id != "" {
+			s = s.UrlId(id)
+		}
+		if a.links == nil {
+			a.links = map[linkKey]tcell.Style{}
+		}
+		a.links[k] = s
 	}
-	return st
+	return s
 }

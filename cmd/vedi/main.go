@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
@@ -86,11 +86,11 @@ func reopen(files []string) func(func()) (*buffer.Buffer, func(), error) {
 
 // postChanged posts the watcher's change to the loop, trying again
 // shortly when the queue is full so none is lost.
-func postChanged(scr tcell.Screen) func() {
+func postChanged(a *app.App) func() {
 	ev := &app.Changed{}
 	var post func()
 	post = func() {
-		if scr.PostEvent(ev) != nil {
+		if !a.Post(ev) {
 			time.AfterFunc(50*time.Millisecond, post)
 		}
 	}
@@ -239,10 +239,11 @@ func main() {
 		appOpts.Open = reopen(files)
 	}
 	a := app.New(scr, buf, appOpts)
+	defer a.Stop() // before Fini closes the queue
 	n.set(a.Notify)
 	a.Notify() // for what was read, or ended, before the app existed
 	if src != nil && opts.Reloads(cfg) {
-		stop := watch.Files(files, postChanged(scr))
+		stop := watch.Files(files, postChanged(a))
 		defer stop()
 	}
 	a.Run()

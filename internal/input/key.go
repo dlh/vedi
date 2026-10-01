@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // Key is a key as the map knows it: a tcell key, its rune when
@@ -27,19 +27,23 @@ var shifted = map[rune]rune{
 }
 
 // Normalize makes a key event comparable to a parsed name. A control
-// key (Ctrl+letter, Ctrl+Space, Enter, Esc) names itself, so Ctrl is
-// dropped from it, and a raw control character becomes its letter's
-// control key; NUL is Ctrl+Space.
+// key (Ctrl+letter, Enter, Esc) names itself, so Ctrl is dropped from
+// it, and a raw control character becomes its letter's control key.
+// Ctrl+Space is a space with Ctrl; NUL is the same key.
 // Shift on a character that has a shifted form is that form, as a
 // legacy terminal sends it: , with Shift is <. Otherwise Shift is
 // dropped from a character: Shift+g is G. Under ⌘ the kitty protocol
 // sends ⇧⌘G as G with Shift, so an uppercase letter with Meta becomes
-// the lowercase one with Shift.
+// the lowercase one with Shift. Text of more than one character, a
+// pasted cluster, is no key: its Rune is 0.
 func Normalize(ev *tcell.EventKey) Key {
-	k := Key{ev.Key(), ev.Rune(), ev.Modifiers()}
+	k := Key{Key: ev.Key(), Mod: ev.Modifiers()}
+	if str := ev.Str(); utf8.RuneCountInString(str) == 1 {
+		k.Rune, _ = utf8.DecodeRuneInString(str)
+	}
 	switch {
-	case k.Key == tcell.KeyNUL || k.Key == tcell.KeyCtrlSpace || k.Key == tcell.KeyRune && k.Rune == ' ' && k.Mod&tcell.ModCtrl != 0:
-		k.Key, k.Rune, k.Mod = tcell.KeyCtrlSpace, 0, k.Mod&^tcell.ModCtrl
+	case k.Key == tcell.KeyNUL || k.Key == tcell.KeyRune && k.Rune == ' ' && k.Mod&tcell.ModCtrl != 0:
+		k.Key, k.Rune, k.Mod = tcell.KeyRune, ' ', k.Mod|tcell.ModCtrl
 	case k.Key == tcell.KeyRune && k.Mod&tcell.ModShift != 0 && shifted[k.Rune] != 0:
 		k.Rune, k.Mod = shifted[k.Rune], k.Mod&^tcell.ModShift
 	case k.Key == tcell.KeyRune && k.Mod&tcell.ModMeta == 0:
@@ -49,9 +53,7 @@ func Normalize(ev *tcell.EventKey) Key {
 		k.Mod |= tcell.ModShift
 	case k.Key >= tcell.KeyCtrlA && k.Key <= tcell.KeyCtrlZ:
 		k.Mod &^= tcell.ModCtrl
-	case k.Key > tcell.KeyNUL && k.Key <= tcell.KeyCtrlZ-tcell.KeyCtrlA+1 && k.Key != tcell.KeyBS && k.Key != tcell.KeyTAB && k.Key != tcell.KeyCR:
-		k.Key, k.Mod = tcell.KeyCtrlA+k.Key-1, k.Mod&^tcell.ModCtrl
-	case k.Key < ' ' || k.Key == tcell.KeyDEL:
+	case k.Key < ' ':
 		k.Mod &^= tcell.ModCtrl
 	}
 	if k.Key != tcell.KeyRune {
@@ -62,7 +64,11 @@ func Normalize(ev *tcell.EventKey) Key {
 
 // Event is a key event that Normalize maps back to k.
 func (k Key) Event() *tcell.EventKey {
-	return tcell.NewEventKey(k.Key, k.Rune, k.Mod)
+	str := ""
+	if k.Key == tcell.KeyRune {
+		str = string(k.Rune)
+	}
+	return tcell.NewEventKey(k.Key, str, k.Mod)
 }
 
 var modPrefixes = []struct {
@@ -80,13 +86,12 @@ var keyNames = map[tcell.Key]string{
 	tcell.KeyUp: "Up", tcell.KeyDown: "Down", tcell.KeyLeft: "Left", tcell.KeyRight: "Right",
 	tcell.KeyHome: "Home", tcell.KeyEnd: "End", tcell.KeyPgUp: "PgUp", tcell.KeyPgDn: "PgDn",
 	tcell.KeyEnter: "Enter", tcell.KeyEscape: "Esc", tcell.KeyBackspace: "Backspace",
-	tcell.KeyCtrlSpace: "Ctrl+Space",
 }
 
 // ParseKey reads a key name: Up Down Left Right Home End PgUp PgDn
 // Enter Esc Backspace Space or one character, with any of Shift+
 // Ctrl+ Alt+ Cmd+ in front. Ctrl+letter is the control key, either
-// case, and Ctrl+Space the NUL key. Shift on a character needs Cmd:
+// case, and Ctrl+Space a space with Ctrl. Shift on a character needs Cmd:
 // without it Shift is another character, or nothing, as Shift+Space.
 func ParseKey(name string) (Key, error) {
 	tok := name
@@ -102,10 +107,10 @@ func ParseKey(name string) (Key, error) {
 		}
 	}
 	if k, ok := namedKeys[tok]; ok {
-		return Normalize(tcell.NewEventKey(k, 0, mod)), nil
+		return Normalize(tcell.NewEventKey(k, "", mod)), nil
 	}
 	if tok == "Space" && mod&tcell.ModCtrl != 0 {
-		return Normalize(tcell.NewEventKey(tcell.KeyCtrlSpace, 0, mod)), nil
+		return Normalize(tcell.NewEventKey(tcell.KeyRune, " ", mod)), nil
 	}
 	if tok == "Space" {
 		tok = " "
@@ -115,12 +120,12 @@ func ParseKey(name string) (Key, error) {
 		return Key{}, fmt.Errorf("unknown key %q", name)
 	}
 	if mod&tcell.ModCtrl != 0 && r < utf8.RuneSelf && unicode.IsLetter(r) {
-		return Normalize(tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(unicode.ToLower(r)-'a'), 0, mod)), nil
+		return Normalize(tcell.NewEventKey(tcell.KeyCtrlA+tcell.Key(unicode.ToLower(r)-'a'), "", mod)), nil
 	}
 	if mod&tcell.ModCtrl != 0 || mod&(tcell.ModShift|tcell.ModMeta) == tcell.ModShift {
 		return Key{}, fmt.Errorf("%q: modifiers on a character key", name)
 	}
-	return Normalize(tcell.NewEventKey(tcell.KeyRune, r, mod)), nil
+	return Normalize(tcell.NewEventKey(tcell.KeyRune, string(r), mod)), nil
 }
 
 // String is the help name, spelled as the config file spells the

@@ -3,7 +3,7 @@ package ansi
 import (
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 func TestParseText(t *testing.T) {
@@ -122,18 +122,17 @@ func TestStyleCarriesAcrossLines(t *testing.T) {
 func TestParseLinks(t *testing.T) {
 	d := tcell.StyleDefault
 	red := d.Foreground(tcell.PaletteColor(1))
-	link := d.Url("http://x")
 	tests := []struct {
 		name string
 		in   string
 		want []Run
 	}{
-		{"link st", "\x1b]8;;http://x\x1b\\a\x1b]8;;\x1b\\b", []Run{{0, 1, link, "http://x", ""}, {1, 2, d, "", ""}}},
-		{"link bel", "\x1b]8;;http://x\x07a\x1b]8;;\x07b", []Run{{0, 1, link, "http://x", ""}, {1, 2, d, "", ""}}},
-		{"link id", "\x1b]8;id=k;http://x\x1b\\a", []Run{{0, 1, link.UrlId("k"), "http://x", "k"}}},
-		{"other params ignored", "\x1b]8;foo=1:id=k;http://x\x1b\\a", []Run{{0, 1, link.UrlId("k"), "http://x", "k"}}},
-		{"sgr inside link", "\x1b]8;;http://x\x1b\\\x1b[31ma\x1b[0mb\x1b]8;;\x1b\\", []Run{{0, 1, red.Url("http://x"), "http://x", ""}, {1, 2, link, "http://x", ""}}},
-		{"new link drops id", "\x1b]8;id=k;http://x\x1b\\a\x1b]8;;http://y\x1b\\b", []Run{{0, 1, link.UrlId("k"), "http://x", "k"}, {1, 2, d.Url("http://y"), "http://y", ""}}},
+		{"link st", "\x1b]8;;http://x\x1b\\a\x1b]8;;\x1b\\b", []Run{{0, 1, d, "http://x", ""}, {1, 2, d, "", ""}}},
+		{"link bel", "\x1b]8;;http://x\x07a\x1b]8;;\x07b", []Run{{0, 1, d, "http://x", ""}, {1, 2, d, "", ""}}},
+		{"link id", "\x1b]8;id=k;http://x\x1b\\a", []Run{{0, 1, d, "http://x", "k"}}},
+		{"other params ignored", "\x1b]8;foo=1:id=k;http://x\x1b\\a", []Run{{0, 1, d, "http://x", "k"}}},
+		{"sgr inside link", "\x1b]8;;http://x\x1b\\\x1b[31ma\x1b[0mb\x1b]8;;\x1b\\", []Run{{0, 1, red, "http://x", ""}, {1, 2, d, "http://x", ""}}},
+		{"new link drops id", "\x1b]8;id=k;http://x\x1b\\a\x1b]8;;http://y\x1b\\b", []Run{{0, 1, d, "http://x", "k"}, {1, 2, d, "http://y", ""}}},
 		{"other osc ignored", "\x1b]0;title\x07a", []Run{{0, 1, d, "", ""}}},
 		{"malformed osc 8", "\x1b]8;http://x\x07a", []Run{{0, 1, d, "", ""}}},
 	}
@@ -153,11 +152,10 @@ func TestParseLinks(t *testing.T) {
 }
 
 func TestLinkCarriesAcrossLines(t *testing.T) {
-	link := tcell.StyleDefault.Url("http://x")
 	p := NewParser()
 	p.Parse([]byte("\x1b]8;;http://x\x1b\\one"))
 	_, runs := p.Parse([]byte("two"))
-	if len(runs) != 1 || runs[0] != (Run{0, 3, link, "http://x", ""}) {
+	if len(runs) != 1 || runs[0] != (Run{0, 3, tcell.StyleDefault, "http://x", ""}) {
 		t.Fatalf("line two runs = %v, want link", runs)
 	}
 }

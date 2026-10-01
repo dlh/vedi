@@ -8,15 +8,16 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 type Copier interface {
 	Copy(text string) error
 }
 
-// OSC52 asks the terminal to set the clipboard. tcell sends it only for
-// XTerm-like terminals and gets no acknowledgement.
+// OSC52 asks the terminal to set the clipboard. tcell sends it unless
+// TERM names a legacy terminal (vt*, ansi, linux) and gets no
+// acknowledgement.
 type OSC52 struct{ Screen tcell.Screen }
 
 func (c OSC52) Copy(text string) error {

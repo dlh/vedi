@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unicode"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
@@ -51,6 +52,7 @@ type Screen struct {
 
 type App struct {
 	scr    tcell.Screen
+	links  map[linkKey]tcell.Style // see linked
 	buf    *buffer.Buffer
 	first  *buffer.Buffer // the startup buffer, whose reader Notify serves
 	copier clipboard.Copier
@@ -105,6 +107,8 @@ type App struct {
 	owed    atomic.Uint64             // the held post's generation; 0 for none
 	gen     atomic.Uint64             // the last generation
 	posted  atomic.Pointer[time.Time] // when the last post was
+	stopMu  sync.RWMutex              // guards stopped; held to post
+	stopped bool                      // Stop was called: the queue may be closed
 
 	laid    layout.Layout       // what laidOut was laid out for
 	laidOut map[int]layout.Line // lines laid out, by index
@@ -201,14 +205,40 @@ func (a *App) notify(buf *buffer.Buffer) {
 func (a *App) post() {
 	t := time.Now()
 	a.posted.Store(&t)
-	a.scr.PostEvent(tcell.NewEventInterrupt(nil))
+	a.Post(tcell.NewEventInterrupt(nil))
+}
+
+// Post queues ev for the loop without blocking and reports whether
+// it was taken: false means the queue is full. After Stop it is
+// dropped and reported taken, since there is no loop to miss it.
+func (a *App) Post(ev tcell.Event) bool {
+	a.stopMu.RLock()
+	defer a.stopMu.RUnlock()
+	if a.stopped {
+		return true
+	}
+	select {
+	case a.scr.EventQ() <- ev:
+		return true
+	default:
+		return false
+	}
+}
+
+// Stop ends posting. Call it before the screen's Fini, which closes
+// the queue: a timer or a reader may post after that.
+func (a *App) Stop() {
+	a.stopMu.Lock()
+	a.stopped = true
+	a.stopMu.Unlock()
 }
 
 // Run draws and handles events until an action quits.
 func (a *App) Run() {
 	a.Draw()
 	for {
-		if a.Handle(a.scr.PollEvent()) {
+		ev, ok := <-a.scr.EventQ()
+		if !ok || a.Handle(ev) {
 			return
 		}
 		a.Draw()
@@ -738,12 +768,12 @@ func (a *App) handleSearchKey(ev *tcell.EventKey) {
 		} else {
 			a.query = append(a.query[:0], a.history[a.histPos]...)
 		}
-	case tcell.KeyBackspace, tcell.KeyBackspace2:
+	case tcell.KeyBackspace:
 		if len(a.query) > 0 {
 			a.query = a.query[:len(a.query)-1]
 		}
 	case tcell.KeyRune:
-		a.query = append(a.query, ev.Rune())
+		a.query = append(a.query, []rune(ev.Str())...)
 	}
 }
 
@@ -772,13 +802,15 @@ func (a *App) handleGotoKey(ev *tcell.EventKey) {
 		a.cur = buffer.Pos{Line: n - 1}
 		a.drop()
 		a.scrollToCursor()
-	case tcell.KeyBackspace, tcell.KeyBackspace2:
+	case tcell.KeyBackspace:
 		if len(a.lineNo) > 0 {
 			a.lineNo = a.lineNo[:len(a.lineNo)-1]
 		}
 	case tcell.KeyRune:
-		if r := ev.Rune(); r >= '0' && r <= '9' {
-			a.lineNo = append(a.lineNo, r)
+		for _, r := range ev.Str() {
+			if r >= '0' && r <= '9' {
+				a.lineNo = append(a.lineNo, r)
+			}
 		}
 	}
 }

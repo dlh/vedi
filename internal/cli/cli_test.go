@@ -4,11 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/layout"
+	"go.dlh.dev/vedi/internal/testscreen"
 )
 
 func TestParse(t *testing.T) {
@@ -98,7 +98,7 @@ func TestReloads(t *testing.T) {
 
 func TestApp(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
-	scr := tcell.NewSimulationScreen("UTF-8")
+	scr := testscreen.New(t, 80, 24)
 	none := config.Config{}
 	got := Options{Wrap: new(false), StartLine: 3, Follow: false, Screen: &app.Screen{CursorRow: 2}}.App(scr, nil, none)
 	if got.Mode != layout.NoWrap || got.StartLine != 3 || got.Screen.CursorRow != 2 {
@@ -120,7 +120,7 @@ func TestApp(t *testing.T) {
 // without one the config does.
 func TestAppConfig(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
-	scr := tcell.NewSimulationScreen("UTF-8")
+	scr := testscreen.New(t, 80, 24)
 	cfg := config.Config{NoWrap: true, ClipboardCmd: "wl-copy"}
 	for _, tc := range []struct {
 		opts Options
@@ -148,7 +148,7 @@ func TestAppConfig(t *testing.T) {
 // config does; without either it is zero, the app's default.
 func TestAppTabWidth(t *testing.T) {
 	t.Setenv("TERM_PROGRAM", "")
-	scr := tcell.NewSimulationScreen("UTF-8")
+	scr := testscreen.New(t, 80, 24)
 	for _, tc := range []struct {
 		opts Options
 		cfg  config.Config
@@ -168,7 +168,7 @@ func TestAppTabWidth(t *testing.T) {
 // TestEdgeMarkersFlag: --edge-markers and --no-edge-markers decide;
 // without one the config does; without either the markers are off.
 func TestEdgeMarkersFlag(t *testing.T) {
-	scr := tcell.NewSimulationScreen("UTF-8")
+	scr := testscreen.New(t, 80, 24)
 	for _, tc := range []struct {
 		flag *bool
 		cfg  config.Config

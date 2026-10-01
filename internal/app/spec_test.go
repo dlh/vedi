@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
 	"go.dlh.dev/vedi/internal/config"
-	"go.dlh.dev/vedi/internal/layout"
+	"go.dlh.dev/vedi/internal/testscreen"
 )
 
 // TestSpecs runs every scenario file under specs/. The format is
@@ -40,7 +40,7 @@ func TestSpecs(t *testing.T) {
 
 type scenario struct {
 	t        *testing.T
-	scr      tcell.SimulationScreen
+	scr      *testscreen.Screen
 	buf      *buffer.Buffer
 	app      *app.App
 	w, h     int
@@ -191,7 +191,7 @@ func runScenario(t *testing.T, a archive) error {
 			if _, err := fmt.Sscanf(strings.TrimSpace(sec.body), "%dx%d", &w, &h); err != nil {
 				return fail("want WxH, got %q", sec.body)
 			}
-			s.scr.SetSize(w, h)
+			s.scr.SetTermSize(s.t, w, h)
 			s.app.Handle(tcell.NewEventResize(w, h))
 			s.app.Draw()
 		case "screen":
@@ -206,7 +206,7 @@ func runScenario(t *testing.T, a archive) error {
 				return fail("%v", err)
 			}
 			want := strings.TrimSpace(sec.body)
-			x, y, vis := s.scr.GetCursor()
+			x, y, vis := s.scr.Cursor()
 			got := "hidden"
 			if vis {
 				got = fmt.Sprintf("%d %d", y, x)
@@ -219,7 +219,7 @@ func runScenario(t *testing.T, a archive) error {
 				return fail("%v", err)
 			}
 			want := strings.TrimSuffix(sec.body, "\n")
-			if got := string(s.scr.GetClipboardData()); got != want {
+			if got := s.scr.Clipboard(); got != want {
 				return fail("clipboard = %q, want %q", got, want)
 			}
 		case "quit":
@@ -327,12 +327,7 @@ func (s *scenario) ready() error {
 // open builds the screen and app and delivers the first notification.
 func (s *scenario) open() error {
 	opts, files := s.opts, s.files
-	s.scr = tcell.NewSimulationScreen("UTF-8")
-	if err := s.scr.Init(); err != nil {
-		return err
-	}
-	s.t.Cleanup(s.scr.Fini)
-	s.scr.SetSize(s.w, s.h)
+	s.scr = testscreen.New(s.t, s.w, s.h)
 	appOpts := opts.App(s.scr, files, s.config)
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
@@ -348,6 +343,7 @@ func (s *scenario) open() error {
 		}
 	}
 	s.app = app.New(s.scr, s.buf, appOpts)
+	s.t.Cleanup(s.app.Stop)
 	s.notify()
 	return nil
 }
@@ -415,24 +411,18 @@ func (s *scenario) notify() {
 // dump renders the screen as the -- screen -- section expects it:
 // reverse-video runs in brackets, search matches in braces, the status
 // row plain, trailing spaces trimmed, one line per row.
-func dump(scr tcell.SimulationScreen) string {
-	cells, w, h := scr.GetContents()
+func dump(scr *testscreen.Screen) string {
+	w, h := scr.Size()
 	var sb strings.Builder
 	for y := range h {
 		var row strings.Builder
 		status := h >= 2 && y == h-1
 		rev, match := false, false
-		for x := 0; x < w; x++ {
-			c := cells[y*w+x]
-			if len(c.Runes) == 0 {
-				continue
-			}
-			if xs := (layout.Layout{}).Cells(c.Runes); xs[len(xs)-1] == 2 {
-				x++ // the simulation leaves a wide cell's second half as it was
-			}
+		for x := 0; x < w; {
+			str, st, cw := scr.Get(x, y)
+			x += cw // a wide cell's second half holds nothing of its own
 			if !status {
-				_, _, attr := c.Style.Decompose()
-				r, m := attr&tcell.AttrReverse != 0, c.Style == app.MatchStyle
+				r, m := st.HasReverse(), st == app.MatchStyle
 				if r && !rev {
 					row.WriteByte('[')
 				} else if !r && rev {
@@ -445,7 +435,7 @@ func dump(scr tcell.SimulationScreen) string {
 				}
 				rev, match = r, m
 			}
-			row.WriteString(string(c.Runes))
+			row.WriteString(str)
 		}
 		if rev {
 			row.WriteByte(']')

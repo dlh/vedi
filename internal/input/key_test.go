@@ -2,11 +2,19 @@ package input
 
 import (
 	"testing"
+	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/testscreen"
 )
 
-func ev(k tcell.Key, r rune, m tcell.ModMask) *tcell.EventKey { return tcell.NewEventKey(k, r, m) }
+func ev(k tcell.Key, r rune, m tcell.ModMask) *tcell.EventKey {
+	str := ""
+	if r != 0 {
+		str = string(r)
+	}
+	return tcell.NewEventKey(k, str, m)
+}
 
 func TestNormalize(t *testing.T) {
 	tests := []struct {
@@ -32,9 +40,12 @@ func TestNormalize(t *testing.T) {
 		{"kitty alt shift period is alt >", ev(tcell.KeyRune, '.', tcell.ModShift|tcell.ModAlt), Key{tcell.KeyRune, '>', tcell.ModAlt}},
 		{"kitty cmd shift slash is cmd ?", ev(tcell.KeyRune, '/', tcell.ModShift|tcell.ModMeta), Key{tcell.KeyRune, '?', tcell.ModMeta}},
 		{"legacy alt < is alt <", ev(tcell.KeyRune, '<', tcell.ModAlt), Key{tcell.KeyRune, '<', tcell.ModAlt}},
-		{"ctrl space", ev(tcell.KeyCtrlSpace, 0, tcell.ModCtrl), Key{tcell.KeyCtrlSpace, 0, 0}},
-		{"nul is ctrl space", ev(tcell.KeyNUL, 0, tcell.ModCtrl), Key{tcell.KeyCtrlSpace, 0, 0}},
-		{"kitty ctrl space", ev(tcell.KeyRune, ' ', tcell.ModCtrl), Key{tcell.KeyCtrlSpace, 0, 0}},
+		{"ctrl space", ev(tcell.KeyRune, ' ', tcell.ModCtrl), Key{tcell.KeyRune, ' ', tcell.ModCtrl}},
+		{"nul is ctrl space", ev(tcell.KeyNUL, 0, tcell.ModCtrl), Key{tcell.KeyRune, ' ', tcell.ModCtrl}},
+		{"nul without mod is ctrl space", ev(tcell.KeyNUL, 0, 0), Key{tcell.KeyRune, ' ', tcell.ModCtrl}},
+		{"ctrl alt space", ev(tcell.KeyRune, ' ', tcell.ModCtrl|tcell.ModAlt), Key{tcell.KeyRune, ' ', tcell.ModCtrl | tcell.ModAlt}},
+		{"del is backspace", ev(tcell.KeyDEL, 0, 0), Key{tcell.KeyBackspace, 0, 0}},
+		{"a pasted cluster is no one character", tcell.NewEventKey(tcell.KeyRune, "e\u0301", 0), Key{tcell.KeyRune, 0, 0}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -67,7 +78,8 @@ func TestParseKey(t *testing.T) {
 		{"Esc", Key{tcell.KeyEscape, 0, 0}},
 		{"Backspace", Key{tcell.KeyBackspace, 0, 0}},
 		{"Space", Key{tcell.KeyRune, ' ', 0}},
-		{"Ctrl+Space", Key{tcell.KeyCtrlSpace, 0, 0}},
+		{"Ctrl+Space", Key{tcell.KeyRune, ' ', tcell.ModCtrl}},
+		{"Ctrl+Alt+Space", Key{tcell.KeyRune, ' ', tcell.ModCtrl | tcell.ModAlt}},
 		{"j", Key{tcell.KeyRune, 'j', 0}},
 		{"G", Key{tcell.KeyRune, 'G', 0}},
 		{"<", Key{tcell.KeyRune, '<', 0}},
@@ -112,7 +124,7 @@ func TestKeyString(t *testing.T) {
 	tests := []struct{ name, want string }{
 		{"Up", "Up"}, {"Down", "Down"}, {"Left", "Left"}, {"Right", "Right"},
 		{"Home", "Home"}, {"End", "End"}, {"PgUp", "PgUp"}, {"PgDn", "PgDn"},
-		{"Enter", "Enter"}, {"Esc", "Esc"}, {"Backspace", "Backspace"}, {"Space", "Space"}, {"Ctrl+Space", "Ctrl+Space"},
+		{"Enter", "Enter"}, {"Esc", "Esc"}, {"Backspace", "Backspace"}, {"Space", "Space"}, {"Ctrl+Space", "Ctrl+Space"}, {"Alt+Ctrl+Space", "Ctrl+Alt+Space"},
 		{"j", "j"}, {"G", "G"}, {"<", "<"},
 		{"Ctrl+f", "Ctrl+f"}, {"Ctrl+F", "Ctrl+f"}, {"Alt+v", "Alt+v"}, {"Alt+V", "Alt+V"},
 		{"Shift+Up", "Shift+Up"}, {"Ctrl+Shift+Left", "Ctrl+Shift+Left"}, {"Shift+Alt+Right", "Alt+Shift+Right"},
@@ -128,6 +140,45 @@ func TestKeyString(t *testing.T) {
 		}
 		if back, err := ParseKey(k.String()); err != nil || back != k {
 			t.Errorf("%s: ParseKey(%q) = %+v, %v; want %+v", tc.name, k.String(), back, err, k)
+		}
+	}
+}
+
+// TestTerminalBytes: what a legacy terminal sends for a key reaches
+// Normalize, through tcell, as the key's parsed name.
+func TestTerminalBytes(t *testing.T) {
+	scr := testscreen.New(t, 20, 5)
+	for _, tc := range []struct{ raw, name string }{
+		{"\x00", "Ctrl+Space"},
+		{"\x7f", "Backspace"},
+		{"\x08", "Backspace"},
+		{"\x06", "Ctrl+f"},
+		{"\r", "Enter"},
+		{"G", "G"},
+		{"<", "<"},
+		{" ", "Space"},
+		{"é", "é"},
+		{"\x1b[A", "Up"},
+		{"\x1b[1;2B", "Shift+Down"},
+		{"\x1b[1;6D", "Ctrl+Shift+Left"},
+		{"\x1b[5~", "PgUp"},
+	} {
+		want, err := ParseKey(tc.name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		scr.Send(tc.raw)
+		select {
+		case e := <-scr.EventQ():
+			k, ok := e.(*tcell.EventKey)
+			if !ok {
+				t.Fatalf("%q: got %T, want a key", tc.raw, e)
+			}
+			if got := Normalize(k); got != want {
+				t.Errorf("%q = %s (%+v), want %s", tc.raw, got, got, tc.name)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("%q: no event", tc.raw)
 		}
 	}
 }

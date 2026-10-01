@@ -77,7 +77,7 @@ func TestClipboard(t *testing.T) {
 
 func TestResize(t *testing.T) {
 	s := New(t, 20, 5)
-	s.Resize(t, 30, 8)
+	s.SetTermSize(t, 30, 8)
 	if w, h := s.Size(); w != 30 || h != 8 {
 		t.Fatalf("size = %dx%d, want 30x8", w, h)
 	}
@@ -96,5 +96,51 @@ func TestHermetic(t *testing.T) {
 	s.SetClipboard([]byte("x"))
 	if got := s.Clipboard(); got != "x" {
 		t.Errorf("clipboard = %q", got)
+	}
+}
+
+// TestZeroSize: a screen can have no columns or no rows, which the
+// mock terminal cannot.
+func TestZeroSize(t *testing.T) {
+	s := New(t, 0, 3)
+	if w, h := s.Size(); w != 0 || h != 3 {
+		t.Fatalf("size = %dx%d, want 0x3", w, h)
+	}
+	s.Clear()
+	s.Show()
+	if got := s.Row(0); got != "" {
+		t.Errorf("row = %q", got)
+	}
+	s.SetTermSize(t, 10, 0)
+	if w, h := s.Size(); w != 10 || h != 0 {
+		t.Fatalf("size = %dx%d, want 10x0", w, h)
+	}
+	s.SetTermSize(t, 10, 3)
+	if w, h := s.Size(); w != 10 || h != 3 {
+		t.Fatalf("size = %dx%d, want 10x3", w, h)
+	}
+}
+
+// TestSameStyle: styles with equal links are the same, though tcell
+// compares the link by pointer.
+func TestSameStyle(t *testing.T) {
+	red := tcell.StyleDefault.Foreground(tcell.PaletteColor(1))
+	a, b := red.Url("http://x").UrlId("k"), red.Url("http://x").UrlId("k")
+	if a == b {
+		t.Fatal("tcell compares links by value now: SameStyle can go")
+	}
+	if !SameStyle(a, b) {
+		t.Error("equal links differ")
+	}
+	for name, c := range map[string]tcell.Style{
+		"no link": red, "other url": red.Url("http://y").UrlId("k"), "other id": red.Url("http://x"),
+		"other color": tcell.StyleDefault.Url("http://x").UrlId("k"),
+	} {
+		if SameStyle(a, c) {
+			t.Errorf("%s: same as the linked style", name)
+		}
+	}
+	if !SameStyle(red, red) {
+		t.Error("a style differs from itself")
 	}
 }

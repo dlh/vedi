@@ -3,7 +3,7 @@ package app
 import (
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/layout"
 )
@@ -127,7 +127,7 @@ func (a *App) drag(x, y int) {
 		t.SetEventTime(a.now())
 		var post func()
 		post = func() {
-			if a.scr.PostEvent(t) != nil { // queue full: try next tick
+			if !a.Post(t) { // queue full: try next tick
 				time.AfterFunc(autoScrollTick, post)
 			}
 		}

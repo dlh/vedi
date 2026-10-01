@@ -3,7 +3,7 @@ package input
 import (
 	"slices"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // Binding is a key and what it does; a zero Cmd unbinds.

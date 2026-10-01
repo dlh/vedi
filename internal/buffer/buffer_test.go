@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 func lines(b *Buffer) []string {
@@ -157,10 +157,10 @@ func TestStateCarriesOutOfOrder(t *testing.T) {
 	b := New()
 	Fill(strings.NewReader("\x1b[31ma\n\x1b]8;;http://x\x1b\\b\ncut \x1b[3\nc\n\x1b[0md"), b, func() {})
 	red := tcell.StyleDefault.Foreground(tcell.PaletteColor(1))
-	if runs := b.Line(3).Runs; len(runs) != 1 || runs[0].Style != red.Url("http://x") || runs[0].Url != "http://x" {
+	if runs := b.Line(3).Runs; len(runs) != 1 || runs[0].Style != red || runs[0].Url != "http://x" {
 		t.Fatalf("line 3 (read first) runs = %v, want red link", runs)
 	}
-	if runs := b.Line(4).Runs; len(runs) != 1 || runs[0].Style != tcell.StyleDefault.Url("http://x") {
+	if runs := b.Line(4).Runs; len(runs) != 1 || runs[0].Style != tcell.StyleDefault || runs[0].Url != "http://x" {
 		t.Fatalf("line 4 runs = %v, want link only", runs)
 	}
 	if runs := b.Line(0).Runs; len(runs) != 1 || runs[0].Style != red {

@@ -16,14 +16,14 @@ import (
 type Screen struct {
 	tcell.Screen
 	term vt.MockTerm
+	w, h int // as asked for: the mock terminal is never less than 1×1
 }
 
 // New returns a w×h screen, initialized, with nothing queued. It is
 // the same whatever terminal runs the tests.
 func New(t testing.TB, w, h int) *Screen {
 	t.Helper()
-	t.Setenv("TERM_PROGRAM", "")
-	term := vt.NewMockTerm(vt.MockOptSize{X: vt.Col(w), Y: vt.Row(h)})
+	term := vt.NewMockTerm(vt.MockOptSize(termSize(w, h)))
 	scr, err := tcell.NewTerminfoScreenFromTty(term, tcell.OptTerm("xterm-256color"))
 	if err == nil {
 		err = scr.Init()
@@ -34,9 +34,25 @@ func New(t testing.TB, w, h int) *Screen {
 	// Fini sleeps out the first 50 ms of a screen's life, so it runs
 	// beside the tests, not in them.
 	t.Cleanup(func() { go scr.Fini() })
-	s := &Screen{scr, term}
+	s := &Screen{scr, term, w, h}
 	s.awaitResize(t)
 	return s
+}
+
+func termSize(w, h int) vt.Coord {
+	return vt.Coord{X: vt.Col(max(w, 1)), Y: vt.Row(max(h, 1))}
+}
+
+// Size is the screen's size, with a dimension asked to be zero as zero.
+func (s *Screen) Size() (w, h int) {
+	w, h = s.Screen.Size()
+	if s.w == 0 {
+		w = 0
+	}
+	if s.h == 0 {
+		h = 0
+	}
+	return w, h
 }
 
 // awaitResize takes tcell's resize event off the queue.
@@ -52,11 +68,16 @@ func (s *Screen) awaitResize(t testing.TB) {
 	}
 }
 
-// Resize makes the terminal w×h. The screen has the new size on
+// SetTermSize makes the terminal w×h. The screen has the new size on
 // return; delivering the resize event is the test's job.
-func (s *Screen) Resize(t testing.TB, w, h int) {
+func (s *Screen) SetTermSize(t testing.TB, w, h int) {
 	t.Helper()
-	s.term.SetSize(vt.Coord{X: vt.Col(w), Y: vt.Row(h)})
+	old := termSize(s.w, s.h)
+	s.w, s.h = w, h
+	if termSize(w, h) == old {
+		return
+	}
+	s.term.SetSize(termSize(w, h))
 	s.awaitResize(t)
 	s.Show() // tcell takes the new size up when it draws
 }
@@ -91,3 +112,14 @@ func (s *Screen) Cursor() (x, y int, visible bool) {
 
 // Clipboard is what the terminal was last asked to copy.
 func (s *Screen) Clipboard() string { return string(s.term.Backend().GetClipboard()) }
+
+// SameStyle reports whether a and b draw alike. tcell compares a
+// style's link by pointer, so == tells two equal links apart.
+func SameStyle(a, b tcell.Style) bool {
+	aid, aurl := a.GetUrl()
+	bid, burl := b.GetUrl()
+	return aid == bid && aurl == burl && a.Url("").UrlId("") == b.Url("").UrlId("")
+}
+
+// Send delivers raw as the terminal's input: the bytes a key sends.
+func (s *Screen) Send(raw string) { s.term.SendRaw([]byte(raw)) }

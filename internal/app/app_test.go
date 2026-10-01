@@ -10,36 +10,43 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
 	"go.dlh.dev/vedi/internal/search"
+	"go.dlh.dev/vedi/internal/testscreen"
 )
 
-// newTestApp builds an app on a w×h simulation screen with input fully
+// newTestApp builds an app on a w×h test screen with input fully
 // read, +N/+G applied, and the first frame drawn.
-func newTestApp(t *testing.T, w, h int, input string, opts Options) (*App, tcell.SimulationScreen) {
+func newTestApp(t *testing.T, w, h int, input string, opts Options) (*App, *testscreen.Screen) {
 	t.Helper()
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(scr.Fini)
-	scr.SetSize(w, h)
+	scr := testscreen.New(t, w, h)
 	buf := buffer.New()
 	buffer.Fill(strings.NewReader(input), buf, func() {})
 	if opts.Copier == nil {
 		opts.Copier = clipboard.OSC52{Screen: scr}
 	}
-	a := New(scr, buf, opts)
+	a := newApp(t, scr, buf, opts)
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Draw()
 	return a, scr
 }
 
+// newApp is New, stopped before the test's screen finishes.
+func newApp(t testing.TB, scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
+	a := New(scr, buf, opts)
+	t.Cleanup(a.Stop)
+	return a
+}
+
 func key(k tcell.Key, r rune, mod tcell.ModMask) *tcell.EventKey {
-	return tcell.NewEventKey(k, r, mod)
+	str := ""
+	if r != 0 {
+		str = string(r)
+	}
+	return tcell.NewEventKey(k, str, mod)
 }
 
 // press feeds keys, redrawing after each, and reports whether the last
@@ -54,27 +61,13 @@ func press(a *App, keys ...*tcell.EventKey) bool {
 }
 
 // row returns the text of screen row y with trailing spaces trimmed.
-func row(scr tcell.SimulationScreen, y int) string {
-	cells, w, _ := scr.GetContents()
-	var sb strings.Builder
-	for x := range w {
-		c := cells[y*w+x]
-		if len(c.Runes) == 0 {
-			continue
-		}
-		sb.WriteString(string(c.Runes))
-	}
-	return strings.TrimRight(sb.String(), " ")
-}
+func row(scr *testscreen.Screen, y int) string { return scr.Row(y) }
 
-func cellStyle(scr tcell.SimulationScreen, x, y int) tcell.Style {
-	cells, w, _ := scr.GetContents()
-	return cells[y*w+x].Style
-}
+func cellStyle(scr *testscreen.Screen, x, y int) tcell.Style { return scr.StyleAt(x, y) }
 
 func TestDrawStyles(t *testing.T) {
 	_, scr := newTestApp(t, 20, 5, "\x1b[31mred", Options{})
-	fg, _, _ := cellStyle(scr, 0, 0).Decompose()
+	fg := cellStyle(scr, 0, 0).GetForeground()
 	if fg != tcell.PaletteColor(1) {
 		t.Errorf("fg = %v, want red", fg)
 	}
@@ -82,7 +75,7 @@ func TestDrawStyles(t *testing.T) {
 
 func TestDrawLinks(t *testing.T) {
 	_, scr := newTestApp(t, 20, 5, "\x1b]8;;http://x\x1b\\a\x1b]8;;\x1b\\b", Options{})
-	if got, want := cellStyle(scr, 0, 0), tcell.StyleDefault.Url("http://x"); got != want {
+	if got, want := cellStyle(scr, 0, 0), tcell.StyleDefault.Url("http://x"); !testscreen.SameStyle(got, want) {
 		t.Errorf("cell 0 style = %v, want %v", got, want)
 	}
 	if got := cellStyle(scr, 1, 0); got != tcell.StyleDefault {
@@ -93,14 +86,14 @@ func TestDrawLinks(t *testing.T) {
 func TestHighlightKeepsLink(t *testing.T) {
 	a, scr := newTestApp(t, 20, 5, "\x1b]8;id=k;http://x\x1b\\a\x1b]8;;\x1b\\a", Options{})
 	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
-	if got, want := cellStyle(scr, 0, 0), MatchStyle.Url("http://x").UrlId("k"); got != want {
+	if got, want := cellStyle(scr, 0, 0), MatchStyle.Url("http://x").UrlId("k"); !testscreen.SameStyle(got, want) {
 		t.Errorf("matched link style = %v, want %v", got, want)
 	}
 	if got := cellStyle(scr, 1, 0); got != MatchStyle {
 		t.Errorf("matched plain style = %v, want %v", got, MatchStyle)
 	}
 	press(a, key(tcell.KeyCtrlA, 0, tcell.ModCtrl))
-	if got, want := cellStyle(scr, 0, 0), selStyle.Url("http://x").UrlId("k"); got != want {
+	if got, want := cellStyle(scr, 0, 0), selStyle.Url("http://x").UrlId("k"); !testscreen.SameStyle(got, want) {
 		t.Errorf("selected link style = %v, want %v", got, want)
 	}
 	if got := cellStyle(scr, 1, 0); got != selStyle {
@@ -108,7 +101,33 @@ func TestHighlightKeepsLink(t *testing.T) {
 	}
 }
 
-func clip(scr tcell.SimulationScreen) string { return string(scr.GetClipboardData()) }
+// TestLinkStyleIsStable: tcell compares a style's link by pointer and
+// sends a cell again when its style differs, so a linked cell drawn
+// again must get the very style it had, and cells of one link share it.
+func TestLinkStyleIsStable(t *testing.T) {
+	a, scr := newTestApp(t, 20, 5, "\x1b]8;id=k;http://x\x1b\\aab\x1b]8;;\x1b\\", Options{})
+	check := func(what string) {
+		t.Helper()
+		before := cellStyle(scr, 0, 0)
+		if _, url := before.GetUrl(); url != "http://x" {
+			t.Fatalf("%s: url = %q", what, url)
+		}
+		if got := cellStyle(scr, 1, 0); got != before {
+			t.Errorf("%s: two cells of one link have two styles", what)
+		}
+		a.Draw()
+		if got := cellStyle(scr, 0, 0); got != before {
+			t.Errorf("%s: style changed on a redraw", what)
+		}
+	}
+	check("plain")
+	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
+	check("matched")
+	press(a, key(tcell.KeyCtrlA, 0, tcell.ModCtrl))
+	check("selected")
+}
+
+func clip(scr *testscreen.Screen) string { return scr.Clipboard() }
 
 func TestReadErrorInStatus(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "", Options{})
@@ -128,32 +147,27 @@ func TestNotifyCoalesces(t *testing.T) {
 	a, scr := newTestApp(t, 10, 4, "x", Options{})
 	a.Notify()
 	a.Notify()
-	if !scr.HasPendingEvent() {
+	if !scr.Pending() {
 		t.Fatal("Notify should post an event")
 	}
-	a.Handle(scr.PollEvent())
-	if scr.HasPendingEvent() {
+	a.Handle(<-scr.EventQ())
+	if scr.Pending() {
 		t.Error("second Notify before a draw should be coalesced")
 	}
 	a.Notify()
-	if !scr.HasPendingEvent() {
+	if !scr.Pending() {
 		t.Error("Notify after handling should post again")
 	}
 }
 
 // readingApp is an app over a buffer still being read, drawn once.
-func readingApp(t *testing.T) (*App, tcell.SimulationScreen) {
+func readingApp(t *testing.T) (*App, *testscreen.Screen) {
 	t.Helper()
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(scr.Fini)
-	scr.SetSize(10, 4)
-	a := New(scr, buffer.New(), Options{})
+	scr := testscreen.New(t, 10, 4)
+	a := newApp(t, scr, buffer.New(), Options{})
 	a.buf.Write([]byte("x\n"))
 	a.Notify()
-	a.Handle(scr.PollEvent())
+	a.Handle(<-scr.EventQ())
 	a.Draw()
 	return a, scr
 }
@@ -163,11 +177,11 @@ func readingApp(t *testing.T) (*App, tcell.SimulationScreen) {
 func TestNotifyThrottledWhileReading(t *testing.T) {
 	a, scr := readingApp(t)
 	a.Notify()
-	if scr.HasPendingEvent() {
+	if scr.Pending() {
 		t.Fatal("Notify within redrawEvery should be held")
 	}
 	time.Sleep(2 * redrawEvery)
-	if !scr.HasPendingEvent() {
+	if !scr.Pending() {
 		t.Fatal("held Notify should post after redrawEvery")
 	}
 }
@@ -177,7 +191,7 @@ func TestNotifyAtEOFPostsAtOnce(t *testing.T) {
 	a, scr := readingApp(t)
 	a.buf.Finish(nil, true)
 	a.Notify()
-	if !scr.HasPendingEvent() {
+	if !scr.Pending() {
 		t.Fatal("Notify at EOF should post at once")
 	}
 }
@@ -187,12 +201,12 @@ func TestNotifyAtEOFPostsAtOnce(t *testing.T) {
 func TestNotifyAtEOFFlushesHeld(t *testing.T) {
 	a, scr := readingApp(t)
 	a.Notify()
-	if scr.HasPendingEvent() {
+	if scr.Pending() {
 		t.Fatal("Notify within redrawEvery should be held")
 	}
 	a.buf.Finish(nil, true)
 	a.Notify()
-	if !scr.HasPendingEvent() {
+	if !scr.Pending() {
 		t.Fatal("Notify at EOF should post at once")
 	}
 }
@@ -206,8 +220,8 @@ func TestNotifyHeldPostsOnceAfterKey(t *testing.T) {
 	a.Notify()
 	time.Sleep(2 * redrawEvery)
 	n := 0
-	for scr.HasPendingEvent() {
-		scr.PollEvent()
+	for scr.Pending() {
+		<-scr.EventQ()
 		n++
 	}
 	if n != 1 {
@@ -224,7 +238,7 @@ func TestEndToEnd(t *testing.T) {
 		"\x1b[m\x1b[31mFAIL\x1b[m  internal/app    \t0.20s\n" +
 		"\x1b[m$ \n"
 	a, scr := newTestApp(t, 40, 6, fixture, Options{Mode: layout.NoWrap, StartLine: 2})
-	fg, _, _ := cellStyle(scr, 0, 0).Decompose()
+	fg := cellStyle(scr, 0, 0).GetForeground()
 	if fg != tcell.PaletteColor(2) {
 		t.Errorf("PASS should be green, got %v", fg)
 	}
@@ -242,7 +256,7 @@ func TestSelectionStyleIsConstant(t *testing.T) {
 	// red, default, reverse-video and a control char, all selected.
 	a, scr := newTestApp(t, 20, 5, "\x1b[31mr\x1b[md\x1b[7mv\x1b[m\r", Options{})
 	before := cellStyle(scr, 0, 0)
-	if fg, _, _ := before.Decompose(); fg != tcell.PaletteColor(1) {
+	if fg := before.GetForeground(); fg != tcell.PaletteColor(1) {
 		t.Fatalf("unselected fg = %v, want red", fg)
 	}
 	press(a, key(tcell.KeyCtrlA, 0, tcell.ModCtrl))
@@ -274,16 +288,11 @@ func TestMatchStyleIsConstant(t *testing.T) {
 // BenchmarkLongLine moves right and redraws on a 1 MB line, which must
 // not lay the whole line out again on every key.
 func BenchmarkLongLine(b *testing.B) {
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		b.Fatal(err)
-	}
-	defer scr.Fini()
-	scr.SetSize(80, 24)
+	scr := testscreen.New(b, 80, 24)
 	buf := buffer.New()
 	buf.Write([]byte(strings.Repeat("a", 1<<20)))
 	buf.Finish(nil, true)
-	a := New(scr, buf, Options{})
+	a := newApp(b, scr, buf, Options{})
 	a.Draw()
 	b.ReportAllocs()
 	for b.Loop() {
@@ -295,13 +304,13 @@ func BenchmarkLongLine(b *testing.B) {
 // acted on once the queue drains, even with no later Notify.
 func TestNotifyFullQueue(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "", Options{})
-	for scr.PostEvent(key(tcell.KeyRune, 'j', 0)) == nil {
+	for a.Post(key(tcell.KeyRune, 'j', 0)) {
 	}
 	a.buf.Write([]byte("late"))
 	a.buf.Finish(fmt.Errorf("disk on fire"), false)
 	a.Notify()
-	for scr.HasPendingEvent() {
-		a.Handle(scr.PollEvent())
+	for scr.Pending() {
+		a.Handle(<-scr.EventQ())
 		a.Draw()
 	}
 	if got := row(scr, 3); got != "read error: disk on fire" {
@@ -313,18 +322,16 @@ func TestNotifyFullQueue(t *testing.T) {
 // arrives once the queue drains, so an edge drag keeps scrolling.
 func TestTickFullQueue(t *testing.T) {
 	a, scr := newTestApp(t, 30, 4, "a\nb\nc\nd\ne", Options{})
-	for scr.PostEvent(key(tcell.KeyRune, 'j', 0)) == nil {
+	for a.Post(key(tcell.KeyRune, 'j', 0)) {
 	}
 	a.Handle(tcell.NewEventMouse(0, 0, tcell.Button1, 0))
 	a.Handle(tcell.NewEventMouse(0, 3, tcell.Button1, 0))
 	time.Sleep(2 * autoScrollTick)
-	for scr.HasPendingEvent() {
-		a.Handle(scr.PollEvent())
+	for scr.Pending() {
+		a.Handle(<-scr.EventQ())
 	}
-	got := make(chan tcell.Event, 1)
-	go func() { got <- scr.PollEvent() }()
 	select {
-	case ev := <-got:
+	case ev := <-scr.EventQ():
 		if _, ok := ev.(*Tick); !ok {
 			t.Errorf("got %T, want *Tick", ev)
 		}
@@ -335,18 +342,13 @@ func TestTickFullQueue(t *testing.T) {
 
 // benchApp builds an app on a 200×60 screen over lines, drawn once.
 func benchApp(b *testing.B, lines ...string) *App {
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		b.Fatal(err)
-	}
-	b.Cleanup(scr.Fini)
-	scr.SetSize(200, 60)
+	scr := testscreen.New(b, 200, 60)
 	buf := buffer.New()
 	for _, l := range lines {
 		buf.Write([]byte(l + "\n"))
 	}
 	buf.Finish(nil, true)
-	a := New(scr, buf, Options{})
+	a := newApp(b, scr, buf, Options{})
 	a.Draw()
 	return a
 }
@@ -395,12 +397,7 @@ func styledLines(n int) []byte {
 // screen: the wait for a large file.
 func BenchmarkFirstDraw(b *testing.B) {
 	in := styledLines(100_000)
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		b.Fatal(err)
-	}
-	b.Cleanup(scr.Fini)
-	scr.SetSize(200, 60)
+	scr := testscreen.New(b, 200, 60)
 	b.SetBytes(int64(len(in)))
 	b.ReportAllocs()
 	for b.Loop() {
@@ -409,6 +406,7 @@ func BenchmarkFirstDraw(b *testing.B) {
 		a := New(scr, buf, Options{})
 		a.Handle(tcell.NewEventInterrupt(nil))
 		a.Draw()
+		a.Stop()
 	}
 }
 
@@ -565,12 +563,7 @@ func TestOnePageOneRowScreen(t *testing.T) {
 // TestTruncatedFileDraws: a file that shrinks after its layouts are
 // kept draws without panicking and reports the read error.
 func TestTruncatedFileDraws(t *testing.T) {
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(scr.Fini)
-	scr.SetSize(30, 4)
+	scr := testscreen.New(t, 30, 4)
 	name := filepath.Join(t.TempDir(), "f")
 	var sb strings.Builder
 	for i := range 2000 {
@@ -586,7 +579,7 @@ func TestTruncatedFileDraws(t *testing.T) {
 	t.Cleanup(func() { f.Close() })
 	buf := buffer.NewFrom(f)
 	buffer.Fill(f, buf, func() {})
-	a := New(scr, buf, Options{Copier: clipboard.OSC52{Screen: scr}})
+	a := newApp(t, scr, buf, Options{Copier: clipboard.OSC52{Screen: scr}})
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Handle(key(tcell.KeyRight, 0, 0))
 	a.Handle(key(tcell.KeyRight, 0, 0))
@@ -729,16 +722,11 @@ func TestReloadOpenFailsOnChange(t *testing.T) {
 // TestReloadDuringFirstRead: a reload lands while the startup buffer
 // is still being read; the old reader's later data does not come back.
 func TestReloadDuringFirstRead(t *testing.T) {
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(scr.Fini)
-	scr.SetSize(30, 4)
+	scr := testscreen.New(t, 30, 4)
 	first := buffer.New()
 	first.Write([]byte("one\n"))
 	o := &opener{}
-	a := New(scr, first, Options{Copier: clipboard.OSC52{Screen: scr}, Open: o.open})
+	a := newApp(t, scr, first, Options{Copier: clipboard.OSC52{Screen: scr}, Open: o.open})
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Handle(&Changed{})
 	o.finish(a, 0, "two\n")
@@ -764,5 +752,31 @@ func TestReloadKeyReportsFailure(t *testing.T) {
 	press(a, key(tcell.KeyRune, 'R', 0))
 	if got := row(scr, 3); !strings.HasPrefix(got, "reload failed: boom") {
 		t.Errorf("status = %q", got)
+	}
+}
+
+// TestPostAfterStop: tcell closes the queue when the screen finishes.
+// A timer or the reader may post after that; once the app is stopped
+// the post is dropped, and not to be tried again.
+func TestPostAfterStop(t *testing.T) {
+	a, scr := newTestApp(t, 10, 4, "x", Options{})
+	a.Stop()
+	scr.Fini()
+	if !a.Post(&Tick{}) {
+		t.Error("Post to a stopped app reported a full queue")
+	}
+	a.Notify()
+}
+
+// TestRunEndsWithScreen: the loop returns when the queue closes.
+func TestRunEndsWithScreen(t *testing.T) {
+	a, scr := newTestApp(t, 10, 4, "x", Options{})
+	done := make(chan struct{})
+	go func() { a.Run(); close(done) }()
+	scr.Fini()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return")
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/input"
 )
 
@@ -125,7 +125,11 @@ func TestDefaultOS(t *testing.T) {
 // the specs.
 func TestLookup(t *testing.T) {
 	k := func(key tcell.Key, r rune, mod tcell.ModMask) *tcell.EventKey {
-		return tcell.NewEventKey(key, r, mod)
+		str := ""
+		if r != 0 {
+			str = string(r)
+		}
+		return tcell.NewEventKey(key, str, mod)
 	}
 	tests := []struct {
 		name  string
@@ -167,13 +171,13 @@ func TestLookupApplied(t *testing.T) {
 		{Key: key("Alt+<"), Cmd: input.Command{Action: input.First}},
 	})
 	// The kitty protocol reports Alt+< as , with Shift and Alt.
-	if got := m.Lookup(tcell.NewEventKey(tcell.KeyRune, ',', tcell.ModShift|tcell.ModAlt)); got != (input.Command{Action: input.First}) {
+	if got := m.Lookup(tcell.NewEventKey(tcell.KeyRune, ",", tcell.ModShift|tcell.ModAlt)); got != (input.Command{Action: input.First}) {
 		t.Errorf("kitty Alt+< = %+v", got)
 	}
 	if got := m.Lookup(key("h").Event()); got != (input.Command{Action: input.Left}) {
 		t.Errorf("h = %+v", got)
 	}
-	if got := m.Lookup(tcell.NewEventKey(tcell.KeyRune, 'L', tcell.ModShift)); got != (input.Command{Action: input.Right, Extend: true}) {
+	if got := m.Lookup(tcell.NewEventKey(tcell.KeyRune, "L", tcell.ModShift)); got != (input.Command{Action: input.Right, Extend: true}) {
 		t.Errorf("L = %+v", got)
 	}
 }
@@ -186,7 +190,7 @@ func BenchmarkDefault(b *testing.B) {
 
 func BenchmarkLookup(b *testing.B) {
 	m := Default(true)
-	ev := tcell.NewEventKey(tcell.KeyRune, 'h', 0)
+	ev := tcell.NewEventKey(tcell.KeyRune, "h", 0)
 	b.ReportAllocs()
 	for b.Loop() {
 		m.Lookup(ev)
@@ -220,7 +224,7 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := Default(false).Apply(c.Keys).Lookup(tcell.NewEventKey(tcell.KeyRune, 'h', 0)); got != (input.Command{Action: input.Left}) {
+	if got := Default(false).Apply(c.Keys).Lookup(tcell.NewEventKey(tcell.KeyRune, "h", 0)); got != (input.Command{Action: input.Left}) {
 		t.Errorf("h = %+v", got)
 	}
 	os.WriteFile(path, []byte("map h left\n\nmap x foo\n"), 0o644)

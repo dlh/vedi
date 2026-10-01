@@ -7,19 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gdamore/tcell/v2"
+	"go.dlh.dev/vedi/internal/testscreen"
 )
 
 func TestOSC52(t *testing.T) {
-	scr := tcell.NewSimulationScreen("UTF-8")
-	if err := scr.Init(); err != nil {
-		t.Fatal(err)
-	}
-	defer scr.Fini()
+	scr := testscreen.New(t, 80, 24)
 	if err := (OSC52{Screen: scr}).Copy("héllo\nworld"); err != nil {
 		t.Fatal(err)
 	}
-	if got := string(scr.GetClipboardData()); got != "héllo\nworld" {
+	if got := scr.Clipboard(); got != "héllo\nworld" {
 		t.Fatalf("clipboard = %q", got)
 	}
 }
@@ -66,7 +62,7 @@ func TestCommandReturnsWhileChildHoldsPipes(t *testing.T) {
 
 // Terminal.app ignores OSC 52, so with no command it gets pbcopy.
 func TestNew(t *testing.T) {
-	scr := tcell.NewSimulationScreen("UTF-8")
+	scr := testscreen.New(t, 80, 24)
 	if got := New(scr, "", "Apple_Terminal"); got != (Command{Cmd: "pbcopy"}) {
 		t.Fatalf("Apple_Terminal: %#v", got)
 	}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/input"
 )
 
@@ -68,7 +68,7 @@ func parseKeys(s string) ([]*tcell.EventKey, error) {
 				return nil, fmt.Errorf("unterminated quote: %s", s)
 			}
 			for _, r := range s[1 : 1+end] {
-				keys = append(keys, tcell.NewEventKey(tcell.KeyRune, r, 0))
+				keys = append(keys, tcell.NewEventKey(tcell.KeyRune, string(r), 0))
 			}
 			s = s[2+end:]
 			continue
@@ -194,21 +194,21 @@ func TestParseKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []*tcell.EventKey{
-		tcell.NewEventKey(tcell.KeyDown, 0, 0),
-		tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModShift),
-		tcell.NewEventKey(tcell.KeyLeft, 0, tcell.ModCtrl|tcell.ModShift),
-		tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModAlt|tcell.ModShift),
-		tcell.NewEventKey(tcell.KeyRune, 'b', tcell.ModAlt),
-		tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModCtrl),
-		tcell.NewEventKey(tcell.KeyRune, 'c', tcell.ModMeta),
-		tcell.NewEventKey(tcell.KeyRune, 'g', tcell.ModMeta|tcell.ModShift),
-		tcell.NewEventKey(tcell.KeyRune, 'y', 0),
-		tcell.NewEventKey(tcell.KeyRune, 'a', 0),
-		tcell.NewEventKey(tcell.KeyRune, ' ', 0),
-		tcell.NewEventKey(tcell.KeyRune, 'b', 0),
-		tcell.NewEventKey(tcell.KeyEscape, 0, 0),
-		tcell.NewEventKey(tcell.KeyBackspace2, 0, 0),
-		tcell.NewEventKey(tcell.KeyRune, ' ', 0),
+		tcell.NewEventKey(tcell.KeyDown, "", 0),
+		tcell.NewEventKey(tcell.KeyRight, "", tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyLeft, "", tcell.ModCtrl|tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyRight, "", tcell.ModAlt|tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyRune, "b", tcell.ModAlt),
+		tcell.NewEventKey(tcell.KeyCtrlC, "", tcell.ModCtrl),
+		tcell.NewEventKey(tcell.KeyRune, "c", tcell.ModMeta),
+		tcell.NewEventKey(tcell.KeyRune, "g", tcell.ModMeta|tcell.ModShift),
+		tcell.NewEventKey(tcell.KeyRune, "y", 0),
+		tcell.NewEventKey(tcell.KeyRune, "a", 0),
+		tcell.NewEventKey(tcell.KeyRune, " ", 0),
+		tcell.NewEventKey(tcell.KeyRune, "b", 0),
+		tcell.NewEventKey(tcell.KeyEscape, "", 0),
+		tcell.NewEventKey(tcell.KeyBackspace, "", 0),
+		tcell.NewEventKey(tcell.KeyRune, " ", 0),
 	}
 	if len(keys) != len(want) {
 		t.Fatalf("got %d keys, want %d", len(keys), len(want))

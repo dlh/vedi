@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell/v3"
 )
 
 // TestConcatJoinsParts: Read is the parts in order, an unterminated
