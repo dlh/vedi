@@ -780,3 +780,48 @@ func TestRunEndsWithScreen(t *testing.T) {
 		t.Fatal("Run did not return")
 	}
 }
+
+// TestRedrawSendsOnlyChanges: drawing a screen again sends the terminal
+// none of its text, wide and linked cells included, and tcell measures
+// none of it again.
+func TestRedrawSendsOnlyChanges(t *testing.T) {
+	a, scr := newTestApp(t, 40, 6, "plain\n日本語 👍🏽 é\n\x1b]8;;http://x\x1b\\link\x1b]8;;\x1b\\\n\ttab \x01\n", Options{})
+	scr.Sent()
+	a.Draw()
+	out := scr.Sent()
+	for _, s := range []string{"plain", "日", "👍", "é", "link", "tab", "^A", "stdin", "help"} {
+		if strings.Contains(out, s) {
+			t.Errorf("redraw sent %q again", s)
+		}
+	}
+	// Moving the cursor off the first row changes the status row alone.
+	press(a, key(tcell.KeyDown, 0, 0))
+	out = scr.Sent()
+	if !strings.Contains(out, "2") {
+		t.Errorf("the new line number was not sent: %q", out)
+	}
+	for _, s := range []string{"plain", "日", "link"} {
+		if strings.Contains(out, s) {
+			t.Errorf("a cursor move sent %q again", s)
+		}
+	}
+}
+
+// TestDrawBlanksWhatItLeaves: with nothing cleared first, cells the
+// last frame drew and this one does not are blanked.
+func TestDrawBlanksWhatItLeaves(t *testing.T) {
+	o := &opener{}
+	a, scr := newTestApp(t, 20, 4, "日本語日本語\nsecond line\nthird\n", Options{Open: o.open})
+	a.Handle(&Changed{})
+	o.finish(a, 0, "x\n")
+	for y, want := range []string{"x", "", ""} {
+		if got := row(scr, y); got != want {
+			t.Errorf("row %d = %q, want %q", y, got, want)
+		}
+	}
+	for x := range 20 {
+		if got := cellStyle(scr, x, 1); got != tcell.StyleDefault {
+			t.Fatalf("blanked cell %d has style %v", x, got)
+		}
+	}
+}

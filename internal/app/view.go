@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/ansi"
@@ -31,16 +32,17 @@ var edgeStyle = tcell.StyleDefault.Reverse(true)
 // then. While help is up the bindings are the text, and no cursor is
 // shown; nor is one scrolled off the side.
 func (a *App) Draw() {
-	a.scr.Clear()
+	c := a.newCanvas()
 	a.top = a.snap(a.top)
 	curX, curY := -1, -1
 	if a.screen == nil {
-		curX, curY = a.drawText()
+		curX, curY = a.drawText(c)
 	}
 	if a.helping {
 		curX = -1
 	}
-	a.drawStatus()
+	a.drawStatus(c)
+	c.finish()
 	if w, _ := a.scr.Size(); curX >= 0 && curX < w {
 		a.scr.ShowCursor(curX, curY)
 	} else {
@@ -51,7 +53,7 @@ func (a *App) Draw() {
 
 // drawText draws the visible rows and returns the cursor's screen
 // position, or (-1, -1) off screen.
-func (a *App) drawText() (curX, curY int) {
+func (a *App) drawText(c *canvas) (curX, curY int) {
 	curX, curY = -1, -1
 	rows := a.textRows()
 	p := a.top
@@ -61,7 +63,7 @@ func (a *App) drawText() (curX, curY int) {
 		if a.highlight && p.Line != matchLine {
 			matches, matchLine = a.matcher.All(a.line(p.Line)), p.Line
 		}
-		if x, ok := a.drawRow(y, p, matches); ok {
+		if x, ok := a.drawRow(c, y, p, matches); ok {
 			curX, curY = x, y
 		}
 		next := a.nextRow(p)
@@ -76,8 +78,8 @@ func (a *App) drawText() (curX, curY int) {
 // drawRow draws the row starting at p on screen row y, with matches the
 // line's search matches, and reports the cursor's column, if the cursor
 // is on it.
-func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
-	w, _ := a.scr.Size()
+func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, ok bool) {
+	w := c.w
 	line := a.buf.Line(p.Line)
 	ln := a.lineLayout(p.Line)
 	xs := ln.Cells()
@@ -111,7 +113,7 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		selected := hasSel && !pos.Less(selStart) && pos.Less(selEnd)
 		if i == len(line.Text) {
 			if selected {
-				put(a.scr, x, y, w, ' ', selStyle)
+				c.put(x, y, " ", selStyle)
 			}
 			continue
 		}
@@ -137,7 +139,7 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 		if ri < len(runs) && runs[ri].Start <= i && runs[ri].Url != "" {
 			st = a.linked(st, runs[ri].Url, runs[ri].UrlId)
 		}
-		drawGlyph(a.scr, x, y, w, line.Text[i:j], xs[i+1]-xs[i], st)
+		c.glyph(x, y, line.Text[i:j], xs[i+1]-xs[i], st)
 		i = j - 1
 	}
 	// With edge markers on, text off either side of the screen is
@@ -147,16 +149,16 @@ func (a *App) drawRow(y int, p buffer.Pos, matches []int) (curX int, ok bool) {
 	// and then it is hidden as if off screen.
 	if width := xs[len(line.Text)]; a.marks && a.mode == layout.NoWrap {
 		if a.xoff > 0 && width > 0 {
-			put(a.scr, 0, y, w, '<', edgeStyle)
+			c.put(0, y, "<", edgeStyle)
 			ok = ok && curX != 0
 		}
 		if width > a.xoff+w {
 			if w >= 2 {
 				if _, st, rw := a.scr.Get(w-2, y); rw == 2 {
-					a.scr.SetContent(w-2, y, ' ', nil, st)
+					c.put(w-2, y, " ", st)
 				}
 			}
-			put(a.scr, w-1, y, w, '>', edgeStyle)
+			c.put(w-1, y, ">", edgeStyle)
 			ok = ok && curX+curW <= w-1
 		}
 	}
@@ -268,34 +270,79 @@ func wrapWords(words []string, sep string, width int) []string {
 // needs two rows to exist, with "h help", naming whatever key shows
 // help, at the right edge unless help is unbound or up, a prompt is
 // open, or it would come within two spaces of the text.
-func (a *App) drawStatus() {
-	w, h := a.scr.Size()
+func (a *App) drawStatus(c *canvas) {
+	w, h := c.w, c.h
 	if h < 2 {
 		return
 	}
 	st := tcell.StyleDefault.Reverse(true)
 	for x := range w {
-		a.scr.SetContent(x, h-1, ' ', nil, st)
+		c.put(x, h-1, " ", st)
 	}
 	text := []rune(a.statusText())
-	width := drawRunes(a.scr, 0, h-1, w, text, st)
+	width := c.runes(0, h-1, text, st)
 	k, ok := a.keys.Find(input.Command{Action: input.Help})
 	hint := []rune(k.String() + " help")
 	if ok && !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
-		drawRunes(a.scr, w-len(hint), h-1, w, hint, st)
+		c.runes(w-len(hint), h-1, hint, st)
 	}
 }
 
-// drawRunes draws text from (x, y) glyph by glyph and returns its
-// width in cells.
-func drawRunes(scr tcell.Screen, x, y, w int, text []rune, st tcell.Style) int {
+// canvas is the screen for one frame. Nothing is cleared first: a
+// cell put again as it was costs tcell nothing and sends the terminal
+// nothing, where a cleared one is measured again and a wide one sent
+// again. It notes the cells put, and finish blanks the rest.
+type canvas struct {
+	scr   tcell.Screen
+	w, h  int
+	drawn []bool // by cell, row after row
+}
+
+func (a *App) newCanvas() *canvas {
+	w, h := a.scr.Size()
+	a.drawn = append(a.drawn[:0], make([]bool, w*h)...)
+	return &canvas{a.scr, w, h, a.drawn}
+}
+
+// put draws the cluster s at (x, y) if that is on screen.
+func (c *canvas) put(x, y int, s string, st tcell.Style) {
+	if x < 0 || x >= c.w || y < 0 || y >= c.h {
+		return
+	}
+	i := y*c.w + x
+	// Put over a wide glyph of this frame, its other half is left for
+	// finish to blank, unless what is put is wide too.
+	if c.drawn[i] && x+1 < c.w {
+		if _, _, was := c.scr.Get(x, y); was == 2 {
+			c.drawn[i+1] = false
+		}
+	}
+	_, width := c.scr.Put(x, y, s, st)
+	c.drawn[i] = true
+	if width == 2 && x+1 < c.w {
+		c.drawn[i+1] = true // the glyph's other half
+	}
+}
+
+// finish blanks the cells this frame did not put.
+func (c *canvas) finish() {
+	for i, drawn := range c.drawn {
+		if !drawn {
+			c.scr.Put(i%c.w, i/c.w, " ", tcell.StyleDefault)
+		}
+	}
+}
+
+// runes draws text from (x, y) glyph by glyph and returns its width
+// in cells.
+func (c *canvas) runes(x, y int, text []rune, st tcell.Style) int {
 	xs := layout.Layout{}.Cells(text)
 	for i := 0; i < len(text); i++ {
 		j := i + 1
 		for j < len(text) && xs[j+1] == xs[j] {
 			j++
 		}
-		drawGlyph(scr, x+xs[i], y, w, text[i:j], xs[i+1]-xs[i], st)
+		c.glyph(x+xs[i], y, text[i:j], xs[i+1]-xs[i], st)
 		i = j - 1
 	}
 	return xs[len(text)]
@@ -338,37 +385,40 @@ func isControl(r rune) bool {
 	return r < 0x20 && r != '\t' || r == 0x7f
 }
 
-// drawGlyph draws the cluster text at (x, y): a tab as width spaces, a
+// glyph draws the cluster text at (x, y): a tab as width spaces, a
 // control char as ^X (DEL as ^?), anything else as itself with its
 // combining marks.
-func drawGlyph(scr tcell.Screen, x, y, w int, text []rune, width int, st tcell.Style) {
+func (c *canvas) glyph(x, y int, text []rune, width int, st tcell.Style) {
 	r := text[0]
 	switch {
 	case r == '\t':
 		for k := range width {
-			put(scr, x+k, y, w, ' ', st)
+			c.put(x+k, y, " ", st)
 		}
 	case r == 0x7f:
-		put(scr, x, y, w, '^', st)
-		put(scr, x+1, y, w, '?', st)
+		c.put(x, y, "^", st)
+		c.put(x+1, y, "?", st)
 	case r < 0x20:
-		put(scr, x, y, w, '^', st)
-		put(scr, x+1, y, w, r+0x40, st)
-	case x < 0 || x >= w:
+		c.put(x, y, "^", st)
+		c.put(x+1, y, ascii[r+0x40:r+0x41], st)
 	case len(text) > 1:
-		// One string for tcell instead of a rune slice and a string.
-		scr.Put(x, y, string(text), st)
+		c.put(x, y, string(text), st)
+	case r < utf8.RuneSelf:
+		c.put(x, y, ascii[r:r+1], st)
 	default:
-		scr.SetContent(x, y, r, nil, st)
+		c.put(x, y, string(r), st)
 	}
 }
 
-// put draws r at (x, y) if x is on screen.
-func put(scr tcell.Screen, x, y, w int, r rune, st tcell.Style) {
-	if x >= 0 && x < w {
-		scr.SetContent(x, y, r, nil, st)
+// ascii holds each ASCII character at its own index: a one-character
+// string cut from it is not allocated.
+var ascii = func() string {
+	b := make([]byte, utf8.RuneSelf)
+	for i := range b {
+		b[i] = byte(i)
 	}
-}
+	return string(b)
+}()
 
 // styleAt is the style of rune i, where runs[ri] is the first run not
 // ending before i.

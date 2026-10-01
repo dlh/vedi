@@ -53,6 +53,7 @@ type Screen struct {
 type App struct {
 	scr    tcell.Screen
 	links  map[linkKey]tcell.Style // see linked
+	drawn  []bool                  // the canvas's cells, kept between frames
 	buf    *buffer.Buffer
 	first  *buffer.Buffer // the startup buffer, whose reader Notify serves
 	copier clipboard.Copier

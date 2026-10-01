@@ -4,6 +4,7 @@ package testscreen
 
 import (
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 // back.
 type Screen struct {
 	tcell.Screen
-	term vt.MockTerm
+	term *recorder
 	w, h int // as asked for: the mock terminal is never less than 1×1
 }
 
@@ -23,7 +24,7 @@ type Screen struct {
 // the same whatever terminal runs the tests.
 func New(t testing.TB, w, h int) *Screen {
 	t.Helper()
-	term := vt.NewMockTerm(vt.MockOptSize(termSize(w, h)))
+	term := &recorder{MockTerm: vt.NewMockTerm(vt.MockOptSize(termSize(w, h)))}
 	scr, err := tcell.NewTerminfoScreenFromTty(term, tcell.OptTerm("xterm-256color"))
 	if err == nil {
 		err = scr.Init()
@@ -123,3 +124,26 @@ func SameStyle(a, b tcell.Style) bool {
 
 // Send delivers raw as the terminal's input: the bytes a key sends.
 func (s *Screen) Send(raw string) { s.term.SendRaw([]byte(raw)) }
+
+// recorder keeps what tcell writes to the terminal.
+type recorder struct {
+	vt.MockTerm
+	mu  sync.Mutex
+	out strings.Builder
+}
+
+func (r *recorder) Write(b []byte) (int, error) {
+	r.mu.Lock()
+	r.out.Write(b)
+	r.mu.Unlock()
+	return r.MockTerm.Write(b)
+}
+
+// Sent is what tcell wrote to the terminal since the last call.
+func (s *Screen) Sent() string {
+	s.term.mu.Lock()
+	defer s.term.mu.Unlock()
+	out := s.term.out.String()
+	s.term.out.Reset()
+	return out
+}

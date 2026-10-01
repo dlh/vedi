@@ -1,6 +1,7 @@
 package testscreen
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -142,5 +143,18 @@ func TestSameStyle(t *testing.T) {
 	}
 	if !SameStyle(red, red) {
 		t.Error("a style differs from itself")
+	}
+}
+
+func TestSent(t *testing.T) {
+	s := New(t, 20, 5)
+	s.Put(0, 0, "q", tcell.StyleDefault)
+	s.Show()
+	if out := s.Sent(); !strings.Contains(out, "q") {
+		t.Errorf("sent %q, want the cell put", out)
+	}
+	s.Show()
+	if out := s.Sent(); strings.Contains(out, "q") {
+		t.Errorf("sent %q again with nothing changed", out)
 	}
 }

@@ -1,0 +1,15 @@
+The < marker over the first half of a wide character leaves its second
+half blank, not what the cell showed before the scroll.
+
+-- size --
+10x3
+-- args --
+-S --edge-markers
+-- input --
+abcd日efghijklmnop
+-- mouse --
+wheel right
+-- screen --
+[<] efghijk[>]
+
+<stdin>  l
