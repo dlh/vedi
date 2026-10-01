@@ -3,14 +3,13 @@ module go.dlh.dev/vedi
 go 1.27.1
 
 require (
+	github.com/clipperhouse/displaywidth v0.11.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/gdamore/tcell/v3 v3.5.0
-	github.com/rivo/uniseg v0.4.7
 	golang.org/x/term v0.45.0
 )
 
 require (
-	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/gdamore/encoding v1.0.1 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.1 // indirect

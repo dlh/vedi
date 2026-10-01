@@ -3,12 +3,25 @@
 package layout
 
 import (
+	"os"
 	"slices"
 	"sort"
+	"strings"
 	"unicode/utf8"
 
-	"github.com/rivo/uniseg"
+	"github.com/clipperhouse/displaywidth"
 )
+
+// widths measures as tcell does, down to the environment variable
+// that widens East Asian ambiguous characters: a cluster must take
+// the cells the screen gives it.
+var widths = func() displaywidth.Options {
+	switch strings.ToLower(os.Getenv("RUNEWIDTH_EASTASIAN")) {
+	case "1", "true", "yes":
+		return displaywidth.Options{EastAsianWidth: true}
+	}
+	return displaywidth.Options{}
+}()
 
 type Mode int
 
@@ -22,7 +35,7 @@ const DefaultTab = 8
 
 // RuneWidth is the cells r takes on its own starting at cell x: a tab
 // to the next tab stop, a C0 control or DEL two (drawn as ^X), anything
-// else as uniseg measures it, 0 for combining marks. Cells measures
+// else as tcell measures it, 0 for combining marks. Cells measures
 // runes in their clusters; this is for a rune known to stand alone.
 func (l Layout) RuneWidth(r rune, x int) int {
 	switch {
@@ -37,7 +50,7 @@ func (l Layout) RuneWidth(r rune, x int) int {
 	case r < 0x7f:
 		return 1
 	}
-	return uniseg.StringWidth(string(r))
+	return widths.Rune(r)
 }
 
 // Cells returns len(text)+1 entries: xs[i] is the cell column where rune
@@ -63,12 +76,9 @@ func (l Layout) Cells(text []rune) []int {
 		for k < n && !(text[k-1] < 0x80 && text[k] < 0x80) {
 			k++
 		}
-		s, state := string(text[i:k]), -1
-		for len(s) > 0 {
-			var g string
-			var w int
-			g, s, w, state = uniseg.FirstGraphemeClusterInString(s, state)
-			m := utf8.RuneCountInString(g)
+		for g := widths.StringGraphemes(string(text[i:k])); g.Next(); {
+			w := g.Width()
+			m := utf8.RuneCountInString(g.Value())
 			if r := text[i]; r < 0x20 || r == 0x7f {
 				w = l.RuneWidth(r, x) // a control is its own cluster: ^X, or the tab stop
 			}

@@ -1,0 +1,15 @@
+A keycap, a digit, # or * with U+FE0F and U+20E3, takes two cells, as
+terminals draw it: the text after it and the cursor line up.
+
+-- size --
+20x3
+-- input --
+1️⃣x
+-- screen --
+1️⃣x
+
+<stdin>  line 1/1  w
+-- keys --
+Right
+-- cursor --
+0 2

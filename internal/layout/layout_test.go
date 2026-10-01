@@ -1,6 +1,8 @@
 package layout
 
 import (
+	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/testscreen"
 	"reflect"
 	"strings"
 	"testing"
@@ -219,5 +221,27 @@ func BenchmarkCells(b *testing.B) {
 				Layout{}.Cells(text)
 			}
 		})
+	}
+}
+
+// TestCellsMatchScreen: every cluster takes the cells tcell gives it,
+// or the terminal's columns and vedi's part ways for the rest of the row.
+func TestCellsMatchScreen(t *testing.T) {
+	scr := testscreen.New(t, 40, 3)
+	for _, s := range []string{
+		"a", "é", "e\u0301", "日", "한", "\u1112\u1161\u11ab", "क्षि", "ก็", "ñ",
+		"👍", "👍🏽", "👨\u200d👩\u200d👧\u200d👦", "🇺🇸", "🇺", "🏳\ufe0f\u200d🌈",
+		"1\ufe0f\u20e3", "#\ufe0f\u20e3", "1\u20e3", "❤\ufe0f", "❤\ufe0e", "❤", "⬆\ufe0f", "©\ufe0f", "©",
+		"\u200b", "\u00ad", "\ufeff", "\u0301", "a\u200d", "…", "—", "Ａ", "ｱ", "\u3000",
+	} {
+		xs := Layout{}.Cells([]rune(s))
+		rest, w := scr.Put(0, 0, s, tcell.StyleDefault)
+		if rest != "" {
+			t.Errorf("%q: tcell takes %q as one cluster and leaves %q", s, s[:len(s)-len(rest)], rest)
+			continue
+		}
+		if got := xs[len(xs)-1]; got != w {
+			t.Errorf("%q (%U): Cells = %d wide, tcell %d", s, []rune(s), got, w)
+		}
 	}
 }
