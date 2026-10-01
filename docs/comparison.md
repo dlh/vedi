@@ -81,14 +81,14 @@ five runs.
 
 | | vedi | less | moor | ov | vim | neovim |
 |---|---:|---:|---:|---:|---:|---:|
-| first screen from a file, ms | 4.7 | 5.3 | 37.4 | 64.0 | 542.4 | 7463.1 |
-| then to the last line, ms | 101.4 | 235.6 | 110.0 | 2.2 | 9.5 | 0.3 |
-| then back to the first, ms | 0.3 | 0.3 | 0.4 | 0.2 | 4.9 | 0.3 |
-| a search that finds nothing, ms | 468.0 | 1006.7 | 115.5 | 1750.1 | 23.9 | 35.9 |
-| first screen from stdin, ms | 4.6 | 5.4 | 28.7 | 62.8 | 676.5 | 7385.5 |
-| that search, from stdin, ms | 456.0 | 981.0 | 121.3 | 1732.4 | 22.9 | 36.1 |
-| peak memory, file, MB | 12.1 | 2.4 | 343.2 | 75.9 | 99.0 | 2227.8 |
-| peak memory, stdin, MB | 81.9 | 94.2 | 351.2 | 228.4 | 175.0 | 2304.2 |
+| first screen from a file, ms | 4.7 | 5.1 | 36.8 | 63.4 | 541.0 | 7242.4 |
+| then to the last line, ms | 95.9 | 234.8 | 109.3 | 2.2 | 9.5 | 0.3 |
+| then back to the first, ms | 0.1 | 0.3 | 0.4 | 0.2 | 4.9 | 0.3 |
+| a search that finds nothing, ms | 379.0 | 991.8 | 124.9 | 1738.1 | 23.8 | 35.8 |
+| first screen from stdin, ms | 4.5 | 4.7 | 28.5 | 62.7 | 671.5 | 7337.5 |
+| that search, from stdin, ms | 369.3 | 982.1 | 114.3 | 1718.2 | 21.6 | 36.6 |
+| peak memory, file, MB | 10.2 | 2.4 | 344.6 | 75.8 | 99.1 | 2227.5 |
+| peak memory, stdin, MB | 78.6 | 94.3 | 332.7 | 228.7 | 174.7 | 2304.0 |
 
 The search covers the whole input, which is read by then. moor
 searches as each character is typed, so its time is four searches.
@@ -98,9 +98,9 @@ over plain text.
 
 | Run | |
 |---|---|
-| Date | 2026-09-29 |
+| Date | 2026-10-01 |
 | Machine | Apple M3 Max, macOS 26.3 |
-| vedi | 1.6.0 |
+| vedi | 1.6.1 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
