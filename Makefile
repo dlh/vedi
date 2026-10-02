@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version clean
+.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version release-notes clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -58,6 +58,10 @@ release-check:
 # Prints the next tag, from the commits since the last one.
 next-version:
 	@bin/next-version
+
+# Prints the changelog the next release would carry.
+release-notes:
+	@bin/release-notes
 
 clean:
 	rm -f vedi

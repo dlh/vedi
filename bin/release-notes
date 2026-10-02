@@ -1,0 +1,26 @@
+#!/bin/sh
+# Prints the changelog a release at REF (default HEAD) would carry.
+# goreleaser writes one only for a tagged commit, so this tags REF in
+# a throwaway clone and releases there, publishing nothing.
+# Usage: bin/release-notes [REF]
+set -eu
+
+main() {
+	root=$(git rev-parse --show-toplevel)
+	ref=$(git rev-parse --verify "${1:-HEAD}^{commit}")
+	tag=$("$root/bin/next-version" "$ref")
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+	git clone -q "$root" "$tmp"
+	cd "$tmp"
+	git checkout -q --detach "$ref"
+	git tag "$tag"
+	if ! log=$(go tool -modfile=tools/go.mod goreleaser release \
+		--skip=publish,announce,notarize 2>&1); then
+		echo "$log" >&2
+		exit 1
+	fi
+	cat dist/CHANGELOG.md
+}
+
+main "$@"

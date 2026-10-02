@@ -12,6 +12,7 @@ Requires Go and make.
     make bench-pagers   vedi, less, moor, ov, vim and neovim on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
     make next-version   print the next tag, from the commits since the last
+    make release-notes  print the changelog the next release would carry
     make media          record the README gif; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
@@ -53,7 +54,8 @@ out, since they change nothing a user sees.
 `make next-version` prints the next tag: a breaking change (`type!:`
 or a `BREAKING CHANGE:` footer) bumps major, a `feat:` minor, a `fix:`
 or `perf:` patch. It fails when the commits since the last tag hold
-none of those. Tag and push:
+none of those. `make release-notes` prints the changelog that tag
+would carry. Tag and push:
 
     git tag $(make -s next-version)
     git push origin $(make -s next-version)
