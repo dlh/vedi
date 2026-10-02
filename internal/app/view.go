@@ -358,11 +358,11 @@ func (a *App) statusText() string {
 	case a.helping:
 		return "help  motion scrolls, any other key returns"
 	case a.searching && a.promptBack:
-		return "?" + string(a.query)
+		return "?" + string(a.query.text)
 	case a.searching:
-		return "/" + string(a.query)
+		return "/" + string(a.query.text)
 	case a.commanding:
-		return ":" + string(a.command)
+		return ":" + string(a.command.text)
 	case a.status != "":
 		return a.status
 	}

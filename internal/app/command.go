@@ -21,13 +21,9 @@ func (a *App) handleCommandKey(ev *tcell.EventKey) {
 		a.commanding = false
 	case tcell.KeyEnter:
 		a.commanding = false
-		a.runCommand(string(a.command))
-	case tcell.KeyBackspace:
-		if len(a.command) > 0 {
-			a.command = a.command[:len(a.command)-1]
-		}
-	case tcell.KeyRune:
-		a.command = append(a.command, []rune(ev.Str())...)
+		a.runCommand(string(a.command.text))
+	default:
+		a.command.edit(ev)
 	}
 }
 

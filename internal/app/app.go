@@ -88,12 +88,9 @@ type App struct {
 	searching  bool      // the / or ? prompt is open
 	promptBack bool      // it is ?
 	backward   bool      // the last search was ?, and so n goes up and N down
-	query      []rune
-	history    [][]rune // queries searched for, oldest first
-	histPos    int      // the entry query shows; len(history) is the draft
-	draft      []rune   // what was typed before Up recalled an entry
-	commanding bool     // the : prompt is open
-	command    []rune   // its line
+	query      prompt    // the / and ? prompts' line
+	commanding bool      // the : prompt is open
+	command    prompt    // its line
 	matcher    search.Matcher
 	highlight  bool
 
@@ -484,15 +481,14 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.Search, input.SearchBack:
 		a.searching, a.dragging = true, false
 		a.promptBack = c.Action == input.SearchBack
-		a.query = a.query[:0]
-		a.histPos = len(a.history)
+		a.query.open()
 	case input.SearchNext:
 		a.find(a.backward, true)
 	case input.SearchPrev:
 		a.find(!a.backward, true)
 	case input.CommandPrompt:
 		a.commanding, a.dragging = true, false
-		a.command = a.command[:0]
+		a.command.open()
 	case input.ToggleWrap:
 		if a.mode == layout.Wrap {
 			a.setMode(layout.NoWrap)
@@ -766,9 +762,7 @@ func (a *App) copy() bool {
 }
 
 // handleSearchKey edits the / and ? prompts. Enter searches; with
-// nothing typed it repeats the last pattern the prompt's way. Up and
-// Down walk the history; Down past the newest entry restores what was
-// typed before Up.
+// nothing typed it repeats the last pattern the prompt's way.
 func (a *App) handleSearchKey(ev *tcell.EventKey) {
 	switch ev.Key() {
 	case tcell.KeyEscape:
@@ -776,48 +770,16 @@ func (a *App) handleSearchKey(ev *tcell.EventKey) {
 	case tcell.KeyEnter:
 		a.searching = false
 		a.backward = a.promptBack
-		if len(a.query) == 0 {
+		if len(a.query.text) == 0 {
 			a.find(a.backward, true)
 			return
 		}
-		a.remember()
-		a.matcher = search.New(string(a.query))
+		a.query.remember()
+		a.matcher = search.New(string(a.query.text))
 		a.find(a.backward, false)
-	case tcell.KeyUp:
-		if a.histPos == 0 {
-			return
-		}
-		if a.histPos == len(a.history) {
-			a.draft = append(a.draft[:0], a.query...)
-		}
-		a.histPos--
-		a.query = append(a.query[:0], a.history[a.histPos]...)
-	case tcell.KeyDown:
-		if a.histPos == len(a.history) {
-			return
-		}
-		a.histPos++
-		if a.histPos == len(a.history) {
-			a.query = append(a.query[:0], a.draft...)
-		} else {
-			a.query = append(a.query[:0], a.history[a.histPos]...)
-		}
-	case tcell.KeyBackspace:
-		if len(a.query) > 0 {
-			a.query = a.query[:len(a.query)-1]
-		}
-	case tcell.KeyRune:
-		a.query = append(a.query, []rune(ev.Str())...)
+	default:
+		a.query.edit(ev)
 	}
-}
-
-// remember adds the query to the history unless it repeats the newest
-// entry.
-func (a *App) remember() {
-	if n := len(a.history); n > 0 && string(a.history[n-1]) == string(a.query) {
-		return
-	}
-	a.history = append(a.history, append([]rune(nil), a.query...))
 }
 
 // find goes to the next match before or after the cursor. A match at
