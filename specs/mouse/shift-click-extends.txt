@@ -1,0 +1,50 @@
+Shift with a click extends the selection to that cell, from the
+cursor when nothing is selected, as Shift with an arrow key does. The
+anchor stays for the next one, and a plain click clears it.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- mouse --
+click 0 1 Shift+click 2 2
+-- screen --
+o[ne ]
+[two ]
+[th]ree
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+2 2
+-- mouse --
+Shift+click 1 1
+-- screen --
+o[ne ]
+[t]wo
+three
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 1
+-- mouse --
+Shift+click 0 0
+-- screen --
+[o]ne
+two
+three
+
+<stdin>  line 1/3  wrap           h help
+-- cursor --
+0 0
+-- mouse --
+click 1 1
+-- screen --
+one
+two
+three
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 1

@@ -1,0 +1,25 @@
+A drag begun with Shift held extends the selection as the Shift+click
+did, from the same anchor.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- mouse --
+click 0 1 Shift+drag 1 1 2 2
+-- screen --
+o[ne ]
+[two ]
+[th]ree
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+2 2
+-- keys --
+y
+-- clipboard --
+ne
+two
+th

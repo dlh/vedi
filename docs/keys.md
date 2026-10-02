@@ -22,7 +22,7 @@ do not fit. These are the defaults.
 | Ctrl+Shift+Left, Ctrl+Shift+Right, Alt+Shift+Left, Alt+Shift+Right | Extend by word |
 | Ctrl+a, Cmd+a | Select all |
 | Esc | Clear the selection, then the search highlight |
-| Click, drag | Move the cursor, select; held at an edge, scroll |
+| Click, drag | Move the cursor, select; with Shift, extend; held at an edge, scroll |
 | Double-, triple-click | Select the word, the line |
 | Wheel | Scroll; with Shift, sideways |
 | Ctrl+c, Cmd+c, y | Copy the selection as plain text |
@@ -35,7 +35,8 @@ do not fit. These are the defaults.
 The Cmd+ keys are macOS only, and reach vedi where the terminal passes
 them on: kitty does, Cmd+c when it has no selection of its own;
 Terminal.app keeps them. Terminal.app also sends some Shift+ keys
-unshifted; [terminals.md](terminals.md) has the fix.
+unshifted, and kitty keeps Shift+click; [terminals.md](terminals.md)
+has the fixes.
 
 The selection is drawn in reverse video and search matches in black
 on bright yellow, whatever the text's own colors. A match off the

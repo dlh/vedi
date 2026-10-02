@@ -8,6 +8,20 @@ and over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
 `--clipboard-cmd 'xclip -selection clipboard'` (X11), or
 `clipboard_cmd xclip -selection clipboard` in the config.
 
+## Shift+click
+
+A terminal keeps Shift+click for its own selection while a program has
+the mouse. vedi asks for it with XTSHIFTESCAPE (`\033[>1s`), which
+xterm and Ghostty grant unless configured not to. kitty does not; unmap
+its shifted presses in `kitty.conf`:
+
+    mouse_map shift+left press grabbed
+    mouse_map shift+left click grabbed
+    mouse_map shift+left doublepress grabbed
+    mouse_map shift+left triplepress grabbed
+
+Each removes a kitty default.
+
 ## macOS Terminal.app
 
 Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞ or ⇧⇟, so

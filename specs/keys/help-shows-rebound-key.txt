@@ -49,8 +49,8 @@ Alt+h
 
                                      MOUSE
 
-  Click, drag                             Move the cursor, select; held at an
-                                          edge, scroll.
+  Click, drag                             Move the cursor, select; with Shift,
+                                          extend; held at an edge, scroll.
   Double-, triple-click                   Select the word, the line.
   Wheel                                   Scroll; with Shift, sideways.
  ------------------------------------------------------------------------------

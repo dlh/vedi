@@ -60,7 +60,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{act(ClearSelection)}, doc: "Clear the selection, then the search highlight"},
 	}},
 	{"Mouse", []helpRow{
-		{fixed: "Click, drag", doc: "Move the cursor, select; held at an edge, scroll"},
+		{fixed: "Click, drag", doc: "Move the cursor, select; with Shift, extend; held at an edge, scroll"},
 		{fixed: "Double-, triple-click", doc: "Select the word, the line"},
 		{fixed: "Wheel", doc: "Scroll; with Shift, sideways"},
 	}},

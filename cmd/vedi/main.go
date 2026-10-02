@@ -232,6 +232,12 @@ func main() {
 	}
 	defer scr.Fini()
 	scr.EnableMouse(tcell.MouseDragEvents)
+	// XTSHIFTESCAPE: ask for Shift+click, which a terminal otherwise
+	// keeps for its own selection.
+	if tty, ok := scr.Tty(); ok {
+		io.WriteString(tty, "\x1b[>1s")
+		defer io.WriteString(tty, "\x1b[>0s") // before Fini closes it
+	}
 
 	appOpts := opts.App(scr, files, cfg)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)

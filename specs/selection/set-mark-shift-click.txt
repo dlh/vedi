@@ -1,0 +1,23 @@
+Shift+click moves the cursor and keeps the mark: the selection runs
+from the mark to the cell, and motions go on extending it.
+
+-- config --
+map v set_mark
+-- input --
+abc
+def
+-- keys --
+Right v
+-- mouse --
+Shift+click 1 1
+-- keys --
+Right
+-- screen --
+a[bc ]
+[de]f
+
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 2

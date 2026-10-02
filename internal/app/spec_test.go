@@ -384,8 +384,12 @@ func (s *scenario) open() error {
 // never a double-click; dblclick and tripleclick press two or three
 // times without moving it.
 func (s *scenario) mouse(a mouseAction) {
+	var mod tcell.ModMask
+	if a.shift {
+		mod = tcell.ModShift
+	}
 	send := func(x, y int, btn tcell.ButtonMask) {
-		s.app.Handle(tcell.NewEventMouse(x, y, btn, 0))
+		s.app.Handle(tcell.NewEventMouse(x, y, btn, mod))
 		s.app.Draw()
 	}
 	switch a.kind {
@@ -414,10 +418,6 @@ func (s *scenario) mouse(a mouseAction) {
 			"up": tcell.WheelUp, "down": tcell.WheelDown,
 			"left": tcell.WheelLeft, "right": tcell.WheelRight,
 		}[a.dir]
-		var mod tcell.ModMask
-		if a.shift {
-			mod = tcell.ModShift
-		}
 		for i := 0; i < a.n; i++ {
 			s.app.Handle(tcell.NewEventMouse(0, 0, btn, mod))
 			s.app.Draw()

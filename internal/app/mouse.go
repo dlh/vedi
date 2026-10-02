@@ -21,8 +21,9 @@ const (
 // autoScrollTick is how often a drag held at an edge scrolls a row.
 const autoScrollTick = 50 * time.Millisecond
 
-// handleMouse: button 1 places the cursor and drags the selection, the
-// wheel scrolls, sideways too, the bindings as well. A press returns
+// handleMouse: button 1 places the cursor and drags the selection,
+// with Shift extends it, the wheel scrolls, sideways too, the bindings
+// as well. A press returns
 // from help like any key. The mouse is ignored at the / and : prompts,
 // and a press from before one is forgotten.
 func (a *App) handleMouse(ev *tcell.EventMouse) {
@@ -52,7 +53,7 @@ func (a *App) handleMouse(ev *tcell.EventMouse) {
 		}
 	default:
 		a.held = true
-		a.press(x, y)
+		a.press(x, y, ev.Modifiers()&tcell.ModShift != 0)
 	}
 }
 
@@ -78,8 +79,10 @@ func wheel(ev *tcell.EventMouse) (rows, cols int) {
 
 // press returns from help, ignores the status line, and otherwise puts
 // the cursor on the cell; a second press there within doubleClick
-// selects the word, a third the line.
-func (a *App) press(x, y int) {
+// selects the word, a third the line. With shift the selection extends
+// to the cell instead, from the cursor when there is none, and the
+// press counts toward no double click.
+func (a *App) press(x, y int, shift bool) {
 	a.act()
 	if a.helping {
 		a.hideHelp()
@@ -94,6 +97,16 @@ func (a *App) press(x, y int) {
 		n = a.lastPress.n + 1
 	}
 	a.dragging, a.ticking = true, false
+	if shift {
+		if a.anchor == nil {
+			p := a.cur
+			a.anchor = &p
+		}
+		a.cur = a.cellPos(x, y)
+		a.lastPress = click{now, x, y, a.cur, 0}
+		a.scrollToCursor()
+		return
+	}
 	a.cur = a.cellPos(x, y)
 	a.lastPress = click{now, x, y, a.cur, n}
 	a.anchor, a.marking = nil, false

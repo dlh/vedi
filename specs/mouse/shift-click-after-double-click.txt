@@ -1,0 +1,35 @@
+After a double-click Shift+click extends from the word's start. A
+shifted double-click is two Shift+clicks: it selects no word, and a
+click after a Shift+click is a first click.
+
+-- size --
+40x4
+-- input --
+foo bar_1 baz
+-- mouse --
+dblclick 0 6 Shift+click 0 12
+-- screen --
+foo [bar_1 ba]z
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 12
+-- mouse --
+Shift+click 0 1
+-- screen --
+f[oo ]bar_1 baz
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 1
+-- mouse --
+click 0 0 Shift+dblclick 0 5
+-- screen --
+[foo b]ar_1 baz
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 5
