@@ -18,7 +18,7 @@ type Section struct {
 
 type helpRow struct {
 	cmds  []Command
-	fixed string
+	fixed []string // keys named outright, for what no action binds
 	doc   string
 }
 
@@ -60,9 +60,9 @@ var helpSections = []helpSection{
 		{cmds: []Command{act(ClearSelection)}, doc: "Clear the selection, then the search highlight"},
 	}},
 	{"Mouse", []helpRow{
-		{fixed: "Click, drag", doc: "Move the cursor, select; with Shift, extend; held at an edge, scroll"},
-		{fixed: "Double-, triple-click", doc: "Select the word, the line"},
-		{fixed: "Wheel", doc: "Scroll; with Shift, sideways"},
+		{fixed: []string{"Click, drag"}, doc: "Move the cursor, select; with Shift, extend; held at an edge, scroll"},
+		{fixed: []string{"Double-, triple-click"}, doc: "Select the word, the line"},
+		{fixed: []string{"Wheel"}, doc: "Scroll; with Shift, sideways"},
 	}},
 	{"Copying", []helpRow{
 		{cmds: []Command{act(Copy)}, doc: "Copy the selection as plain text"},
@@ -71,8 +71,10 @@ var helpSections = []helpSection{
 	{"Searching", []helpRow{
 		{cmds: []Command{act(Search)}, doc: "Search; ignores case if lowercase; empty repeats"},
 		{cmds: []Command{act(SearchBack)}, doc: "Search backward"},
-		{fixed: "Up, Down at the prompt", doc: "Recall earlier searches"},
 		{cmds: []Command{act(SearchNext), act(SearchPrev)}, doc: "Next and previous match; ? swaps them"},
+	}},
+	{"Prompts", []helpRow{
+		{fixed: []string{"Up", "Down"}, doc: "Recall earlier searches, or commands"},
 	}},
 }
 
@@ -83,8 +85,8 @@ func (m Keymap) Help() []Section {
 	for _, s := range helpSections {
 		var rows []Row
 		for _, h := range s.rows {
-			if h.fixed != "" {
-				rows = append(rows, Row{[]string{h.fixed}, h.doc})
+			if h.fixed != nil {
+				rows = append(rows, Row{h.fixed, h.doc})
 				continue
 			}
 			var keys []string

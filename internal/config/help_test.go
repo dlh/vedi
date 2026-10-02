@@ -44,7 +44,7 @@ func TestHelpDefault(t *testing.T) {
 	for _, s := range secs {
 		names = append(names, s.Name)
 	}
-	if want := []string{"", "Moving", "Selecting", "Mouse", "Copying", "Searching"}; !slices.Equal(names, want) {
+	if want := []string{"", "Moving", "Selecting", "Mouse", "Copying", "Searching", "Prompts"}; !slices.Equal(names, want) {
 		t.Errorf("sections = %v", names)
 	}
 	all := rows(secs)
@@ -54,7 +54,7 @@ func TestHelpDefault(t *testing.T) {
 		}
 	}
 	last := all[len(all)-1]
-	if !slices.Equal(last.Keys, []string{"n", "N"}) || last.Doc != "Next and previous match; ? swaps them" {
+	if !slices.Equal(last.Keys, []string{"Up", "Down"}) || last.Doc != "Recall earlier searches, or commands" {
 		t.Errorf("last row = %+v", last)
 	}
 	mac := Default(true).Help()

@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x56
+80x60
 -- input --
 abc
 -- keys --
@@ -63,6 +63,10 @@ h
   /                                       Search; ignores case if lowercase;
                                           empty repeats.
   ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier searches.
   n  N                                    Next and previous match; ? swaps them.
+ ------------------------------------------------------------------------------
+
+                                    PROMPTS
+
+  Up  Down                                Recall earlier searches, or commands.
 help  motion scrolls, any other key returns

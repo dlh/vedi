@@ -10,7 +10,7 @@ the text and does nothing else, so q returns rather than quits and
 the cursor is where it was.
 
 -- size --
-80x57
+80x61
 -- input --
 abc
 def
@@ -71,8 +71,12 @@ Down h
   /                                       Search; ignores case if lowercase;
                                           empty repeats.
   ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier searches.
   n  N                                    Next and previous match; ? swaps them.
+ ------------------------------------------------------------------------------
+
+                                    PROMPTS
+
+  Up  Down                                Recall earlier searches, or commands.
 help  motion scrolls, any other key returns
 -- cursor --
 hidden
@@ -81,6 +85,10 @@ q
 -- screen --
 abc
 def
+
+
+
+
 
 
 

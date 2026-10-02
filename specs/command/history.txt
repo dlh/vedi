@@ -1,0 +1,72 @@
+At the : prompt, Up recalls earlier commands, newest first, and Down
+goes back toward what was being typed. The history is the prompt's
+own, apart from the searches'; a command equal to the newest entry is
+not added again, and one that failed is still remembered.
+
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+: "2" Enter : "wrap_style word" Enter / "foo" Enter : Up
+-- screen --
+line 1
+line 2
+line 3
+
+
+:wrap_style word
+-- keys --
+Up
+-- screen --
+line 1
+line 2
+line 3
+
+
+:2
+-- keys --
+Up
+-- screen --
+line 1
+line 2
+line 3
+
+
+:2
+-- keys --
+Down Down "go"
+-- screen --
+line 1
+line 2
+line 3
+
+
+:go
+-- keys --
+Up Backspace Backspace Backspace Backspace "no"
+-- screen --
+line 1
+line 2
+line 3
+
+
+:wrap_style no
+-- keys --
+Down
+-- screen --
+line 1
+line 2
+line 3
+
+
+:go
+-- keys --
+Esc : "bogus" Enter : "bogus" Enter : Up Up
+-- screen --
+line 1
+line 2
+line 3
+
+
+:wrap_style word

@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x58
+80x62
 -- input --
 abc
 -- keys --
@@ -67,6 +67,10 @@ Alt+h
   /                                       Search; ignores case if lowercase;
                                           empty repeats.
   ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier searches.
   n  N                                    Next and previous match; ? swaps them.
+ ------------------------------------------------------------------------------
+
+                                    PROMPTS
+
+  Up  Down                                Recall earlier searches, or commands.
 help  motion scrolls, any other key returns

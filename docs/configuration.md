@@ -72,7 +72,8 @@ run, and the command line overrides `VEDI`; see
 and `map`, as the config file does, for the rest of the run:
 `:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
 22`, goes to line 22. A bad line is an error on the status line.
-`clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
+`clear_all_shortcuts` is not taken: it would unbind `:` and `q`. Up
+and Down recall earlier commands.
 
 ## Keys
 

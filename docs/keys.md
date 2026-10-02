@@ -29,8 +29,8 @@ do not fit. These are the defaults.
 | Enter | Copy the selection and quit; with none, down a line |
 | / | Search; ignores case if lowercase; empty repeats |
 | ? | Search backward |
-| Up, Down at the prompt | Recall earlier searches |
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
+| Up, Down | Recall earlier searches, or commands |
 
 The Cmd+ keys are macOS only, and reach vedi where the terminal passes
 them on: kitty does, Cmd+c when it has no selection of its own;

@@ -26,29 +26,29 @@ help  motion scrolls, any other key returns
 -- keys --
 G
 -- screen --
-                                          empty repeats.
-  ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier sea
-  n  N                                    Next and previous
+
+                                    PROMPTS
+
+  Up  Down                                Recall earlier sea
  -----------------------------------------------------------
 help  motion scrolls, any other key returns
 -- keys --
 Down
 -- screen --
-                                          empty repeats.
-  ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier sea
-  n  N                                    Next and previous
+
+                                    PROMPTS
+
+  Up  Down                                Recall earlier sea
  -----------------------------------------------------------
 help  motion scrolls, any other key returns
 -- keys --
 u
 -- screen --
+  n  N                                    Next and previous
+ -----------------------------------------------------------
 
-  /                                       Search; ignores ca
-                                          empty repeats.
-  ?                                       Search backward.
-  Up, Down at the prompt                  Recall earlier sea
+                                    PROMPTS
+
 help  motion scrolls, any other key returns
 -- keys --
 g k

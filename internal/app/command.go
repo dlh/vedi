@@ -21,6 +21,9 @@ func (a *App) handleCommandKey(ev *tcell.EventKey) {
 		a.commanding = false
 	case tcell.KeyEnter:
 		a.commanding = false
+		if len(a.command.text) > 0 {
+			a.command.remember()
+		}
 		a.runCommand(string(a.command.text))
 	default:
 		a.command.edit(ev)
