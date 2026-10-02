@@ -4,7 +4,6 @@ package app
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -91,8 +90,8 @@ type App struct {
 	history    [][]rune // queries searched for, oldest first
 	histPos    int      // the entry query shows; len(history) is the draft
 	draft      []rune   // what was typed before Up recalled an entry
-	gotoing    bool     // the : prompt is open
-	lineNo     []rune   // its digits
+	commanding bool     // the : prompt is open
+	command    []rune   // its line
 	matcher    search.Matcher
 	highlight  bool
 
@@ -276,8 +275,8 @@ func (a *App) Handle(ev tcell.Event) bool {
 			a.handleSearchKey(ev)
 			return false
 		}
-		if a.gotoing {
-			a.handleGotoKey(ev)
+		if a.commanding {
+			a.handleCommandKey(ev)
 			return false
 		}
 		return a.handleKey(a.keys.Lookup(ev))
@@ -486,16 +485,15 @@ func (a *App) handleKey(c input.Command) bool {
 		a.find(a.backward, true)
 	case input.SearchPrev:
 		a.find(!a.backward, true)
-	case input.GoToLine:
-		a.gotoing, a.dragging = true, false
-		a.lineNo = a.lineNo[:0]
+	case input.CommandPrompt:
+		a.commanding, a.dragging = true, false
+		a.command = a.command[:0]
 	case input.ToggleWrap:
 		if a.mode == layout.Wrap {
-			a.mode = layout.NoWrap
+			a.setMode(layout.NoWrap)
 		} else {
-			a.mode = layout.Wrap
+			a.setMode(layout.Wrap)
 		}
-		a.xoff = 0
 	case input.Reload:
 		a.reload(true)
 	case input.Help:
@@ -516,6 +514,12 @@ func (a *App) handleKey(c input.Command) bool {
 }
 
 func (a *App) line(i int) []rune { return a.buf.Line(i).Text }
+
+// setMode switches between wrap and nowrap; the horizontal scroll
+// starts over.
+func (a *App) setMode(m layout.Mode) {
+	a.mode, a.xoff = m, 0
+}
 
 // wrapMarks reports whether wrap mode marks rows that continue, on a
 // screen w wide: the last column is then the marker's, and text wraps
@@ -809,35 +813,6 @@ func (a *App) remember() {
 		return
 	}
 	a.history = append(a.history, append([]rune(nil), a.query...))
-}
-
-// handleGotoKey edits the : prompt: digits only. Enter goes to the
-// 1-based line, clamped to the buffer; with no digits it just closes
-// the prompt.
-func (a *App) handleGotoKey(ev *tcell.EventKey) {
-	switch ev.Key() {
-	case tcell.KeyEscape:
-		a.gotoing = false
-	case tcell.KeyEnter:
-		a.gotoing = false
-		if len(a.lineNo) == 0 {
-			return
-		}
-		n, _ := strconv.Atoi(string(a.lineNo))
-		a.cur = buffer.Pos{Line: n - 1}
-		a.drop()
-		a.scrollToCursor()
-	case tcell.KeyBackspace:
-		if len(a.lineNo) > 0 {
-			a.lineNo = a.lineNo[:len(a.lineNo)-1]
-		}
-	case tcell.KeyRune:
-		for _, r := range ev.Str() {
-			if r >= '0' && r <= '9' {
-				a.lineNo = append(a.lineNo, r)
-			}
-		}
-	}
 }
 
 // find goes to the next match before or after the cursor. A match at

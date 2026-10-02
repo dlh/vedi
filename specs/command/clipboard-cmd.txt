@@ -1,0 +1,24 @@
+clipboard_cmd at the : prompt is the config's: copies pipe to the
+command, the rest of the line, for the rest of the run. `sh -c false`
+always fails, so the status line shows the failure.
+
+-- size --
+40x5
+-- input --
+hello
+-- keys --
+: "clipboard_cmd sh -c false" Enter Shift+Right y
+-- screen --
+[h]ello
+
+
+
+copy failed: exit status 1        h help
+-- keys --
+: "clipboard_cmd" Enter
+-- screen --
+[h]ello
+
+
+
+clipboard_cmd takes a command     h help

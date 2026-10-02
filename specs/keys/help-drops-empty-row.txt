@@ -28,7 +28,7 @@ h
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   g  G  <  >                              First line, last line.
-  :                                       Go to a line number.
+  :                                       Command prompt; N goes to line N.
  ------------------------------------------------------------------------------
 
                                    SELECTING

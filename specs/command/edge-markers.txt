@@ -1,0 +1,25 @@
+edge_markers yes or no at the : prompt turns the markers on or off for
+the rest of the run.
+
+-- size --
+6x3
+-- args --
+-S
+-- input --
+abcdefghij
+-- screen --
+abcdef
+
+<stdin
+-- keys --
+: "edge_markers yes" Enter
+-- screen --
+abcde[>]
+
+<stdin
+-- keys --
+: "edge_markers no" Enter
+-- screen --
+abcdef
+
+<stdin

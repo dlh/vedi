@@ -1,0 +1,33 @@
+wrap yes or no at the : prompt sets the mode, as w toggles it; the
+status line shows which. Setting the mode it is in changes nothing.
+
+-- size --
+26x5
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- keys --
+: "wrap no" Enter
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+
+
+
+<stdin>  line 1/1  nowrap
+-- keys --
+: "wrap no" Enter
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+
+
+
+<stdin>  line 1/1  nowrap
+-- keys --
+End : "wrap yes" Enter
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+0123
+
+
+<stdin>  line 1/1  wrap
+-- cursor --
+1 4

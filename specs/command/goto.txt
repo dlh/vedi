@@ -1,0 +1,70 @@
+: opens the command prompt. goto N goes to line N, column 0, with no
+selection, as a bare N does. Lines start at 1; past the end is the
+last line. Without a number it says so.
+
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+line 9
+line 10
+-- keys --
+: "goto 7"
+-- screen --
+line 1
+line 2
+line 3
+line 4
+line 5
+:goto 7
+-- keys --
+Enter
+-- screen --
+line 3
+line 4
+line 5
+line 6
+line 7
+<stdin>  line 7/10  wrap          h help
+-- cursor --
+4 0
+-- keys --
+Shift+Down : "goto 2" Enter
+-- screen --
+line 2
+line 3
+line 4
+line 5
+line 6
+<stdin>  line 2/10  wrap          h help
+-- cursor --
+0 0
+-- keys --
+: "goto 99" Enter
+-- cursor --
+4 0
+-- keys --
+: "goto" Enter
+-- screen --
+line 6
+line 7
+line 8
+line 9
+line 10
+goto takes a line number          h help
+-- cursor --
+4 0
+-- keys --
+: "goto 1 2" Enter
+-- screen --
+line 6
+line 7
+line 8
+line 9
+line 10
+goto takes a line number          h help

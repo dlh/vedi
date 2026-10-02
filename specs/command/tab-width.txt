@@ -1,0 +1,26 @@
+tab_width N at the : prompt sets the cells per tab stop for the rest
+of the run. The cursor keeps its place in the text. This file holds a
+raw tab.
+
+-- size --
+40x5
+-- input --
+	x
+-- keys --
+Right : "tab_width 4" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 4
+-- keys --
+: "tab_width 0" Enter
+-- screen --
+    x
+
+
+
+tab_width takes a positive number

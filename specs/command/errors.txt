@@ -1,0 +1,39 @@
+A command the prompt does not know is an error on the status line; so
+is a number mixed with letters, or a bad argument. Nothing moves.
+
+-- input --
+line 1
+line 2
+-- keys --
+Down : "frobnicate 3" Enter
+-- screen --
+line 1
+line 2
+
+
+
+unknown command "frobnicate"      h help
+-- cursor --
+1 0
+-- keys --
+: "1x" Enter
+-- screen --
+line 1
+line 2
+
+
+
+unknown command "1x"              h help
+-- cursor --
+1 0
+-- keys --
+: "wrap_style wide" Enter
+-- screen --
+line 1
+line 2
+
+
+
+wrap_style takes char or word     h help
+-- cursor --
+1 0

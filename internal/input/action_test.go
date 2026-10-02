@@ -39,3 +39,14 @@ func TestActionNames(t *testing.T) {
 		t.Errorf("SelectAll = %q", got)
 	}
 }
+
+// TestGoToLineAlias: go_to_line, the command prompt's old name, still
+// parses; command is the name it prints.
+func TestGoToLineAlias(t *testing.T) {
+	for _, name := range []string{"command", "go_to_line"} {
+		c, err := ParseCommand(name)
+		if err != nil || c != (Command{Action: CommandPrompt}) || c.String() != "command" {
+			t.Errorf("ParseCommand(%q) = %+v, %v", name, c, err)
+		}
+	}
+}

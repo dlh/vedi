@@ -29,7 +29,7 @@ const (
 	SearchBack
 	SearchNext
 	SearchPrev
-	GoToLine
+	CommandPrompt
 	ToggleWrap
 	Quit
 	Help

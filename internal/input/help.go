@@ -48,7 +48,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{act(HalfPageUp)}, doc: "Up half a page"},
 		{cmds: []Command{act(WordLeft), act(WordRight)}, doc: "Move by word"},
 		{cmds: []Command{act(First), act(Last)}, doc: "First line, last line"},
-		{cmds: []Command{act(GoToLine)}, doc: "Go to a line number"},
+		{cmds: []Command{act(CommandPrompt)}, doc: "Command prompt; N goes to line N"},
 	}},
 	{"Selecting", []helpRow{
 		{cmds: []Command{sel(Up), sel(Down), sel(Left), sel(Right), sel(Home), sel(End), sel(First), sel(Last)}, doc: "Extend the selection"},

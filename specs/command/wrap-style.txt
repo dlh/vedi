@@ -1,0 +1,29 @@
+wrap_style char or word at the : prompt changes where wrap mode breaks
+rows, for the rest of the run; the status line shows word.
+
+-- size --
+25x5
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox jumps
+ over the lazy dog
+
+
+<stdin>  line 1/1  wrap
+-- keys --
+: "wrap_style word" Enter
+-- screen --
+the quick brown fox
+jumps over the lazy dog
+
+
+<stdin>  line 1/1  word
+-- keys --
+: "wrap_style char" Enter
+-- screen --
+the quick brown fox jumps
+ over the lazy dog
+
+
+<stdin>  line 1/1  wrap

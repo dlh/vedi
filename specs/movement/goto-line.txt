@@ -1,6 +1,6 @@
-: opens a prompt on the status line; digits type a line number, other
-keys are ignored, Backspace edits and Enter goes to that line, column
-0, with no selection. Lines start at 1: 0 goes to the first and past
+: opens the command prompt on the status line; a number alone is a
+line number: Backspace edits and Enter goes to that line, column 0,
+with no selection. Lines start at 1: 0 goes to the first and past
 the end goes to the last. Enter with nothing typed and Esc leave the
 cursor where it was.
 
@@ -23,9 +23,9 @@ line 2
 line 3
 line 4
 line 5
-:12
+:1x2
 -- keys --
-Backspace "0" Enter
+Backspace Backspace "0" Enter
 -- screen --
 line 6
 line 7

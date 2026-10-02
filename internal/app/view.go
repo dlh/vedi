@@ -288,7 +288,7 @@ func (a *App) drawStatus(c *canvas) {
 	width := c.runes(0, h-1, text, st)
 	k, ok := a.keys.Find(input.Command{Action: input.Help})
 	hint := []rune(k.String() + " help")
-	if ok && !(a.helping || a.searching || a.gotoing || width+2+len(hint) > w) {
+	if ok && !(a.helping || a.searching || a.commanding || width+2+len(hint) > w) {
 		c.runes(w-len(hint), h-1, hint, st)
 	}
 }
@@ -361,8 +361,8 @@ func (a *App) statusText() string {
 		return "?" + string(a.query)
 	case a.searching:
 		return "/" + string(a.query)
-	case a.gotoing:
-		return ":" + string(a.lineNo)
+	case a.commanding:
+		return ":" + string(a.command)
 	case a.status != "":
 		return a.status
 	}

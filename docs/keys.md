@@ -16,7 +16,7 @@ do not fit. These are the defaults.
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | g, G, <, >, Cmd+Up, Cmd+Down | First line, last line |
-| : | Go to a line number |
+| : | Command prompt; N goes to line N |
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
 | Shift+PgUp, Shift+PgDn | Extend by a page |
 | Ctrl+Shift+Left, Ctrl+Shift+Right, Alt+Shift+Left, Alt+Shift+Right | Extend by word |

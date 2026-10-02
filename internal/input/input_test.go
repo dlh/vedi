@@ -8,7 +8,7 @@ func TestIsMovement(t *testing.T) {
 			t.Errorf("IsMovement(%d) = false", a)
 		}
 	}
-	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, CopyAndQuit, Search, SearchBack, SearchNext, SearchPrev, GoToLine, ToggleWrap, Quit, Help} {
+	for _, a := range []Action{None, SelectAll, ClearSelection, Copy, CopyAndQuit, Search, SearchBack, SearchNext, SearchPrev, CommandPrompt, ToggleWrap, Quit, Help} {
 		if IsMovement(a) {
 			t.Errorf("IsMovement(%d) = true", a)
 		}

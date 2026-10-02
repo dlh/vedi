@@ -1,0 +1,24 @@
+map at the : prompt binds a key for the rest of the run, over the
+bindings in effect; none unbinds one.
+
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+: "map x down" Enter x
+-- cursor --
+1 0
+-- keys --
+: "map j none" Enter j
+-- cursor --
+1 0
+-- keys --
+: "map x" Enter
+-- screen --
+line 1
+line 2
+line 3
+
+
+map takes a key and an action     h help

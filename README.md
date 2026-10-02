@@ -40,6 +40,10 @@ copies.
 SGR colors and attributes, including 24-bit color, and OSC 8
 hyperlinks are drawn as the terminal would. Copy sends plain text.
 
+`:` opens a command prompt: `:22` goes to line 22, and `:wrap_style
+word` or any other setting from the config file takes effect for the
+rest of the run.
+
 A file that changes on disk is read again, so a log that grows is
 followed. `-F` is for a pager that should get out of the way: text
 that fits on one screen is printed as if by `cat`, and the pager

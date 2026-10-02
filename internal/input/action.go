@@ -12,7 +12,7 @@ var actionNames = [...]string{
 	WordLeft: "word_left", WordRight: "word_right", First: "first", Last: "last",
 	SelectAll: "select_all", ClearSelection: "clear_selection", SetMark: "set_mark", Copy: "copy",
 	CopyAndQuit: "copy_and_quit", Search: "search", SearchBack: "search_back",
-	SearchNext: "search_next", SearchPrev: "search_prev", GoToLine: "go_to_line",
+	SearchNext: "search_next", SearchPrev: "search_prev", CommandPrompt: "command",
 	ToggleWrap: "toggle_wrap", Quit: "quit", Help: "help", Reload: "reload",
 }
 
@@ -37,7 +37,11 @@ func action(name string) (Action, bool) {
 }
 
 // ParseCommand reads an action name; none is the zero Command.
+// go_to_line is command's old name.
 func ParseCommand(name string) (Command, error) {
+	if name == "go_to_line" {
+		name = "command"
+	}
 	if a, ok := action(name); ok {
 		return Command{Action: a}, nil
 	}

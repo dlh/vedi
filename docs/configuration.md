@@ -1,6 +1,7 @@
 # Configuration
 
 - [Settings](#settings)
+- [Commands](#commands)
 - [Keys](#keys)
 - [Actions](#actions)
 - [Defaults](#defaults)
@@ -64,6 +65,14 @@ video. In wrap mode a row whose line continues on the next ends in
 Flags in the `VEDI` environment variable override these for every
 run, and the command line overrides `VEDI`; see
 [Pager](pager.md#vedi).
+
+## Commands
+
+`:` opens a prompt on the status line. It takes the settings above
+and `map`, as the config file does, for the rest of the run:
+`:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
+22`, goes to line 22. A bad line is an error on the status line.
+`clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
 
 ## Keys
 
@@ -199,8 +208,8 @@ map N search_prev
 map Cmd+g search_next
 map Cmd+Shift+g search_prev
 
-# Go to a line number
-map : go_to_line
+# Command prompt; N goes to line N
+map : command
 
 # Toggle wrap / nowrap
 map w toggle_wrap

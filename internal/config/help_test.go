@@ -37,7 +37,7 @@ func TestHelpDefault(t *testing.T) {
 			t.Errorf("row %d = %+v, want %+v", i, moving.Rows[i], w)
 		}
 	}
-	if last := moving.Rows[len(moving.Rows)-1]; last.Doc != "Go to a line number" {
+	if last := moving.Rows[len(moving.Rows)-1]; last.Doc != "Command prompt; N goes to line N" {
 		t.Errorf("last moving row = %+v", last)
 	}
 	var names []string

@@ -27,7 +27,7 @@ const autoScrollTick = 50 * time.Millisecond
 // from help like any key. The mouse is ignored at the / and : prompts,
 // and a press from before one is forgotten.
 func (a *App) handleMouse(ev *tcell.EventMouse) {
-	if a.searching || a.gotoing {
+	if a.searching || a.commanding {
 		a.held, a.dragging = false, false
 		return
 	}
