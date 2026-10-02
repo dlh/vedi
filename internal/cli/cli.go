@@ -61,7 +61,7 @@ type Options struct {
 
 // App converts the options to the app's: a flag, else the config,
 // decides the wrap mode, the wrap style, the clipboard
-// command, the tab width and the edge markers. The
+// command, the tab width, the edge markers and auto-reload. The
 // input is named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
@@ -96,6 +96,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		MacOS:       macOS,
 		TabWidth:    tab,
 		EdgeMarkers: marks,
+		AutoReload:  o.Reloads(cfg),
 	}
 }
 

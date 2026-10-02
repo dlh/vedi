@@ -658,7 +658,7 @@ func (o *opener) finish(a *App, i int, text string) {
 
 func TestReloadPendingStatus(t *testing.T) {
 	o := &opener{}
-	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
 	a.Handle(&Changed{})
 	a.Draw()
 	if got := row(scr, 3); !strings.HasSuffix(got, "  reloading…") {
@@ -680,7 +680,7 @@ func TestReloadPendingStatus(t *testing.T) {
 // after it, and each swapped-out buffer's close runs.
 func TestReloadCoalesces(t *testing.T) {
 	o := &opener{}
-	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
 	a.Handle(&Changed{})
 	a.Handle(&Changed{})
 	a.Handle(&Changed{})
@@ -708,7 +708,7 @@ func TestReloadCoalesces(t *testing.T) {
 
 func TestReloadOpenFailsOnChange(t *testing.T) {
 	o := &opener{err: fmt.Errorf("boom")}
-	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
 	a.Handle(&Changed{})
 	a.Draw()
 	if a.status != "" {
@@ -726,7 +726,7 @@ func TestReloadDuringFirstRead(t *testing.T) {
 	first := buffer.New()
 	first.Write([]byte("one\n"))
 	o := &opener{}
-	a := newApp(t, scr, first, Options{Copier: clipboard.OSC52{Screen: scr}, Open: o.open})
+	a := newApp(t, scr, first, Options{Copier: clipboard.OSC52{Screen: scr}, Open: o.open, AutoReload: true})
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Handle(&Changed{})
 	o.finish(a, 0, "two\n")
@@ -748,7 +748,7 @@ func TestReloadDuringFirstRead(t *testing.T) {
 
 func TestReloadKeyReportsFailure(t *testing.T) {
 	o := &opener{err: fmt.Errorf("boom")}
-	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open})
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
 	press(a, key(tcell.KeyRune, 'R', 0))
 	if got := row(scr, 3); !strings.HasPrefix(got, "reload failed: boom") {
 		t.Errorf("status = %q", got)
@@ -811,7 +811,7 @@ func TestRedrawSendsOnlyChanges(t *testing.T) {
 // last frame drew and this one does not are blanked.
 func TestDrawBlanksWhatItLeaves(t *testing.T) {
 	o := &opener{}
-	a, scr := newTestApp(t, 20, 4, "日本語日本語\nsecond line\nthird\n", Options{Open: o.open})
+	a, scr := newTestApp(t, 20, 4, "日本語日本語\nsecond line\nthird\n", Options{Open: o.open, AutoReload: true})
 	a.Handle(&Changed{})
 	o.finish(a, 0, "x\n")
 	for y, want := range []string{"x", "", ""} {

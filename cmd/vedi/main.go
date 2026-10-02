@@ -248,7 +248,7 @@ func main() {
 	defer a.Stop() // before Fini closes the queue
 	n.set(a.Notify)
 	a.Notify() // for what was read, or ended, before the app existed
-	if src != nil && opts.Reloads(cfg) {
+	if src != nil {
 		stop := watch.Files(files, postChanged(a))
 		defer stop()
 	}

@@ -33,7 +33,7 @@ func (a *App) handleCommandKey(ev *tcell.EventKey) {
 
 // commands is what the : prompt takes: goto and the config verbs but
 // clear_all_shortcuts, which would unbind : and q.
-var commands = []string{"goto", "wrap", "wrap_style", "tab_width", "edge_markers", "clipboard_cmd", "map"}
+var commands = []string{"goto", "wrap", "wrap_style", "tab_width", "edge_markers", "auto_reload", "clipboard_cmd", "map"}
 
 // runCommand runs a : line. A number alone, or goto and a number, goes
 // to that 1-based line, clamped to the buffer; a config verb sets
@@ -81,6 +81,8 @@ func (a *App) runCommand(line string) {
 		a.tab = c.TabWidth
 	case "edge_markers":
 		a.marks = c.EdgeMarkers
+	case "auto_reload":
+		a.auto = !c.NoAutoReload
 	case "clipboard_cmd":
 		a.copier = clipboard.Command{Cmd: c.ClipboardCmd}
 	case "map":

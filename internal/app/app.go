@@ -32,6 +32,7 @@ type Options struct {
 	Keys        input.Keymap     // nil for the defaults
 	TabWidth    int              // cells per tab stop; 0 for 8
 	EdgeMarkers bool             // mark text off the sides with < and >, a wrapped row with \
+	AutoReload  bool             // a Changed event reads the file again
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -62,6 +63,7 @@ type App struct {
 	style  layout.WrapStyle // where wrap mode breaks rows
 	tab    int              // cells per tab stop; 0 for the default
 	marks  bool             // mark text off the sides with < and >, a wrapped row with \
+	auto   bool             // a Changed event reads the file again
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -137,6 +139,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		style:     opts.WrapStyle,
 		tab:       opts.TabWidth,
 		marks:     opts.EdgeMarkers,
+		auto:      opts.AutoReload,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
@@ -285,7 +288,9 @@ func (a *App) Handle(ev tcell.Event) bool {
 	case *Tick:
 		a.tick(ev)
 	case *Changed:
-		a.reload(false)
+		if a.auto {
+			a.reload(false)
+		}
 	}
 	return false
 }

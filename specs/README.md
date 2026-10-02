@@ -77,7 +77,7 @@ Actions:
 | `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), each optionally with `Shift+`, `wheel up`, `wheel down`, `wheel left` or `wheel right`, optionally with `Shift+` on the direction and followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
 | `-- file --` | The file on disk now holds this text, ended the way `-- input --` is. Needs a file in `-- args --`; disk starts as the input. |
-| `-- reload --` | The same, and the app is told the file changed, unless `--no-auto-reload` or `auto_reload no` is in effect: the reload lands before the next section. |
+| `-- reload --` | The same, and the app is told the file changed: unless `--no-auto-reload`, `auto_reload no` or `:auto_reload no` is in effect, the reload lands before the next section. |
 
 Assertions, checked at that point:
 

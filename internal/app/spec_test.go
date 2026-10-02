@@ -63,7 +63,6 @@ type scenario struct {
 	config   config.Config
 	nl       bool   // the last input section ended with a newline
 	file     bool   // the args name files, so the app has an Open
-	reloads  bool   // and a change on disk is delivered: the watcher would run
 	disk     string // what the file holds: the input, then each file or reload body
 	diskNL   bool   // and it ended with a newline
 	hasEOF   bool   // the file has an eof section, so input stays open
@@ -188,7 +187,7 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 				return fail("%s needs a file in -- args --", sec.name)
 			}
 			s.disk, s.diskNL = lines(sec.body)
-			if sec.name == "reload" && s.reloads {
+			if sec.name == "reload" {
 				s.app.Handle(&app.Changed{})
 				// The reload's reader notifies at EOF, as the real one does.
 				s.notify()
@@ -365,7 +364,6 @@ func (s *scenario) open() error {
 	appOpts.Now = func() time.Time { return s.now }
 	appOpts.MacOS = s.macOS
 	appOpts.Keys = s.config.Keymap(s.macOS)
-	s.reloads = opts.Reloads(s.config)
 	if s.file = len(files) > 0 && !slices.Contains(files, "-"); s.file {
 		// Open is the disk text, finished: a reload lands at once.
 		appOpts.Open = func(func()) (*buffer.Buffer, func(), error) {

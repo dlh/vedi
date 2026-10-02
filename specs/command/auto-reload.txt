@@ -1,0 +1,38 @@
+auto_reload yes or no at the : prompt decides, for the rest of the
+run, whether a file that changes on disk is read again. R always is.
+
+-- args --
+--no-auto-reload f.txt
+-- input --
+old
+-- keys --
+: "auto_reload yes" Enter
+-- reload --
+new
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help
+-- keys --
+: "auto_reload no" Enter
+-- reload --
+newer
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help
+-- keys --
+R
+-- screen --
+newer
+
+
+
+
+f.txt  line 1/1  wrap             h help
