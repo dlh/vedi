@@ -1,0 +1,36 @@
+A view scrolled sideways by the wheel stays where it is while input is
+still arriving: new text does not count as a motion, so the hidden
+cursor does not pull the view back.
+
+-- size --
+6x3
+-- args --
+-S
+-- input --
+abcdefghijkl
+xy
+-- mouse --
+wheel right
+-- screen --
+efghij
+
+<stdin
+-- cursor --
+hidden
+-- input --
+more
+-- screen --
+efghij
+
+<stdin
+-- cursor --
+hidden
+-- keys --
+Right
+-- screen --
+bcdefg
+y
+<stdin
+-- cursor --
+0 0
+-- eof --

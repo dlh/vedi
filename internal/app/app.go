@@ -300,13 +300,16 @@ func (a *App) act() {
 // onData runs after the reader appended lines: it applies a pending +N,
 // follows for +G and applies a Screen at EOF. While the bindings are
 // shown there is nothing to do: the h key ended startup positioning,
-// and the text view is placed when it comes back.
+// and the text view is placed when it comes back. New text is not a
+// motion: unless one of those moved the cursor, a view the wheel
+// scrolled sideways off it stays put.
 func (a *App) onData() {
 	if a.helping {
 		return
 	}
 	eof, _ := a.buf.Finished()
 	n := a.buf.Len()
+	cur, xoff := a.cur, a.xoff
 	if a.startLine >= 0 && (n > a.startLine || eof) {
 		a.cur = buffer.Pos{Line: min(a.startLine, max(n-1, 0))}
 		a.top = a.cur
@@ -320,6 +323,9 @@ func (a *App) onData() {
 		a.screen = nil
 	}
 	a.scrollToCursor()
+	if a.cur == cur && a.mode == layout.NoWrap {
+		a.xoff = xoff
+	}
 }
 
 // Verdict is -F's decision about the text read so far.
