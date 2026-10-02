@@ -22,7 +22,7 @@ var selStyle = tcell.StyleDefault.Reverse(true)
 var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
 
 // edgeStyle draws the < and > that mark text off the side of the screen
-// in nowrap mode: reverse, as control characters are, so they read as
+// in nowrap mode, and the \ that ends a wrapped row: reverse, as control characters are, so they read as
 // the pager's and not the text's.
 var edgeStyle = tcell.StyleDefault.Reverse(true)
 
@@ -161,6 +161,11 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 			c.put(w-1, y, ">", edgeStyle)
 			ok = ok && curX+curW <= w-1
 		}
+	}
+	// In wrap mode a row whose line goes on below ends in a marker, in
+	// the column the layout leaves free.
+	if a.wrapMarks(w) && seg.End < len(line.Text) {
+		c.put(w-1, y, "\\", edgeStyle)
 	}
 	return curX, ok
 }

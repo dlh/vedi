@@ -43,7 +43,7 @@ on bright yellow, whatever the text's own colors. A match off the
 screen scrolls to the top row, or as near as the last screenful
 allows. With `edge_markers yes` in the config, nowrap mode marks text
 off the screen with a `<` or `>` in reverse video at that edge of the
-row.
+row, and wrap mode ends a row that continues below with a `\`.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
 named by `--config`, and `clear_all_shortcuts` there starts the map

@@ -32,7 +32,7 @@ type Options struct {
 	MacOS       bool             // there is a ⌘ key
 	Keys        input.Keymap     // nil for the defaults
 	TabWidth    int              // cells per tab stop; 0 for 8
-	EdgeMarkers bool             // nowrap marks text off the sides with < and >
+	EdgeMarkers bool             // mark text off the sides with < and >, a wrapped row with \
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -62,7 +62,7 @@ type App struct {
 	mode   layout.Mode
 	style  layout.WrapStyle // where wrap mode breaks rows
 	tab    int              // cells per tab stop; 0 for the default
-	marks  bool             // nowrap marks text off the sides with < and >
+	marks  bool             // mark text off the sides with < and >, a wrapped row with \
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -517,8 +517,18 @@ func (a *App) handleKey(c input.Command) bool {
 
 func (a *App) line(i int) []rune { return a.buf.Line(i).Text }
 
+// wrapMarks reports whether wrap mode marks rows that continue, on a
+// screen w wide: the last column is then the marker's, and text wraps
+// a column early. Under three columns there is no room.
+func (a *App) wrapMarks(w int) bool {
+	return a.marks && a.mode == layout.Wrap && w > 2
+}
+
 func (a *App) layout() layout.Layout {
 	w, _ := a.scr.Size()
+	if a.wrapMarks(w) {
+		w--
+	}
 	return layout.Layout{Width: w, Mode: a.mode, Tab: a.tab, WrapStyle: a.style}
 }
 
@@ -527,7 +537,9 @@ func (a *App) layout() layout.Layout {
 // them are held. A kept layout is used only while it fits the text:
 // a line past the end may appear later, and a file may shrink. The
 // cursor's line gets a row for its newline while the cursor is on it
-// and the line's last row is full; that row is not kept.
+// and the line's last row is full; that row is not kept. With wrap
+// markers the newline has the marker's column, unless a tab wider
+// than the screen fills that too.
 func (a *App) lineLayout(i int) layout.Line {
 	l := a.layout()
 	if a.laidOut == nil || a.laid != l || len(a.laidOut) >= laidLines {
@@ -540,6 +552,9 @@ func (a *App) lineLayout(i int) layout.Line {
 		a.laidOut[i] = ln
 	}
 	if i == a.cur.Line && a.cur.Col >= len(text) {
+		if w, _ := a.scr.Size(); a.wrapMarks(w) {
+			l.Width = w // the newline may take the marker's column
+		}
 		ln = l.NewlineRow(ln)
 	}
 	return ln

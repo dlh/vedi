@@ -1,0 +1,33 @@
+With edge_markers yes, in wrap mode a row whose line continues on the
+next row ends in \ in reverse video, in the last column. Text wraps a
+column early to leave that column to the marker, so the cursor on a
+full last row's newline sits there and no row opens for it. A click
+on a marker lands on the row's last character.
+
+-- size --
+6x5
+-- config --
+edge_markers yes
+-- input --
+abcdefghij
+abc
+-- screen --
+abcde[\]
+fghij
+abc
+
+<stdin
+-- keys --
+End
+-- screen --
+abcde[\]
+fghij
+abc
+
+<stdin
+-- cursor --
+1 5
+-- mouse --
+click 0 5
+-- cursor --
+0 4

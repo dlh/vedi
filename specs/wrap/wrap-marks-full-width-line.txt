@@ -1,0 +1,15 @@
+With edge_markers yes a line exactly as wide as the screen wraps: its
+last character would sit under the marker's column.
+
+-- size --
+6x4
+-- args --
+--edge-markers
+-- input --
+abcdef
+xy
+-- screen --
+abcde[\]
+f
+xy
+<stdin

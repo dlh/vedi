@@ -23,7 +23,7 @@ type Config struct {
 	WrapStyle    layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
 	ClipboardCmd string           // clipboard_cmd: copy pipes to this, not OSC 52
 	TabWidth     int              // tab_width: cells per tab stop; 0 for the default
-	EdgeMarkers  bool             // edge_markers yes: nowrap marks text off the sides
+	EdgeMarkers  bool             // edge_markers yes: mark text off the sides, and wrapped rows
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,

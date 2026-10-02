@@ -1,0 +1,21 @@
+With edge_markers yes a tab wider than the screen leaves no column for
+its newline: a row opens for the cursor there, as it does without
+markers.
+
+-- size --
+6x5
+-- args --
+--edge-markers
+-- input --
+	
+x
+-- keys --
+End
+-- screen --
+
+
+x
+
+<stdin
+-- cursor --
+1 0

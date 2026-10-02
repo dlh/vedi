@@ -56,7 +56,9 @@ row's start. 8 is the default. `--tab-width` overrides it for one run.
 `edge_markers yes` marks text off the side of the screen in nowrap
 mode: a row whose line runs past the right edge ends in `>`, and one
 with text scrolled off the left edge starts with `<`, both in reverse
-video. `edge_markers no` is the default. `--edge-markers` and
+video. In wrap mode a row whose line continues on the next ends in
+`\`, and text wraps a column early to leave the last column to it.
+`edge_markers no` is the default. `--edge-markers` and
 `--no-edge-markers` override it for one run.
 
 Flags in the `VEDI` environment variable override these for every

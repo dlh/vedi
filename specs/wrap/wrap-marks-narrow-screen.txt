@@ -1,0 +1,14 @@
+A screen under three columns has no room for the marker: wrap mode
+uses every column and marks nothing.
+
+-- size --
+2x4
+-- args --
+--edge-markers
+-- input --
+abc
+-- screen --
+ab
+c
+
+<s

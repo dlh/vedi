@@ -1,0 +1,15 @@
+With edge_markers yes and wrap_style word the marker stays in the
+last column, past the row's own end.
+
+-- size --
+12x4
+-- config --
+edge_markers yes
+wrap_style word
+-- input --
+aaa bbb ccc ddd
+-- screen --
+aaa bbb    [\]
+ccc ddd
+
+<stdin>  lin

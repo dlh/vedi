@@ -30,7 +30,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
   --tab-width N           draw a tab as N cells (8)
-  --edge-markers          in nowrap mode, mark text off the sides with < and >
+  --edge-markers          mark text off the sides with < and >, a wrapped row with \
   --no-edge-markers       leave the edges bare (the default)
   --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
