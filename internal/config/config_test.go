@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/gdamore/tcell/v3"
@@ -57,6 +58,36 @@ func TestParse(t *testing.T) {
 	for _, tc := range bad {
 		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
 			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
+		}
+	}
+}
+
+// TestParseLine: one line applies on its own, naming its verb, with the
+// error bare of the file position that Parse adds.
+func TestParseLine(t *testing.T) {
+	var c Config
+	verb, err := ParseLine("  wrap_style  word ", &c)
+	if verb != "wrap_style" || c.WrapStyle != layout.WrapStyleWord || err != nil {
+		t.Errorf("ParseLine(wrap_style word) = %q, %+v, %v", verb, c, err)
+	}
+	verb, err = ParseLine("clipboard_cmd sh -c false", &c)
+	if verb != "clipboard_cmd" || c.ClipboardCmd != "sh -c false" || err != nil {
+		t.Errorf("ParseLine(clipboard_cmd) = %q, %+v, %v", verb, c, err)
+	}
+	for _, blank := range []string{"", "   ", "# a comment"} {
+		var c Config
+		if verb, err := ParseLine(blank, &c); verb != "" || err != nil || !reflect.DeepEqual(c, Config{}) {
+			t.Errorf("ParseLine(%q) = %q, %+v, %v", blank, verb, c, err)
+		}
+	}
+	bad := []struct{ src, err string }{
+		{"wrap_style wide", "wrap_style takes char or word"},
+		{"bind j down", `unknown verb "bind"`},
+	}
+	for _, tc := range bad {
+		var c Config
+		if verb, err := ParseLine(tc.src, &c); err == nil || err.Error() != tc.err || verb != strings.Fields(tc.src)[0] {
+			t.Errorf("ParseLine(%q) = %q, %v, want %s", tc.src, verb, err, tc.err)
 		}
 	}
 }

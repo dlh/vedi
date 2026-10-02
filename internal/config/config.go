@@ -3,6 +3,7 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,74 +34,81 @@ type Config struct {
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
-		f := strings.Fields(line)
-		if len(f) == 0 || strings.HasPrefix(f[0], "#") {
-			continue
-		}
-		fail := func(format string, args ...any) error {
-			return fmt.Errorf("%s:%d: %s", name, i+1, fmt.Sprintf(format, args...))
-		}
-		switch f[0] {
-		case "map":
-			if len(f) != 3 {
-				return c, fail("map takes a key and an action")
-			}
-			k, err := input.ParseKey(f[1])
-			if err != nil {
-				return c, fail("%v", err)
-			}
-			cmd, err := input.ParseCommand(f[2])
-			if err != nil {
-				return c, fail("%v", err)
-			}
-			c.Keys = append(c.Keys, input.Binding{Key: k, Cmd: cmd})
-		case "clear_all_shortcuts":
-			if len(f) != 1 {
-				return c, fail("clear_all_shortcuts takes nothing")
-			}
-			c.Keys, c.Clear = nil, true
-		case "auto_reload":
-			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
-				return c, fail("auto_reload takes yes or no")
-			}
-			c.NoAutoReload = f[1] == "no"
-		case "wrap":
-			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
-				return c, fail("wrap takes yes or no")
-			}
-			c.NoWrap = f[1] == "no"
-		case "wrap_style":
-			if len(f) != 2 || (f[1] != "char" && f[1] != "word") {
-				return c, fail("wrap_style takes char or word")
-			}
-			c.WrapStyle = layout.WrapStyleChar
-			if f[1] == "word" {
-				c.WrapStyle = layout.WrapStyleWord
-			}
-		case "clipboard_cmd":
-			if len(f) < 2 {
-				return c, fail("clipboard_cmd takes a command")
-			}
-			c.ClipboardCmd = strings.TrimSpace(strings.TrimSpace(line)[len(f[0]):])
-		case "tab_width":
-			if len(f) != 2 {
-				return c, fail("tab_width takes a positive number")
-			}
-			n, err := strconv.Atoi(f[1])
-			if err != nil || n < 1 {
-				return c, fail("tab_width takes a positive number")
-			}
-			c.TabWidth = n
-		case "edge_markers":
-			if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
-				return c, fail("edge_markers takes yes or no")
-			}
-			c.EdgeMarkers = f[1] == "yes"
-		default:
-			return c, fail("unknown verb %q", f[0])
+		if _, err := ParseLine(line, &c); err != nil {
+			return c, fmt.Errorf("%s:%d: %v", name, i+1, err)
 		}
 	}
 	return c, nil
+}
+
+// ParseLine applies one line of a config to c and names its verb: ""
+// for a blank line or a comment. The error has no file position.
+func ParseLine(line string, c *Config) (verb string, err error) {
+	f := strings.Fields(line)
+	if len(f) == 0 || strings.HasPrefix(f[0], "#") {
+		return "", nil
+	}
+	verb = f[0]
+	switch verb {
+	case "map":
+		if len(f) != 3 {
+			return verb, errors.New("map takes a key and an action")
+		}
+		k, err := input.ParseKey(f[1])
+		if err != nil {
+			return verb, err
+		}
+		cmd, err := input.ParseCommand(f[2])
+		if err != nil {
+			return verb, err
+		}
+		c.Keys = append(c.Keys, input.Binding{Key: k, Cmd: cmd})
+	case "clear_all_shortcuts":
+		if len(f) != 1 {
+			return verb, errors.New("clear_all_shortcuts takes nothing")
+		}
+		c.Keys, c.Clear = nil, true
+	case "auto_reload":
+		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+			return verb, errors.New("auto_reload takes yes or no")
+		}
+		c.NoAutoReload = f[1] == "no"
+	case "wrap":
+		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+			return verb, errors.New("wrap takes yes or no")
+		}
+		c.NoWrap = f[1] == "no"
+	case "wrap_style":
+		if len(f) != 2 || (f[1] != "char" && f[1] != "word") {
+			return verb, errors.New("wrap_style takes char or word")
+		}
+		c.WrapStyle = layout.WrapStyleChar
+		if f[1] == "word" {
+			c.WrapStyle = layout.WrapStyleWord
+		}
+	case "clipboard_cmd":
+		if len(f) < 2 {
+			return verb, errors.New("clipboard_cmd takes a command")
+		}
+		c.ClipboardCmd = strings.TrimSpace(strings.TrimSpace(line)[len(f[0]):])
+	case "tab_width":
+		if len(f) != 2 {
+			return verb, errors.New("tab_width takes a positive number")
+		}
+		n, err := strconv.Atoi(f[1])
+		if err != nil || n < 1 {
+			return verb, errors.New("tab_width takes a positive number")
+		}
+		c.TabWidth = n
+	case "edge_markers":
+		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+			return verb, errors.New("edge_markers takes yes or no")
+		}
+		c.EdgeMarkers = f[1] == "yes"
+	default:
+		return verb, fmt.Errorf("unknown verb %q", verb)
+	}
+	return verb, nil
 }
 
 // Keymap is the bindings in effect: the defaults, or none after
