@@ -13,6 +13,7 @@ Requires Go and make.
     make release-check  validate .goreleaser.yaml (needs a git remote)
     make next-version   print the next tag, from the commits since the last
     make release-notes  print the changelog the next release would carry
+    make release-tag    tag HEAD with the next version
     make media          record the README gif; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
@@ -55,10 +56,11 @@ out, since they change nothing a user sees.
 or a `BREAKING CHANGE:` footer) bumps major, a `feat:` minor, a `fix:`
 or `perf:` patch. It fails when the commits since the last tag hold
 none of those. `make release-notes` prints the changelog that tag
-would carry. Tag and push:
+would carry. `make release-tag` tags HEAD with it and prints the push
+that releases it:
 
-    git tag $(make -s next-version)
-    git push origin $(make -s next-version)
+    make release-tag
+    git push origin v1.2.3
 
 CI builds linux and darwin, amd64 and arm64, and publishes a GitHub
 release with archives, `checksums.txt` and a changelog from the commit

@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version release-notes clean
+.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version release-notes release-tag clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -62,6 +62,11 @@ next-version:
 # Prints the changelog the next release would carry.
 release-notes:
 	@bin/release-notes
+
+# Tags HEAD with the next version; pushing the tag releases it.
+release-tag:
+	@tag=$$(bin/next-version) && git tag "$$tag" && \
+		printf 'tagged %s; release it with:\n\ngit push origin %s\n' "$$tag" "$$tag"
 
 clean:
 	rm -f vedi
