@@ -1,0 +1,4 @@
+root = true
+
+[bin/next-version]
+indent_style = tab

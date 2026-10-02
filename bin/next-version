@@ -1,0 +1,55 @@
+#!/bin/sh
+# Prints the tag the next release takes, from the commits between the
+# last tag and REF (default HEAD): a breaking change bumps major, a
+# feat minor, a fix or perf patch. Fails when none of those is there.
+# Usage: bin/next-version [REF]
+set -eu
+
+# has_type TYPES [!]: a subject in $range has one of the |-separated
+# TYPES, with any scope, and the ! if given.
+has_type() {
+	git log --format=%s "$range" | grep -Eq "^($1)(\([^)]*\))?${2:-}: "
+}
+
+has_breaking_footer() {
+	git log --format=%B "$range" | grep -Eq '^BREAKING[ -]CHANGE: '
+}
+
+# Prints major, minor or patch for the commits in $range.
+bump() {
+	if has_type '[a-z]+' '!' || has_breaking_footer; then
+		echo major
+	elif has_type 'feat'; then
+		echo minor
+	elif has_type 'fix|perf'; then
+		echo patch
+	else
+		return 1
+	fi
+}
+
+# increment TAG BUMP: prints TAG with its BUMP part raised.
+increment() {
+	IFS=. read -r major minor patch <<-EOF
+		${1#v}
+	EOF
+	case $2 in
+	major) major=$((major + 1)) minor=0 patch=0 ;;
+	minor) minor=$((minor + 1)) patch=0 ;;
+	patch) patch=$((patch + 1)) ;;
+	esac
+	echo "v$major.$minor.$patch"
+}
+
+main() {
+	ref=${1:-HEAD}
+	last=$(git describe --tags --abbrev=0 "$ref")
+	range=$last..$ref
+	if ! part=$(bump); then
+		echo "no release: nothing user-visible since $last" >&2
+		exit 1
+	fi
+	increment "$last" "$part"
+}
+
+main "$@"

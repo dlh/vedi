@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check clean
+.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version clean
 
 build:
 	go build -o vedi ./cmd/vedi
@@ -54,6 +54,10 @@ tidy:
 # Needs a git remote.
 release-check:
 	go tool -modfile=tools/go.mod goreleaser check
+
+# Prints the next tag, from the commits since the last one.
+next-version:
+	@bin/next-version
 
 clean:
 	rm -f vedi

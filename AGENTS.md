@@ -14,5 +14,8 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
   (`internal/app/app_test.go`); everything else belongs in `specs/`.
 - `go test ./...` must pass before every commit.
 - `docs/development.md` says how to check, commit and release.
+- When updating the benchmarks in `docs/comparison.md`, its vedi
+  version is the one `make -s next-version` prints, without the `v`; when it fails, the last
+  tag's.
 - Docs, comments and commit messages are terse: say it once, in as
   few words as read clearly. No preamble, no restating the code.

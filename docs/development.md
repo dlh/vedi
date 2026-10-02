@@ -11,6 +11,7 @@ Requires Go and make.
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
     make bench-pagers   vedi, less, moor, ov, vim and neovim on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs a git remote)
+    make next-version   print the next tag, from the commits since the last
     make media          record the README gif; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
@@ -48,10 +49,13 @@ out, since they change nothing a user sees.
 
 ## Releases
 
-Tag and push:
+`make next-version` prints the next tag: a breaking change (`type!:`
+or a `BREAKING CHANGE:` footer) bumps major, a `feat:` minor, a `fix:`
+or `perf:` patch. It fails when the commits since the last tag hold
+none of those. Tag and push:
 
-    git tag v1.2.3
-    git push origin v1.2.3
+    git tag $(make -s next-version)
+    git push origin $(make -s next-version)
 
 CI builds linux and darwin, amd64 and arm64, and publishes a GitHub
 release with archives, `checksums.txt` and a changelog from the commit
