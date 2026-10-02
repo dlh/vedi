@@ -16,6 +16,16 @@ func (p *prompt) open() {
 	p.text, p.pos = p.text[:0], len(p.history)
 }
 
+// cancels reports whether a key closes a prompt without running it:
+// Esc, Ctrl+g and Ctrl+c.
+func cancels(ev *tcell.EventKey) bool {
+	switch ev.Key() {
+	case tcell.KeyEscape, tcell.KeyCtrlG, tcell.KeyCtrlC:
+		return true
+	}
+	return false
+}
+
 // edit handles the keys every prompt shares: Up and Down walk the
 // history, Down past the newest entry restoring what was typed before
 // Up; Backspace deletes; a character types. It reports whether the key

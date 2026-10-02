@@ -1,0 +1,32 @@
+Ctrl+g and Ctrl+c at the prompt cancel the search as Esc does: nothing
+is searched for, and the cursor stays. Outside the prompt Ctrl+c still
+copies.
+
+-- input --
+abc
+-- keys --
+/ "b" Ctrl+g n
+-- screen --
+abc
+
+
+
+
+no search pattern                 h help
+-- cursor --
+0 0
+-- keys --
+? "c" Ctrl+c n
+-- screen --
+abc
+
+
+
+
+no search pattern                 h help
+-- cursor --
+0 0
+-- keys --
+Shift+Right Ctrl+c
+-- clipboard --
+a

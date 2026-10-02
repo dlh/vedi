@@ -76,6 +76,7 @@ var helpSections = []helpSection{
 	{"Prompts", []helpRow{
 		{fixed: []string{"Up", "Down"}, doc: "Recall earlier searches, or commands"},
 		{fixed: []string{"Tab"}, doc: "Complete; again, the next match"},
+		{fixed: []string{"Esc", "Ctrl+g", "Ctrl+c"}, doc: "Cancel"},
 	}},
 }
 

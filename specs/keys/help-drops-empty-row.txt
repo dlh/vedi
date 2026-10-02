@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x61
+80x62
 -- input --
 abc
 -- keys --
@@ -70,4 +70,5 @@ h
 
   Up  Down                                Recall earlier searches, or commands.
   Tab                                     Complete; again, the next match.
+  Esc  ⌃G  ⌃C                             Cancel.
 help  motion scrolls, any other key returns

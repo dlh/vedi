@@ -768,10 +768,10 @@ func (a *App) copy() bool {
 // handleSearchKey edits the / and ? prompts. Enter searches; with
 // nothing typed it repeats the last pattern the prompt's way.
 func (a *App) handleSearchKey(ev *tcell.EventKey) {
-	switch ev.Key() {
-	case tcell.KeyEscape:
+	switch {
+	case cancels(ev):
 		a.searching = false
-	case tcell.KeyEnter:
+	case ev.Key() == tcell.KeyEnter:
 		a.searching = false
 		a.backward = a.promptBack
 		if len(a.query.text) == 0 {

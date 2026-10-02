@@ -1,0 +1,29 @@
+Ctrl+g and Ctrl+c at the : prompt cancel it as Esc does: nothing runs,
+and the cursor stays.
+
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+: "3" Ctrl+g
+-- screen --
+line 1
+line 2
+line 3
+
+
+<stdin>  line 1/3  wrap           h help
+-- cursor --
+0 0
+-- keys --
+: "wrap no" Ctrl+c
+-- screen --
+line 1
+line 2
+line 3
+
+
+<stdin>  line 1/3  wrap           h help
+-- cursor --
+0 0

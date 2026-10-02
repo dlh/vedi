@@ -32,6 +32,7 @@ do not fit. These are the defaults.
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
 | Up, Down | Recall earlier searches, or commands |
 | Tab | Complete; again, the next match |
+| Esc, Ctrl+g, Ctrl+c | Cancel |
 
 The Cmd+ keys are macOS only, and reach vedi where the terminal passes
 them on: kitty does, Cmd+c when it has no selection of its own;

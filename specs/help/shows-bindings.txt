@@ -10,7 +10,7 @@ the text and does nothing else, so q returns rather than quits and
 the cursor is where it was.
 
 -- size --
-80x62
+80x63
 -- input --
 abc
 def
@@ -78,6 +78,7 @@ Down h
 
   Up  Down                                Recall earlier searches, or commands.
   Tab                                     Complete; again, the next match.
+  Esc  ⌃G  ⌃C                             Cancel.
 help  motion scrolls, any other key returns
 -- cursor --
 hidden
@@ -86,6 +87,7 @@ q
 -- screen --
 abc
 def
+
 
 
 
