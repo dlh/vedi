@@ -1,0 +1,17 @@
+--wrap-style char wraps at the screen's edge despite wrap_style word in
+the config.
+
+-- size --
+24x5
+-- args --
+--wrap-style char
+-- config --
+wrap_style word
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox jump
+s over the lazy dog
+
+
+<stdin>  line 1/1  wrap

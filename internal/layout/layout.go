@@ -30,6 +30,14 @@ const (
 	NoWrap
 )
 
+// WrapStyle is where Wrap ends a row.
+type WrapStyle int
+
+const (
+	WrapStyleChar WrapStyle = iota // at the screen's edge
+	WrapStyleWord                  // after a space or tab
+)
+
 // DefaultTab is the tab width when Layout.Tab is zero.
 const DefaultTab = 8
 
@@ -98,9 +106,10 @@ func (l Layout) Cells(text []rune) []int {
 type Segment struct{ Start, End int }
 
 type Layout struct {
-	Width int
-	Mode  Mode
-	Tab   int // cells per tab stop; zero is DefaultTab
+	Width     int
+	Mode      Mode
+	Tab       int       // cells per tab stop; zero is DefaultTab
+	WrapStyle WrapStyle // where Wrap ends a row
 }
 
 // Line is text laid out once: its cell columns and visual rows. Lay a
@@ -111,13 +120,17 @@ type Line struct {
 }
 
 // Line lays text out. NoWrap, or a width of zero, gives one row. Wrap
-// moves a rune that does not fit to the next row. An empty line is one
-// empty row.
+// moves a rune that does not fit to the next row; with WrapStyleWord, the
+// word it is in, when that leaves something on the row. An empty line
+// is one empty row.
 func (l Layout) Line(text []rune) Line {
 	xs := l.Cells(text)
 	n := len(text)
 	if l.Mode == NoWrap || l.Width <= 0 {
 		return Line{xs, []Segment{{0, n}}}
+	}
+	if l.WrapStyle == WrapStyleWord {
+		return Line{xs, l.wordRows(text, xs)}
 	}
 	var segs []Segment
 	start, x0 := 0, 0
@@ -129,6 +142,35 @@ func (l Layout) Line(text []rune) Line {
 		}
 	}
 	return Line{xs, append(segs, Segment{start, n})}
+}
+
+// wordRows breaks text into rows after the last space or tab that fits,
+// so a row begins with a word. A word wider than the row breaks by
+// rune, as a run of spaces does.
+func (l Layout) wordRows(text []rune, xs []int) []Segment {
+	var segs []Segment
+	start, x0 := 0, 0
+	brk, space := 0, false // where the row may break; the glyph before is a space
+	for i := range text {
+		w := xs[i+1] - xs[i]
+		if w == 0 {
+			continue // the rest of a cluster
+		}
+		if space {
+			brk = i
+		}
+		space = text[i] == ' ' || text[i] == '\t'
+		// Twice when a wide rune still does not fit after its word moved.
+		for xs[i]-x0+w > l.Width && i > start {
+			at := i
+			if brk > start {
+				at = brk
+			}
+			segs = append(segs, Segment{start, at})
+			start, x0 = at, xs[at]
+		}
+	}
+	return append(segs, Segment{start, len(text)})
 }
 
 // NewlineRow returns ln, laid out by l, with an empty row after its last

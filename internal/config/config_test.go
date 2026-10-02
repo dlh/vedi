@@ -10,6 +10,7 @@ import (
 
 	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/input"
+	"go.dlh.dev/vedi/internal/layout"
 )
 
 func key(name string) input.Key {
@@ -285,9 +286,34 @@ func TestWrap(t *testing.T) {
 			t.Errorf("Parse(%q) = %+v, %v; want NoWrap %v", tc.src, c, err, tc.want)
 		}
 	}
-	for _, src := range []string{"wrap\n", "wrap maybe\n", "wrap no yes\n"} {
+	for _, src := range []string{"wrap\n", "wrap maybe\n", "wrap no yes\n", "wrap word\n"} {
 		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != "vedi.conf:1: wrap takes yes or no" {
 			t.Errorf("Parse(%q) err = %v, want wrap takes yes or no", src, err)
+		}
+	}
+}
+
+// TestWrapStyle: wrap_style word breaks wrapped rows at words; char, the
+// default, at the screen's edge; anything else is an error.
+func TestWrapStyle(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want layout.WrapStyle
+	}{
+		{"", layout.WrapStyleChar},
+		{"wrap_style word\n", layout.WrapStyleWord},
+		{"wrap_style char\n", layout.WrapStyleChar},
+		{"wrap_style word\nwrap_style char\n", layout.WrapStyleChar},
+		{"wrap_style word\nwrap no\n", layout.WrapStyleWord},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.WrapStyle != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want WrapStyle %v", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"wrap_style\n", "wrap_style yes\n", "wrap_style word char\n"} {
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != "vedi.conf:1: wrap_style takes char or word" {
+			t.Errorf("Parse(%q) err = %v, want wrap_style takes char or word", src, err)
 		}
 	}
 }

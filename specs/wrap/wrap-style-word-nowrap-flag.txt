@@ -1,0 +1,25 @@
+-S starts in nowrap mode whatever wrap_style is; with wrap_style word,
+w then wraps at words.
+
+-- size --
+25x5
+-- args --
+-S
+-- config --
+wrap_style word
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox jumps
+
+
+
+<stdin>  line 1/1  nowrap
+-- keys --
+w
+-- screen --
+the quick brown fox
+jumps over the lazy dog
+
+
+<stdin>  line 1/1  word

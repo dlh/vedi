@@ -47,6 +47,18 @@ func TestSegments(t *testing.T) {
 		{"rune wider than width", Layout{Width: 1, Mode: Wrap}, "日本", []Segment{{0, 1}, {1, 2}}},
 		{"nowrap", Layout{Width: 4, Mode: NoWrap}, "abcdefghij", []Segment{{0, 10}}},
 		{"zero width", Layout{Width: 0, Mode: Wrap}, "abc", []Segment{{0, 3}}},
+		{"words break after a space", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaa bb cc", []Segment{{0, 4}, {4, 9}}},
+		{"words fit exactly", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaa bb", []Segment{{0, 6}}},
+		{"words keep the space on the row", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaaa b ccc", []Segment{{0, 5}, {5, 10}}},
+		{"long word breaks by rune", Layout{Width: 4, WrapStyle: WrapStyleWord}, "abcdefghij", []Segment{{0, 4}, {4, 8}, {8, 10}}},
+		{"long word after a short one", Layout{Width: 4, WrapStyle: WrapStyleWord}, "ab cdefghij", []Segment{{0, 3}, {3, 7}, {7, 11}}},
+		{"long run of spaces breaks by rune", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaaa     b", []Segment{{0, 6}, {6, 10}}},
+		{"words break after a tab", Layout{Width: 10, WrapStyle: WrapStyleWord}, "ab\tcd efgh", []Segment{{0, 3}, {3, 10}}},
+		{"words without spaces", Layout{Width: 5, WrapStyle: WrapStyleWord}, "日本語", []Segment{{0, 2}, {2, 3}}},
+		{"a mark stays with its space", Layout{Width: 5, WrapStyle: WrapStyleWord}, "abc \u0301de", []Segment{{0, 5}, {5, 7}}},
+		{"wide rune past a moved word", Layout{Width: 5, WrapStyle: WrapStyleWord}, " abcd日", []Segment{{0, 1}, {1, 5}, {5, 6}}},
+		{"words nowrap", Layout{Width: 4, Mode: NoWrap, WrapStyle: WrapStyleWord}, "ab cd ef", []Segment{{0, 8}}},
+		{"words zero width", Layout{Width: 0, WrapStyle: WrapStyleWord}, "ab cd", []Segment{{0, 5}}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -62,17 +74,19 @@ func TestSegments(t *testing.T) {
 }
 
 func TestPosColRoundTrip(t *testing.T) {
-	texts := []string{"", "abc", "abcdefghij", "日本語テキスト", "a\tb\tc", "x\ry", "éabc"}
+	texts := []string{"", "abc", "abcdefghij", "日本語テキスト", "a\tb\tc", "x\ry", "ab cde  f ghijklmnop q", "éabc"}
 	for _, s := range texts {
 		text := []rune(s)
 		for _, mode := range []Mode{Wrap, NoWrap} {
-			for width := 1; width <= 12; width++ {
-				l := Layout{Width: width, Mode: mode}
-				for col := 0; col <= len(text); col++ {
-					row, x := l.Pos(text, col)
-					got := l.Col(text, row, x)
-					if got != col && !zeroWidthAt(text, col) {
-						t.Errorf("%q %v w=%d: Col(Pos(%d)=(%d,%d)) = %d", s, mode, width, col, row, x, got)
+			for _, style := range []WrapStyle{WrapStyleChar, WrapStyleWord} {
+				for width := 1; width <= 12; width++ {
+					l := Layout{Width: width, Mode: mode, WrapStyle: style}
+					for col := 0; col <= len(text); col++ {
+						row, x := l.Pos(text, col)
+						got := l.Col(text, row, x)
+						if got != col && !zeroWidthAt(text, col) {
+							t.Errorf("%q %v style=%v w=%d: Col(Pos(%d)=(%d,%d)) = %d", s, mode, style, width, col, row, x, got)
+						}
 					}
 				}
 			}
@@ -144,6 +158,8 @@ func TestNewlineRow(t *testing.T) {
 		{"empty", Layout{Width: 4, Mode: Wrap}, "", []Segment{{0, 0}}},
 		{"nowrap", Layout{Width: 4, Mode: NoWrap}, "abcd", []Segment{{0, 4}}},
 		{"zero width", Layout{Width: 0, Mode: Wrap}, "abcd", []Segment{{0, 4}}},
+		{"words short last row", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaa bb cc dd", []Segment{{0, 4}, {4, 10}, {10, 12}}},
+		{"words full", Layout{Width: 6, WrapStyle: WrapStyleWord}, "aaa bb", []Segment{{0, 6}, {6, 6}}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

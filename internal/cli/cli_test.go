@@ -25,6 +25,12 @@ func TestParse(t *testing.T) {
 		{"nowrap long", []string{"--nowrap"}, Options{Wrap: new(false)}, nil, false},
 		{"wrap", []string{"--wrap"}, Options{Wrap: new(true)}, nil, false},
 		{"last wrap wins", []string{"-S", "--wrap"}, Options{Wrap: new(true)}, nil, false},
+		{"wrap style word", []string{"--wrap-style", "word"}, Options{WrapStyle: new(layout.WrapStyleWord)}, nil, false},
+		{"wrap style char", []string{"--wrap-style=char"}, Options{WrapStyle: new(layout.WrapStyleChar)}, nil, false},
+		{"last wrap style wins", []string{"--wrap-style", "word", "--wrap-style", "char"}, Options{WrapStyle: new(layout.WrapStyleChar)}, nil, false},
+		{"wrap style leaves wrap", []string{"-S", "--wrap-style", "word"}, Options{Wrap: new(false), WrapStyle: new(layout.WrapStyleWord)}, nil, false},
+		{"missing wrap style", []string{"--wrap-style"}, Options{}, nil, true},
+		{"bad wrap style", []string{"--wrap-style", "yes"}, Options{}, nil, true},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
@@ -205,6 +211,30 @@ func TestAppConfig(t *testing.T) {
 		}
 		if got.Mode != tc.mode || cmd != tc.cmd {
 			t.Errorf("%+v.App(%+v) = mode %v cmd %q, want %v %q", tc.opts, tc.cfg, got.Mode, cmd, tc.mode, tc.cmd)
+		}
+	}
+}
+
+// TestAppWrapStyle: the flag decides where wrap breaks rows;
+// without one the config does.
+func TestAppWrapStyle(t *testing.T) {
+	scr := testscreen.New(t, 80, 24)
+	word := config.Config{WrapStyle: layout.WrapStyleWord}
+	for _, tc := range []struct {
+		opts Options
+		cfg  config.Config
+		mode layout.Mode
+		want layout.WrapStyle
+	}{
+		{Options{}, config.Config{}, layout.Wrap, layout.WrapStyleChar},
+		{Options{}, word, layout.Wrap, layout.WrapStyleWord},
+		{Options{WrapStyle: new(layout.WrapStyleWord)}, config.Config{NoWrap: true}, layout.NoWrap, layout.WrapStyleWord},
+		{Options{WrapStyle: new(layout.WrapStyleChar)}, word, layout.Wrap, layout.WrapStyleChar},
+		{Options{Wrap: new(true)}, word, layout.Wrap, layout.WrapStyleWord},
+		{Options{Wrap: new(false)}, word, layout.NoWrap, layout.WrapStyleWord},
+	} {
+		if got := tc.opts.App(scr, nil, tc.cfg); got.Mode != tc.mode || got.WrapStyle != tc.want {
+			t.Errorf("%+v.App(%+v) = mode %v, style %v, want %v, %v", tc.opts, tc.cfg, got.Mode, got.WrapStyle, tc.mode, tc.want)
 		}
 	}
 }

@@ -19,6 +19,7 @@ const Usage = `usage: vedi [flags] [file...]
 
   -S, --nowrap            start in nowrap mode
   --wrap                  start in wrap mode (the default)
+  --wrap-style STYLE      wrap at the screen's edge (char) or at words (word)
   -F, --quit-if-one-page  print the text and quit if it fits the screen
   --auto-reload           read a file again when it changes on disk (the default)
   --no-auto-reload        leave a changed file as it was read; R still reloads
@@ -43,7 +44,8 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	Wrap          *bool // --wrap, -S; nil leaves it to the config
+	Wrap          *bool             // --wrap, -S; nil leaves it to the config
+	WrapStyle     *layout.WrapStyle // --wrap-style; nil leaves it to the config
 	QuitIfOnePage bool
 	StartLine     int // 1-based; 0 for none
 	Follow        bool
@@ -58,14 +60,18 @@ type Options struct {
 }
 
 // App converts the options to the app's: a flag, else the config,
-// decides the wrap mode, the clipboard command, the tab width and the
-// edge markers. The
+// decides the wrap mode, the wrap style, the clipboard
+// command, the tab width and the edge markers. The
 // input is named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
 	mode := layout.Wrap
 	if o.Wrap != nil && !*o.Wrap || o.Wrap == nil && cfg.NoWrap {
 		mode = layout.NoWrap
+	}
+	style := cfg.WrapStyle
+	if o.WrapStyle != nil {
+		style = *o.WrapStyle
 	}
 	cmd := o.ClipboardCmd
 	if cmd == "" {
@@ -82,6 +88,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 	return app.Options{
 		Name:        inputName(files),
 		Mode:        mode,
+		WrapStyle:   style,
 		StartLine:   o.StartLine,
 		Follow:      o.Follow,
 		Screen:      o.Screen,
@@ -124,6 +131,17 @@ var valueFlags = map[string]func(*Options, string) error{
 	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
 	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
 	"--config":        func(o *Options, v string) error { o.Config = v; return nil },
+	"--wrap-style": func(o *Options, v string) error {
+		switch v {
+		case "char":
+			o.WrapStyle = new(layout.WrapStyleChar)
+		case "word":
+			o.WrapStyle = new(layout.WrapStyleWord)
+		default:
+			return fmt.Errorf("%q", v)
+		}
+		return nil
+	},
 	"--tab-width": func(o *Options, v string) error {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {

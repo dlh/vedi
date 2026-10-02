@@ -11,21 +11,23 @@ import (
 
 	"github.com/gdamore/tcell/v3"
 	"go.dlh.dev/vedi/internal/input"
+	"go.dlh.dev/vedi/internal/layout"
 )
 
 // Config is what a file sets.
 type Config struct {
-	Keys         []input.Binding // map lines, in order
-	Clear        bool            // clear_all_shortcuts: the map starts empty
-	NoAutoReload bool            // auto_reload no: a changed file is not read again
-	NoWrap       bool            // wrap no: start in nowrap mode
-	ClipboardCmd string          // clipboard_cmd: copy pipes to this, not OSC 52
-	TabWidth     int             // tab_width: cells per tab stop; 0 for the default
-	EdgeMarkers  bool            // edge_markers yes: nowrap marks text off the sides
+	Keys         []input.Binding  // map lines, in order
+	Clear        bool             // clear_all_shortcuts: the map starts empty
+	NoAutoReload bool             // auto_reload no: a changed file is not read again
+	NoWrap       bool             // wrap no: start in nowrap mode
+	WrapStyle    layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
+	ClipboardCmd string           // clipboard_cmd: copy pipes to this, not OSC 52
+	TabWidth     int              // tab_width: cells per tab stop; 0 for the default
+	EdgeMarkers  bool             // edge_markers yes: nowrap marks text off the sides
 }
 
 // Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
-// "auto_reload yes|no", "wrap yes|no", "clipboard_cmd <command>",
+// "auto_reload yes|no", "wrap yes|no", "wrap_style char|word", "clipboard_cmd <command>",
 // "tab_width <n>", "edge_markers yes|no", blank lines and # comments. Errors read name:line:
 // message.
 func Parse(name string, src []byte) (Config, error) {
@@ -67,6 +69,14 @@ func Parse(name string, src []byte) (Config, error) {
 				return c, fail("wrap takes yes or no")
 			}
 			c.NoWrap = f[1] == "no"
+		case "wrap_style":
+			if len(f) != 2 || (f[1] != "char" && f[1] != "word") {
+				return c, fail("wrap_style takes char or word")
+			}
+			c.WrapStyle = layout.WrapStyleChar
+			if f[1] == "word" {
+				c.WrapStyle = layout.WrapStyleWord
+			}
 		case "clipboard_cmd":
 			if len(f) < 2 {
 				return c, fail("clipboard_cmd takes a command")

@@ -366,8 +366,11 @@ func (a *App) statusText() string {
 		return "read error: " + err.Error()
 	}
 	mode := "wrap"
-	if a.mode == layout.NoWrap {
+	switch {
+	case a.mode == layout.NoWrap:
 		mode = "nowrap"
+	case a.style == layout.WrapStyleWord:
+		mode = "word"
 	}
 	reading := ""
 	if !eof {

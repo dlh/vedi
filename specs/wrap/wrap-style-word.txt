@@ -1,0 +1,25 @@
+wrap_style word in the config makes wrap mode break rows at spaces: a word
+that does not fit moves whole to the next row, and the status line
+shows the mode as word. Down moves by those rows, and a click past a
+row's end lands on its last cell, the space.
+
+-- size --
+24x5
+-- config --
+wrap_style word
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox
+jumps over the lazy dog
+
+
+<stdin>  line 1/1  word
+-- keys --
+Down
+-- cursor --
+1 0
+-- mouse --
+click 0 22
+-- cursor --
+0 19

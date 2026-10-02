@@ -39,6 +39,12 @@ line `--no-auto-reload` and `--auto-reload` override it for one run.
 `wrap no` starts in nowrap mode; `w` still toggles. `wrap yes` is the
 default. `-S` and `--wrap` override it for one run.
 
+`wrap_style word` makes wrap mode break rows at spaces and tabs, not
+at the screen's edge: a word that does not fit moves to the next row
+with the space after it, and one wider than the screen breaks where
+the row ends. The status line then shows `word`. `wrap_style char` is
+the default. `--wrap-style` overrides it for one run.
+
 `clipboard_cmd <command>` pipes copied text to the command instead of
 OSC 52; the command is the rest of the line, so `clipboard_cmd xclip
 -selection clipboard` works. `--clipboard-cmd` overrides it for one

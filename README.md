@@ -17,6 +17,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
     vedi [flags] [file...]
       -S, --nowrap            start in nowrap mode
       --wrap                  start in wrap mode (the default)
+      --wrap-style STYLE      wrap at the screen's edge (char) or at words (word)
       -F, --quit-if-one-page  print the text and quit if it fits the screen
       --auto-reload           read a file again when it changes on disk (the default)
       --no-auto-reload        leave a changed file as it was read; R still reloads

@@ -1,0 +1,26 @@
+With wrap_style word, w toggles between nowrap and wrapping at words. A
+word moves down with the space after it: jumps would fit the first
+row, its space would not.
+
+-- size --
+25x5
+-- config --
+wrap_style word
+-- input --
+the quick brown fox jumps over the lazy dog
+-- keys --
+w
+-- screen --
+the quick brown fox jumps
+
+
+
+<stdin>  line 1/1  nowrap
+-- keys --
+w
+-- screen --
+the quick brown fox
+jumps over the lazy dog
+
+
+<stdin>  line 1/1  word

@@ -1,0 +1,14 @@
+--wrap-style word makes wrap mode break rows at words. A word wider
+than the screen starts a row and breaks where the row ends.
+
+-- size --
+10x4
+-- args --
+--wrap-style word
+-- input --
+see abcdefghijklmnop end
+-- screen --
+see
+abcdefghij
+klmnop end
+<stdin>  l

@@ -23,8 +23,9 @@ import (
 type Options struct {
 	Name        string // what the status line calls the input
 	Mode        layout.Mode
-	StartLine   int  // 1-based line to put at the top; 0 for none
-	Follow      bool // keep the cursor on the last line until EOF (+G)
+	WrapStyle   layout.WrapStyle // where wrap mode breaks rows
+	StartLine   int              // 1-based line to put at the top; 0 for none
+	Follow      bool             // keep the cursor on the last line until EOF (+G)
 	Screen      *Screen
 	Copier      clipboard.Copier
 	Now         func() time.Time // the clock double-clicks are timed by; nil for time.Now
@@ -59,8 +60,9 @@ type App struct {
 	copier clipboard.Copier
 	name   string
 	mode   layout.Mode
-	tab    int  // cells per tab stop; 0 for the default
-	marks  bool // nowrap marks text off the sides with < and >
+	style  layout.WrapStyle // where wrap mode breaks rows
+	tab    int              // cells per tab stop; 0 for the default
+	marks  bool             // nowrap marks text off the sides with < and >
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -133,6 +135,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		copier:    opts.Copier,
 		name:      opts.Name,
 		mode:      opts.Mode,
+		style:     opts.WrapStyle,
 		tab:       opts.TabWidth,
 		marks:     opts.EdgeMarkers,
 		follow:    opts.Follow,
@@ -516,7 +519,7 @@ func (a *App) line(i int) []rune { return a.buf.Line(i).Text }
 
 func (a *App) layout() layout.Layout {
 	w, _ := a.scr.Size()
-	return layout.Layout{Width: w, Mode: a.mode, Tab: a.tab}
+	return layout.Layout{Width: w, Mode: a.mode, Tab: a.tab, WrapStyle: a.style}
 }
 
 // lineLayout is line i laid out for the current width and mode.
