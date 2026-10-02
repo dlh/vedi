@@ -10,10 +10,11 @@ Set Height 440
 Set Padding 12
 Set TypingSpeed 60ms
 
-# OSC 52 has nowhere to land here, so the copy goes to a temp file,
-# and a pbpaste function reads it back.
+# OSC 52 has nowhere to land here, so VEDI sends the copy to a temp
+# file, and a pbpaste function reads it back. VEDI also wraps rows at
+# words.
 Hide
-Type `export PATH=$PWD:$PATH && cd docs/media && clip=$(mktemp) && alias vedi="vedi --clipboard-cmd 'cat > $clip'" && pbpaste() { cat "$clip"; } && clear`
+Type `export PATH=$PWD:$PATH && cd docs/media && clip=$(mktemp) && export VEDI="--wrap-style word --clipboard-cmd 'cat > $clip'" && pbpaste() { cat "$clip"; } && clear`
 Enter
 Show
 
@@ -31,7 +32,8 @@ Enter
 Sleep 1s
 Sleep 1s
 
-# The match starts its line; three lines down with J extends the selection.
+# The match sits mid-line; J extends the selection down the wrapped rows
+# to the end of the line.
 Type@250ms "JJJ"
 Sleep 800ms
 

@@ -1,82 +1,38 @@
 [1;4;38;2;255;184;108mLorem ipsum[0m
 
-Lorem [3mipsum[23m [31mdolor[39m sit [34mamet,[39m [38;2;80;250;123mconsectetur[39m adipiscing [38;2;80;250;123melit,[39m [31msed[39m do eiusmod
-tempor [38;2;255;121;198mincididunt[39m [35mut[39m [32mlabore[39m et [31mdolore[39m magna aliqua. Ut [34menim[39m ad minim
-[3mveniam,[23m quis nostrud exercitation ullamco laboris nisi ut [33maliquip[39m ex [1;31mea[0m
-commodo consequat. Duis aute irure [38;2;80;250;123mdolor[39m [38;5;208min[39m [48;5;236m[38;5;229mreprehenderit[0m in voluptate
-[38;5;208mvelit[39m esse cillum dolore eu [4mfugiat[24m nulla pariatur. Excepteur [1;31msint[0m occaecat
-cupidatat non proident, sunt in [38;2;139;233;253mculpa[39m qui officia deserunt [1;31mmollit[0m [35manim[39m id
-est laborum.
+Lorem [3mipsum[23m [31mdolor[39m sit [34mamet,[39m [38;2;80;250;123mconsectetur[39m adipiscing [38;2;80;250;123melit,[39m [31msed[39m do eiusmod tempor [38;2;255;121;198mincididunt[39m [35mut[39m [32mlabore[39m et [31mdolore[39m magna aliqua. Ut [34menim[39m ad minim [3mveniam,[23m quis nostrud exercitation ullamco laboris nisi ut [33maliquip[39m ex [1;31mea[0m commodo consequat. Duis aute irure [38;2;80;250;123mdolor[39m [38;5;208min[39m [48;5;236m[38;5;229mreprehenderit[0m in voluptate [38;5;208mvelit[39m esse cillum dolore eu [4mfugiat[24m nulla pariatur. Excepteur [1;31msint[0m occaecat cupidatat non proident, sunt in [38;2;139;233;253mculpa[39m qui officia deserunt [1;31mmollit[0m [35manim[39m id est laborum.
 
 [1;4;38;2;189;147;249mDe finibus[0m
 
-[38;2;255;121;198mSed[39m ut perspiciatis unde omnis [38;2;80;250;123miste[39m natus error sit [4mvoluptatem[24m [35maccusantium[39m
-doloremque [33mlaudantium,[39m [1mtotam[22m [38;5;141mrem[39m aperiam, eaque [3mipsa[23m quae ab illo
-inventore veritatis et quasi architecto beatae [34mvitae[39m dicta [3msunt[23m [32mexplicabo.[39m
-Nemo enim ipsam [34mvoluptatem[39m quia [36mvoluptas[39m sit aspernatur aut [48;5;236m[38;5;229modit[0m aut
-fugit, sed [31mquia[39m consequuntur magni dolores eos qui [38;5;141mratione[39m [1mvoluptatem[22m
-sequi nesciunt. Neque [36mporro[39m quisquam est, qui [38;5;208mdolorem[39m ipsum quia dolor sit
-[35mamet,[39m consectetur, adipisci [48;5;236m[38;5;229mvelit,[0m sed [1mquia[22m non numquam [38;5;141meius[39m modi tempora
-incidunt ut labore [35met[39m dolore magnam aliquam quaerat voluptatem.
+[38;2;255;121;198mSed[39m ut perspiciatis unde omnis [38;2;80;250;123miste[39m natus error sit [4mvoluptatem[24m [35maccusantium[39m doloremque [33mlaudantium,[39m [1mtotam[22m [38;5;141mrem[39m aperiam, eaque [3mipsa[23m quae ab illo inventore veritatis et quasi architecto beatae [34mvitae[39m dicta [3msunt[23m [32mexplicabo.[39m Nemo enim ipsam [34mvoluptatem[39m quia [36mvoluptas[39m sit aspernatur aut [48;5;236m[38;5;229modit[0m aut fugit, sed [31mquia[39m consequuntur magni dolores eos qui [38;5;141mratione[39m [1mvoluptatem[22m sequi nesciunt. Neque [36mporro[39m quisquam est, qui [38;5;208mdolorem[39m ipsum quia dolor sit [35mamet,[39m consectetur, adipisci [48;5;236m[38;5;229mvelit,[0m sed [1mquia[22m non numquam [38;5;141meius[39m modi tempora incidunt ut labore [35met[39m dolore magnam aliquam quaerat voluptatem.
 
 [1;4;38;2;80;250;123mQuis autem[0m
 
-[38;5;141mUt[39m enim [31mad[39m minima veniam, quis nostrum [38;5;208mexercitationem[39m [38;2;255;121;198mullam[39m corporis
-suscipit [33mlaboriosam,[39m [32mnisi[39m [38;2;139;233;253mut[39m aliquid [48;5;236m[38;5;229mex[0m ea commodi consequatur? [1mQuis[22m autem
-vel [32meum[39m iure reprehenderit qui [36min[39m [35mea[39m voluptate velit esse quam [38;5;141mnihil[39m
-molestiae consequatur, vel illum qui dolorem [32meum[39m fugiat [38;2;139;233;253mquo[39m voluptas nulla
-pariatur?
+[38;5;141mUt[39m enim [31mad[39m minima veniam, quis nostrum [38;5;208mexercitationem[39m [38;2;255;121;198mullam[39m corporis suscipit [33mlaboriosam,[39m [32mnisi[39m [38;2;139;233;253mut[39m aliquid [48;5;236m[38;5;229mex[0m ea commodi consequatur? [1mQuis[22m autem vel [32meum[39m iure reprehenderit qui [36min[39m [35mea[39m voluptate velit esse quam [38;5;141mnihil[39m molestiae consequatur, vel illum qui dolorem [32meum[39m fugiat [38;2;139;233;253mquo[39m voluptas nulla pariatur?
 
 [1;4;38;2;139;233;253mAt vero[0m
 
-[32mAt[39m vero eos et accusamus et iusto odio [3mdignissimos[23m [36mducimus[39m [31mqui[39m blanditiis
-praesentium voluptatum deleniti atque corrupti quos dolores et quas
-molestias excepturi sint occaecati cupiditate non [34mprovident,[39m similique
-[31msunt[39m in culpa qui officia [1;31mdeserunt[0m mollitia animi, [38;5;141mid[39m [32mest[39m laborum [31met[39m
-dolorum fuga. Et harum [38;2;80;250;123mquidem[39m rerum facilis est et [38;5;141mexpedita[39m [38;2;139;233;253mdistinctio.[39m
+[32mAt[39m vero eos et accusamus et iusto odio [3mdignissimos[23m [36mducimus[39m [31mqui[39m blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non [34mprovident,[39m similique [31msunt[39m in culpa qui officia [1;31mdeserunt[0m mollitia animi, [38;5;141mid[39m [32mest[39m laborum [31met[39m dolorum fuga. Et harum [38;2;80;250;123mquidem[39m rerum facilis est et [38;5;141mexpedita[39m [38;2;139;233;253mdistinctio.[39m
 
 [1;4;38;2;255;121;198mNam libero[0m
 
-Nam [38;5;208mlibero[39m tempore, cum soluta [35mnobis[39m est [36meligendi[39m [33moptio[39m [32mcumque[39m nihil
-impedit quo minus id quod maxime placeat facere [33mpossimus,[39m omnis [1mvoluptas[22m
-assumenda est, [35momnis[39m [31mdolor[39m repellendus. Temporibus autem quibusdam [32met[39m [35maut[39m
-officiis debitis [33maut[39m [1;31mrerum[0m necessitatibus saepe [38;2;139;233;253meveniet[39m ut [38;5;141met[39m voluptates
-repudiandae [1msint[22m et molestiae [48;5;236m[38;5;229mnon[0m [38;2;139;233;253mrecusandae.[39m
+Nam [38;5;208mlibero[39m tempore, cum soluta [35mnobis[39m est [36meligendi[39m [33moptio[39m [32mcumque[39m nihil impedit quo minus id quod maxime placeat facere [33mpossimus,[39m omnis [1mvoluptas[22m assumenda est, [35momnis[39m [31mdolor[39m repellendus. Temporibus autem quibusdam [32met[39m [35maut[39m officiis debitis [33maut[39m [1;31mrerum[0m necessitatibus saepe [38;2;139;233;253meveniet[39m ut [38;5;141met[39m voluptates repudiandae [1msint[22m et molestiae [48;5;236m[38;5;229mnon[0m [38;2;139;233;253mrecusandae.[39m
 
 [1;4;38;5;208mItaque[0m
 
-[38;2;80;250;123mItaque[39m earum rerum hic tenetur a [35msapiente[39m delectus, ut aut reiciendis
-voluptatibus maiores [32malias[39m [36mconsequatur[39m aut [38;2;255;121;198mperferendis[39m doloribus
-asperiores repellat. [1;31mCurabitur[0m [33mpretium[39m [38;2;139;233;253mtincidunt[39m [38;5;141mlacus.[39m Nulla gravida orci
-[1;31ma[0m [33modio.[39m [38;2;255;121;198mNullam[39m [36mvarius,[39m turpis [1met[22m [4mcommodo[24m [3mpharetra,[23m est eros bibendum [32melit,[39m
-nec luctus magna felis sollicitudin mauris. [32mInteger[39m [38;2;80;250;123min[39m mauris eu [1mnibh[22m
-euismod gravida.
+[38;2;80;250;123mItaque[39m earum rerum hic tenetur a [35msapiente[39m delectus, ut aut reiciendis voluptatibus maiores [32malias[39m [36mconsequatur[39m aut [38;2;255;121;198mperferendis[39m doloribus asperiores repellat. [1;31mCurabitur[0m [33mpretium[39m [38;2;139;233;253mtincidunt[39m [38;5;141mlacus.[39m Nulla gravida orci [1;31ma[0m [33modio.[39m [38;2;255;121;198mNullam[39m [36mvarius,[39m turpis [1met[22m [4mcommodo[24m [3mpharetra,[23m est eros bibendum [32melit,[39m nec luctus magna felis sollicitudin mauris. [32mInteger[39m [38;2;80;250;123min[39m mauris eu [1mnibh[22m euismod gravida.
 
 [1;4;38;5;81mDuis ac tellus[0m
 
-Duis ac tellus [1met[22m [38;5;141mrisus[39m vulputate vehicula. Donec [1mlobortis[22m risus a elit.
-[4mEtiam[24m tempor. Ut ullamcorper, ligula [48;5;236m[38;5;229meu[0m [4mtempor[24m congue, [34meros[39m [38;2;139;233;253mest[39m euismod
-turpis, id tincidunt sapien risus a [32mquam.[39m Maecenas fermentum consequat mi.
-[48;5;236m[38;5;229mDonec[0m [36mfermentum.[39m Pellentesque [34mmalesuada[39m nulla a mi. Duis sapien [34msem,[39m
-aliquet [48;5;236m[38;5;229mnec,[0m [38;2;139;233;253mcommodo[39m [38;2;139;233;253meget,[39m consequat quis, neque. Aliquam [4mfaucibus,[24m [36melit[39m
-ut [36mdictum[39m aliquet, felis [48;5;236m[38;5;229mnisl[0m adipiscing [48;5;236m[38;5;229msapien,[0m sed malesuada diam lacus
-eget [38;5;208merat.[39m
+Duis ac tellus [1met[22m [38;5;141mrisus[39m vulputate vehicula. Donec [1mlobortis[22m risus a elit. [4mEtiam[24m tempor. Ut ullamcorper, ligula [48;5;236m[38;5;229meu[0m [4mtempor[24m congue, [34meros[39m [38;2;139;233;253mest[39m euismod turpis, id tincidunt sapien risus a [32mquam.[39m Maecenas fermentum consequat mi. [48;5;236m[38;5;229mDonec[0m [36mfermentum.[39m Pellentesque [34mmalesuada[39m nulla a mi. Duis sapien [34msem,[39m aliquet [48;5;236m[38;5;229mnec,[0m [38;2;139;233;253mcommodo[39m [38;2;139;233;253meget,[39m consequat quis, neque. Aliquam [4mfaucibus,[24m [36melit[39m ut [36mdictum[39m aliquet, felis [48;5;236m[38;5;229mnisl[0m adipiscing [48;5;236m[38;5;229msapien,[0m sed malesuada diam lacus eget [38;5;208merat.[39m
 
 [1;4;38;5;213mCras mollis[0m
 
-[38;5;208mCras[39m mollis [34mscelerisque[39m nunc. Nullam arcu. Aliquam consequat. Curabitur
-augue lorem, dapibus [3mquis,[23m laoreet [1;31met,[0m pretium [36mac,[39m nisi. Aenean magna
-nisl, mollis [38;2;255;121;198mquis,[39m molestie eu, feugiat in, [38;2;80;250;123morci.[39m In hac habitasse platea
-[32mdictumst.[39m [38;2;80;250;123mFusce[39m convallis, mauris imperdiet gravida [35mbibendum,[39m nisl turpis
-suscipit [33mmauris,[39m [48;5;236m[38;5;229msed[0m placerat ipsum urna sed risus.
+[38;5;208mCras[39m mollis [34mscelerisque[39m nunc. Nullam arcu. Aliquam consequat. Curabitur augue lorem, dapibus [3mquis,[23m laoreet [1;31met,[0m pretium [36mac,[39m nisi. Aenean magna nisl, mollis [38;2;255;121;198mquis,[39m molestie eu, feugiat in, [38;2;80;250;123morci.[39m In hac habitasse platea [32mdictumst.[39m [38;2;80;250;123mFusce[39m convallis, mauris imperdiet gravida [35mbibendum,[39m nisl turpis suscipit [33mmauris,[39m [48;5;236m[38;5;229msed[0m placerat ipsum urna sed risus.
 
 [1;4;38;5;120mVivamus[0m
 
-Vivamus [33mvestibulum[39m ante [35mac[39m magna. Proin [1mnec[22m dui. Suspendisse potenti.
-Nulla facilisi. Cras [36mut[39m sapien. Aenean vel massa. Praesent bibendum, [35msem[39m
-sit amet posuere ullamcorper, mi metus [38;2;80;250;123mfaucibus[39m dui, sed laoreet lorem
-[38;2;255;121;198mquam[39m nec dui. Vestibulum ante ipsum primis [32min[39m faucibus orci luctus et
-ultrices posuere cubilia curae. [32mMorbi[39m [3mcommodo,[23m ipsum sed [36mpharetra[39m gravida,
-orci magna [1;31mrhoncus[0m neque, id pulvinar [1modio[22m [1;31mlorem[0m non [38;5;208mturpis.[39m
+Vivamus [33mvestibulum[39m ante [35mac[39m magna. Proin [1mnec[22m dui. Suspendisse potenti. Nulla facilisi. Cras [36mut[39m sapien. Aenean vel massa. Praesent bibendum, [35msem[39m sit amet posuere ullamcorper, mi metus [38;2;80;250;123mfaucibus[39m dui, sed laoreet lorem [38;2;255;121;198mquam[39m nec dui. Vestibulum ante ipsum primis [32min[39m faucibus orci luctus et ultrices posuere cubilia curae. [32mMorbi[39m [3mcommodo,[23m ipsum sed [36mpharetra[39m gravida, orci magna [1;31mrhoncus[0m neque, id pulvinar [1modio[22m [1;31mlorem[0m non [38;5;208mturpis.[39m
 
 Source: [4m]8;;https://la.wikipedia.org/wiki/Lorem_ipsum\la.wikipedia.org/wiki/Lorem_ipsum]8;;\[24m
+
