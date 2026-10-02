@@ -1,6 +1,7 @@
 package app_test
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,12 +18,19 @@ import (
 	"go.dlh.dev/vedi/internal/testscreen"
 )
 
+// stepFile is bin/spec-step's: TestSpecs runs this one scenario and
+// prints it as it goes.
+var stepFile = flag.String("step", "", "scenario `file` to step through")
+
 // TestSpecs runs every scenario file under specs/. The format is
 // described in specs/README.md.
 func TestSpecs(t *testing.T) {
 	files, err := filepath.Glob("../../specs/*/*.txt")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("no scenario files found: %v", err)
+	}
+	if *stepFile != "" {
+		files = []string{*stepFile}
 	}
 	for _, path := range files {
 		name, _ := filepath.Rel("../../specs", path)
@@ -31,7 +39,12 @@ func TestSpecs(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := runScenario(t, parseArchive(string(data))); err != nil {
+			a := parseArchive(string(data))
+			var step *stepper
+			if *stepFile != "" {
+				step = newStepper(a)
+			}
+			if err := runScenario(t, a, step); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -61,25 +74,39 @@ type scenario struct {
 	quit     bool
 	now      time.Time // the app's clock, advanced by mouse actions
 	moved    time.Time // the last motion, which arms the auto-scroll timer
+	step     *stepper  // prints the scenario as it runs, or nil
 }
 
 // runScenario runs one scenario and returns the first failure, a
 // malformed section or a failed assertion, prefixed with its line. t
-// only cleans up the screen.
-func runScenario(t *testing.T, a archive) error {
+// only cleans up the screen. step, if not nil, is told of each section
+// once it has run.
+func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 	// The copier must not depend on the terminal running the tests.
 	t.Setenv("TERM_PROGRAM", "")
 	if strings.TrimSpace(a.comment) == "" {
 		return fmt.Errorf("a scenario starts with prose describing the behavior")
 	}
-	s := &scenario{t: t, buf: buffer.New(), w: 40, h: 6}
+	s := &scenario{t: t, buf: buffer.New(), w: 40, h: 6, step: step}
 	for _, sec := range a.sections {
 		if sec.name == "eof" {
 			s.hasEOF = true
 		}
 	}
 	inputSeen := false
+	ran := -1
+	if step != nil {
+		defer func() {
+			if ran >= 0 {
+				step.after(s, err)
+			}
+		}()
+	}
 	for i, sec := range a.sections {
+		if step != nil && i > 0 {
+			step.after(s, nil)
+		}
+		ran = i
 		fail := func(format string, args ...any) error {
 			return fmt.Errorf("line %d, -- %s --: %s", sec.line, sec.name, fmt.Sprintf(format, args...))
 		}
@@ -345,6 +372,9 @@ func (s *scenario) open() error {
 	s.app = app.New(s.scr, s.buf, appOpts)
 	s.t.Cleanup(s.app.Stop)
 	s.notify()
+	if s.step != nil {
+		s.step.opened(s)
+	}
 	return nil
 }
 
@@ -476,7 +506,7 @@ func sideBySide(want, got string) string {
 // suite means the assertions ran.
 func TestRunScenarioRejects(t *testing.T) {
 	const ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\n<stdin>  line 1/1  wrap           h help\n"
-	if err := runScenario(t, parseArchive(ok)); err != nil {
+	if err := runScenario(t, parseArchive(ok), nil); err != nil {
 		t.Fatalf("control scenario failed: %v", err)
 	}
 	cases := []struct{ name, text, want string }{
@@ -500,7 +530,7 @@ func TestRunScenarioRejects(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err := runScenario(t, parseArchive(c.text))
+			err := runScenario(t, parseArchive(c.text), nil)
 			if err == nil {
 				t.Fatal("scenario passed, want failure")
 			}

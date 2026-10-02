@@ -16,7 +16,8 @@ Requires Go and make.
 
 CI runs `fmt`, `test` and `tidy` on every push and PR;
 run them before committing. Behaviors are specified and tested in
-`specs/`; see `specs/README.md`.
+`specs/`; see `specs/README.md`. `bin/spec-step FILE` steps through
+one, showing the screen after each section.
 
 `bench-pagers` runs each pager on a pty over a million generated
 lines and reports the median time to the first screen from a file and

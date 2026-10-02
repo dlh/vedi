@@ -5,6 +5,15 @@ Each file here is one behavior of `vedi` and runs as a test
 what the behavior is; the sections below show it. When a behavior
 changes, its file changes in the same commit.
 
+## Stepping through one
+
+    bin/spec-step specs/mouse/click-moves-cursor.txt
+
+prints each section as it runs and the screen it leaves, in a frame
+the scenario's size, with the cursor's cell underlined. It waits for
+Enter before each action; `q` runs to the end, as does stdin that is
+not a terminal.
+
 ## Format
 
 Scenarios live at `specs/<feature>/<behavior>.txt`, one directory deep;

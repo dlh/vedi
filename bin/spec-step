@@ -1,0 +1,17 @@
+#!/bin/sh
+# Steps through one scenario: prints each section and the screen it
+# leaves, at the scenario's size, waiting for Enter before each action.
+# With stdin not a terminal it prints the whole run.
+# Usage: bin/spec-step specs/FEATURE/BEHAVIOR.txt
+set -eu
+if [ $# -ne 1 ] || [ ! -f "$1" ]; then
+	echo "usage: bin/spec-step specs/FEATURE/BEHAVIOR.txt" >&2
+	exit 2
+fi
+spec=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+root=$(git rev-parse --show-toplevel)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+cd "$root/internal/app"
+go test -c -o "$tmp/app.test" .
+"$tmp/app.test" -test.run '^TestSpecs$' -step "$spec"
