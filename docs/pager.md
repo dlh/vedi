@@ -8,6 +8,25 @@ shell's equivalent:
 
     export PAGER="vedi -F"
 
+## VEDI
+
+vedi reads flags from the `VEDI` environment variable before those on
+its command line, so they apply whatever runs it:
+
+    export PAGER=vedi
+    export VEDI="-F -S"
+
+A flag on the command line wins over the same one in `VEDI`, and both
+win over `vedi.conf`. A start position on the command line, `+N`, `+G`,
+`--scrolled-by` or `--cursor-*`, replaces one in `VEDI`.
+
+The value is split into words as a shell would: quote with `'` or
+`"`, or put `\` before a space.
+
+    export VEDI="-F --clipboard-cmd 'xclip -selection clipboard'"
+
+`VEDI` takes flags only: a file name, `-h` or `-v` there is an error.
+
 ## git
 
 git reads `GIT_PAGER`, then `core.pager`, then `PAGER`, and colors

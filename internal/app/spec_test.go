@@ -58,6 +58,7 @@ type scenario struct {
 	app      *app.App
 	w, h     int
 	args     []string
+	env      string // $VEDI
 	macOS    bool
 	config   config.Config
 	nl       bool   // the last input section ended with a newline
@@ -127,6 +128,11 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 				return fail("must come before the app starts")
 			}
 			s.args = strings.Fields(sec.body)
+		case "env":
+			if s.started {
+				return fail("must come before the app starts")
+			}
+			s.env = strings.TrimSpace(sec.body)
 		case "os":
 			if s.started {
 				return fail("must come before the app starts")
@@ -308,7 +314,7 @@ func (s *scenario) start() error {
 		s.buf.Finish(nil, s.nl)
 	}
 	var err error
-	if s.opts, s.files, err = cli.Parse(s.args); err != nil {
+	if s.opts, s.files, err = cli.Parse(s.args, s.env); err != nil {
 		return fmt.Errorf("args %q: %v", s.args, err)
 	}
 	s.onePage = s.opts.QuitIfOnePage
@@ -523,6 +529,8 @@ func TestRunScenarioRejects(t *testing.T) {
 		{"os after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- os --\nmacos\n", "line 6, -- os --: must come before the app starts"},
 		{"config after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- config --\nmap q none\n", "line 6, -- config --: must come before the app starts"},
 		{"bad config", "T\n-- config --\nmap q nope\n-- input --\nhi\n", `line 2, -- config --: config:1: unknown action "nope"`},
+		{"env after start", "T\n-- input --\nhi\n-- keys --\nDown\n-- env --\n-S\n", "line 6, -- env --: must come before the app starts"},
+		{"bad env", "T\n-- env --\na.txt\n-- input --\nhi\n-- screen --\nhi\n", `VEDI: "a.txt" is not a flag`},
 		{"reload without file", "T\n-- input --\nhi\n-- reload --\nho\n", "line 4, -- reload --: reload needs a file in -- args --"},
 		{"screen before -F opens", "T\n-- args --\n-F\n-- input --\nhi\n-- screen --\nhi\n-- eof --\n", "line 6, -- screen --: -F is waiting for EOF; the pager has not opened"},
 		{"keys before -F opens", "T\n-- args --\n-F\n-- input --\nhi\n-- keys --\nDown\n-- eof --\n", "line 6, -- keys --: -F is waiting for EOF; the pager has not opened"},

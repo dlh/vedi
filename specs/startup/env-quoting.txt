@@ -1,0 +1,17 @@
+VEDI is split into words as a shell would, so a quoted value keeps
+its spaces: the clipboard command here is `sh -c false`, which fails.
+
+-- size --
+40x5
+-- env --
+--clipboard-cmd 'sh -c false'
+-- input --
+hello
+-- keys --
+Shift+Right y
+-- screen --
+[h]ello
+
+
+
+copy failed: exit status 1        h help

@@ -46,6 +46,11 @@ opens only for more. To make vedi your pager:
 
     export PAGER="vedi -F"
 
+vedi also reads flags from the `VEDI` environment variable, so they
+apply however it is started:
+
+    export VEDI="-F -S"
+
 ## Documentation
 
 - [Keys](docs/keys.md): every key, for moving, selecting, copying and searching

@@ -1,0 +1,18 @@
+A flag on the command line wins over the same one in VEDI, and the
+rest of VEDI still applies: --wrap undoes its -S, and its tab width
+stays.
+
+-- size --
+26x5
+-- env --
+-S --tab-width 2
+-- args --
+--wrap
+-- input --
+a	bcdefghijklmnopqrstuvwxyz0123
+-- screen --
+a bcdefghijklmnopqrstuvwxy
+z0123
+
+
+<stdin>  line 1/1  wrap

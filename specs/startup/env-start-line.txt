@@ -1,0 +1,20 @@
+A start position on the command line replaces one in VEDI instead of
+clashing with it: +2 wins over +G.
+
+-- size --
+40x4
+-- env --
++G
+-- args --
++2
+-- input --
+one
+two
+three
+four
+five
+-- screen --
+two
+three
+four
+<stdin>  line 2/5  wrap           h help

@@ -63,7 +63,7 @@ func TestParse(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, files, err := Parse(tc.args)
+			got, files, err := Parse(tc.args, "")
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("err = %v, wantErr %v", err, tc.wantErr)
 			}
@@ -72,6 +72,71 @@ func TestParse(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tc.want) || !reflect.DeepEqual(files, tc.files) {
 				t.Fatalf("got %+v %v, want %+v %v", got, files, tc.want, tc.files)
+			}
+		})
+	}
+}
+
+// TestParseEnv: VEDI holds flags, split as a shell would; the command
+// line is parsed after it, so it wins.
+func TestParseEnv(t *testing.T) {
+	tests := []struct {
+		name  string
+		env   string
+		args  []string
+		want  Options
+		files []string
+	}{
+		{"flags", "-F -S", []string{"f"}, Options{QuitIfOnePage: true, Wrap: new(false)}, []string{"f"}},
+		{"blank", " \t ", nil, Options{}, nil},
+		{"arg wins", "-S --tab-width 4", []string{"--wrap", "--tab-width=2"}, Options{Wrap: new(true), TabWidth: 2}, nil},
+		{"single quotes", "--clipboard-cmd 'xclip -selection clipboard'", nil, Options{ClipboardCmd: "xclip -selection clipboard"}, nil},
+		{"double quotes", `--clipboard-cmd "sh -c 'cat >f'"`, nil, Options{ClipboardCmd: "sh -c 'cat >f'"}, nil},
+		{"quotes join", `--clipboard-cmd="wl-copy -n"`, nil, Options{ClipboardCmd: "wl-copy -n"}, nil},
+		{"backslash", `--config my\ vedi.conf`, nil, Options{Config: "my vedi.conf"}, nil},
+		{"backslash in double quotes", `--clipboard-cmd "a \"b\" \\ \c"`, nil, Options{ClipboardCmd: `a "b" \ \c`}, nil},
+		{"backslash in single quotes", `--clipboard-cmd 'a\b'`, nil, Options{ClipboardCmd: `a\b`}, nil},
+		{"empty quotes", "--clipboard-cmd ''", []string{"f"}, Options{}, []string{"f"}},
+		{"plus G", "+G", nil, Options{Follow: true}, nil},
+		{"plus N beats plus G", "+G", []string{"+5"}, Options{StartLine: 5}, nil},
+		{"plus G beats plus N", "+5", []string{"+G"}, Options{Follow: true}, nil},
+		{"screen beats plus G", "+G", []string{"--cursor-row", "2"}, Options{Screen: &app.Screen{CursorRow: 2}}, nil},
+		{"plus N beats screen", "--scrolled-by 1", []string{"+3"}, Options{StartLine: 3}, nil},
+		{"screen replaces screen", "--scrolled-by 1", []string{"--cursor-row", "2"}, Options{Screen: &app.Screen{CursorRow: 2}}, nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, files, err := Parse(tc.args, tc.env)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, tc.want) || !reflect.DeepEqual(files, tc.files) {
+				t.Fatalf("got %+v %v, want %+v %v", got, files, tc.want, tc.files)
+			}
+		})
+	}
+}
+
+// TestParseEnvRejects: VEDI takes flags only, and its errors name it.
+func TestParseEnvRejects(t *testing.T) {
+	for _, tc := range []struct{ name, env, want string }{
+		{"file", "-S a.txt", `VEDI: "a.txt" is not a flag`},
+		{"stdin dash", "-", `VEDI: "-" is not a flag`},
+		{"dash dash", "-- -S", `VEDI: "--" is not a flag`},
+		{"help", "-h", `VEDI: "-h" is not allowed`},
+		{"version", "--version", `VEDI: "--version" is not allowed`},
+		{"unknown flag", "--bogus", `VEDI: unknown flag "--bogus"`},
+		{"bad value", "--tab-width 0", `VEDI: bad --tab-width "0"`},
+		{"missing value", "--tab-width", "VEDI: --tab-width needs an argument"},
+		{"conflict", "+G +5", "VEDI: +N and +G cannot be combined"},
+		{"open single quote", "--clipboard-cmd 'pbcopy", "VEDI: unclosed '"},
+		{"open double quote", `--clipboard-cmd "pbcopy`, `VEDI: unclosed "`},
+		{"trailing backslash", `-S \`, `VEDI: trailing \`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := Parse([]string{"f"}, tc.env)
+			if err == nil || err.Error() != tc.want {
+				t.Fatalf("err = %v, want %s", err, tc.want)
 			}
 		})
 	}
@@ -187,7 +252,7 @@ func TestEdgeMarkersFlag(t *testing.T) {
 		arg  string
 		want bool
 	}{{"--edge-markers", true}, {"--no-edge-markers", false}} {
-		o, _, err := Parse([]string{tc.arg})
+		o, _, err := Parse([]string{tc.arg}, "")
 		if err != nil || o.EdgeMarkers == nil || *o.EdgeMarkers != tc.want {
 			t.Errorf("Parse(%q) = %+v, %v; want EdgeMarkers %v", tc.arg, o, err, tc.want)
 		}

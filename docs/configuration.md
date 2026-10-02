@@ -53,6 +53,10 @@ with text scrolled off the left edge starts with `<`, both in reverse
 video. `edge_markers no` is the default. `--edge-markers` and
 `--no-edge-markers` override it for one run.
 
+Flags in the `VEDI` environment variable override these for every
+run, and the command line overrides `VEDI`; see
+[Pager](pager.md#vedi).
+
 ## Keys
 
 `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or

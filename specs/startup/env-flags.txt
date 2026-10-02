@@ -1,0 +1,17 @@
+Flags in the VEDI environment variable apply to every run, over the
+config: -S starts in nowrap mode despite wrap yes.
+
+-- size --
+26x5
+-- env --
+-S
+-- config --
+wrap yes
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- screen --
+abcdefghijklmnopqrstuvwxyz
+
+
+
+<stdin>  line 1/1  nowrap

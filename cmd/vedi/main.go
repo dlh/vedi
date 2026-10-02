@@ -156,7 +156,7 @@ func waitOnePage(buf *buffer.Buffer, data <-chan struct{}, resize <-chan os.Sign
 var version string
 
 func main() {
-	opts, files, err := cli.Parse(os.Args[1:])
+	opts, files, err := cli.Parse(os.Args[1:], os.Getenv("VEDI"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "vedi: %v\n%s", err, cli.Usage)
 		os.Exit(1)

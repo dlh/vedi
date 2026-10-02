@@ -35,6 +35,9 @@ const Usage = `usage: vedi [flags] [file...]
   -h, --help              show this help
   -v, --version           print the version
 
+Flags in the VEDI environment variable apply to every run; the
+command line wins.
+
 Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
 quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
@@ -148,9 +151,84 @@ func screenInt(min int, field func(*app.Screen) *int) func(*Options, string) err
 }
 
 // Parse parses the command line by hand: package flag does not know
-// +N and +G.
-func Parse(args []string) (Options, []string, error) {
+// +N and +G. env is $VEDI, flags for every run, parsed first so the
+// command line wins; a start position there gives way to one on the
+// command line.
+func Parse(args []string, env string) (Options, []string, error) {
 	var o Options
+	words, err := split(env)
+	if err == nil {
+		_, err = o.parse(words, true)
+	}
+	if err != nil {
+		return o, nil, fmt.Errorf("VEDI: %v", err)
+	}
+	fromEnv := o
+	o.StartLine, o.Follow, o.Screen = 0, false, nil
+	files, err := o.parse(args, false)
+	if err != nil {
+		return o, nil, err
+	}
+	if o.StartLine == 0 && !o.Follow && o.Screen == nil {
+		o.StartLine, o.Follow, o.Screen = fromEnv.StartLine, fromEnv.Follow, fromEnv.Screen
+	}
+	return o, files, nil
+}
+
+// split splits s into words as a shell would: on blanks, with '...'
+// taken as written, "..." too but for \" and \\, and a \ outside
+// quotes standing for the character after it.
+func split(s string) ([]string, error) {
+	var words []string
+	var w strings.Builder
+	inWord := false
+	var quote byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case quote != 0 && c == quote:
+			quote = 0
+		case quote == '\'':
+			w.WriteByte(c)
+		case c == '\\':
+			if i+1 == len(s) {
+				return nil, fmt.Errorf("trailing \\")
+			}
+			if quote == '"' && s[i+1] != '"' && s[i+1] != '\\' {
+				w.WriteByte(c)
+				continue
+			}
+			i++
+			w.WriteByte(s[i])
+			inWord = true
+		case quote == '"':
+			w.WriteByte(c)
+		case c == '\'' || c == '"':
+			quote = c
+			inWord = true
+		case c == ' ' || c == '\t' || c == '\n':
+			if inWord {
+				words = append(words, w.String())
+				w.Reset()
+				inWord = false
+			}
+		default:
+			w.WriteByte(c)
+			inWord = true
+		}
+	}
+	if quote != 0 {
+		return nil, fmt.Errorf("unclosed %c", quote)
+	}
+	if inWord {
+		words = append(words, w.String())
+	}
+	return words, nil
+}
+
+// parse lays args over o and returns the files. env is the words of
+// $VEDI, which may only be flags, and not -h or -v.
+func (o *Options) parse(args []string, env bool) ([]string, error) {
 	var files []string
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -158,13 +236,13 @@ func Parse(args []string) (Options, []string, error) {
 		if set, ok := valueFlags[name]; ok {
 			if !hasVal {
 				if i+1 >= len(args) {
-					return o, nil, fmt.Errorf("%s needs an argument", name)
+					return nil, fmt.Errorf("%s needs an argument", name)
 				}
 				i++
 				val = args[i]
 			}
-			if err := set(&o, val); err != nil {
-				return o, nil, fmt.Errorf("bad %s %v", name, err)
+			if err := set(o, val); err != nil {
+				return nil, fmt.Errorf("bad %s %v", name, err)
 			}
 			continue
 		}
@@ -188,27 +266,35 @@ func Parse(args []string) (Options, []string, error) {
 		case strings.HasPrefix(a, "+"):
 			n, err := strconv.Atoi(a[1:])
 			if err != nil || n < 1 {
-				return o, nil, fmt.Errorf("bad line number %q", a)
+				return nil, fmt.Errorf("bad line number %q", a)
 			}
 			o.StartLine = n
 		case a == "-h" || a == "--help":
+			if env {
+				return nil, fmt.Errorf("%q is not allowed", a)
+			}
 			o.Help = true
 		case a == "-v" || a == "--version":
+			if env {
+				return nil, fmt.Errorf("%q is not allowed", a)
+			}
 			o.Version = true
+		case env && (a == "--" || a == "-" || !strings.HasPrefix(a, "-")):
+			return nil, fmt.Errorf("%q is not a flag", a)
 		case a == "--":
 			files = append(files, args[i+1:]...)
 			i = len(args)
 		case strings.HasPrefix(a, "-") && a != "-":
-			return o, nil, fmt.Errorf("unknown flag %q", a)
+			return nil, fmt.Errorf("unknown flag %q", a)
 		default:
 			files = append(files, a)
 		}
 	}
 	if o.Screen != nil && (o.StartLine > 0 || o.Follow) {
-		return o, nil, fmt.Errorf("--scrolled-by and --cursor-* cannot be combined with +N or +G")
+		return nil, fmt.Errorf("--scrolled-by and --cursor-* cannot be combined with +N or +G")
 	}
 	if o.StartLine > 0 && o.Follow {
-		return o, nil, fmt.Errorf("+N and +G cannot be combined")
+		return nil, fmt.Errorf("+N and +G cannot be combined")
 	}
-	return o, files, nil
+	return files, nil
 }
