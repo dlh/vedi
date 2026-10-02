@@ -825,3 +825,23 @@ func TestDrawBlanksWhatItLeaves(t *testing.T) {
 		}
 	}
 }
+
+// BenchmarkSearchNearLongTail searches to a match just below the
+// screen, nothing laid out yet, which must not lay out a 4 MiB last
+// line far below it.
+func BenchmarkSearchNearLongTail(b *testing.B) {
+	lines := make([]string, 0, 1001)
+	for range 1000 {
+		lines = append(lines, "line")
+	}
+	lines[100] = "foo"
+	lines = append(lines, strings.Repeat("a", 4<<20))
+	a := benchApp(b, lines...)
+	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'f', 0), key(tcell.KeyRune, 'o', 0), key(tcell.KeyRune, 'o', 0), key(tcell.KeyEnter, 0, 0))
+	b.ReportAllocs()
+	for b.Loop() {
+		press(a, key(tcell.KeyRune, 'g', 0))
+		a.laidOut = nil
+		press(a, key(tcell.KeyRune, 'n', 0))
+	}
+}

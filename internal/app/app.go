@@ -841,7 +841,41 @@ func (a *App) jumpTo(pos buffer.Pos, wrapped, found bool) {
 	if wrapped {
 		a.status = "search wrapped"
 	}
+	a.scrollMatchToTop()
 	a.scrollToCursor()
+}
+
+// scrollMatchToTop makes the cursor's row the top one if it is off
+// the screen, stopping at the last screenful.
+func (a *App) scrollMatchToTop() {
+	rows := a.textRows()
+	if rows <= 0 || a.buf.Len() == 0 {
+		return
+	}
+	crow := a.snap(a.cur)
+	if top := a.snap(a.top); !crow.Less(top) {
+		bottom := top
+		for i := 0; i < rows-1; i++ {
+			bottom = a.nextRow(bottom)
+		}
+		if !bottom.Less(crow) {
+			return
+		}
+	}
+	// Each row missing below the match is one more above it: only a
+	// match near the end looks there, and never past it.
+	below := 0
+	for p := crow; below < rows-1; below++ {
+		next := a.nextRow(p)
+		if next == p {
+			break
+		}
+		p = next
+	}
+	for ; below < rows-1; below++ {
+		crow = a.prevRow(crow)
+	}
+	a.top = crow
 }
 
 // extend anchors the selection at the cursor if there is none, so a
