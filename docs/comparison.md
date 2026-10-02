@@ -100,7 +100,7 @@ over plain text.
 |---|---|
 | Date | 2026-10-01 |
 | Machine | Apple M3 Max, macOS 26.3 |
-| vedi | 1.6.1 |
+| vedi | 1.6.2 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
