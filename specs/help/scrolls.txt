@@ -26,29 +26,29 @@ help  motion scrolls, any other key returns
 -- keys --
 G
 -- screen --
-
                                     PROMPTS
 
   Up  Down                                Recall earlier sea
+  Tab                                     Complete; again, t
  -----------------------------------------------------------
 help  motion scrolls, any other key returns
 -- keys --
 Down
 -- screen --
-
                                     PROMPTS
 
   Up  Down                                Recall earlier sea
+  Tab                                     Complete; again, t
  -----------------------------------------------------------
 help  motion scrolls, any other key returns
 -- keys --
 u
 -- screen --
-  n  N                                    Next and previous
  -----------------------------------------------------------
 
                                     PROMPTS
 
+  Up  Down                                Recall earlier sea
 help  motion scrolls, any other key returns
 -- keys --
 g k

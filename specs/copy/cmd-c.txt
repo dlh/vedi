@@ -5,7 +5,7 @@ when it has no selection of its own; Terminal.app keeps it.
 -- os --
 macos
 -- size --
-80x64
+80x65
 -- input --
 hello
 world
@@ -14,6 +14,7 @@ Shift+Right Shift+Right Cmd+c
 -- screen --
 [he]llo
 world
+
 
 
 
@@ -144,4 +145,5 @@ h
                                     PROMPTS
 
   Up  Down                                Recall earlier searches, or commands.
+  Tab                                     Complete; again, the next match.
 help  motion scrolls, any other key returns

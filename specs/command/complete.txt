@@ -1,0 +1,71 @@
+Tab completes the last word at the : prompt: the command, then yes or
+no, char or word, and an action name after map's key. One candidate
+completes the word and a space, so the next word types straight on;
+several, what they share, listed after the prompt as far as the screen
+goes; none, nothing.
+
+-- input --
+line 1
+-- keys --
+: "g" Tab "7"
+-- screen --
+line 1
+
+
+
+
+:goto 7
+-- keys --
+Esc : "w" Tab
+-- screen --
+line 1
+
+
+
+
+:wrap  wrap  wrap_style
+-- keys --
+"_s" Tab "w" Tab Enter
+-- screen --
+line 1
+
+
+
+
+<stdin>  line 1/1  word           h help
+-- keys --
+: "edge_markers y" Tab Enter
+-- screen --
+line 1
+
+
+
+
+<stdin>  line 1/1  word           h help
+-- keys --
+: "map x sel" Tab
+-- screen --
+line 1
+
+
+
+
+:map x select_  select_all  select_down
+-- keys --
+"page_d" Tab Enter
+-- screen --
+line 1
+
+
+
+
+<stdin>  line 1/1  word           h help
+-- keys --
+: "zz" Tab "goto 1" Tab
+-- screen --
+line 1
+
+
+
+
+:zzgoto 1

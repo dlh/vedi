@@ -91,6 +91,10 @@ type App struct {
 	query      prompt    // the / and ? prompts' line
 	commanding bool      // the : prompt is open
 	command    prompt    // its line
+	matches    []string  // what the last Tab found, shown while the line is as it left it; nil for none
+	matchPos   int       // the match filled in; -1 for what was typed
+	stem       string    // the line before the first Tab
+	filled     string    // the line as the last Tab left it
 	matcher    search.Matcher
 	highlight  bool
 

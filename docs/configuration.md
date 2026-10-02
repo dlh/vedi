@@ -72,12 +72,18 @@ run, and the command line overrides `VEDI`; see
 and `map`, as the config file does, for the rest of the run:
 `:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
 22`, goes to line 22. A bad line is an error on the status line.
-`clear_all_shortcuts` is not taken: it would unbind `:` and `q`. Up
-and Down recall earlier commands.
+`clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
+
+Tab completes the word being typed: the command, `yes` or `no`, `char`
+or `word`, an action after `map`'s key. One match fills it in and a
+space; several, what they share, and lists them sorted after the
+prompt. Tab again fills in each in turn, then what was typed. Enter on
+a listed command keeps the prompt, for the argument; on a listed
+argument it runs the line. Up and Down recall earlier commands.
 
 ## Keys
 
-`Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, or
+`Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, or
 a single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in
 front. `Ctrl+f` and `Ctrl+F` are the same key, and `Ctrl+Space` is a
 key too. `Shift+` on a character

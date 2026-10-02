@@ -1,0 +1,59 @@
+Tab again, with the prompt as the last Tab left it, fills in each
+match in turn, with a space, and shows it in the list out of reverse
+video; after the last comes what was typed. Enter with a list of
+commands showing takes the one the prompt holds and keeps it open,
+for the argument; with a list of arguments, it runs the line.
+
+-- size --
+60x4
+-- input --
+the quick brown fox jumps over the lazy dog and runs away home
+-- keys --
+: "w" Tab Tab
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:wrap   [wrap]  wrap_style
+-- keys --
+Tab
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:wrap_style   wrap  [wrap_style]
+-- keys --
+Tab
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:w  wrap  wrap_style
+-- keys --
+Tab Tab Enter
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:wrap_style
+-- keys --
+"w" Tab Enter
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away
+home
+
+<stdin>  line 1/1  word                               h help
+-- keys --
+: Tab Tab Tab Tab Enter
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away
+home
+
+:edge_markers
+-- keys --
+Tab Tab Tab Enter
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away  [\]
+home
+
+<stdin>  line 1/1  word                               h help

@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -34,6 +35,19 @@ func action(name string) (Action, bool) {
 		}
 	}
 	return None, false
+}
+
+// CommandNames is every name ParseCommand takes, sorted.
+func CommandNames() []string {
+	var names []string
+	for a, n := range actionNames {
+		names = append(names, n)
+		if IsMovement(Action(a)) {
+			names = append(names, "select_"+n)
+		}
+	}
+	slices.Sort(names)
+	return names
 }
 
 // ParseCommand reads an action name; none is the zero Command.

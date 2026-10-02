@@ -79,17 +79,17 @@ var modPrefixes = []struct {
 var namedKeys = map[string]tcell.Key{
 	"Up": tcell.KeyUp, "Down": tcell.KeyDown, "Left": tcell.KeyLeft, "Right": tcell.KeyRight,
 	"Home": tcell.KeyHome, "End": tcell.KeyEnd, "PgUp": tcell.KeyPgUp, "PgDn": tcell.KeyPgDn,
-	"Enter": tcell.KeyEnter, "Esc": tcell.KeyEscape, "Backspace": tcell.KeyBackspace,
+	"Enter": tcell.KeyEnter, "Esc": tcell.KeyEscape, "Tab": tcell.KeyTab, "Backspace": tcell.KeyBackspace,
 }
 
 var keyNames = map[tcell.Key]string{
 	tcell.KeyUp: "Up", tcell.KeyDown: "Down", tcell.KeyLeft: "Left", tcell.KeyRight: "Right",
 	tcell.KeyHome: "Home", tcell.KeyEnd: "End", tcell.KeyPgUp: "PgUp", tcell.KeyPgDn: "PgDn",
-	tcell.KeyEnter: "Enter", tcell.KeyEscape: "Esc", tcell.KeyBackspace: "Backspace",
+	tcell.KeyEnter: "Enter", tcell.KeyEscape: "Esc", tcell.KeyTab: "Tab", tcell.KeyBackspace: "Backspace",
 }
 
 // ParseKey reads a key name: Up Down Left Right Home End PgUp PgDn
-// Enter Esc Backspace Space or one character, with any of Shift+
+// Enter Esc Tab Backspace Space or one character, with any of Shift+
 // Ctrl+ Alt+ Cmd+ in front. Ctrl+letter is the control key, either
 // case, and Ctrl+Space a space with Ctrl. Shift on a character needs Cmd:
 // without it Shift is another character, or nothing, as Shift+Space.

@@ -1,6 +1,9 @@
 package input
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestActionNames(t *testing.T) {
 	for a := None; a <= Help; a++ {
@@ -40,6 +43,24 @@ func TestActionNames(t *testing.T) {
 	}
 }
 
+// TestCommandNames: every name parses back to itself, the select_
+// forms included, and none is unparseable.
+func TestCommandNames(t *testing.T) {
+	names := CommandNames()
+	if !slices.Contains(names, "none") || !slices.Contains(names, "select_page_down") || slices.Contains(names, "select_copy") {
+		t.Errorf("CommandNames = %v", names)
+	}
+	if !slices.IsSorted(names) {
+		t.Errorf("CommandNames not sorted: %v", names)
+	}
+	for _, n := range names {
+		c, err := ParseCommand(n)
+		if err != nil || c.String() != n {
+			t.Errorf("ParseCommand(%q) = %v, %v", n, c, err)
+		}
+	}
+}
+
 // TestGoToLineAlias: go_to_line, the command prompt's old name, still
 // parses; command is the name it prints.
 func TestGoToLineAlias(t *testing.T) {
@@ -48,5 +69,8 @@ func TestGoToLineAlias(t *testing.T) {
 		if err != nil || c != (Command{Action: CommandPrompt}) || c.String() != "command" {
 			t.Errorf("ParseCommand(%q) = %+v, %v", name, c, err)
 		}
+	}
+	if slices.Contains(CommandNames(), "go_to_line") {
+		t.Error("CommandNames lists the alias")
 	}
 }

@@ -444,7 +444,8 @@ func (s *scenario) notify() {
 
 // dump renders the screen as the -- screen -- section expects it:
 // reverse-video runs in brackets, search matches in braces, the status
-// row plain, trailing spaces trimmed, one line per row.
+// row plain with its runs out of reverse video in brackets, trailing
+// spaces trimmed, one line per row.
 func dump(scr *testscreen.Screen) string {
 	w, h := scr.Size()
 	var sb strings.Builder
@@ -455,20 +456,18 @@ func dump(scr *testscreen.Screen) string {
 		for x := 0; x < w; {
 			str, st, cw := scr.Get(x, y)
 			x += cw // a wide cell's second half holds nothing of its own
-			if !status {
-				r, m := st.HasReverse(), st == app.MatchStyle
-				if r && !rev {
-					row.WriteByte('[')
-				} else if !r && rev {
-					row.WriteByte(']')
-				}
-				if m && !match {
-					row.WriteByte('{')
-				} else if !m && match {
-					row.WriteByte('}')
-				}
-				rev, match = r, m
+			r, m := st.HasReverse() != status, st == app.MatchStyle && !status
+			if r && !rev {
+				row.WriteByte('[')
+			} else if !r && rev {
+				row.WriteByte(']')
 			}
+			if m && !match {
+				row.WriteByte('{')
+			} else if !m && match {
+				row.WriteByte('}')
+			}
+			rev, match = r, m
 			row.WriteString(str)
 		}
 		if rev {

@@ -73,7 +73,7 @@ Actions:
 
 | Section | Content |
 |---|---|
-| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune. |
+| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune. |
 | `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), each optionally with `Shift+`, `wheel up`, `wheel down`, `wheel left` or `wheel right`, optionally with `Shift+` on the direction and followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
 | `-- file --` | The file on disk now holds this text, ended the way `-- input --` is. Needs a file in `-- args --`; disk starts as the input. |
@@ -83,7 +83,7 @@ Assertions, checked at that point:
 
 | Section | Content |
 |---|---|
-| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`; the status row plain; trailing spaces trimmed. |
+| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`; the status row plain, with its runs out of reverse video in `[` `]`; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |

@@ -54,7 +54,7 @@ func TestHelpDefault(t *testing.T) {
 		}
 	}
 	last := all[len(all)-1]
-	if !slices.Equal(last.Keys, []string{"Up", "Down"}) || last.Doc != "Recall earlier searches, or commands" {
+	if !slices.Equal(last.Keys, []string{"Tab"}) || last.Doc != "Complete; again, the next match" {
 		t.Errorf("last row = %+v", last)
 	}
 	mac := Default(true).Help()

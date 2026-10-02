@@ -274,7 +274,8 @@ func wrapWords(words []string, sep string, width int) []string {
 // drawStatus draws statusText in reverse video on the bottom row, which
 // needs two rows to exist, with "h help", naming whatever key shows
 // help, at the right edge unless help is unbound or up, a prompt is
-// open, or it would come within two spaces of the text.
+// open, or it would come within two spaces of the text. The : prompt's
+// completions follow it, the one filled in out of reverse video.
 func (a *App) drawStatus(c *canvas) {
 	w, h := c.w, c.h
 	if h < 2 {
@@ -286,6 +287,16 @@ func (a *App) drawStatus(c *canvas) {
 	}
 	text := []rune(a.statusText())
 	width := c.runes(0, h-1, text, st)
+	if a.commanding && a.matches != nil && string(a.command.text) == a.filled {
+		for i, m := range a.matches {
+			width += 2
+			ms := st
+			if i == a.matchPos {
+				ms = tcell.StyleDefault
+			}
+			width += c.runes(width, h-1, []rune(m), ms)
+		}
+	}
 	k, ok := a.keys.Find(input.Command{Action: input.Help})
 	hint := []rune(k.String() + " help")
 	if ok && !(a.helping || a.searching || a.commanding || width+2+len(hint) > w) {

@@ -76,6 +76,7 @@ func TestParseKey(t *testing.T) {
 		{"Shift+PgDn", Key{tcell.KeyPgDn, 0, tcell.ModShift}},
 		{"Enter", Key{tcell.KeyEnter, 0, 0}},
 		{"Esc", Key{tcell.KeyEscape, 0, 0}},
+		{"Tab", Key{tcell.KeyTab, 0, 0}},
 		{"Backspace", Key{tcell.KeyBackspace, 0, 0}},
 		{"Space", Key{tcell.KeyRune, ' ', 0}},
 		{"Ctrl+Space", Key{tcell.KeyRune, ' ', tcell.ModCtrl}},
@@ -124,7 +125,7 @@ func TestKeyString(t *testing.T) {
 	tests := []struct{ name, want string }{
 		{"Up", "Up"}, {"Down", "Down"}, {"Left", "Left"}, {"Right", "Right"},
 		{"Home", "Home"}, {"End", "End"}, {"PgUp", "PgUp"}, {"PgDn", "PgDn"},
-		{"Enter", "Enter"}, {"Esc", "Esc"}, {"Backspace", "Backspace"}, {"Space", "Space"}, {"Ctrl+Space", "Ctrl+Space"}, {"Alt+Ctrl+Space", "Ctrl+Alt+Space"},
+		{"Enter", "Enter"}, {"Esc", "Esc"}, {"Tab", "Tab"}, {"Backspace", "Backspace"}, {"Space", "Space"}, {"Ctrl+Space", "Ctrl+Space"}, {"Alt+Ctrl+Space", "Ctrl+Alt+Space"},
 		{"j", "j"}, {"G", "G"}, {"<", "<"},
 		{"Ctrl+f", "Ctrl+f"}, {"Ctrl+F", "Ctrl+f"}, {"Alt+v", "Alt+v"}, {"Alt+V", "Alt+V"},
 		{"Shift+Up", "Shift+Up"}, {"Ctrl+Shift+Left", "Ctrl+Shift+Left"}, {"Shift+Alt+Right", "Alt+Shift+Right"},

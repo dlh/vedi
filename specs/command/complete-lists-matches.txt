@@ -1,0 +1,50 @@
+When several candidates match, Tab fills in what they share and lists
+them after the prompt, sorted, cut at the screen's edge. With nothing
+typed it lists every command. The list goes with the next key.
+
+-- size --
+60x4
+-- input --
+line 1
+-- keys --
+: "w" Tab
+-- screen --
+line 1
+
+
+:wrap  wrap  wrap_style
+-- keys --
+"_"
+-- screen --
+line 1
+
+
+:wrap_
+-- keys --
+Esc : "wrap_style " Tab
+-- screen --
+line 1
+
+
+:wrap_style   char  word
+-- keys --
+Esc : Tab
+-- screen --
+line 1
+
+
+:  auto_reload  clipboard_cmd  edge_markers  goto  map  tab_
+-- keys --
+Esc : "wrap " Tab
+-- screen --
+line 1
+
+
+:wrap   no  yes
+-- keys --
+Esc : "map x select_h" Tab
+-- screen --
+line 1
+
+
+:map x select_h  select_half_page_down  select_half_page_up
