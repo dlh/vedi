@@ -26,7 +26,9 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --cursor-row N               put the cursor on row N of the last screenful
       --cursor-col N               put the cursor in column N of the last screenful
       --clipboard-cmd CMD          pipe copied text to CMD instead of OSC 52
+      --no-clipboard-cmd           copy with OSC 52, or pbcopy in Terminal.app
       --open-cmd CMD               read each file by running CMD, %s the file
+      --no-open-cmd                read each file as it is
       --tab-width N                draw a tab as N cells (default: 8)
       --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
       --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf

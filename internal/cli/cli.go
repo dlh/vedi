@@ -29,7 +29,9 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N               put the cursor on row N of the last screenful
   --cursor-col N               put the cursor in column N of the last screenful
   --clipboard-cmd CMD          pipe copied text to CMD instead of OSC 52
+  --no-clipboard-cmd           copy with OSC 52, or pbcopy in Terminal.app
   --open-cmd CMD               read each file by running CMD, %s the file
+  --no-open-cmd                read each file as it is
   --tab-width N                draw a tab as N cells (default: 8)
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
@@ -50,8 +52,8 @@ type Options struct {
 	StartLine     int // 1-based; 0 for none
 	Follow        bool
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd  string      // --clipboard-cmd; "" leaves it to the config
-	OpenCmd       string      // --open-cmd; "" leaves it to the config
+	ClipboardCmd  *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
+	OpenCmd       *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
 	TabWidth      int         // --tab-width; 0 leaves it to the config
 	Config        string      // "" for the default location
 	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
@@ -74,9 +76,9 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 	if o.WrapStyle != nil {
 		style = *o.WrapStyle
 	}
-	cmd := o.ClipboardCmd
-	if cmd == "" {
-		cmd = cfg.ClipboardCmd
+	cmd := cfg.ClipboardCmd
+	if o.ClipboardCmd != nil {
+		cmd = *o.ClipboardCmd
 	}
 	tab := o.TabWidth
 	if tab == 0 {
@@ -115,8 +117,8 @@ func (o Options) Reloads(cfg config.Config) bool {
 // Open is the command each file is read through: the flag's, else
 // the config's, else "" for none.
 func (o Options) Open(cfg config.Config) string {
-	if o.OpenCmd != "" {
-		return o.OpenCmd
+	if o.OpenCmd != nil {
+		return *o.OpenCmd
 	}
 	return cfg.OpenCmd
 }
@@ -140,8 +142,8 @@ var valueFlags = map[string]func(*Options, string) error{
 	"--scrolled-by":   screenInt(0, func(s *app.Screen) *int { return &s.ScrolledBy }),
 	"--cursor-row":    screenInt(1, func(s *app.Screen) *int { return &s.CursorRow }),
 	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
-	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
-	"--open-cmd":      func(o *Options, v string) error { o.OpenCmd = v; return nil },
+	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = &v; return nil },
+	"--open-cmd":      func(o *Options, v string) error { o.OpenCmd = &v; return nil },
 	"--config":        func(o *Options, v string) error { o.Config = v; return nil },
 	"--wrap-style": func(o *Options, v string) error {
 		switch v {
@@ -242,6 +244,10 @@ func (o *Options) parse(args []string, env bool) ([]string, error) {
 			o.EdgeMarkers = new(true)
 		case a == "--no-edge-markers":
 			o.EdgeMarkers = new(false)
+		case a == "--no-clipboard-cmd":
+			o.ClipboardCmd = new("")
+		case a == "--no-open-cmd":
+			o.OpenCmd = new("")
 		case a == "+G":
 			o.Follow = true
 		case strings.HasPrefix(a, "+"):

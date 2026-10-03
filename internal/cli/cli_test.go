@@ -33,8 +33,8 @@ func TestParse(t *testing.T) {
 		{"bad wrap style", []string{"--wrap-style", "yes"}, Options{}, nil, true},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
-		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: "pbcopy"}, nil, false},
-		{"clipboard cmd eq", []string{"--clipboard-cmd=wl-copy -n"}, Options{ClipboardCmd: "wl-copy -n"}, nil, false},
+		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: new("pbcopy")}, nil, false},
+		{"clipboard cmd eq", []string{"--clipboard-cmd=wl-copy -n"}, Options{ClipboardCmd: new("wl-copy -n")}, nil, false},
 		{"config", []string{"--config", "/tmp/k.conf"}, Options{Config: "/tmp/k.conf"}, nil, false},
 		{"config eq", []string{"--config=k.conf", "f"}, Options{Config: "k.conf"}, []string{"f"}, false},
 		{"missing config", []string{"--config"}, Options{}, nil, true},
@@ -60,7 +60,10 @@ func TestParse(t *testing.T) {
 		{"screen conflicts with plus G", []string{"--cursor-row", "1", "+G"}, Options{}, nil, true},
 		{"plus G conflicts with plus N", []string{"+G", "+5"}, Options{}, nil, true},
 		{"flag after file", []string{"a", "-S"}, Options{Wrap: new(false)}, []string{"a"}, false},
-		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{}, nil, false},
+		{"clipboard cmd empty eq", []string{"--clipboard-cmd="}, Options{ClipboardCmd: new("")}, nil, false},
+		{"no clipboard cmd", []string{"--no-clipboard-cmd"}, Options{ClipboardCmd: new("")}, nil, false},
+		{"no clipboard cmd wins", []string{"--clipboard-cmd", "pbcopy", "--no-clipboard-cmd"}, Options{ClipboardCmd: new("")}, nil, false},
+		{"clipboard cmd wins", []string{"--no-clipboard-cmd", "--clipboard-cmd=pbcopy"}, Options{ClipboardCmd: new("pbcopy")}, nil, false},
 		{"auto reload", []string{"--auto-reload"}, Options{AutoReload: new(true)}, nil, false},
 		{"no auto reload", []string{"--no-auto-reload", "f"}, Options{AutoReload: new(false)}, []string{"f"}, false},
 		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: new(true)}, nil, false},
@@ -69,9 +72,11 @@ func TestParse(t *testing.T) {
 		{"missing tab width", []string{"--tab-width"}, Options{}, nil, true},
 		{"bad tab width", []string{"--tab-width", "0"}, Options{}, nil, true},
 		{"bad tab width text", []string{"--tab-width", "four"}, Options{}, nil, true},
-		{"open cmd", []string{"--open-cmd", "bat --color=always %s", "f"}, Options{OpenCmd: "bat --color=always %s"}, []string{"f"}, false},
-		{"open cmd eq", []string{"--open-cmd=cat %s"}, Options{OpenCmd: "cat %s"}, nil, false},
+		{"open cmd", []string{"--open-cmd", "bat --color=always %s", "f"}, Options{OpenCmd: new("bat --color=always %s")}, []string{"f"}, false},
+		{"open cmd eq", []string{"--open-cmd=cat %s"}, Options{OpenCmd: new("cat %s")}, nil, false},
 		{"missing open cmd", []string{"--open-cmd"}, Options{}, nil, true},
+		{"no open cmd", []string{"--no-open-cmd", "f"}, Options{OpenCmd: new("")}, []string{"f"}, false},
+		{"no open cmd wins", []string{"--open-cmd=bat %s", "--no-open-cmd"}, Options{OpenCmd: new("")}, nil, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -103,14 +108,16 @@ func TestParseEnv(t *testing.T) {
 		{"blank", " \t ", nil, Options{}, nil},
 		{"arg wins", "-S --tab-width 4", []string{"--wrap", "--tab-width=2"}, Options{Wrap: new(true), TabWidth: 2}, nil},
 		{"no quit if one page beats env", "-F", []string{"--no-quit-if-one-page", "f"}, Options{}, []string{"f"}},
-		{"single quotes", "--clipboard-cmd 'xclip -selection clipboard'", nil, Options{ClipboardCmd: "xclip -selection clipboard"}, nil},
-		{"double quotes", `--clipboard-cmd "sh -c 'cat >f'"`, nil, Options{ClipboardCmd: "sh -c 'cat >f'"}, nil},
-		{"quotes join", `--clipboard-cmd="wl-copy -n"`, nil, Options{ClipboardCmd: "wl-copy -n"}, nil},
+		{"no open cmd beats env", "--open-cmd 'bat %s'", []string{"--no-open-cmd"}, Options{OpenCmd: new("")}, nil},
+		{"no clipboard cmd beats env", "--clipboard-cmd pbcopy", []string{"--no-clipboard-cmd"}, Options{ClipboardCmd: new("")}, nil},
+		{"single quotes", "--clipboard-cmd 'xclip -selection clipboard'", nil, Options{ClipboardCmd: new("xclip -selection clipboard")}, nil},
+		{"double quotes", `--clipboard-cmd "sh -c 'cat >f'"`, nil, Options{ClipboardCmd: new("sh -c 'cat >f'")}, nil},
+		{"quotes join", `--clipboard-cmd="wl-copy -n"`, nil, Options{ClipboardCmd: new("wl-copy -n")}, nil},
 		{"backslash", `--config my\ vedi.conf`, nil, Options{Config: "my vedi.conf"}, nil},
-		{"backslash in double quotes", `--clipboard-cmd "a \"b\" \\ \c"`, nil, Options{ClipboardCmd: `a "b" \ \c`}, nil},
-		{"backslash in single quotes", `--clipboard-cmd 'a\b'`, nil, Options{ClipboardCmd: `a\b`}, nil},
-		{"empty quotes", "--clipboard-cmd ''", []string{"f"}, Options{}, []string{"f"}},
-		{"open cmd", "-F --open-cmd 'bat --color=always --paging=never %s'", nil, Options{QuitIfOnePage: true, OpenCmd: "bat --color=always --paging=never %s"}, nil},
+		{"backslash in double quotes", `--clipboard-cmd "a \"b\" \\ \c"`, nil, Options{ClipboardCmd: new(`a "b" \ \c`)}, nil},
+		{"backslash in single quotes", `--clipboard-cmd 'a\b'`, nil, Options{ClipboardCmd: new(`a\b`)}, nil},
+		{"empty quotes", "--clipboard-cmd ''", []string{"f"}, Options{ClipboardCmd: new("")}, []string{"f"}},
+		{"open cmd", "-F --open-cmd 'bat --color=always --paging=never %s'", nil, Options{QuitIfOnePage: true, OpenCmd: new("bat --color=always --paging=never %s")}, nil},
 		{"plus G", "+G", nil, Options{Follow: true}, nil},
 		{"plus N beats plus G", "+G", []string{"+5"}, Options{StartLine: 5}, nil},
 		{"plus G beats plus N", "+5", []string{"+G"}, Options{Follow: true}, nil},
@@ -186,7 +193,7 @@ func TestApp(t *testing.T) {
 	if _, ok := got.Copier.(clipboard.OSC52); !ok {
 		t.Errorf("default copier = %T, want OSC52", got.Copier)
 	}
-	if _, ok := (Options{ClipboardCmd: "pbcopy"}.App(scr, nil, none).Copier).(clipboard.Command); !ok {
+	if _, ok := (Options{ClipboardCmd: new("pbcopy")}.App(scr, nil, none).Copier).(clipboard.Command); !ok {
 		t.Error("--clipboard-cmd should give a Command copier")
 	}
 	t.Setenv("TERM_PROGRAM", "Apple_Terminal")
@@ -209,7 +216,8 @@ func TestAppConfig(t *testing.T) {
 	}{
 		{Options{}, config.Config{}, layout.Wrap, ""},
 		{Options{}, cfg, layout.NoWrap, "wl-copy"},
-		{Options{Wrap: new(true), ClipboardCmd: "pbcopy"}, cfg, layout.Wrap, "pbcopy"},
+		{Options{Wrap: new(true), ClipboardCmd: new("pbcopy")}, cfg, layout.Wrap, "pbcopy"},
+		{Options{ClipboardCmd: new("")}, cfg, layout.NoWrap, ""},
 		{Options{Wrap: new(false)}, config.Config{}, layout.NoWrap, ""},
 	} {
 		got := tc.opts.App(scr, nil, tc.cfg)
@@ -268,21 +276,23 @@ func TestAppTabWidth(t *testing.T) {
 	}
 }
 
-// TestOpenCmd: the flag decides the open command; without one the
-// config does; without either there is none.
+// TestOpenCmd: the flag decides the open command, --no-open-cmd
+// included; without one the config does; without either there is
+// none.
 func TestOpenCmd(t *testing.T) {
 	for _, tc := range []struct {
-		flag string
+		flag *string
 		cfg  config.Config
 		want string
 	}{
-		{"", config.Config{}, ""},
-		{"", config.Config{OpenCmd: "cat %s"}, "cat %s"},
-		{"bat %s", config.Config{OpenCmd: "cat %s"}, "bat %s"},
-		{"bat %s", config.Config{}, "bat %s"},
+		{nil, config.Config{}, ""},
+		{nil, config.Config{OpenCmd: "cat %s"}, "cat %s"},
+		{new("bat %s"), config.Config{OpenCmd: "cat %s"}, "bat %s"},
+		{new("bat %s"), config.Config{}, "bat %s"},
+		{new(""), config.Config{OpenCmd: "cat %s"}, ""},
 	} {
 		if got := (Options{OpenCmd: tc.flag}).Open(tc.cfg); got != tc.want {
-			t.Errorf("Options{OpenCmd: %q}.Open(%+v) = %q, want %q", tc.flag, tc.cfg, got, tc.want)
+			t.Errorf("Options{OpenCmd: %v}.Open(%+v) = %q, want %q", tc.flag, tc.cfg, got, tc.want)
 		}
 	}
 }

@@ -57,8 +57,9 @@ through bat, for syntax coloring:
 
     export VEDI="-F --open-cmd 'bat --color=always --paging=never %s'"
 
-Piped input is read as it is. `open_cmd` in `vedi.conf` sets it for
-good; see [Configuration](configuration.md#settings).
+Piped input is read as it is, and `--no-open-cmd` reads the files so
+for one run. `open_cmd` in `vedi.conf` sets it for good; see
+[Configuration](configuration.md#settings).
 
 ## git-delta
 
