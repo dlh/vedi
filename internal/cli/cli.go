@@ -18,9 +18,8 @@ import (
 
 const Usage = `usage: vedi [flags] [file...]
 
-  -S, --nowrap                 start in nowrap mode
-  --wrap                       start in wrap mode (default: on)
-  --wrap-style STYLE           wrap at the screen's edge (char) or at words (word)
+  -S, --[no-]wrap              wrap long lines; -S is --no-wrap (default: on)
+  --wrap-style STYLE          wrap at the screen's edge (char) or at words (word)
   -F, --[no-]quit-if-one-page  print the text and quit if it fits the screen (default: off)
   --[no-]auto-reload           read a file again when it changes on disk (default: on)
   +G                           start at the last line and follow until EOF
@@ -46,7 +45,7 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	Wrap          *bool             // --wrap, -S; nil leaves it to the config
+	Wrap          *bool             // --wrap, --no-wrap, -S; nil leaves it to the config
 	WrapStyle     *layout.WrapStyle // --wrap-style; nil leaves it to the config
 	QuitIfOnePage bool
 	StartLine     int // 1-based; 0 for none
@@ -228,7 +227,7 @@ func (o *Options) parse(args []string, env bool) ([]string, error) {
 			continue
 		}
 		switch {
-		case a == "-S" || a == "--nowrap":
+		case a == "-S" || a == "--no-wrap":
 			o.Wrap = new(false)
 		case a == "--wrap":
 			o.Wrap = new(true)

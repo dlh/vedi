@@ -15,8 +15,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
 ## Usage
 
     vedi [flags] [file...]
-      -S, --nowrap                 start in nowrap mode
-      --wrap                       start in wrap mode (default: on)
+      -S, --[no-]wrap              wrap long lines; -S is --no-wrap (default: on)
       --wrap-style STYLE           wrap at the screen's edge (char) or at words (word)
       -F, --[no-]quit-if-one-page  print the text and quit if it fits the screen (default: off)
       --[no-]auto-reload           read a file again when it changes on disk (default: on)
