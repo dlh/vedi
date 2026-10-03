@@ -19,3 +19,6 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
   tag's.
 - Docs, comments and commit messages are terse: say it once, in as
   few words as read clearly. No preamble, no restating the code.
+- A comment says why, or what the code cannot show: a constraint, a
+  case it guards against. Never what the code does; delete one that
+  only repeats it.
