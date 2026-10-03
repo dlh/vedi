@@ -4,7 +4,7 @@ w then wraps at words.
 -- size --
 25x5
 -- args --
--S
+-S fox
 -- config --
 wrap_style word
 -- input --
@@ -14,7 +14,7 @@ the quick brown fox jumps
 
 
 
-<stdin>  line 1/1  nowrap
+fox  line 1/1  nowrap
 -- keys --
 w
 -- screen --
@@ -22,4 +22,4 @@ the quick brown fox
 jumps over the lazy dog
 
 
-<stdin>  line 1/1  word
+fox  line 1/1  word wrap

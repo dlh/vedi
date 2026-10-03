@@ -32,7 +32,7 @@ line 1
 
 
 
-<stdin>  line 1/1  word           h help
+<stdin>  line 1/1  word wrap      h help
 -- keys --
 : "edge_markers y" Tab Enter
 -- screen --
@@ -41,7 +41,7 @@ line 1
 
 
 
-<stdin>  line 1/1  word           h help
+<stdin>  line 1/1  word wrap      h help
 -- keys --
 : "map x sel" Tab
 -- screen --
@@ -59,7 +59,7 @@ line 1
 
 
 
-<stdin>  line 1/1  word           h help
+<stdin>  line 1/1  word wrap      h help
 -- keys --
 : "zz" Tab "goto 1" Tab
 -- screen --

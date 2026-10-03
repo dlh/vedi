@@ -6,6 +6,8 @@ row, its space would not.
 25x5
 -- config --
 wrap_style word
+-- args --
+fox
 -- input --
 the quick brown fox jumps over the lazy dog
 -- keys --
@@ -15,7 +17,7 @@ the quick brown fox jumps
 
 
 
-<stdin>  line 1/1  nowrap
+fox  line 1/1  nowrap
 -- keys --
 w
 -- screen --
@@ -23,4 +25,4 @@ the quick brown fox
 jumps over the lazy dog
 
 
-<stdin>  line 1/1  word
+fox  line 1/1  word wrap

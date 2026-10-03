@@ -386,7 +386,7 @@ func (a *App) statusText() string {
 	case a.mode == layout.NoWrap:
 		mode = "nowrap"
 	case a.style == layout.WrapStyleWord:
-		mode = "word"
+		mode = "word wrap"
 	}
 	reading := ""
 	if !eof {
