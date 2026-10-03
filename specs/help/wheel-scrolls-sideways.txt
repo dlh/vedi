@@ -13,11 +13,11 @@ wheel right 2
                     SUMMARY OF VEDI COMM
 
 ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- mouse --
 wheel Shift+up
 -- screen --
                         SUMMARY OF VEDI
 
   ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctr
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot

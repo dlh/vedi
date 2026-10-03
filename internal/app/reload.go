@@ -72,7 +72,7 @@ func (a *App) swap(buf *buffer.Buffer, closeBuf func()) {
 	if a.helping {
 		a.text.reload(buf)
 	} else {
-		t := textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight}
+		t := textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.matcher, a.backward, a.highlight}
 		t.reload(buf)
 		a.buf, a.cur, a.top, a.anchor = t.buf, t.cur, t.top, t.anchor
 		a.laidOut = nil

@@ -59,4 +59,4 @@ h
   w                                       Toggle wrap / nowrap.
   ⌥W                                      Toggle the edge markers.
   R                                       Reload the file.
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns

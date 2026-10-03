@@ -366,8 +366,6 @@ func (c *canvas) runes(x, y int, text []rune, st tcell.Style) int {
 
 func (a *App) statusText() string {
 	switch {
-	case a.helping:
-		return "help  motion scrolls, any other key returns"
 	case a.searching && a.promptBack:
 		return "?" + string(a.query.text)
 	case a.searching:
@@ -376,6 +374,8 @@ func (a *App) statusText() string {
 		return ":" + string(a.command.text)
 	case a.status != "":
 		return a.status
+	case a.helping:
+		return "help  motion scrolls, / searches, any other key returns"
 	}
 	eof, err := a.buf.Finished()
 	if err != nil {

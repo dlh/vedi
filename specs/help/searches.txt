@@ -1,0 +1,62 @@
+/ and ? search the bindings as they search the text: the match is
+highlighted and scrolled into view, n and N step through the matches,
+and a search that finds nothing or wraps says so in the banner's
+place. A search starts from the screen as scrolled. The search is
+help's own: it starts with no pattern, and the text's pattern, its
+direction and its highlight are back on return.
+
+-- size --
+60x4
+-- input --
+page 1
+page 2
+-- keys --
+/ "page" Enter h n
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+no search pattern
+-- keys --
+/ "half"
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+/half
+-- keys --
+Enter
+-- screen --
+  d  ⌃D                                   Down {half} a page.
+  u  ⌃U                                   Up {half} a page.
+  ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
+help  motion scrolls, / searches, any other key returns
+-- cursor --
+hidden
+-- keys --
+n n
+-- screen --
+  d  ⌃D                                   Down {half} a page.
+  u  ⌃U                                   Up {half} a page.
+  ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
+search wrapped
+-- keys --
+G ? Enter
+-- screen --
+  u  ⌃U                                   Up {half} a page.
+  ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
+  g  G  <  >                              First line, last l
+help  motion scrolls, / searches, any other key returns
+-- keys --
+q
+-- screen --
+{page} 1
+{page} 2
+
+<stdin>  line 1/2  wrap                               h help
+-- cursor --
+0 0
+-- keys --
+n
+-- cursor --
+1 0

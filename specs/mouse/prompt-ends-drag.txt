@@ -65,7 +65,7 @@ tick 2
 
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is
 
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- mouse --
 release 4 0
 click 3 0

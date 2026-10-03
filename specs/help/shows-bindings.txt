@@ -5,9 +5,9 @@ with their names centered in capitals between rules. Each row is the
 keys bound to an action, two spaces apart, and what they do beside.
 The key column is as wide as the widest list, up to half the room;
 a list or a doc too wide for its column continues on the next line.
-The status line says how to get back. Any key but a motion returns to
-the text and does nothing else, so q returns rather than quits and
-the cursor is where it was.
+The status line says how to get back. Any key but a motion or a
+search key returns to the text and does nothing else, so q returns
+rather than quits and the cursor is where it was.
 
 -- size --
 80x63
@@ -79,7 +79,7 @@ Down h
   Up  Down                                Recall earlier searches, or commands.
   Tab                                     Complete; again, the next match.
   Esc  ⌃G  ⌃C                             Cancel.
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns
 -- cursor --
 hidden
 -- keys --

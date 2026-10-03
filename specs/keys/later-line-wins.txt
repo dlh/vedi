@@ -15,4 +15,4 @@ x
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
 
   h  x                                    Show the key bindi
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns

@@ -75,4 +75,4 @@ Alt+h
   Up  Down                                Recall earlier searches, or commands.
   Tab                                     Complete; again, the next match.
   Esc  ⌃G  ⌃C                             Cancel.
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns

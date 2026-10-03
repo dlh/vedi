@@ -1,7 +1,7 @@
 # Keys
 
 `h` shows the bindings in effect; the motions scroll them when they
-do not fit. These are the defaults.
+do not fit, and the search keys search them. These are the defaults.
 
 | Key | Action |
 |---|---|

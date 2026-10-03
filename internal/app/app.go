@@ -275,12 +275,12 @@ func (a *App) Handle(ev tcell.Event) bool {
 		}
 	case *tcell.EventKey:
 		a.act()
-		if a.helping {
-			a.helpKey(a.keys.Lookup(ev))
-			return false
-		}
 		if a.searching {
 			a.handleSearchKey(ev)
+			return false
+		}
+		if a.helping {
+			a.helpKey(a.keys.Lookup(ev))
 			return false
 		}
 		if a.commanding {
@@ -487,9 +487,7 @@ func (a *App) handleKey(c input.Command) bool {
 		a.drop()
 		a.moveRows(1)
 	case input.Search, input.SearchBack:
-		a.searching, a.dragging = true, false
-		a.promptBack = c.Action == input.SearchBack
-		a.query.open()
+		a.openSearch(c.Action == input.SearchBack)
 	case input.SearchNext:
 		a.find(a.backward, true)
 	case input.SearchPrev:
@@ -765,6 +763,13 @@ func (a *App) copy() bool {
 	return true
 }
 
+// openSearch opens the / prompt, or the ? prompt if back.
+func (a *App) openSearch(back bool) {
+	a.searching, a.dragging = true, false
+	a.promptBack = back
+	a.query.open()
+}
+
 // handleSearchKey edits the / and ? prompts. Enter searches; with
 // nothing typed it repeats the last pattern the prompt's way.
 func (a *App) handleSearchKey(ev *tcell.EventKey) {
@@ -960,22 +965,27 @@ func (a *App) scrollToCursor() {
 	}
 }
 
-// textView is what help sets aside: the text and how it was shown.
+// textView is what help sets aside: the text, how it was shown, and
+// its search, which help's does not disturb.
 type textView struct {
 	buf       *buffer.Buffer
 	cur, top  buffer.Pos
 	anchor    *buffer.Pos
 	xoff      int
 	mode      layout.Mode
+	matcher   search.Matcher
+	backward  bool
 	highlight bool
 }
 
 // showHelp puts the bindings in the text's place, laid out as text
-// in NoWrap mode, so drawing and scrolling are the text's.
+// in NoWrap mode, so drawing and scrolling are the text's. The
+// search starts over: help's is its own.
 func (a *App) showHelp() {
 	a.helping, a.dragging = true, false
-	a.text = &textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight}
-	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight = a.helpBuffer(), buffer.Pos{}, buffer.Pos{}, nil, 0, layout.NoWrap, false
+	a.text = &textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.matcher, a.backward, a.highlight}
+	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode = a.helpBuffer(), buffer.Pos{}, buffer.Pos{}, nil, 0, layout.NoWrap
+	a.matcher, a.backward, a.highlight = search.Matcher{}, false, false
 	a.laidOut = nil
 }
 
@@ -994,18 +1004,32 @@ func (a *App) helpBuffer() *buffer.Buffer {
 // reload meanwhile may have moved it.
 func (a *App) hideHelp() {
 	t := a.text
-	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.highlight = t.buf, t.cur, t.top, t.anchor, t.xoff, t.mode, t.highlight
+	a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode = t.buf, t.cur, t.top, t.anchor, t.xoff, t.mode
+	a.matcher, a.backward, a.highlight = t.matcher, t.backward, t.highlight
 	a.helping, a.text, a.laidOut = false, nil, nil
 	a.scrollToCursor()
 }
 
-// helpKey scrolls the bindings by a motion; any other key returns.
+// helpKey scrolls the bindings by a motion and searches them by the
+// search keys; any other key returns. The search is the text's: its
+// pattern, direction and highlight carry over, as less's do.
 func (a *App) helpKey(c input.Command) {
+	n := a.buf.Len()
+	switch c.Action {
+	case input.Search, input.SearchBack:
+		a.openSearch(c.Action == input.SearchBack)
+		return
+	case input.SearchNext:
+		a.find(a.backward, true)
+		return
+	case input.SearchPrev:
+		a.find(!a.backward, true)
+		return
+	}
 	if c.Extend || !input.IsMovement(c.Action) {
 		a.hideHelp()
 		return
 	}
-	n := a.buf.Len()
 	switch c.Action {
 	case input.Up:
 		a.scrollHelp(-1)
@@ -1035,9 +1059,17 @@ func (a *App) helpKey(c input.Command) {
 }
 
 // scrollHelp moves the bindings by n rows, no further than the last
-// page; each line is a row, the mode being NoWrap.
+// page; each line is a row, the mode being NoWrap. The cursor, hidden
+// but where a search starts, is kept on screen as scrollView keeps
+// the text's: scrolled off, it moves to the edge row.
 func (a *App) scrollHelp(n int) {
-	a.top = buffer.Pos{Line: max(0, min(a.top.Line+n, a.buf.Len()-a.textRows()))}
+	rows := a.textRows()
+	a.top = buffer.Pos{Line: max(0, min(a.top.Line+n, a.buf.Len()-rows))}
+	if a.cur.Line < a.top.Line {
+		a.cur = a.top
+	} else if a.cur.Line >= a.top.Line+rows {
+		a.cur = buffer.Pos{Line: a.top.Line + rows - 1}
+	}
 }
 
 // scrollHelpSideways moves the bindings by n columns, no further than

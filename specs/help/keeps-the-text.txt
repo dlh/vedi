@@ -13,7 +13,7 @@ End Shift+Left h
                             SUMMARY OF VEDI COMMANDS
 
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns
 -- keys --
 Down Right q
 -- screen --

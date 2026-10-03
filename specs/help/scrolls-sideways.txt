@@ -15,7 +15,7 @@ h Right
 ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f
 
                                   Show t
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- keys --
 End
 -- screen --
@@ -24,7 +24,7 @@ EDI COMMANDS
  Ctrl+f in the config file.
 
   Show the key bindings.
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- keys --
 Left
 -- screen --
@@ -33,7 +33,7 @@ ARY OF VEDI COMMANDS
 d: ⌃F is Ctrl+f in the config file.
 
           Show the key bindings.
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- resize --
 60x6
 -- screen --
@@ -42,7 +42,7 @@ help  motion scrolls, any other key retu
 , Alt and Cmd: ⌃F is Ctrl+f in the config file.
 
                       Show the key bindings.
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns
 -- keys --
 Home
 -- screen --
@@ -51,7 +51,7 @@ Home
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
 
   h                                       Show the key bindi
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns
 -- resize --
 80x6
 -- keys --
@@ -62,4 +62,4 @@ Right End
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
 
   h                                       Show the key bindings.
-help  motion scrolls, any other key returns
+help  motion scrolls, / searches, any other key returns

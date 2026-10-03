@@ -16,7 +16,7 @@ h Down Right
 
                                   Show t
                                   Quit.
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- reload --
 uno
 dos
@@ -26,4 +26,4 @@ dos
 
                                   Show t
                                   Quit.
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot

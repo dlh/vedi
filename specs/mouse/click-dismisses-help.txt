@@ -12,7 +12,7 @@ Down h
                             SUMMARY OF V
 
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is
-help  motion scrolls, any other key retu
+help  motion scrolls, / searches, any ot
 -- mouse --
 click 0 0
 -- screen --
