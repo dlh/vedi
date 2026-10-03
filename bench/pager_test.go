@@ -3,9 +3,33 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
+
+// TestEnv: each pager runs with its defaults, so the variables that
+// configure less and vedi are dropped, and TERM is fixed.
+func TestEnv(t *testing.T) {
+	t.Setenv("LESS", "-R")
+	t.Setenv("LESSOPEN", "|cat %s")
+	t.Setenv("VEDI", "-F -S")
+	t.Setenv("TERM", "dumb")
+	t.Setenv("KEEP", "1")
+	got := map[string]string{}
+	for _, kv := range env() {
+		k, v, _ := strings.Cut(kv, "=")
+		got[k] = v
+	}
+	for _, k := range []string{"LESS", "LESSOPEN", "VEDI"} {
+		if v, ok := got[k]; ok {
+			t.Errorf("%s=%q kept", k, v)
+		}
+	}
+	if got["TERM"] != "xterm-256color" || got["LESSHISTFILE"] != "-" || got["KEEP"] != "1" {
+		t.Errorf("TERM=%q LESSHISTFILE=%q KEEP=%q", got["TERM"], got["LESSHISTFILE"], got["KEEP"])
+	}
+}
 
 // TestSession: a shell stand-in for a pager prints the file, waits for
 // a key, says bye and exits; RSS is positive whatever the platform.

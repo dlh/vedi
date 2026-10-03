@@ -60,12 +60,12 @@ func start(dir string, argv []string, in *os.File) (*session, error) {
 	return s, nil
 }
 
-// env is the environment with LESS* removed and TERM set, so less runs
-// with its defaults and writes no history.
+// env is the environment with LESS* and VEDI removed and TERM set, so
+// each pager runs with its defaults and less writes no history.
 func env() []string {
 	var e []string
 	for _, kv := range os.Environ() {
-		if strings.HasPrefix(kv, "LESS") || strings.HasPrefix(kv, "TERM=") {
+		if strings.HasPrefix(kv, "LESS") || strings.HasPrefix(kv, "VEDI=") || strings.HasPrefix(kv, "TERM=") {
 			continue
 		}
 		e = append(e, kv)
