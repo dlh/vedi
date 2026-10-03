@@ -1,0 +1,62 @@
+map KEY cycle SETTING binds a key to cycling the setting. Here Alt+w
+turns the edge markers on, then off, reporting each on the status
+line; the help screen lists the key on the setting's row.
+
+-- config --
+map Alt+w cycle edge_markers
+-- size --
+80x10
+-- args --
+-S
+-- input --
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij
+-- screen --
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab
+
+
+
+
+
+
+
+
+<stdin>  line 1/1  nowrap                                                 h help
+-- keys --
+Alt+w
+-- screen --
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyza[>]
+
+
+
+
+
+
+
+
+edge_markers yes                                                          h help
+-- keys --
+Alt+w
+-- screen --
+abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab
+
+
+
+
+
+
+
+
+edge_markers no                                                           h help
+-- keys --
+h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+
+  h                                       Show the key bindings.
+  q                                       Quit.
+  w                                       Toggle wrap / nowrap.
+  ⌥W                                      Toggle the edge markers.
+  R                                       Reload the file.
+help  motion scrolls, any other key returns

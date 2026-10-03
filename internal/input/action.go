@@ -14,16 +14,20 @@ var actionNames = [...]string{
 	SelectAll: "select_all", ClearSelection: "clear_selection", SetMark: "set_mark", Copy: "copy",
 	CopyAndQuit: "copy_and_quit", Search: "search", SearchBack: "search_back",
 	SearchNext: "search_next", SearchPrev: "search_prev", CommandPrompt: "command",
-	ToggleWrap: "toggle_wrap", Quit: "quit", Help: "help", Reload: "reload",
+	Cycle: "cycle", Quit: "quit", Help: "help", Reload: "reload",
 }
 
 // String is the config name.
 func (a Action) String() string { return actionNames[a] }
 
-// String is the config name: select_ before a movement that extends.
+// String is the config name: select_ before a movement that extends,
+// cycle and its setting.
 func (c Command) String() string {
-	if c.Extend {
+	switch {
+	case c.Extend:
 		return "select_" + c.Action.String()
+	case c.Action == Cycle:
+		return "cycle " + c.Arg
 	}
 	return c.Action.String()
 }
@@ -50,9 +54,20 @@ func CommandNames() []string {
 	return names
 }
 
-// ParseCommand reads an action name; none is the zero Command.
-// go_to_line is command's old name.
-func ParseCommand(name string) (Command, error) {
+// ParseCommand reads an action, cycle with its setting; none is the
+// zero Command. go_to_line is command's old name.
+func ParseCommand(text string) (Command, error) {
+	f := strings.Fields(text)
+	if len(f) > 0 && f[0] == "cycle" {
+		if len(f) != 2 {
+			return Command{}, errCycle()
+		}
+		if _, ok := LookupSetting(f[1]); !ok {
+			return Command{}, errCycle()
+		}
+		return Command{Action: Cycle, Arg: f[1]}, nil
+	}
+	name := strings.Join(f, " ")
 	if name == "go_to_line" {
 		name = "command"
 	}
@@ -61,7 +76,7 @@ func ParseCommand(name string) (Command, error) {
 	}
 	if base, ok := strings.CutPrefix(name, "select_"); ok {
 		if a, ok := action(base); ok && IsMovement(a) {
-			return Command{a, true}, nil
+			return Command{Action: a, Extend: true}, nil
 		}
 	}
 	return Command{}, fmt.Errorf("unknown action %q", name)

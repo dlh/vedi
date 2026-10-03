@@ -44,7 +44,7 @@ home
 
 <stdin>  line 1/1  word wrap                          h help
 -- keys --
-: Tab Tab Tab Tab Enter
+: Tab Tab Tab Tab Tab Enter
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away
 home

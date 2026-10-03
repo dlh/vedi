@@ -30,7 +30,7 @@ const (
 	SearchNext
 	SearchPrev
 	CommandPrompt
-	ToggleWrap
+	Cycle
 	Quit
 	Help
 	Reload
@@ -40,8 +40,9 @@ const (
 func IsMovement(a Action) bool { return a >= Up && a <= Last }
 
 // Command is a decoded key. Extend is Shift on a movement key: extend
-// the selection instead of clearing it.
+// the selection instead of clearing it. Arg is Cycle's setting.
 type Command struct {
 	Action Action
 	Extend bool
+	Arg    string
 }

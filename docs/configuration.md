@@ -71,13 +71,17 @@ run, and the command line overrides `VEDI`; see
 `:` opens a prompt on the status line. It takes the settings above
 and `map`, as the config file does, for the rest of the run:
 `:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
-22`, goes to line 22. A bad line is an error on the status line.
+22`, goes to line 22. `:cycle wrap_style` sets a setting to the value
+after its current one, the first after the last; it takes `wrap`,
+`wrap_style`, `edge_markers` and `auto_reload`, and reports the new
+value on the status line unless the line shows it anyway, as it does
+`wrap` and `wrap_style`. A bad line is an error on the status line.
 `clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
 
 Tab completes the word being typed: the command, `yes` or `no`, `char`
-or `word`, an action after `map`'s key. One match fills it in and a
-space; several, what they share, and lists them sorted after the
-prompt. Tab again fills in each in turn, then what was typed. Enter on
+or `word`, a setting after `cycle`, an action after `map`'s key. One
+match fills it in and a space; several, what they share, and lists
+them sorted after the prompt. Tab again fills in each in turn, then what was typed. Enter on
 a listed command keeps the prompt, for the argument; on a listed
 argument it runs the line. Up and Down recall earlier commands; Esc,
 Ctrl+g and Ctrl+c cancel.
@@ -101,8 +105,9 @@ Each movement has a `select_` twin that extends the selection instead
 of clearing it: `left` and `select_left`, `page_down` and
 `select_page_down`. `set_mark` starts a selection that every motion
 then extends, Shift or not, until `set_mark` again, `clear_selection`
-or a click ends it: vim's `v`, emacs's `Ctrl+Space`. The defaults
-below name every action.
+or a click ends it: vim's `v`, emacs's `Ctrl+Space`. `cycle` takes a
+setting, as `cycle wrap_style`, and is the one action that does; see
+[Commands](#commands). The defaults below name every other action.
 
 ## Defaults
 
@@ -220,7 +225,7 @@ map Cmd+Shift+g search_prev
 map : command
 
 # Toggle wrap / nowrap
-map w toggle_wrap
+map w cycle wrap
 
 # Reload the file
 map R reload
@@ -244,7 +249,7 @@ map 0 home
 map $ end
 # w and b move by word; wrap moves to Alt+w, and Ctrl+b still pages up
 map w word_right
-map Alt+w toggle_wrap
+map Alt+w cycle wrap
 map b word_left
 # Shifted, the same keys extend the selection
 map H select_left

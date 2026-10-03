@@ -1,0 +1,64 @@
+cycle SETTING at the : prompt sets the setting to the value after its
+current one, the first after the last: wrap_style char becomes word,
+and word char again. A setting the status line does not show,
+edge_markers or auto_reload, is reported there with its new value.
+Anything but wrap, wrap_style, edge_markers or auto_reload is an error.
+
+-- size --
+60x5
+-- input --
+the quick brown fox jumps over the lazy dog, then naps in the sun
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+<stdin>  line 1/1  wrap                               h help
+-- keys --
+: "cycle wrap_style" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in
+the sun
+
+
+<stdin>  line 1/1  word wrap                          h help
+-- keys --
+: "cycle wrap_style" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+<stdin>  line 1/1  wrap                               h help
+-- keys --
+: "cycle auto_reload" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+auto_reload no                                        h help
+-- keys --
+: "cycle auto_reload" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+auto_reload yes                                       h help
+-- keys --
+: "cycle tab_width" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+cycle takes wrap, wrap_style, edge_markers or auto_reload
+-- keys --
+: "cycle" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in th
+e sun
+
+
+cycle takes wrap, wrap_style, edge_markers or auto_reload

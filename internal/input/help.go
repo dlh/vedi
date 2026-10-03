@@ -27,8 +27,9 @@ type helpSection struct {
 	rows []helpRow
 }
 
-func act(a Action) Command { return Command{Action: a} }
-func sel(a Action) Command { return Command{a, true} }
+func act(a Action) Command       { return Command{Action: a} }
+func sel(a Action) Command       { return Command{Action: a, Extend: true} }
+func cyc(setting string) Command { return Command{Action: Cycle, Arg: setting} }
 
 // helpSections is the help screen in order: the first, unnamed, is
 // shown at the top as less shows h and q. The table in docs/keys.md is
@@ -37,7 +38,10 @@ var helpSections = []helpSection{
 	{"", []helpRow{
 		{cmds: []Command{act(Help)}, doc: "Show the key bindings"},
 		{cmds: []Command{act(Quit)}, doc: "Quit"},
-		{cmds: []Command{act(ToggleWrap)}, doc: "Toggle wrap / nowrap"},
+		{cmds: []Command{cyc("wrap")}, doc: "Toggle wrap / nowrap"},
+		{cmds: []Command{cyc("wrap_style")}, doc: "Cycle the wrap style: char, word"},
+		{cmds: []Command{cyc("edge_markers")}, doc: "Toggle the edge markers"},
+		{cmds: []Command{cyc("auto_reload")}, doc: "Toggle reloading a changed file"},
 		{cmds: []Command{act(Reload)}, doc: "Reload the file"},
 	}},
 	{"Moving", []helpRow{

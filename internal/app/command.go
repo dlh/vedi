@@ -104,15 +104,16 @@ func candidates(before []string) []string {
 	switch {
 	case len(before) == 0:
 		return commands
+	case len(before) == 1 && before[0] == "cycle":
+		return input.SettingNames()
 	case len(before) == 1:
-		switch before[0] {
-		case "wrap", "edge_markers", "auto_reload":
-			return []string{"yes", "no"}
-		case "wrap_style":
-			return []string{"char", "word"}
+		if s, ok := input.LookupSetting(before[0]); ok {
+			return s.Values
 		}
 	case len(before) == 2 && before[0] == "map":
 		return input.CommandNames()
+	case len(before) == 3 && before[0] == "map" && before[2] == "cycle":
+		return input.SettingNames()
 	}
 	return nil
 }
@@ -125,14 +126,14 @@ func commonPrefix(a, b string) string {
 	return a[:i]
 }
 
-// commands is what the : prompt takes: goto and the config verbs but
-// clear_all_shortcuts, which would unbind : and q.
-var commands = []string{"goto", "wrap", "wrap_style", "tab_width", "edge_markers", "auto_reload", "clipboard_cmd", "map"}
+// commands is what the : prompt takes: goto, cycle and the config
+// verbs but clear_all_shortcuts, which would unbind : and q.
+var commands = []string{"goto", "cycle", "wrap", "wrap_style", "tab_width", "edge_markers", "auto_reload", "clipboard_cmd", "map"}
 
 // runCommand runs a : line. A number alone, or goto and a number, goes
-// to that 1-based line, clamped to the buffer; a config verb sets
-// what it would in a file, for the rest of the run. Nothing typed does
-// nothing; an error is reported on the status line.
+// to that 1-based line, clamped to the buffer; cycle steps a setting;
+// a config verb sets what it would in a file, for the rest of the run.
+// Nothing typed does nothing; an error is reported on the status line.
 func (a *App) runCommand(line string) {
 	f := strings.Fields(line)
 	if len(f) == 0 {
@@ -141,7 +142,8 @@ func (a *App) runCommand(line string) {
 	if len(f) == 1 && isNumber(f[0]) {
 		f = []string{"goto", f[0]}
 	}
-	if f[0] == "goto" {
+	switch f[0] {
+	case "goto":
 		if len(f) != 2 || !isNumber(f[1]) {
 			a.status = "goto takes a line number"
 			return
@@ -150,6 +152,14 @@ func (a *App) runCommand(line string) {
 		a.cur = buffer.Pos{Line: n - 1}
 		a.drop()
 		a.scrollToCursor()
+		return
+	case "cycle":
+		c, err := input.ParseCommand(line)
+		if err != nil {
+			a.status = err.Error()
+			return
+		}
+		a.cycle(c.Arg)
 		return
 	}
 	var c config.Config
@@ -183,6 +193,44 @@ func (a *App) runCommand(line string) {
 		a.keys = a.keys.Apply(c.Keys)
 	}
 	a.scrollToCursor()
+}
+
+// cycle sets a setting to the value after its current one, the first
+// after the last, and reports the new value on the status line unless
+// the line shows it anyway, as it does wrap and wrap_style.
+func (a *App) cycle(name string) {
+	s, _ := input.LookupSetting(name)
+	line := name + " " + s.Next(a.setting(name))
+	a.runCommand(line)
+	if name != "wrap" && name != "wrap_style" {
+		a.status = line
+	}
+}
+
+// setting is the current value of a setting cycle takes, as a config
+// file spells it.
+func (a *App) setting(name string) string {
+	switch name {
+	case "wrap":
+		return yesNo(a.mode == layout.Wrap)
+	case "wrap_style":
+		if a.style == layout.WrapStyleWord {
+			return "word"
+		}
+		return "char"
+	case "edge_markers":
+		return yesNo(a.marks)
+	case "auto_reload":
+		return yesNo(a.auto)
+	}
+	return ""
+}
+
+func yesNo(b bool) string {
+	if b {
+		return "yes"
+	}
+	return "no"
 }
 
 func isNumber(s string) bool {

@@ -493,12 +493,8 @@ func (a *App) handleKey(c input.Command) bool {
 	case input.CommandPrompt:
 		a.commanding, a.dragging = true, false
 		a.command.open()
-	case input.ToggleWrap:
-		if a.mode == layout.Wrap {
-			a.setMode(layout.NoWrap)
-		} else {
-			a.setMode(layout.Wrap)
-		}
+	case input.Cycle:
+		a.cycle(c.Arg)
 	case input.Reload:
 		a.reload(true)
 	case input.Help:

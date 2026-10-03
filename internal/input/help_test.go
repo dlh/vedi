@@ -14,11 +14,19 @@ func TestHelpCoversActions(t *testing.T) {
 			covered = append(covered, h.cmds...)
 		}
 	}
+	for _, name := range SettingNames() {
+		if !slices.Contains(covered, Command{Action: Cycle, Arg: name}) {
+			t.Errorf("cycle %s has no help row", name)
+		}
+	}
 	for a := Up; a <= Reload; a++ {
+		if a == Cycle {
+			continue
+		}
 		if !slices.Contains(covered, Command{Action: a}) {
 			t.Errorf("%s has no help row", a)
 		}
-		if IsMovement(a) && !slices.Contains(covered, Command{a, true}) {
+		if IsMovement(a) && !slices.Contains(covered, Command{Action: a, Extend: true}) {
 			t.Errorf("select_%s has no help row", a)
 		}
 	}

@@ -1,0 +1,35 @@
+Tab after cycle, at the prompt or after map's key, offers the
+settings it takes.
+
+-- size --
+60x4
+-- input --
+line 1
+-- keys --
+: "cy" Tab
+-- screen --
+line 1
+
+
+:cycle
+-- keys --
+Tab
+-- screen --
+line 1
+
+
+:cycle   auto_reload  edge_markers  wrap  wrap_style
+-- keys --
+"wrap_" Tab Enter
+-- screen --
+line 1
+
+
+<stdin>  line 1/1  word wrap                          h help
+-- keys --
+: "map x cycle e" Tab
+-- screen --
+line 1
+
+
+:map x cycle edge_markers

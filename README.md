@@ -42,7 +42,8 @@ hyperlinks are drawn as the terminal would. Copy sends plain text.
 
 `:` opens a command prompt: `:22` goes to line 22, and `:wrap_style
 word` or any other setting from the config file takes effect for the
-rest of the run.
+rest of the run. `:cycle wrap_style` steps a setting to its next
+value, and `map Alt+w cycle wrap_style` puts that on a key.
 
 A file that changes on disk is read again, so a log that grows is
 followed. `-F` is for a pager that should get out of the way: text

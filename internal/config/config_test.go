@@ -23,7 +23,7 @@ func key(name string) input.Key {
 }
 
 func TestParse(t *testing.T) {
-	src := "# vim\n\nmap h left\n\tmap  L\tselect_right \nmap ? none\r\n"
+	src := "# vim\n\nmap h left\n\tmap  L\tselect_right \nmap ? none\r\nmap Alt+w cycle wrap_style\n"
 	c, err := Parse("vedi.conf", []byte(src))
 	if err != nil {
 		t.Fatal(err)
@@ -33,6 +33,7 @@ func TestParse(t *testing.T) {
 		{Key: input.Key{Key: tcell.KeyRune, Rune: 'h', Mod: 0}, Cmd: input.Command{Action: input.Left}},
 		{Key: input.Key{Key: tcell.KeyRune, Rune: 'L', Mod: 0}, Cmd: input.Command{Action: input.Right, Extend: true}},
 		{Key: input.Key{Key: tcell.KeyRune, Rune: '?', Mod: 0}, Cmd: input.Command{}},
+		{Key: input.Key{Key: tcell.KeyRune, Rune: 'w', Mod: tcell.ModAlt}, Cmd: input.Command{Action: input.Cycle, Arg: "wrap_style"}},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("Parse = %+v, want %+v", got, want)
@@ -54,6 +55,10 @@ func TestParse(t *testing.T) {
 		{"map h foo\n", `vedi.conf:1: unknown action "foo"`},
 		{"map Shift+h left\n", `vedi.conf:1: "Shift+h": modifiers on a character key`},
 		{"map h select_copy\n", `vedi.conf:1: unknown action "select_copy"`},
+		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers or auto_reload"},
+		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers or auto_reload"},
+		{"map h cycle wrap yes\n", "vedi.conf:1: map takes a key and an action"},
+		{"map h toggle_wrap\n", `vedi.conf:1: unknown action "toggle_wrap"`},
 	}
 	for _, tc := range bad {
 		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {

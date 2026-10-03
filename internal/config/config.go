@@ -51,14 +51,14 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 	verb = f[0]
 	switch verb {
 	case "map":
-		if len(f) != 3 {
+		if len(f) != 3 && !(len(f) == 4 && f[2] == "cycle") {
 			return verb, errors.New("map takes a key and an action")
 		}
 		k, err := input.ParseKey(f[1])
 		if err != nil {
 			return verb, err
 		}
-		cmd, err := input.ParseCommand(f[2])
+		cmd, err := input.ParseCommand(strings.Join(f[2:], " "))
 		if err != nil {
 			return verb, err
 		}
