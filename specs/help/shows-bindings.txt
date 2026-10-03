@@ -10,7 +10,7 @@ search key returns to the text and does nothing else, so q returns
 rather than quits and the cursor is where it was.
 
 -- size --
-80x63
+80x64
 -- input --
 abc
 def
@@ -36,6 +36,7 @@ Down h
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   g  G  <  >                              First line, last line.
+  [  ]                                    Previous input, next input.
   :                                       Command prompt; N goes to line N.
  ------------------------------------------------------------------------------
 
@@ -87,6 +88,7 @@ q
 -- screen --
 abc
 def
+
 
 
 

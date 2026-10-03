@@ -1,0 +1,28 @@
+With the rows off, ] puts the next input's first line at the top.
+
+-- size --
+28x5
+-- args --
+--no-file-separators a.txt b.txt
+-- input --
+a1
+a2
+a3
+a4
+a5
+-- next-file --
+-- input --
+b1
+b2
+b3
+b4
+-- keys --
+]
+-- screen --
+b1
+b2
+b3
+b4
+b.txt 2/2  line 1/4  wrap
+-- cursor --
+0 0

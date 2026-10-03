@@ -1,0 +1,62 @@
+] puts the cursor on the first line of the next input, with the row
+naming it at the top of the screen, as near as the last screenful
+allows. At the last input it does nothing. g shows the first input's
+row again.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt c.txt
+-- input --
+a1
+a2
+a3
+a4
+a5
+-- next-file --
+-- input --
+b1
+b2
+-- next-file --
+-- input --
+c1
+-- keys --
+]
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+── c.txt ───────────────────
+b.txt 2/3  line 1/2  wrap
+-- cursor --
+1 0
+-- keys --
+]
+-- screen --
+b1
+b2
+── c.txt ───────────────────
+c1
+c.txt 3/3  line 1/1  wrap
+-- cursor --
+3 0
+-- keys --
+]
+-- screen --
+b1
+b2
+── c.txt ───────────────────
+c1
+c.txt 3/3  line 1/1  wrap
+-- cursor --
+3 0
+-- keys --
+g
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+a3
+a.txt 1/3  line 1/5  wrap
+-- cursor --
+1 0

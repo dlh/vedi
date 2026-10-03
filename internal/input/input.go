@@ -20,6 +20,8 @@ const (
 	WordRight
 	First
 	Last
+	PrevFile
+	NextFile
 	SelectAll
 	ClearSelection
 	SetMark
@@ -37,7 +39,7 @@ const (
 )
 
 // IsMovement reports whether a moves the cursor.
-func IsMovement(a Action) bool { return a >= Up && a <= Last }
+func IsMovement(a Action) bool { return a >= Up && a <= NextFile }
 
 // Command is a decoded key. Extend is Shift on a movement key: extend
 // the selection instead of clearing it. Arg is Cycle's setting.

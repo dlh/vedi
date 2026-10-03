@@ -1,0 +1,34 @@
+select_next_file, unbound by default, extends the selection to the
+next input's first line: here } is bound to it, and the copy is the
+first input's lines.
+
+-- size --
+28x5
+-- config --
+map } select_next_file
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+b1
+b2
+b3
+-- keys --
+}
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b3
+b.txt 2/2  line 1/3  wrap
+-- cursor --
+1 0
+-- keys --
+y
+-- clipboard --
+a1
+a2
+

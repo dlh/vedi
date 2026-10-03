@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x62
+80x63
 -- input --
 abc
 -- keys --
@@ -28,6 +28,7 @@ h
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   g  G  <  >                              First line, last line.
+  [  ]                                    Previous input, next input.
   :                                       Command prompt; N goes to line N.
  ------------------------------------------------------------------------------
 

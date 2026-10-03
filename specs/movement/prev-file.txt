@@ -1,0 +1,65 @@
+[ puts the cursor on the first line of its input; from there, on the
+first line of the input before. The row naming the input goes to the
+top of the screen. On the first line of the first input it does
+nothing.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+b3
+b4
+b5
+b6
+-- keys --
+G
+-- screen --
+b3
+b4
+b5
+b6
+b.txt 2/2  line 6/6  wrap
+-- cursor --
+3 0
+-- keys --
+[
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b3
+b.txt 2/2  line 1/6  wrap
+-- cursor --
+1 0
+-- keys --
+[
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+a3
+a.txt 1/2  line 1/3  wrap
+-- cursor --
+1 0
+-- keys --
+[
+-- cursor --
+1 0
+-- keys --
+Down Down [
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+a3
+a.txt 1/2  line 1/3  wrap
+-- cursor --
+1 0

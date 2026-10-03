@@ -473,6 +473,10 @@ func (a *App) handleKey(c input.Command) bool {
 		a.cur = buffer.Pos{}
 	case input.Last:
 		a.cur = buffer.Pos{Line: max(a.buf.Len()-1, 0)}
+	case input.PrevFile:
+		a.prevInput()
+	case input.NextFile:
+		a.nextInput()
 	case input.SelectAll:
 		a.anchor = &buffer.Pos{}
 		a.cur = a.endPos()
@@ -874,20 +878,63 @@ func (a *App) scrollMatchToTop() {
 			return
 		}
 	}
-	// Each row missing below the match is one more above it: only a
-	// match near the end looks there, and never past it.
+	a.placeTop(crow)
+}
+
+// placeTop makes row p the top one, stopping at the last screenful:
+// each row missing below p is one more above it.
+func (a *App) placeTop(p buffer.Pos) {
+	rows := a.textRows()
 	below := 0
-	for p := crow; below < rows-1; below++ {
-		next := a.nextRow(p)
-		if next == p {
+	for q := p; below < rows-1; below++ {
+		next := a.nextRow(q)
+		if next == q {
 			break
 		}
-		p = next
+		q = next
 	}
 	for ; below < rows-1; below++ {
-		crow = a.prevRow(crow)
+		p = a.prevRow(p)
 	}
-	a.top = crow
+	a.top = p
+}
+
+// nextInput moves to the first line of the input after the cursor's;
+// at the last, nowhere. An input with no lines is passed over.
+func (a *App) nextInput() {
+	for _, start := range a.buf.Parts() {
+		if start > a.cur.Line && start < a.buf.Len() {
+			a.jumpToInput(start)
+			return
+		}
+	}
+}
+
+// prevInput moves to the first line of the cursor's input, or from
+// there to the first line of the input before it; on the first line
+// of the first, nowhere.
+func (a *App) prevInput() {
+	_, start, _ := a.input()
+	if a.cur.Line > start {
+		a.jumpToInput(start)
+		return
+	}
+	target := -1
+	for _, s := range a.buf.Parts() {
+		if s < start {
+			target = s
+		}
+	}
+	if target >= 0 {
+		a.jumpToInput(target)
+	}
+}
+
+// jumpToInput puts the cursor on line, the first of an input, with
+// the row naming the input, or the line itself, at the top.
+func (a *App) jumpToInput(line int) {
+	a.cur = buffer.Pos{Line: line}
+	a.placeTop(a.withSep(a.cur))
 }
 
 // extend anchors the selection at the cursor if there is none, so a

@@ -179,6 +179,10 @@ map > last
 map Cmd+Up first
 map Cmd+Down last
 
+# Previous input, next input
+map [ prev_file
+map ] next_file
+
 # Extend the selection
 map J select_down
 map K select_up

@@ -11,6 +11,7 @@ var actionNames = [...]string{
 	Home: "home", End: "end", PageUp: "page_up", PageDown: "page_down",
 	HalfPageUp: "half_page_up", HalfPageDown: "half_page_down",
 	WordLeft: "word_left", WordRight: "word_right", First: "first", Last: "last",
+	PrevFile: "prev_file", NextFile: "next_file",
 	SelectAll: "select_all", ClearSelection: "clear_selection", SetMark: "set_mark", Copy: "copy",
 	CopyAndQuit: "copy_and_quit", Search: "search", SearchBack: "search_back",
 	SearchNext: "search_next", SearchPrev: "search_prev", CommandPrompt: "command",
