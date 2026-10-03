@@ -19,11 +19,10 @@ import (
 const Usage = `usage: vedi [flags] [file...]
 
   -S, --nowrap            start in nowrap mode
-  --wrap                  start in wrap mode (the default)
+  --wrap                  start in wrap mode (default: on)
   --wrap-style STYLE      wrap at the screen's edge (char) or at words (word)
   -F, --quit-if-one-page  print the text and quit if it fits the screen
-  --auto-reload           read a file again when it changes on disk (the default)
-  --no-auto-reload        leave a changed file as it was read; R still reloads
+  --[no-]auto-reload      read a file again when it changes on disk (default: on)
   +G                      start at the last line and follow until EOF
   +N                      start with line N at the top
   --scrolled-by N         start on the last screenful, scrolled N rows up
@@ -31,9 +30,8 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
   --open-cmd CMD          read each file by running CMD, %s the file
-  --tab-width N           draw a tab as N cells (8)
-  --edge-markers          mark text off the sides with < and >, a wrapped row with \
-  --no-edge-markers       leave the edges bare (the default)
+  --tab-width N           draw a tab as N cells (default: 8)
+  --[no-]edge-markers     mark text off the sides with < and >, a wrapped row with \ (default: off)
   --config FILE           read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help              show this help
   -v, --version           print the version
