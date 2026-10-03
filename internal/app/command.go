@@ -189,6 +189,9 @@ func (a *App) runCommand(line string) {
 		a.marks = c.EdgeMarkers
 	case "auto_reload":
 		a.auto = !c.NoAutoReload
+		if !a.auto {
+			a.dirty = false // a change during a reload asked for another
+		}
 	case "clipboard_cmd":
 		a.copier = clipboard.Command{Cmd: c.ClipboardCmd}
 	case "map":

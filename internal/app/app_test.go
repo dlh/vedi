@@ -706,6 +706,27 @@ func TestReloadCoalesces(t *testing.T) {
 	}
 }
 
+// TestAutoReloadOffDropsQueuedReload: auto_reload no at the : prompt
+// drops the reload a change during the running one asked for.
+func TestAutoReloadOffDropsQueuedReload(t *testing.T) {
+	o := &opener{}
+	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
+	a.Handle(&Changed{})
+	a.Handle(&Changed{})
+	press(a, key(tcell.KeyRune, ':', 0))
+	for _, r := range "auto_reload no" {
+		press(a, key(tcell.KeyRune, r, 0))
+	}
+	press(a, key(tcell.KeyEnter, 0, 0))
+	o.finish(a, 0, "one\n")
+	if len(o.bufs) != 1 {
+		t.Errorf("opens after the swap = %d, want 1", len(o.bufs))
+	}
+	if got := row(scr, 0); got != "one" {
+		t.Errorf("text = %q", got)
+	}
+}
+
 func TestReloadOpenFailsOnChange(t *testing.T) {
 	o := &opener{err: fmt.Errorf("boom")}
 	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
