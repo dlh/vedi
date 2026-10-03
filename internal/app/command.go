@@ -15,9 +15,10 @@ import (
 )
 
 // handleCommandKey edits the : prompt. Enter runs what was typed and
-// closes the prompt, unless Tab's list of commands is showing: then it
-// takes the one the prompt holds and keeps it open, for the argument.
-// Esc, Ctrl+g and Ctrl+c just close it.
+// closes the prompt, unless Tab's list of commands is showing and the
+// prompt holds one of them: then it adds the space after the command
+// and keeps the prompt open, for the argument. Esc, Ctrl+g and Ctrl+c
+// just close it.
 func (a *App) handleCommandKey(ev *tcell.EventKey) {
 	_, before := lastWord(a.stem)
 	listingCommands := a.matches != nil && string(a.command.text) == a.filled && len(before) == 0
@@ -27,7 +28,8 @@ func (a *App) handleCommandKey(ev *tcell.EventKey) {
 	switch {
 	case cancels(ev):
 		a.commanding = false
-	case ev.Key() == tcell.KeyEnter && listingCommands:
+	case ev.Key() == tcell.KeyEnter && listingCommands && slices.Contains(commands, strings.TrimSuffix(a.filled, " ")):
+		a.setCommand(strings.TrimSuffix(a.filled, " ") + " ")
 	case ev.Key() == tcell.KeyEnter:
 		a.commanding = false
 		if len(a.command.text) > 0 {

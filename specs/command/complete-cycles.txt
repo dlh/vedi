@@ -1,8 +1,9 @@
 Tab again, with the prompt as the last Tab left it, fills in each
 match in turn, with a space, and shows it in the list out of reverse
 video; after the last comes what was typed. Enter with a list of
-commands showing takes the one the prompt holds and keeps it open,
-for the argument; with a list of arguments, it runs the line.
+commands showing takes the one the prompt holds, with a space after
+it, and keeps it open for the argument; with a list of arguments, it
+runs the line.
 
 -- size --
 60x4
@@ -57,3 +58,10 @@ the quick brown fox jumps over the lazy dog and runs away  [\]
 home
 
 <stdin>  line 1/1  word wrap                          h help
+-- keys --
+: "w" Tab Enter "no" Enter
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away h[>]
+
+
+<stdin>  line 1/1  nowrap                             h help
