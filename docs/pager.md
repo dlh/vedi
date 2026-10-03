@@ -17,8 +17,9 @@ its command line, so they apply whatever runs it:
     export VEDI="-F -S"
 
 A flag on the command line wins over the same one in `VEDI`, and both
-win over `vedi.conf`. A start position on the command line, `+N`, `+G`,
-`--scrolled-by` or `--cursor-*`, replaces one in `VEDI`.
+win over `vedi.conf`: `vedi --no-quit-if-one-page` opens the pager for
+one run despite the `-F` above. A start position on the command line,
+`+N`, `+G`, `--scrolled-by` or `--cursor-*`, replaces one in `VEDI`.
 
 The value is split into words as a shell would: quote with `'` or
 `"`, or put `\` before a space.
