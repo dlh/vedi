@@ -62,3 +62,10 @@ pipes its colored diffs through a second pager. In `~/.gitconfig`:
         pager = vedi -F
 
 `DELTA_PAGER=vedi -F` in the environment does the same.
+
+## The input's name
+
+The status line starts with the input's name: the file, or `<stdin>`.
+A program that sets the window title with OSC 2 as it writes names
+its output: the title in effect at the cursor's line replaces
+`<stdin>`. With several files, the name is the file the cursor is in.

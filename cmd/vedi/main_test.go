@@ -21,13 +21,13 @@ func TestOpenInputFIFO(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() { os.WriteFile(pipe, []byte("hello\n"), 0) }()
-	in, src, closeInput, err := openInput([]string{pipe})
+	in, paged, closeInput, err := openInput([]string{pipe})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer closeInput()
-	if src != nil {
-		t.Error("src != nil for a pipe")
+	if paged {
+		t.Error("paged for a pipe")
 	}
 	got, err := io.ReadAll(in)
 	if err != nil || string(got) != "hello\n" {
@@ -41,13 +41,40 @@ func TestOpenInputFile(t *testing.T) {
 	if err := os.WriteFile(name, []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, src, closeInput, err := openInput([]string{name})
+	_, paged, closeInput, err := openInput([]string{name})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer closeInput()
-	if src == nil {
-		t.Error("src == nil for a regular file")
+	if !paged {
+		t.Error("not paged for a regular file")
+	}
+}
+
+// TestOpenParts: each file is a part of the buffer, so the app can
+// name the one a line came from.
+func TestOpenParts(t *testing.T) {
+	dir := t.TempDir()
+	var names []string
+	for i, text := range []string{"a\n", "b\nc\n"} {
+		name := filepath.Join(dir, string(rune('a'+i)))
+		if err := os.WriteFile(name, []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		names = append(names, name)
+	}
+	buf, closeInput, _, err := open(names, func() {})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeInput()
+	for eof := false; !eof; eof, _ = buf.Finished() {
+		time.Sleep(time.Millisecond)
+	}
+	for line, want := range []int{0, 1, 1} {
+		if got := buf.PartAt(line); got != want {
+			t.Errorf("PartAt(%d) = %d, want %d", line, got, want)
+		}
 	}
 }
 

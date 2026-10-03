@@ -74,6 +74,71 @@ func TestFillStyleCarriesAcrossLines(t *testing.T) {
 	}
 }
 
+// TestLineTitle: a line's Title is the window title in effect once it
+// is drawn: set on it, or carried from a line before, across blocks
+// and however the lines are read.
+func TestLineTitle(t *testing.T) {
+	var sb strings.Builder
+	sb.WriteString("none\n\x1b]2;one\x07a\nb\n")
+	for range 2 * blockLines {
+		sb.WriteString("more\n")
+	}
+	sb.WriteString("\x1b]0;two\x07c\n\x1b]2;\x07d\ne\n")
+	b := New()
+	Fill(strings.NewReader(sb.String()), b, func() {})
+	n := b.Len()
+	want := map[int]string{0: "", 1: "one", 2: "one", n / 2: "one", n - 3: "two", n - 2: "", n - 1: ""}
+	for _, i := range []int{n - 1, n - 2, n - 3, n / 2, 2, 1, 0} {
+		if got := b.Line(i).Title; got != want[i] {
+			t.Errorf("Line(%d).Title = %q, want %q", i, got, want[i])
+		}
+	}
+	if got := b.Line(n).Title; got != "" {
+		t.Errorf("Line(%d).Title = %q, want none", n, got)
+	}
+}
+
+// TestParts: PartAt is the part a line came from. A part begins at the
+// next line to begin, so an unterminated line stays with the part it
+// started in; an empty part yields to the one after it.
+func TestParts(t *testing.T) {
+	b := New()
+	b.StartPart()
+	b.Write([]byte("a1\na2"))
+	b.StartPart()
+	b.Write([]byte("b1\nb2\n"))
+	b.StartPart()
+	b.StartPart()
+	b.Write([]byte("d1\n"))
+	b.Finish(nil, true)
+	for line, want := range []int{0, 0, 1, 3} {
+		if got := b.PartAt(line); got != want {
+			t.Errorf("PartAt(%d) = %d, want %d", line, got, want)
+		}
+	}
+	if got := lines(b); strings.Join(got, "|") != "a1|a2b1|b2|d1" {
+		t.Fatalf("lines = %q", got)
+	}
+}
+
+// TestPartsBeforeAnyLine: PartAt before the first part, or on an
+// empty buffer, is part 0.
+func TestPartsBeforeAnyLine(t *testing.T) {
+	b := New()
+	if i := b.PartAt(0); i != 0 {
+		t.Fatalf("empty PartAt(0) = %d", i)
+	}
+	b.Write([]byte("x\n"))
+	b.StartPart()
+	b.Write([]byte("y\n"))
+	if i := b.PartAt(0); i != 0 {
+		t.Fatalf("PartAt(0) = %d, want 0", i)
+	}
+	if i := b.PartAt(1); i != 1 {
+		t.Fatalf("PartAt(1) = %d, want 1", i)
+	}
+}
+
 type failReader struct{ n int }
 
 func (f *failReader) Read(p []byte) (int, error) {

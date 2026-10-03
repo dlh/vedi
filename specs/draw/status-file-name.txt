@@ -1,14 +1,34 @@
-The status line starts with the name of the input: each file as given,
-or <stdin> for standard input, whether that is the only input or a "-"
-among the files.
+The status line starts with the name of the input the cursor's line
+came from: the file as given, or <stdin> for standard input, whether
+that is the only input or a "-" among the files. Lines are counted
+through all of them.
 
 -- size --
-40x3
+28x3
 -- args --
 a.txt - b.txt
 -- input --
 abc
+-- next-file --
+-- input --
+def
+-- next-file --
+-- input --
+ghi
+-- eof --
 -- screen --
 abc
-
-a.txt <stdin> b.txt  line 1/1  wrap
+def
+a.txt  line 1/3  wrap
+-- keys --
+Down
+-- screen --
+abc
+def
+<stdin>  line 2/3  wrap
+-- keys --
+Down
+-- screen --
+def
+ghi
+b.txt  line 3/3  wrap

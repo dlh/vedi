@@ -395,7 +395,21 @@ func (a *App) statusText() string {
 	if a.next != nil {
 		reading += "  reloading…"
 	}
-	return fmt.Sprintf("%s  line %d/%d  %s%s", a.name, a.cur.Line+1, a.buf.Len(), mode, reading)
+	return fmt.Sprintf("%s  line %d/%d  %s%s", a.inputName(), a.cur.Line+1, a.buf.Len(), mode, reading)
+}
+
+// inputName is what the status line calls the input the cursor's line
+// came from: its Name, or for stdin the window title in effect at that
+// line, as a shell prompt sets to the directory.
+func (a *App) inputName() string {
+	name := Stdin
+	if i := a.buf.PartAt(a.cur.Line); i < len(a.names) {
+		name = a.names[i]
+	}
+	if title := a.buf.Line(a.cur.Line).Title; name == Stdin && title != "" {
+		return title
+	}
+	return name
 }
 
 // isControl reports whether r is drawn as ^X: a C0 control other than

@@ -17,10 +17,15 @@ type Source interface {
 // each part's size at its EOF, so ReadAt is exact for every byte Read
 // has passed, which is all a Buffer asks for.
 type Concat struct {
+	// OnPart, when set, is called with each part's index before its
+	// first byte is read, from Read's goroutine.
+	OnPart func(i int)
+
 	mu    sync.Mutex
 	parts []Source
 	sizes []int64 // of the parts Read has finished
 	cur   int64   // read so far from the part after those
+	begun int     // parts OnPart has been called for
 }
 
 func NewConcat(parts ...Source) *Concat { return &Concat{parts: parts} }
@@ -32,6 +37,12 @@ func (c *Concat) Read(p []byte) (int, error) {
 		c.mu.Unlock()
 		if i >= len(c.parts) {
 			return 0, io.EOF
+		}
+		if i == c.begun {
+			c.begun++
+			if c.OnPart != nil {
+				c.OnPart(i)
+			}
 		}
 		n, err := c.parts[i].Read(p)
 		c.mu.Lock()

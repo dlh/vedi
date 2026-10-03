@@ -21,14 +21,21 @@ type Run struct {
 // Parser converts bytes to text and style runs. The style carries
 // across calls: a color set on one line stays until a reset. The OSC 8
 // link is kept apart from the SGR style because a reset inside a link
-// (ls --hyperlink does this) must not end it. The zero value is ready,
-// and a Parser is a value: a copy holds the state at that point.
+// (ls --hyperlink does this) must not end it. The window title OSC 0
+// or 2 sets carries the same way, as the terminal's would. The zero
+// value is ready, and a Parser is a value: a copy holds the state at
+// that point.
 type Parser struct {
 	sgr     tcell.Style
 	url, id string
+	title   string
 }
 
 func NewParser() *Parser { return &Parser{sgr: tcell.StyleDefault} }
+
+// Title is the window title in effect after the last line parsed: ""
+// for none, or one cleared since.
+func (p *Parser) Title() string { return p.title }
 
 // Parse takes one line without its ending and returns the visible runes
 // and runs covering them. SGR changes the style and OSC 8 the link;
@@ -66,7 +73,8 @@ func (p *Parser) Skip(line []byte) {
 	}
 }
 
-// apply takes an escape's effect: SGR on the style, OSC 8 on the link.
+// apply takes an escape's effect: SGR on the style, OSC 8 on the link,
+// OSC 0 or 2 on the title.
 func (p *Parser) apply(sgr, osc []byte) {
 	if sgr != nil {
 		p.sgr = applySGR(p.sgr, sgr)
@@ -74,6 +82,18 @@ func (p *Parser) apply(sgr, osc []byte) {
 	if url, id, ok := link(osc); ok {
 		p.url, p.id = url, id
 	}
+	if title, ok := windowTitle(osc); ok {
+		p.title = title
+	}
+}
+
+// windowTitle decodes an OSC 0 or 2 body "2;title" into the title;
+// ok=false for any other OSC. OSC 1 names the icon alone.
+func windowTitle(osc []byte) (title string, ok bool) {
+	if len(osc) < 2 || osc[1] != ';' || osc[0] != '0' && osc[0] != '2' {
+		return "", false
+	}
+	return string(osc[2:]), true
 }
 
 // parse appends line's runes to text, which starts empty, and its runs

@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -23,6 +24,27 @@ func TestConcatJoinsParts(t *testing.T) {
 	}
 	if n, err := c.ReadAt(p, 4); n != 1 || err != io.EOF || p[0] != 'd' {
 		t.Fatalf("ReadAt(4) = %q, %d, %v; want d, 1, EOF", p[:n], n, err)
+	}
+}
+
+// TestConcatOnPart: OnPart is called once per part, in order, before
+// its first byte is read, an empty part included.
+func TestConcatOnPart(t *testing.T) {
+	c := NewConcat(strings.NewReader("ab"), strings.NewReader(""), strings.NewReader("c\nd"))
+	var got []string
+	read := ""
+	c.OnPart = func(i int) { got = append(got, fmt.Sprintf("%d@%q", i, read)) }
+	p := make([]byte, 1)
+	for {
+		n, err := c.Read(p)
+		read += string(p[:n])
+		if err == io.EOF {
+			break
+		}
+	}
+	want := `0@"" 1@"ab" 2@"ab"`
+	if strings.Join(got, " ") != want || read != "abc\nd" {
+		t.Fatalf("OnPart calls = %q, read %q; want %s", got, read, want)
 	}
 }
 

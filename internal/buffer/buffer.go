@@ -6,6 +6,7 @@ import (
 	"cmp"
 	"errors"
 	"io"
+	"slices"
 	"sync"
 
 	"go.dlh.dev/vedi/internal/ansi"
@@ -21,9 +22,12 @@ func (p Pos) Less(q Pos) bool {
 }
 
 // Line is one logical line, decoded. Lines never change once indexed.
+// Title is the window title in effect once the line is drawn: set on
+// it with OSC 0 or 2, or carried from a line before; "" for none.
 type Line struct {
-	Text []rune
-	Runs []ansi.Run
+	Text  []rune
+	Runs  []ansi.Run
+	Title string
 }
 
 // cacheLines is how many decoded lines are kept before starting over.
@@ -58,6 +62,7 @@ type Buffer struct {
 	state   []uint32 // the parser at line blockLines*k, an index into parsers
 	parsers []ansi.Parser
 	written int64
+	parts   []int // the line each input begins at; empty until StartPart
 
 	// The writer's alone. A Write indexes its bytes into staged
 	// outside mu, so readers wait only for publish.
@@ -216,7 +221,7 @@ func (b *Buffer) Line(i int) Line {
 	if b.cache == nil || len(b.cache) >= cacheLines {
 		b.cache = map[int]Line{}
 	}
-	l := Line{Text: text, Runs: runs}
+	l := Line{Text: text, Runs: runs, Title: p.Title()}
 	b.cache[i] = l
 	return l
 }
@@ -353,6 +358,38 @@ func (b *Buffer) TrailingNewline() bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return b.nl
+}
+
+// StartPart begins the next input, for the writer to call before its
+// bytes: it starts at the next line to begin, so a line an unfinished
+// input left open stays with that input. Lines written before the
+// first StartPart are part 0's, so a first part they precede is part 1.
+func (b *Buffer) StartPart() {
+	start := b.lines
+	if len(b.pending) > 0 {
+		start++
+	}
+	b.mu.Lock()
+	if len(b.parts) == 0 && start > 0 {
+		b.parts = append(b.parts, 0)
+	}
+	b.parts = append(b.parts, start)
+	b.mu.Unlock()
+}
+
+// PartAt is the input line i came from, as an index into the parts
+// StartPart began. The last part starting at or before the line is
+// its: an empty one yields to the next. Lines before any part, or an
+// empty buffer, are part 0's.
+func (b *Buffer) PartAt(i int) int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for k, start := range slices.Backward(b.parts) {
+		if start <= i {
+			return k
+		}
+	}
+	return 0
 }
 
 // Finished reports whether input has ended, and the read error: from

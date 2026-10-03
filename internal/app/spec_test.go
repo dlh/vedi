@@ -66,6 +66,7 @@ type scenario struct {
 	disk     string // what the file holds: the input, then each file or reload body
 	diskNL   bool   // and it ended with a newline
 	hasEOF   bool   // the file has an eof section, so input stays open
+	part     int    // the input in -- args -- the input now comes from
 	finished bool   // an eof section has run
 	started  bool   // the setup is frozen: an action or assertion has run
 	onePage  bool   // -F: the pager opens only once the text is known not to fit
@@ -166,6 +167,15 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 			s.input(sec.body)
 			if err := s.deliver(); err != nil {
 				return err
+			}
+		case "next-file":
+			if s.finished {
+				return fail("input after eof")
+			}
+			s.part++
+			s.buf.StartPart()
+			if s.started && s.part >= len(s.files) {
+				return fail("no more files in -- args --")
 			}
 		case "eof":
 			if s.finished {
@@ -274,7 +284,7 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 
 // actions are the sections that drive the app, so none may follow a
 // quit.
-var actions = map[string]bool{"input": true, "eof": true, "file": true, "reload": true, "keys": true, "mouse": true, "resize": true}
+var actions = map[string]bool{"input": true, "next-file": true, "eof": true, "file": true, "reload": true, "keys": true, "mouse": true, "resize": true}
 
 // input appends the body to the buffer and to the disk text.
 func (s *scenario) input(body string) {
@@ -315,6 +325,9 @@ func (s *scenario) start() error {
 	var err error
 	if s.opts, s.files, err = cli.Parse(s.args, s.env); err != nil {
 		return fmt.Errorf("args %q: %v", s.args, err)
+	}
+	if s.part > 0 && s.part >= len(s.files) {
+		return fmt.Errorf("-- next-file --: no more files in -- args --")
 	}
 	s.onePage = s.opts.QuitIfOnePage
 	return s.deliver()

@@ -62,7 +62,7 @@ type Options struct {
 // App converts the options to the app's: a flag, else the config,
 // decides the wrap mode, the wrap style, the clipboard
 // command, the tab width, the edge markers and auto-reload. The
-// input is named after files, each as given; "-" and no files are
+// inputs are named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
 	mode := layout.Wrap
@@ -86,7 +86,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		marks = *o.EdgeMarkers
 	}
 	return app.Options{
-		Name:        inputName(files),
+		Names:       inputNames(files),
 		Mode:        mode,
 		WrapStyle:   style,
 		StartLine:   o.StartLine,
@@ -111,18 +111,18 @@ func (o Options) Reloads(cfg config.Config) bool {
 	return !cfg.NoAutoReload
 }
 
-func inputName(files []string) string {
+func inputNames(files []string) []string {
 	if len(files) == 0 {
-		return "<stdin>"
+		return []string{app.Stdin}
 	}
 	names := make([]string, len(files))
 	for i, f := range files {
 		if f == "-" {
-			f = "<stdin>"
+			f = app.Stdin
 		}
 		names[i] = f
 	}
-	return strings.Join(names, " ")
+	return names
 }
 
 // valueFlags take an argument, as "--flag N" or "--flag=N", and set it.

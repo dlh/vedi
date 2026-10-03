@@ -73,6 +73,64 @@ func TestDrawStyles(t *testing.T) {
 	}
 }
 
+// TestTitleNamesStdin: an OSC 2 title in the input names stdin on the
+// status line; a file keeps its name.
+func TestTitleNamesStdin(t *testing.T) {
+	input := "\x1b]2;~/src\x07text"
+	_, scr := newTestApp(t, 30, 3, input, Options{Names: []string{Stdin}})
+	if got := row(scr, 2); !strings.HasPrefix(got, "~/src  line 1/1") {
+		t.Errorf("stdin status = %q, want ~/src first", got)
+	}
+	_, scr = newTestApp(t, 30, 3, input, Options{Names: []string{"log.txt"}})
+	if got := row(scr, 2); !strings.HasPrefix(got, "log.txt  line 1/1") {
+		t.Errorf("file status = %q, want log.txt first", got)
+	}
+	_, scr = newTestApp(t, 30, 3, "text", Options{Names: []string{Stdin}})
+	if got := row(scr, 2); !strings.HasPrefix(got, "<stdin>  line 1/1") {
+		t.Errorf("untitled status = %q, want <stdin> first", got)
+	}
+}
+
+// TestTitleFollowsCursor: a stream that sets the title more than once
+// is named by the one in effect at the cursor's line.
+func TestTitleFollowsCursor(t *testing.T) {
+	input := "\x1b]2;README.md\x1b\\# vedi\nA pager.\n\x1b]2;SECURITY.md\x1b\\# Security\n"
+	a, scr := newTestApp(t, 30, 4, input, Options{Names: []string{Stdin}})
+	for _, want := range []string{"README.md  line 1/3", "README.md  line 2/3", "SECURITY.md  line 3/3"} {
+		if got := row(scr, 3); !strings.HasPrefix(got, want) {
+			t.Errorf("status = %q, want %q first", got, want)
+		}
+		press(a, key(tcell.KeyDown, 0, 0))
+	}
+	press(a, key(tcell.KeyUp, 0, 0))
+	if got := row(scr, 3); !strings.HasPrefix(got, "README.md  line 2/3") {
+		t.Errorf("status after Up = %q, want README.md", got)
+	}
+}
+
+// TestTitleNamesStdinAmongFiles: a "-" among the files is named by its
+// own title, and only while the cursor is in it.
+func TestTitleNamesStdinAmongFiles(t *testing.T) {
+	scr := testscreen.New(t, 30, 4)
+	buf := buffer.New()
+	buf.StartPart()
+	buf.Write([]byte("\x1b]2;A\x07a\n"))
+	buf.StartPart()
+	buf.Write([]byte("\x1b]2;~/src\x07s\n"))
+	buf.StartPart()
+	buf.Write([]byte("b\n"))
+	buf.Finish(nil, true)
+	a := newApp(t, scr, buf, Options{Names: []string{"a.txt", Stdin, "b.txt"}, Copier: clipboard.OSC52{Screen: scr}})
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Draw()
+	for _, want := range []string{"a.txt  line 1/3", "~/src  line 2/3", "b.txt  line 3/3"} {
+		if got := row(scr, 3); !strings.HasPrefix(got, want) {
+			t.Errorf("status = %q, want %q first", got, want)
+		}
+		press(a, key(tcell.KeyDown, 0, 0))
+	}
+}
+
 func TestDrawLinks(t *testing.T) {
 	_, scr := newTestApp(t, 20, 5, "\x1b]8;;http://x\x1b\\a\x1b]8;;\x1b\\b", Options{})
 	if got, want := cellStyle(scr, 0, 0), tcell.StyleDefault.Url("http://x"); !testscreen.SameStyle(got, want) {
@@ -658,7 +716,7 @@ func (o *opener) finish(a *App, i int, text string) {
 
 func TestReloadPendingStatus(t *testing.T) {
 	o := &opener{}
-	a, scr := newTestApp(t, 30, 4, "old\n", Options{Open: o.open, AutoReload: true})
+	a, scr := newTestApp(t, 40, 4, "old\n", Options{Open: o.open, AutoReload: true})
 	a.Handle(&Changed{})
 	a.Draw()
 	if got := row(scr, 3); !strings.HasSuffix(got, "  reloading…") {

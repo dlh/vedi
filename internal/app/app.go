@@ -19,8 +19,12 @@ import (
 	"go.dlh.dev/vedi/internal/search"
 )
 
+// Stdin is the Name of input read from stdin, which a window title in
+// the input renames.
+const Stdin = "<stdin>"
+
 type Options struct {
-	Name        string // what the status line calls the input
+	Names       []string // what the status line calls each input, by its part in the buffer
 	Mode        layout.Mode
 	WrapStyle   layout.WrapStyle // where wrap mode breaks rows
 	StartLine   int              // 1-based line to put at the top; 0 for none
@@ -58,7 +62,7 @@ type App struct {
 	buf    *buffer.Buffer
 	first  *buffer.Buffer // the startup buffer, whose reader Notify serves
 	copier clipboard.Copier
-	name   string
+	names  []string
 	mode   layout.Mode
 	style  layout.WrapStyle // where wrap mode breaks rows
 	tab    int              // cells per tab stop; 0 for the default
@@ -135,7 +139,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		buf:       buf,
 		first:     buf,
 		copier:    opts.Copier,
-		name:      opts.Name,
+		names:     opts.Names,
 		mode:      opts.Mode,
 		style:     opts.WrapStyle,
 		tab:       opts.TabWidth,

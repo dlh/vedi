@@ -23,23 +23,24 @@ import (
 	"golang.org/x/term"
 )
 
-// openInput is the files, or stdin when there are none; "-" names
-// stdin. src is the same bytes at random, or nil unless every file is
-// a regular one: a pipe cannot be read twice.
-func openInput(files []string) (in io.Reader, src io.ReaderAt, closeInput func(), err error) {
+// openInput is the files, each a part, or stdin when there are none;
+// "-" names stdin. paged says the same bytes can be read at random,
+// which they can only when every file is a regular one: a pipe cannot
+// be read twice.
+func openInput(files []string) (in *buffer.Concat, paged bool, closeInput func(), err error) {
 	if len(files) == 0 {
 		if fi, err := os.Stdin.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
-			return nil, nil, nil, fmt.Errorf("no input: give a file or pipe something in")
+			return nil, false, nil, fmt.Errorf("no input: give a file or pipe something in")
 		}
-		return os.Stdin, nil, func() {}, nil
+		return buffer.NewConcat(os.Stdin), false, func() {}, nil
 	}
 	var parts []buffer.Source
 	var closers []io.Closer
-	regular := true
+	paged = true
 	for _, name := range files {
 		if name == "-" {
 			parts = append(parts, os.Stdin)
-			regular = false
+			paged = false
 			continue
 		}
 		f, err := os.Open(name)
@@ -47,40 +48,44 @@ func openInput(files []string) (in io.Reader, src io.ReaderAt, closeInput func()
 			for _, c := range closers {
 				c.Close()
 			}
-			return nil, nil, nil, err
+			return nil, false, nil, err
 		}
 		if fi, err := f.Stat(); err != nil || !fi.Mode().IsRegular() {
-			regular = false
+			paged = false
 		}
 		parts = append(parts, f)
 		closers = append(closers, f)
 	}
-	c := buffer.NewConcat(parts...)
 	closeInput = func() {
 		for _, c := range closers {
 			c.Close()
 		}
 	}
-	if !regular {
-		return c, nil, closeInput, nil
-	}
-	return c, c, closeInput, nil
+	return buffer.NewConcat(parts...), paged, closeInput, nil
 }
 
-// reopen is the app's Open: the files read again by name, the input
-// paged from disk when it still can be.
+// open is the input as a buffer being filled, each file a part of it,
+// paged from disk when it can be and else kept in memory. notify is
+// the reader's, as buffer.Fill calls it.
+func open(files []string, notify func()) (buf *buffer.Buffer, closeInput func(), paged bool, err error) {
+	in, paged, closeInput, err := openInput(files)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	buf = buffer.New()
+	if paged {
+		buf = buffer.NewFrom(in)
+	}
+	in.OnPart = func(int) { buf.StartPart() }
+	go buffer.Fill(in, buf, notify)
+	return buf, closeInput, paged, nil
+}
+
+// reopen is the app's Open: the files read again by name.
 func reopen(files []string) func(func()) (*buffer.Buffer, func(), error) {
 	return func(notify func()) (*buffer.Buffer, func(), error) {
-		in, src, closeInput, err := openInput(files)
-		if err != nil {
-			return nil, nil, err
-		}
-		buf := buffer.New()
-		if src != nil {
-			buf = buffer.NewFrom(src)
-		}
-		go buffer.Fill(in, buf, notify)
-		return buf, closeInput, nil
+		buf, closeInput, _, err := open(files, notify)
+		return buf, closeInput, err
 	}
 }
 
@@ -184,20 +189,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
 		os.Exit(1)
 	}
-	in, src, closeInput, err := openInput(files)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
-		if len(files) == 0 {
-			fmt.Fprint(os.Stderr, cli.Usage)
-		}
-		os.Exit(1)
-	}
-	defer closeInput()
-
-	buf := buffer.New()
-	if src != nil {
-		buf = buffer.NewFrom(src)
-	}
 	data := make(chan struct{}, 1)
 	n := new(notifier)
 	n.set(func() {
@@ -206,7 +197,15 @@ func main() {
 		default:
 		}
 	})
-	go buffer.Fill(in, buf, n.notify)
+	buf, closeInput, paged, err := open(files, n.notify)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
+		if len(files) == 0 {
+			fmt.Fprint(os.Stderr, cli.Usage)
+		}
+		os.Exit(1)
+	}
+	defer closeInput()
 	if opts.QuitIfOnePage {
 		// Without a terminal to size, the screen below fails the same way.
 		if tty, err := os.Open("/dev/tty"); err == nil {
@@ -241,14 +240,14 @@ func main() {
 
 	appOpts := opts.App(scr, files, cfg)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
-	if src != nil {
+	if paged {
 		appOpts.Open = reopen(files)
 	}
 	a := app.New(scr, buf, appOpts)
 	defer a.Stop() // before Fini closes the queue
 	n.set(a.Notify)
 	a.Notify() // for what was read, or ended, before the app existed
-	if src != nil {
+	if paged {
 		stop := watch.Files(files, postChanged(a))
 		defer stop()
 	}

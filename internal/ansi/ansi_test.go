@@ -167,7 +167,7 @@ func TestSkipMatchesParse(t *testing.T) {
 		"plain", "\x1b[31mred", "still red",
 		"\x1b]8;;http://x\x1b\\link", "\x1b[1mbold in link", "\x1b[0mreset keeps link",
 		"\x1b]8;;\x07unlinked", "\x1b(Bcharset", "cut \x1b[3", "after cut",
-		"\x1b[38;2;1;2;3mrgb ü \x1b[4:0mno underline", "\x1b]0;title\x07other osc", "",
+		"\x1b[38;2;1;2;3mrgb ü \x1b[4:0mno underline", "\x1b]0;title\x07title", "\x1b]2;\x07cleared", "",
 	}
 	var byParse, bySkip Parser
 	for _, l := range lines {
@@ -176,6 +176,38 @@ func TestSkipMatchesParse(t *testing.T) {
 		if byParse != bySkip {
 			t.Fatalf("after %q: Skip left %+v, Parse %+v", l, bySkip, byParse)
 		}
+	}
+}
+
+// TestTitle: the window title OSC 0 or 2 sets is parser state, carried
+// across lines like the link until set again; an empty title clears it.
+func TestTitle(t *testing.T) {
+	tests := []struct {
+		name  string
+		in    string
+		title string
+	}{
+		{"osc 2 bel", "\x1b]2;vedi\x07text", "vedi"},
+		{"osc 2 st", "\x1b]2;vedi\x1b\\text", "vedi"},
+		{"osc 0", "\x1b]0;both\x07", "both"},
+		{"osc 1 is the icon", "\x1b]1;icon\x07", "was"},
+		{"empty clears", "\x1b]2;\x07", ""},
+		{"last wins", "\x1b]2;one\x07\x1b[31m\x1b]0;two\x07", "two"},
+		{"semicolons kept", "\x1b]2;a;b\x07", "a;b"},
+		{"no osc keeps it", "plain \x1b[1mtext", "was"},
+		{"link is not a title", "\x1b]8;;http://x\x07", "was"},
+		{"cut off", "\x1b]2;ved", "was"},
+		{"sgr reset keeps it", "\x1b[0m", "was"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := NewParser()
+			p.Parse([]byte("\x1b]2;was\x07"))
+			p.Parse([]byte(tc.in))
+			if got := p.Title(); got != tc.title {
+				t.Fatalf("Title = %q, want %q", got, tc.title)
+			}
+		})
 	}
 }
 
