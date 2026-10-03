@@ -21,13 +21,13 @@ func TestOpenInputFIFO(t *testing.T) {
 		t.Fatal(err)
 	}
 	go func() { os.WriteFile(pipe, []byte("hello\n"), 0) }()
-	in, paged, closeInput, err := openInput([]string{pipe})
+	in, paged, onDisk, closeInput, err := openInput([]string{pipe}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer closeInput()
-	if paged {
-		t.Error("paged for a pipe")
+	if paged || onDisk {
+		t.Errorf("paged %v, onDisk %v for a pipe", paged, onDisk)
 	}
 	got, err := io.ReadAll(in)
 	if err != nil || string(got) != "hello\n" {
@@ -41,13 +41,122 @@ func TestOpenInputFile(t *testing.T) {
 	if err := os.WriteFile(name, []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	_, paged, closeInput, err := openInput([]string{name})
+	_, paged, onDisk, closeInput, err := openInput([]string{name}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer closeInput()
-	if !paged {
-		t.Error("not paged for a regular file")
+	if !paged || !onDisk {
+		t.Errorf("paged %v, onDisk %v for a regular file", paged, onDisk)
+	}
+}
+
+// TestOpenInputCmd: with an open command a file is read through it,
+// so its text is kept in memory, but it is still on disk to watch and
+// read again.
+func TestOpenInputCmd(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "f")
+	if err := os.WriteFile(name, []byte("hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	in, paged, onDisk, closeInput, err := openInput([]string{name}, []string{"sed", "s/l/L/g", "%s"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeInput()
+	if paged || !onDisk {
+		t.Errorf("paged %v, onDisk %v for a file read through a command", paged, onDisk)
+	}
+	got, err := io.ReadAll(in)
+	if err != nil || string(got) != "heLLo\n" {
+		t.Errorf("read %q, %v", got, err)
+	}
+}
+
+// TestOpenInputCmdStdin: stdin is read through the open command too,
+// as "-".
+func TestOpenInputCmdStdin(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	stdin := os.Stdin
+	os.Stdin = r
+	t.Cleanup(func() { os.Stdin = stdin })
+	go func() {
+		w.Write([]byte("hello\n"))
+		w.Close()
+	}()
+	in, _, onDisk, closeInput, err := openInput(nil, []string{"cat", "-n", "%s"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeInput()
+	if onDisk {
+		t.Error("onDisk for stdin")
+	}
+	got, err := io.ReadAll(in)
+	if err != nil || string(got) != "     1\thello\n" {
+		t.Errorf("read %q, %v", got, err)
+	}
+}
+
+// TestOpenInputCmdFIFO: a named pipe is left for the command to open:
+// opened twice, the second reader would wait for a writer that has
+// been and gone.
+func TestOpenInputCmdFIFO(t *testing.T) {
+	pipe := filepath.Join(t.TempDir(), "pipe")
+	if err := syscall.Mkfifo(pipe, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	go func() { os.WriteFile(pipe, []byte("hello\n"), 0) }()
+	type result struct {
+		got []byte
+		err error
+	}
+	done := make(chan result, 1)
+	go func() {
+		in, _, onDisk, closeInput, err := openInput([]string{pipe}, []string{"cat", "%s"})
+		if err != nil {
+			done <- result{nil, err}
+			return
+		}
+		defer closeInput()
+		if onDisk {
+			t.Error("onDisk for a pipe")
+		}
+		got, err := io.ReadAll(in)
+		done <- result{got, err}
+	}()
+	select {
+	case r := <-done:
+		if r.err != nil || string(r.got) != "hello\n" {
+			t.Errorf("read %q, %v", r.got, r.err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("reading the pipe through the command hung")
+	}
+}
+
+// TestOpenInputCmdMissingFile: a file that is not there is the error,
+// before any command runs.
+func TestOpenInputCmdMissingFile(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "missing")
+	_, _, _, _, err := openInput([]string{name}, []string{"cat", "%s"})
+	if !os.IsNotExist(err) {
+		t.Errorf("err = %v, want not exist", err)
+	}
+}
+
+// TestOpenInputCmdNotFound: a command that cannot start is the error.
+func TestOpenInputCmdNotFound(t *testing.T) {
+	name := filepath.Join(t.TempDir(), "f")
+	if err := os.WriteFile(name, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, _, err := openInput([]string{name}, []string{"vedi-no-such-command", "%s"}); err == nil {
+		t.Error("openInput succeeded")
 	}
 }
 
@@ -63,7 +172,7 @@ func TestOpenParts(t *testing.T) {
 		}
 		names = append(names, name)
 	}
-	buf, closeInput, _, err := open(names, func() {})
+	buf, closeInput, _, _, err := open(names, nil, func() {})
 	if err != nil {
 		t.Fatal(err)
 	}

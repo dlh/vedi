@@ -13,6 +13,7 @@ import (
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/layout"
+	"go.dlh.dev/vedi/internal/words"
 )
 
 const Usage = `usage: vedi [flags] [file...]
@@ -29,6 +30,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N          put the cursor on row N of the last screenful
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+  --open-cmd CMD          read each input by running CMD, %s the file or -
   --tab-width N           draw a tab as N cells (8)
   --edge-markers          mark text off the sides with < and >, a wrapped row with \
   --no-edge-markers       leave the edges bare (the default)
@@ -51,6 +53,7 @@ type Options struct {
 	Follow        bool
 	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
 	ClipboardCmd  string      // --clipboard-cmd; "" leaves it to the config
+	OpenCmd       string      // --open-cmd; "" leaves it to the config
 	TabWidth      int         // --tab-width; 0 leaves it to the config
 	Config        string      // "" for the default location
 	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
@@ -111,6 +114,15 @@ func (o Options) Reloads(cfg config.Config) bool {
 	return !cfg.NoAutoReload
 }
 
+// Open is the command each input is read through: the flag's, else
+// the config's, else "" for none.
+func (o Options) Open(cfg config.Config) string {
+	if o.OpenCmd != "" {
+		return o.OpenCmd
+	}
+	return cfg.OpenCmd
+}
+
 func inputNames(files []string) []string {
 	if len(files) == 0 {
 		return []string{app.Stdin}
@@ -131,6 +143,7 @@ var valueFlags = map[string]func(*Options, string) error{
 	"--cursor-row":    screenInt(1, func(s *app.Screen) *int { return &s.CursorRow }),
 	"--cursor-col":    screenInt(1, func(s *app.Screen) *int { return &s.CursorCol }),
 	"--clipboard-cmd": func(o *Options, v string) error { o.ClipboardCmd = v; return nil },
+	"--open-cmd":      func(o *Options, v string) error { o.OpenCmd = v; return nil },
 	"--config":        func(o *Options, v string) error { o.Config = v; return nil },
 	"--wrap-style": func(o *Options, v string) error {
 		switch v {
@@ -175,9 +188,9 @@ func screenInt(min int, field func(*app.Screen) *int) func(*Options, string) err
 // command line.
 func Parse(args []string, env string) (Options, []string, error) {
 	var o Options
-	words, err := split(env)
+	w, err := words.Split(env)
 	if err == nil {
-		_, err = o.parse(words, true)
+		_, err = o.parse(w, true)
 	}
 	if err != nil {
 		return o, nil, fmt.Errorf("VEDI: %v", err)
@@ -192,57 +205,6 @@ func Parse(args []string, env string) (Options, []string, error) {
 		o.StartLine, o.Follow, o.Screen = fromEnv.StartLine, fromEnv.Follow, fromEnv.Screen
 	}
 	return o, files, nil
-}
-
-// split splits s into words as a shell would: on blanks, with '...'
-// taken as written, "..." too but for \" and \\, and a \ outside
-// quotes standing for the character after it.
-func split(s string) ([]string, error) {
-	var words []string
-	var w strings.Builder
-	inWord := false
-	var quote byte
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		switch {
-		case quote != 0 && c == quote:
-			quote = 0
-		case quote == '\'':
-			w.WriteByte(c)
-		case c == '\\':
-			if i+1 == len(s) {
-				return nil, fmt.Errorf("trailing \\")
-			}
-			if quote == '"' && s[i+1] != '"' && s[i+1] != '\\' {
-				w.WriteByte(c)
-				continue
-			}
-			i++
-			w.WriteByte(s[i])
-			inWord = true
-		case quote == '"':
-			w.WriteByte(c)
-		case c == '\'' || c == '"':
-			quote = c
-			inWord = true
-		case c == ' ' || c == '\t' || c == '\n':
-			if inWord {
-				words = append(words, w.String())
-				w.Reset()
-				inWord = false
-			}
-		default:
-			w.WriteByte(c)
-			inWord = true
-		}
-	}
-	if quote != 0 {
-		return nil, fmt.Errorf("unclosed %c", quote)
-	}
-	if inWord {
-		words = append(words, w.String())
-	}
-	return words, nil
 }
 
 // parse lays args over o and returns the files. env is the words of

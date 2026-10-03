@@ -51,6 +51,15 @@ To set the pager for bat alone:
 
 or put `--pager="vedi -F"` in `~/.config/bat/config`.
 
+The other way around, `--open-cmd` reads every file vedi is given
+through bat, for syntax coloring:
+
+    export VEDI="-F --open-cmd 'bat --color=always --paging=never %s'"
+
+`%s` is the file, or `-` for stdin, which bat reads as is. `open_cmd`
+in `vedi.conf` sets it for good; see
+[Configuration](configuration.md#settings).
+
 ## git-delta
 
 [delta](https://github.com/dandavison/delta) is a pager for git that

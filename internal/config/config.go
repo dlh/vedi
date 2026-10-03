@@ -23,14 +23,12 @@ type Config struct {
 	NoWrap       bool             // wrap no: start in nowrap mode
 	WrapStyle    layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
 	ClipboardCmd string           // clipboard_cmd: copy pipes to this, not OSC 52
+	OpenCmd      string           // open_cmd: each input is read by running this, %s the name
 	TabWidth     int              // tab_width: cells per tab stop; 0 for the default
 	EdgeMarkers  bool             // edge_markers yes: mark text off the sides, and wrapped rows
 }
 
-// Parse reads a config: "map <key> <action>" lines, clear_all_shortcuts,
-// "auto_reload yes|no", "wrap yes|no", "wrap_style char|word", "clipboard_cmd <command>",
-// "tab_width <n>", "edge_markers yes|no", blank lines and # comments. Errors read name:line:
-// message.
+// Parse applies src line by line. Errors read name:line: message.
 func Parse(name string, src []byte) (Config, error) {
 	var c Config
 	for i, line := range strings.Split(string(src), "\n") {
@@ -90,7 +88,12 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 		if len(f) < 2 {
 			return verb, errors.New("clipboard_cmd takes a command")
 		}
-		c.ClipboardCmd = strings.TrimSpace(strings.TrimSpace(line)[len(f[0]):])
+		c.ClipboardCmd = rest(line, f[0])
+	case "open_cmd":
+		if len(f) < 2 {
+			return verb, errors.New("open_cmd takes a command")
+		}
+		c.OpenCmd = rest(line, f[0])
 	case "tab_width":
 		if len(f) != 2 {
 			return verb, errors.New("tab_width takes a positive number")
@@ -109,6 +112,10 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 		return verb, fmt.Errorf("unknown verb %q", verb)
 	}
 	return verb, nil
+}
+
+func rest(line, verb string) string {
+	return strings.TrimSpace(strings.TrimSpace(line)[len(verb):])
 }
 
 // Keymap is the bindings in effect: the defaults, or none after

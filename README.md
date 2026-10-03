@@ -27,6 +27,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --cursor-row N          put the cursor on row N of the last screenful
       --cursor-col N          put the cursor in column N of the last screenful
       --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
+      --open-cmd CMD          read each input by running CMD, %s the file or -
       --tab-width N           draw a tab as N cells (8)
       --edge-markers          mark text off the sides with < and >, a wrapped row with \
       --no-edge-markers       leave the edges bare (the default)

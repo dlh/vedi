@@ -374,6 +374,25 @@ func TestClipboardCmd(t *testing.T) {
 	}
 }
 
+// TestOpenCmd: open_cmd takes the rest of the line, spaces and all;
+// the last line wins; a bare verb is an error.
+func TestOpenCmd(t *testing.T) {
+	for _, tc := range []struct{ src, want string }{
+		{"", ""},
+		{"open_cmd bat --color=always --paging=never %s\n", "bat --color=always --paging=never %s"},
+		{"\topen_cmd\t cat  %s \n", "cat  %s"},
+		{"open_cmd cat %s\nopen_cmd bat %s\n", "bat %s"},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.OpenCmd != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want OpenCmd %q", tc.src, c, err, tc.want)
+		}
+	}
+	if _, err := Parse("vedi.conf", []byte("open_cmd\n")); err == nil || err.Error() != "vedi.conf:1: open_cmd takes a command" {
+		t.Errorf("Parse(\"open_cmd\") err = %v, want open_cmd takes a command", err)
+	}
+}
+
 // TestTabWidth: tab_width takes a positive number; zero, the default,
 // leaves the tab width to the app.
 func TestTabWidth(t *testing.T) {

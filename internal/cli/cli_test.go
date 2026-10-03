@@ -66,6 +66,9 @@ func TestParse(t *testing.T) {
 		{"missing tab width", []string{"--tab-width"}, Options{}, nil, true},
 		{"bad tab width", []string{"--tab-width", "0"}, Options{}, nil, true},
 		{"bad tab width text", []string{"--tab-width", "four"}, Options{}, nil, true},
+		{"open cmd", []string{"--open-cmd", "bat --color=always %s", "f"}, Options{OpenCmd: "bat --color=always %s"}, []string{"f"}, false},
+		{"open cmd eq", []string{"--open-cmd=cat %s"}, Options{OpenCmd: "cat %s"}, nil, false},
+		{"missing open cmd", []string{"--open-cmd"}, Options{}, nil, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -103,6 +106,7 @@ func TestParseEnv(t *testing.T) {
 		{"backslash in double quotes", `--clipboard-cmd "a \"b\" \\ \c"`, nil, Options{ClipboardCmd: `a "b" \ \c`}, nil},
 		{"backslash in single quotes", `--clipboard-cmd 'a\b'`, nil, Options{ClipboardCmd: `a\b`}, nil},
 		{"empty quotes", "--clipboard-cmd ''", []string{"f"}, Options{}, []string{"f"}},
+		{"open cmd", "-F --open-cmd 'bat --color=always --paging=never %s'", nil, Options{QuitIfOnePage: true, OpenCmd: "bat --color=always --paging=never %s"}, nil},
 		{"plus G", "+G", nil, Options{Follow: true}, nil},
 		{"plus N beats plus G", "+G", []string{"+5"}, Options{StartLine: 5}, nil},
 		{"plus G beats plus N", "+5", []string{"+G"}, Options{Follow: true}, nil},
@@ -256,6 +260,25 @@ func TestAppTabWidth(t *testing.T) {
 	} {
 		if got := tc.opts.App(scr, nil, tc.cfg).TabWidth; got != tc.want {
 			t.Errorf("%+v.App(%+v).TabWidth = %d, want %d", tc.opts, tc.cfg, got, tc.want)
+		}
+	}
+}
+
+// TestOpenCmd: the flag decides the open command; without one the
+// config does; without either there is none.
+func TestOpenCmd(t *testing.T) {
+	for _, tc := range []struct {
+		flag string
+		cfg  config.Config
+		want string
+	}{
+		{"", config.Config{}, ""},
+		{"", config.Config{OpenCmd: "cat %s"}, "cat %s"},
+		{"bat %s", config.Config{OpenCmd: "cat %s"}, "bat %s"},
+		{"bat %s", config.Config{}, "bat %s"},
+	} {
+		if got := (Options{OpenCmd: tc.flag}).Open(tc.cfg); got != tc.want {
+			t.Errorf("Options{OpenCmd: %q}.Open(%+v) = %q, want %q", tc.flag, tc.cfg, got, tc.want)
 		}
 	}
 }
