@@ -1,5 +1,6 @@
 # Configuration
 
+- [The file](#the-file)
 - [Settings](#settings)
 - [Commands](#commands)
 - [Keys](#keys)
@@ -8,17 +9,14 @@
 - [vim](#vim)
 - [emacs](#emacs)
 
-vedi reads `$XDG_CONFIG_HOME/vedi/vedi.conf`, or
-`~/.config/vedi/vedi.conf` when `XDG_CONFIG_HOME` is unset. Without
-the file it uses the defaults below. `--config FILE` reads FILE
-instead, and then it must exist. A bad line stops vedi before it
-opens, naming the file and line.
+## The file
 
-One directive per line. `map <key> <action>` binds a key; a later
-line wins over an earlier one and over the defaults, and the action
-`none` unbinds. `clear_all_shortcuts` drops every binding so far, the
-defaults included, for a map built from nothing by the lines after
-it. Blank lines and lines starting with `#` are skipped.
+vedi reads `~/.config/vedi/vedi.conf` (or `$XDG_CONFIG_HOME/vedi/vedi.conf`),
+or the file named by `--config`. Without a file it uses the
+[defaults](#defaults). A bad line stops vedi before it opens, naming
+the file and line.
+
+One directive per line. Blank lines and `#` comments are skipped.
 
     # vim-style horizontal motion
     map h left
@@ -31,98 +29,95 @@ it. Blank lines and lines starting with `#` are skipped.
     map j down
     map k up
 
+`map <key> <action>` binds a key. Later lines win over earlier ones
+and over the defaults; the action `none` unbinds.
+`clear_all_shortcuts` drops every binding so far, defaults included.
+
 ## Settings
 
-`auto_reload no` leaves a file that changes on disk as it was read;
-`R` still reloads it. `auto_reload yes` is the default. On the command
-line `--no-auto-reload` and `--auto-reload` override it for one run.
+| Setting | Default | Flags | Effect |
+| --- | --- | --- | --- |
+| `auto_reload` | `yes` | `--auto-reload`, `--no-auto-reload` | Reread a file that changes on disk. `R` reloads either way. |
+| `wrap` | `yes` | `--wrap`, `-S` | Start in wrap mode. `w` toggles. |
+| `wrap_style` | `char` | `--wrap-style` | `word` breaks rows at spaces and tabs. |
+| `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
+| `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
+| `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
+| `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
+| `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
 
-`wrap no` starts in nowrap mode; `w` still toggles. `wrap yes` is the
-default. `-S` and `--wrap` override it for one run.
-
-`wrap_style word` makes wrap mode break rows at spaces and tabs, not
-at the screen's edge: a word that does not fit moves to the next row
-with the space after it, and one wider than the screen breaks where
-the row ends. The status line then shows `word wrap`. `wrap_style char` is
-the default. `--wrap-style` overrides it for one run.
-
-`clipboard_cmd <command>` pipes copied text to the command instead of
-OSC 52; the command is the rest of the line, so `clipboard_cmd xclip
--selection clipboard` works. `--clipboard-cmd` overrides it for one
-run, and `--no-clipboard-cmd` copies with OSC 52 for one run.
-
-`open_cmd <command>` reads each file by running the command and
-paging what it writes, `%s` standing for the file name; stdin is read
-as it is. The command is the rest of the line, so `open_cmd bat
---color=always --paging=never %s` works; a pipeline needs a script. A
-command that fails ends the text with a read error naming its exit
-status and stderr. `R` and auto-reload run it again. `--open-cmd`
-overrides it for one run, and `--no-open-cmd` reads the files as they
-are for one run; see [Pager](pager.md#bat).
-
-`tab_width N` draws a tab as N cells: the next multiple of N from the
-row's start. 8 is the default. `--tab-width` overrides it for one run.
-
-`edge_markers yes` marks text off the side of the screen in nowrap
-mode: a row whose line runs past the right edge ends in `>`, and one
-with text scrolled off the left edge starts with `<`, both in reverse
-video. In wrap mode a row whose line continues on the next ends in
-`\`, and text wraps a column early to leave the last column to it.
-`edge_markers no` is the default. `--edge-markers` and
-`--no-edge-markers` override it for one run.
-
-`file_separators no` leaves out the row that names each input when
-several are given; see [Pager](pager.md#the-inputs-name).
-`file_separators yes` is the default. `--file-separators` and
-`--no-file-separators` override it for one run.
-
-Flags in the `VEDI` environment variable override these for every
-run, and the command line overrides `VEDI`; see
+Flags apply for one run. Flags in the `VEDI` environment variable
+override the file, and the command line overrides `VEDI`; see
 [Pager](pager.md#vedi).
+
+**wrap_style word.** A word that does not fit moves to the next row,
+taking the space after it; one wider than the screen breaks at the
+edge. The status line shows `word wrap`.
+
+**edge_markers yes.** In nowrap mode a row that runs past the right
+edge ends in `>`, and one scrolled off the left edge starts with
+`<`, both in reverse video. In wrap mode a row that continues on the
+next ends in `\`, and text wraps a column early to leave room for it.
+
+**clipboard_cmd** and **open_cmd** take the rest of the line as the
+command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd
+bat --color=always --paging=never %s` work; a pipeline needs a
+script. `open_cmd` leaves stdin as it is. A command that fails ends
+the text with a read error naming its exit status and stderr; `R` and
+auto-reload run it again. See [Pager](pager.md#bat) and
+[Pager](pager.md#the-inputs-name).
 
 ## Commands
 
-`:` opens a prompt on the status line. It takes the settings above
-and `map`, as the config file does, for the rest of the run:
-`:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
-22`, goes to line 22. `:cycle wrap_style` sets a setting to the value
-after its current one, the first after the last; it takes `wrap`,
-`wrap_style`, `edge_markers`, `file_separators` and `auto_reload`,
-and reports the new value on the status line unless the line shows
-it anyway, as it does `wrap` and `wrap_style`. A bad line is an error
-on the status line.
-`clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
+`:` opens a prompt on the status line. It takes any setting above,
+and `map`, for the rest of the run:
 
-Tab completes the word being typed: the command, `yes` or `no`, `char`
-or `word`, a setting after `cycle`, an action after `map`'s key. One
-match fills it in and a space; several, what they share, and lists
-them sorted after the prompt. Tab again fills in each in turn, then
-what was typed. Enter on a listed command keeps the prompt, for the
-argument; on a listed argument it runs the line. Up and Down recall
-earlier commands; Esc, Ctrl+g and Ctrl+c cancel.
+    :wrap_style word
+    :tab_width 4
+    :map x quit
+
+`:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
+setting to its next value, the first after the last; it takes `wrap`,
+`wrap_style`, `edge_markers`, `file_separators` and `auto_reload`.
+`clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad
+line is an error on the status line.
+
+Tab completes the word being typed. One match fills it in; several
+fill in what they share and list the rest under the prompt, and Tab
+again steps through them. Up and Down recall earlier commands; Esc,
+Ctrl+g and Ctrl+c cancel.
 
 ## Keys
 
-`Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, or
-a single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in
-front. `Ctrl+f` and `Ctrl+F` are the same key, and `Ctrl+Space` is a
-key too. `Shift+` on a character
-needs `Cmd+`: without it Shift is another character, and `Shift+Space`
-is not a key a terminal can send. `Cmd+G` is `Cmd+Shift+g`. `Cmd+`
-keys reach vedi only on macOS and only where the terminal passes them
-on. Under the kitty keyboard protocol a shifted character with `Alt+`
-or `Cmd+`, as `Alt+<`, is read as on a US layout. `h` shows the
-bindings in effect.
+A key is one of `Up Down Left Right Home End PgUp PgDn Enter Esc Tab
+Backspace Space`, or a single character, with any of `Shift+`,
+`Ctrl+`, `Alt+`, `Cmd+` in front: `q`, `Ctrl+f`, `Alt+Shift+Left`,
+`Ctrl+Space`.
+
+- `Ctrl+f` and `Ctrl+F` are the same key.
+- A shifted character is just that character: `G`, not `Shift+g`.
+  Only `Cmd+` takes `Shift+` on a character, and `Cmd+G` is
+  `Cmd+Shift+g`. `Shift+Space` is not a key a terminal can send.
+- `Cmd+` keys reach vedi only on macOS, and only where the terminal
+  passes them on.
+- Under the kitty keyboard protocol a shifted character with `Alt+`
+  or `Cmd+`, as `Alt+<`, is read as on a US layout.
+
+`h` shows the bindings in effect.
 
 ## Actions
 
-Each movement has a `select_` twin that extends the selection instead
-of clearing it: `left` and `select_left`, `page_down` and
-`select_page_down`. `set_mark` starts a selection that every motion
-then extends, Shift or not, until `set_mark` again, `clear_selection`
-or a click ends it: vim's `v`, emacs's `Ctrl+Space`. `cycle` takes a
-setting, as `cycle wrap_style`, and is the one action that does; see
-[Commands](#commands). The defaults below name every other action.
+The [defaults](#defaults) below name every action, with three
+exceptions:
+
+- Each movement has a `select_` twin that extends the selection
+  instead of clearing it: `left` and `select_left`, `page_down` and
+  `select_page_down`.
+- `set_mark` starts a selection that every motion then extends until
+  `set_mark` again, `clear_selection` or a click ends it: vim's `v`,
+  emacs's `Ctrl+Space`.
+- `cycle <setting>` steps a setting, as in [Commands](#commands). It
+  is the one action that takes an argument.
 
 ## Defaults
 
