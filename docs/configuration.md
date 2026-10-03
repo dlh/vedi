@@ -96,10 +96,10 @@ on the status line.
 Tab completes the word being typed: the command, `yes` or `no`, `char`
 or `word`, a setting after `cycle`, an action after `map`'s key. One
 match fills it in and a space; several, what they share, and lists
-them sorted after the prompt. Tab again fills in each in turn, then what was typed. Enter on
-a listed command keeps the prompt, for the argument; on a listed
-argument it runs the line. Up and Down recall earlier commands; Esc,
-Ctrl+g and Ctrl+c cancel.
+them sorted after the prompt. Tab again fills in each in turn, then
+what was typed. Enter on a listed command keeps the prompt, for the
+argument; on a listed argument it runs the line. Up and Down recall
+earlier commands; Esc, Ctrl+g and Ctrl+c cancel.
 
 ## Keys
 
