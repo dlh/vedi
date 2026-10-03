@@ -27,20 +27,16 @@ type Cmd struct {
 	err    error
 }
 
-// Open runs argv with each %s replaced by name, and returns its stdout.
-// For name "-" the command reads stdin; for a file it reads nothing.
-// The error is one of starting it; a failure after that comes from
-// Read.
-func Open(argv []string, name string, stdin io.Reader) (*Cmd, error) {
+// Open runs argv with each %s replaced by name, and returns its stdout;
+// the command reads nothing. The error is one of starting it; a
+// failure after that comes from Read.
+func Open(argv []string, name string) (*Cmd, error) {
 	args := make([]string, len(argv))
 	for i, a := range argv {
 		args[i] = strings.ReplaceAll(a, "%s", name)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Cmd{cmd: exec.CommandContext(ctx, args[0], args[1:]...), cancel: cancel}
-	if name == "-" {
-		c.cmd.Stdin = stdin
-	}
 	c.cmd.Stderr = &c.stderr
 	// Its own process group, so cancelling kills what it started too;
 	// a descendant that escapes the group and keeps a pipe open holds

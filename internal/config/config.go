@@ -23,7 +23,7 @@ type Config struct {
 	NoWrap       bool             // wrap no: start in nowrap mode
 	WrapStyle    layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
 	ClipboardCmd string           // clipboard_cmd: copy pipes to this, not OSC 52
-	OpenCmd      string           // open_cmd: each input is read by running this, %s the name
+	OpenCmd      string           // open_cmd: each file is read by running this, %s the name
 	TabWidth     int              // tab_width: cells per tab stop; 0 for the default
 	EdgeMarkers  bool             // edge_markers yes: mark text off the sides, and wrapped rows
 }

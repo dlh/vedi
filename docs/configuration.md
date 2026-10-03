@@ -51,14 +51,13 @@ OSC 52; the command is the rest of the line, so `clipboard_cmd xclip
 -selection clipboard` works. `--clipboard-cmd` overrides it for one
 run.
 
-`open_cmd <command>` reads each input by running the command and
-paging what it writes, `%s` standing for the file name; stdin is `-`,
-and the command then reads vedi's stdin. The command is the rest of
-the line, so `open_cmd bat --color=always --paging=never %s` works; a
-pipeline needs a script. A command that fails ends the text with a
-read error naming its exit status and stderr. `R` and auto-reload run
-it again. `--open-cmd` overrides it for one run; see
-[Pager](pager.md#bat).
+`open_cmd <command>` reads each file by running the command and
+paging what it writes, `%s` standing for the file name; stdin is read
+as it is. The command is the rest of the line, so `open_cmd bat
+--color=always --paging=never %s` works; a pipeline needs a script. A
+command that fails ends the text with a read error naming its exit
+status and stderr. `R` and auto-reload run it again. `--open-cmd`
+overrides it for one run; see [Pager](pager.md#bat).
 
 `tab_width N` draws a tab as N cells: the next multiple of N from the
 row's start. 8 is the default. `--tab-width` overrides it for one run.

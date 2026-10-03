@@ -26,8 +26,8 @@ import (
 )
 
 // openInput is the files, each a part, or stdin when there are none;
-// "-" names stdin. With argv, the open command, each is read through
-// it, and a file is left for the command to open: a named pipe opened
+// "-" names stdin. With argv, the open command, each file is read
+// through it and left for the command to open: a named pipe opened
 // twice waits for a second writer. onDisk says every input is a
 // regular file, to watch and read again; paged that its bytes can be
 // read at random, which a command's output, a pipe, cannot.
@@ -46,6 +46,8 @@ func openInput(files, argv []string) (in *buffer.Concat, paged, onDisk bool, clo
 		switch {
 		case name == "-":
 			onDisk = false
+			parts = append(parts, src)
+			continue
 		case argv != nil:
 			fi, err := os.Stat(name)
 			if err != nil {
@@ -68,7 +70,7 @@ func openInput(files, argv []string) (in *buffer.Concat, paged, onDisk bool, clo
 			closers = append(closers, f)
 		}
 		if argv != nil {
-			c, err := opencmd.Open(argv, name, os.Stdin)
+			c, err := opencmd.Open(argv, name)
 			if err != nil {
 				closeAll(closers)
 				return nil, false, false, nil, err

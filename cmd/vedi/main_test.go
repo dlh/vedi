@@ -73,8 +73,8 @@ func TestOpenInputCmd(t *testing.T) {
 	}
 }
 
-// TestOpenInputCmdStdin: stdin is read through the open command too,
-// as "-".
+// TestOpenInputCmdStdin: the open command is for files; stdin is read
+// as it is.
 func TestOpenInputCmdStdin(t *testing.T) {
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -97,7 +97,7 @@ func TestOpenInputCmdStdin(t *testing.T) {
 		t.Error("onDisk for stdin")
 	}
 	got, err := io.ReadAll(in)
-	if err != nil || string(got) != "     1\thello\n" {
+	if err != nil || string(got) != "hello\n" {
 		t.Errorf("read %q, %v", got, err)
 	}
 }

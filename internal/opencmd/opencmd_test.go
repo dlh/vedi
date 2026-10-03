@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -16,7 +15,7 @@ func TestOpenFile(t *testing.T) {
 	if err := os.WriteFile(name, []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	c, err := Open([]string{"cat", "%s"}, name, nil)
+	c, err := Open([]string{"cat", "%s"}, name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,23 +26,9 @@ func TestOpenFile(t *testing.T) {
 	}
 }
 
-// TestOpenStdin: for "-" the command's stdin is the one given, and %s
-// is "-".
-func TestOpenStdin(t *testing.T) {
-	c, err := Open([]string{"cat", "%s"}, "-", strings.NewReader("piped\n"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer c.Close()
-	got, err := io.ReadAll(c)
-	if err != nil || string(got) != "piped\n" {
-		t.Errorf("read %q, %v", got, err)
-	}
-}
-
 // TestOpenInsideWord: %s is replaced inside a word too.
 func TestOpenInsideWord(t *testing.T) {
-	c, err := Open([]string{"echo", "file=%s"}, "f.rs", nil)
+	c, err := Open([]string{"echo", "file=%s"}, "f.rs")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,10 +39,10 @@ func TestOpenInsideWord(t *testing.T) {
 	}
 }
 
-// TestOpenWithoutPercent: a command without %s runs as given, and a
-// file's stdin is empty.
+// TestOpenWithoutPercent: a command without %s runs as given, and its
+// stdin is empty.
 func TestOpenWithoutPercent(t *testing.T) {
-	c, err := Open([]string{"cat"}, "f.rs", nil)
+	c, err := Open([]string{"cat"}, "f.rs")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +56,7 @@ func TestOpenWithoutPercent(t *testing.T) {
 // TestOpenFails: a non-zero exit is the read error once the output
 // ends, with what the command wrote to stderr.
 func TestOpenFails(t *testing.T) {
-	c, err := Open([]string{"sh", "-c", "echo partial; echo oops >&2; exit 3", "sh", "%s"}, "f", nil)
+	c, err := Open([]string{"sh", "-c", "echo partial; echo oops >&2; exit 3", "sh", "%s"}, "f")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +69,7 @@ func TestOpenFails(t *testing.T) {
 
 // TestOpenNotFound: a command that cannot start is an error from Open.
 func TestOpenNotFound(t *testing.T) {
-	if _, err := Open([]string{"vedi-no-such-command", "%s"}, "f", nil); err == nil {
+	if _, err := Open([]string{"vedi-no-such-command", "%s"}, "f"); err == nil {
 		t.Error("Open succeeded")
 	}
 }
@@ -92,7 +77,7 @@ func TestOpenNotFound(t *testing.T) {
 // TestCloseKills: Close ends a command still running, without waiting
 // for it to finish on its own.
 func TestCloseKills(t *testing.T) {
-	c, err := Open([]string{"sleep", "10"}, "f", nil)
+	c, err := Open([]string{"sleep", "10"}, "f")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +91,7 @@ func TestCloseKills(t *testing.T) {
 // TestCloseKillsDescendants: a child of the command holding its
 // stderr does not hold up Close either.
 func TestCloseKillsDescendants(t *testing.T) {
-	c, err := Open([]string{"sh", "-c", "sleep 10 & echo ready; wait"}, "f", nil)
+	c, err := Open([]string{"sh", "-c", "sleep 10 & echo ready; wait"}, "f")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,7 +109,7 @@ func TestCloseKillsDescendants(t *testing.T) {
 // TestCloseWhileWaiting: a command that closes its stdout and runs on
 // leaves a reader waiting for its exit; Close still ends it.
 func TestCloseWhileWaiting(t *testing.T) {
-	c, err := Open([]string{"sh", "-c", "echo ready; exec 1>&-; sleep 10"}, "f", nil)
+	c, err := Open([]string{"sh", "-c", "echo ready; exec 1>&-; sleep 10"}, "f")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +136,7 @@ func TestCloseWhileWaiting(t *testing.T) {
 // TestCloseAfterEOF: Close after the output ended is fine, and so is
 // Close twice.
 func TestCloseAfterEOF(t *testing.T) {
-	c, err := Open([]string{"echo", "hi"}, "f", nil)
+	c, err := Open([]string{"echo", "hi"}, "f")
 	if err != nil {
 		t.Fatal(err)
 	}

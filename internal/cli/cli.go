@@ -30,7 +30,7 @@ const Usage = `usage: vedi [flags] [file...]
   --cursor-row N          put the cursor on row N of the last screenful
   --cursor-col N          put the cursor in column N of the last screenful
   --clipboard-cmd CMD     pipe copied text to CMD instead of OSC 52
-  --open-cmd CMD          read each input by running CMD, %s the file or -
+  --open-cmd CMD          read each file by running CMD, %s the file
   --tab-width N           draw a tab as N cells (8)
   --edge-markers          mark text off the sides with < and >, a wrapped row with \
   --no-edge-markers       leave the edges bare (the default)
@@ -114,7 +114,7 @@ func (o Options) Reloads(cfg config.Config) bool {
 	return !cfg.NoAutoReload
 }
 
-// Open is the command each input is read through: the flag's, else
+// Open is the command each file is read through: the flag's, else
 // the config's, else "" for none.
 func (o Options) Open(cfg config.Config) string {
 	if o.OpenCmd != "" {
