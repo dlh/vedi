@@ -26,6 +26,14 @@ var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background
 // the pager's and not the text's.
 var edgeStyle = tcell.StyleDefault.Reverse(true)
 
+// sepNameStyle and sepRuleStyle draw the row naming an input: the
+// name bold, so it reads at a glance, and the dashes dim, so the rule
+// recedes from the text.
+var (
+	sepNameStyle = tcell.StyleDefault.Bold(true)
+	sepRuleStyle = tcell.StyleDefault.Dim(true)
+)
+
 // Draw renders the text from top, the selection in selStyle, search
 // matches in MatchStyle, and the status line. While a Screen waits
 // for EOF only the status line is drawn: the view is not known until
@@ -79,6 +87,10 @@ func (a *App) drawText(c *canvas) (curX, curY int) {
 // line's search matches, and reports the cursor's column, if the cursor
 // is on it.
 func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, ok bool) {
+	if p.Col < 0 {
+		a.drawSeparator(c, y, p.Line)
+		return -1, false
+	}
 	w := c.w
 	line := a.buf.Line(p.Line)
 	ln := a.lineLayout(p.Line)
@@ -168,6 +180,22 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		c.put(w-1, y, "\\", edgeStyle)
 	}
 	return curX, ok
+}
+
+// drawSeparator draws the row naming line i's input: two dashes, the
+// name as given, and dashes to the right edge. The name is cut there
+// if it is wider than the screen.
+func (a *App) drawSeparator(c *canvas, y, i int) {
+	name := Stdin
+	if k := a.buf.PartAt(i); k < len(a.names) {
+		name = a.names[k]
+	}
+	x := c.runes(0, y, []rune("── "), sepRuleStyle)
+	x += c.runes(x, y, []rune(name), sepNameStyle)
+	c.put(x, y, " ", sepRuleStyle)
+	for x++; x < c.w; x++ {
+		c.put(x, y, "─", sepRuleStyle)
+	}
 }
 
 // helpCols is how wide the help is laid out, whatever the screen:
@@ -395,7 +423,12 @@ func (a *App) statusText() string {
 	if a.next != nil {
 		reading += "  reloading…"
 	}
-	return fmt.Sprintf("%s  line %d/%d  %s%s", a.inputName(), a.cur.Line+1, a.buf.Len(), mode, reading)
+	k, start, end := a.input()
+	name := a.inputName()
+	if len(a.names) > 1 {
+		name = fmt.Sprintf("%s %d/%d", name, k+1, len(a.names))
+	}
+	return fmt.Sprintf("%s  line %d/%d  %s%s", name, a.cur.Line-start+1, end-start, mode, reading)
 }
 
 // inputName is what the status line calls the input the cursor's line
@@ -410,6 +443,12 @@ func (a *App) inputName() string {
 		return title
 	}
 	return name
+}
+
+// input is the cursor's input: its index among the names, and the
+// lines it holds as [start, end).
+func (a *App) input() (k, start, end int) {
+	return a.buf.Part(a.cur.Line)
 }
 
 // isControl reports whether r is drawn as ^X: a C0 control other than

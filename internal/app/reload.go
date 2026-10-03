@@ -87,7 +87,7 @@ func (a *App) swap(buf *buffer.Buffer, closeBuf func()) {
 // reload puts buf in the view's place, keeping the cursor's place in
 // the text: a cursor on the last line goes to the new last line, and
 // every position is clamped, the line to the last, the column to the
-// line's end. A top past the new end starts over from the first line,
+// line's end. A top past the new end starts over from the first row,
 // so a text shorter than the screen fills it from the top; scrolling
 // to the cursor then places it.
 func (t *textView) reload(buf *buffer.Buffer) {
@@ -97,10 +97,14 @@ func (t *textView) reload(buf *buffer.Buffer) {
 		t.cur.Line = buf.Len() - 1
 	}
 	t.cur = t.clamp(t.cur)
-	if t.top.Line >= buf.Len() {
-		t.top = buffer.Pos{}
+	switch {
+	case t.top.Line >= buf.Len():
+		t.top = buffer.Pos{Col: -1}
+	case t.top.Col >= 0:
+		t.top = t.clamp(t.top)
 	}
-	t.top = t.clamp(t.top)
+	// A separator row stays one: snap drops it if the line no longer
+	// starts an input.
 	if t.anchor != nil {
 		p := t.clamp(*t.anchor)
 		t.anchor = &p

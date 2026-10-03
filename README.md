@@ -30,6 +30,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --no-open-cmd                read each file as it is
       --tab-width N                draw a tab as N cells (default: 8)
       --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
+      --[no-]file-separators       with several inputs, draw a row naming each (default: on)
       --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
       -v, --version                print the version
 

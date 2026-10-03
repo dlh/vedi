@@ -130,7 +130,7 @@ func commonPrefix(a, b string) string {
 
 // commands is what the : prompt takes: goto, cycle and the config
 // verbs but clear_all_shortcuts, which would unbind : and q.
-var commands = []string{"goto", "cycle", "wrap", "wrap_style", "tab_width", "edge_markers", "auto_reload", "clipboard_cmd", "map"}
+var commands = []string{"goto", "cycle", "wrap", "wrap_style", "tab_width", "edge_markers", "file_separators", "auto_reload", "clipboard_cmd", "map"}
 
 // runCommand runs a : line. A number alone, or goto and a number, goes
 // to that 1-based line, clamped to the buffer; cycle steps a setting;
@@ -151,7 +151,8 @@ func (a *App) runCommand(line string) {
 			return
 		}
 		n, _ := strconv.Atoi(f[1])
-		a.cur = buffer.Pos{Line: n - 1}
+		_, start, end := a.input()
+		a.cur = buffer.Pos{Line: max(start, min(start+n-1, end-1))}
 		a.drop()
 		a.scrollToCursor()
 		return
@@ -187,6 +188,8 @@ func (a *App) runCommand(line string) {
 		a.tab = c.TabWidth
 	case "edge_markers":
 		a.marks = c.EdgeMarkers
+	case "file_separators":
+		a.seps = !c.NoFileSeparators
 	case "auto_reload":
 		a.auto = !c.NoAutoReload
 		if !a.auto {
@@ -225,6 +228,8 @@ func (a *App) setting(name string) string {
 		return "char"
 	case "edge_markers":
 		return yesNo(a.marks)
+	case "file_separators":
+		return yesNo(a.seps)
 	case "auto_reload":
 		return yesNo(a.auto)
 	}

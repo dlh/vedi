@@ -41,6 +41,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{cyc("wrap")}, doc: "Toggle wrap / nowrap"},
 		{cmds: []Command{cyc("wrap_style")}, doc: "Cycle the wrap style: char, word"},
 		{cmds: []Command{cyc("edge_markers")}, doc: "Toggle the edge markers"},
+		{cmds: []Command{cyc("file_separators")}, doc: "Toggle the rows naming the inputs"},
 		{cmds: []Command{cyc("auto_reload")}, doc: "Toggle reloading a changed file"},
 		{cmds: []Command{act(Reload)}, doc: "Reload the file"},
 	}},

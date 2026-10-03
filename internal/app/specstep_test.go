@@ -69,12 +69,12 @@ func (p *stepper) after(s *scenario, err error) {
 	changed := s.scr != nil && p.frame(s)
 	switch {
 	case err != nil:
-	case !actions[sec.name] && s.started:
+	case !actions[sec.verb()] && s.started:
 		fmt.Println("ok")
 	case !changed && s.scr != nil:
 		fmt.Println("(screen unchanged)")
 	}
-	if s.quit && actions[sec.name] {
+	if s.quit && actions[sec.verb()] {
 		fmt.Println("(the app quit)")
 	}
 	if err == nil && s.started && p.i < len(p.a.sections) && actions[p.a.sections[p.i].name] {

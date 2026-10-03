@@ -1,0 +1,26 @@
+A click on the row that names an input lands on the input's first
+line, in the column clicked.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- mouse --
+click 2 1
+-- screen --
+── a.txt ───────────────────
+a1
+── b.txt ───────────────────
+b1
+b.txt 2/2  line 1/1  wrap
+-- cursor --
+3 1
+-- mouse --
+click 0 1
+-- cursor --
+1 1

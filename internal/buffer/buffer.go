@@ -382,14 +382,43 @@ func (b *Buffer) StartPart() {
 // its: an empty one yields to the next. Lines before any part, or an
 // empty buffer, are part 0's.
 func (b *Buffer) PartAt(i int) int {
+	k, _, _ := b.Part(i)
+	return k
+}
+
+// Part is the input line i came from, as PartAt says, with the lines
+// it holds as [start, end): to the next input's start, or the end of
+// the buffer for the last.
+func (b *Buffer) Part(i int) (k, start, end int) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	for k, start := range slices.Backward(b.parts) {
+	end = b.n
+	for k, start = range slices.Backward(b.parts) {
 		if start <= i {
-			return k
+			if k+1 < len(b.parts) {
+				end = b.parts[k+1]
+			}
+			return k, start, end
 		}
 	}
-	return 0
+	return 0, 0, end
+}
+
+// Parts is a copy of the line each input begins at, as StartPart
+// recorded them: ascending, an empty input repeating the start of the
+// next, and none before the first StartPart.
+func (b *Buffer) Parts() []int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return slices.Clone(b.parts)
+}
+
+// StartsPart reports whether an input begins at line i.
+func (b *Buffer) StartsPart(i int) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	_, ok := slices.BinarySearch(b.parts, i)
+	return ok
 }
 
 // Finished reports whether input has ended, and the read error: from

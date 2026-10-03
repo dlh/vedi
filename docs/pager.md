@@ -78,4 +78,8 @@ pipes its colored diffs through a second pager. In `~/.gitconfig`:
 The status line starts with the input's name: the file, or `<stdin>`.
 A program that sets the window title with OSC 2 as it writes names
 its output: the title in effect at the cursor's line replaces
-`<stdin>`. With several files, the name is the file the cursor is in.
+`<stdin>`. With several files, the name is the file the cursor is in
+and its number among them, `b.txt 2/3`; lines are numbered within it,
+and `:N` goes to its line N. A row above each file names it;
+`file_separators no` in the config, or `--no-file-separators`,
+leaves the rows out.

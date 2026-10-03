@@ -61,21 +61,27 @@ type scenario struct {
 	env      string // $VEDI
 	macOS    bool
 	config   config.Config
-	nl       bool   // the last input section ended with a newline
-	file     bool   // the args name files, so the app has an Open
-	disk     string // what the file holds: the input, then each file or reload body
-	diskNL   bool   // and it ended with a newline
-	hasEOF   bool   // the file has an eof section, so input stays open
-	part     int    // the input in -- args -- the input now comes from
-	finished bool   // an eof section has run
-	started  bool   // the setup is frozen: an action or assertion has run
-	onePage  bool   // -F: the pager opens only once the text is known not to fit
+	nl       bool       // the last input section ended with a newline
+	file     bool       // the args name files, so the app has an Open
+	disks    []diskText // what each file holds: the input, then each file or reload body
+	hasEOF   bool       // the file has an eof section, so input stays open
+	part     int        // the input in -- args -- the input now comes from
+	finished bool       // an eof section has run
+	started  bool       // the setup is frozen: an action or assertion has run
+	onePage  bool       // -F: the pager opens only once the text is known not to fit
 	opts     cli.Options
 	files    []string
 	quit     bool
 	now      time.Time // the app's clock, advanced by mouse actions
 	moved    time.Time // the last motion, which arms the auto-scroll timer
 	step     *stepper  // prints the scenario as it runs, or nil
+}
+
+// diskText is a file on disk: its text, and whether it ended with a
+// newline.
+type diskText struct {
+	text string
+	nl   bool
 }
 
 // runScenario runs one scenario and returns the first failure, a
@@ -111,11 +117,11 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 		fail := func(format string, args ...any) error {
 			return fmt.Errorf("line %d, -- %s --: %s", sec.line, sec.name, fmt.Sprintf(format, args...))
 		}
-		if s.quit && actions[sec.name] {
+		if s.quit && actions[sec.verb()] {
 			return fail("%s after the app quit", sec.name)
 		}
 		started := s.started
-		switch sec.name {
+		switch sec.verb() {
 		case "size":
 			if s.started {
 				return fail("must come before the app starts")
@@ -174,6 +180,10 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 			}
 			s.part++
 			s.buf.StartPart()
+			if len(s.disks) == 0 {
+				s.disks = append(s.disks, diskText{})
+			}
+			s.disks = append(s.disks, diskText{})
 			if s.started && s.part >= len(s.files) {
 				return fail("no more files in -- args --")
 			}
@@ -196,8 +206,19 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 			if !s.file {
 				return fail("%s needs a file in -- args --", sec.name)
 			}
-			s.disk, s.diskNL = lines(sec.body)
-			if sec.name == "reload" {
+			// With several files the section names the one that changed.
+			i := 0
+			if len(s.files) > 1 || sec.arg() != "" {
+				i = slices.Index(s.files, sec.arg())
+				if i < 0 {
+					return fail("%s names one of the files in -- args --: %s", sec.verb(), strings.Join(s.files, " "))
+				}
+			}
+			for len(s.disks) <= i {
+				s.disks = append(s.disks, diskText{})
+			}
+			s.disks[i].text, s.disks[i].nl = lines(sec.body)
+			if sec.verb() == "reload" {
 				s.app.Handle(&app.Changed{})
 				// The reload's reader notifies at EOF, as the real one does.
 				s.notify()
@@ -275,7 +296,7 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 			return fail("unknown section")
 		}
 		// Starting the app can quit it too: -F at EOF before the first draw.
-		if s.quit && sec.name != "quit" && (actions[sec.name] || !started) && (i+1 >= len(a.sections) || a.sections[i+1].name != "quit") {
+		if s.quit && sec.name != "quit" && (actions[sec.verb()] || !started) && (i+1 >= len(a.sections) || a.sections[i+1].name != "quit") {
 			return fail("the app quit; the next section must be -- quit --")
 		}
 	}
@@ -294,7 +315,11 @@ func (s *scenario) input(body string) {
 	}
 	s.nl = nl
 	s.buf.Write([]byte(text))
-	s.disk, s.diskNL = s.disk+text, nl
+	if len(s.disks) == 0 {
+		s.disks = append(s.disks, diskText{})
+	}
+	d := &s.disks[len(s.disks)-1]
+	d.text, d.nl = d.text+text, nl
 }
 
 // lines is a section body as file bytes. txtar's trailing newline is
@@ -343,7 +368,7 @@ func (s *scenario) deliver() error {
 		return nil
 	}
 	if s.onePage {
-		switch app.OnePage(s.buf, s.w, s.h) {
+		switch app.OnePage(s.buf, s.w, s.h, s.opts.Separators(s.config)) {
 		case app.Undecided:
 			return nil
 		case app.Print:
@@ -378,11 +403,17 @@ func (s *scenario) open() error {
 	appOpts.MacOS = s.macOS
 	appOpts.Keys = s.config.Keymap(s.macOS)
 	if s.file = len(files) > 0 && !slices.Contains(files, "-"); s.file {
-		// Open is the disk text, finished: a reload lands at once.
+		// Open is the disk text, each file a part, finished: a reload
+		// lands at once.
 		appOpts.Open = func(func()) (*buffer.Buffer, func(), error) {
 			b := buffer.New()
-			b.Write([]byte(s.disk))
-			b.Finish(nil, s.diskNL)
+			nl := false
+			for _, d := range s.disks {
+				b.StartPart()
+				b.Write([]byte(d.text))
+				nl = d.nl
+			}
+			b.Finish(nil, nl)
 			return b, func() {}, nil
 		}
 	}

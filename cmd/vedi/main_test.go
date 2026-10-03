@@ -217,7 +217,7 @@ func TestWaitOnePagePrintsAtEOF(t *testing.T) {
 		pw.Write([]byte("hello\n"))
 		pw.Close()
 	}()
-	if !waitOnePage(buf, data, nil, fixed(40, 3)) {
+	if !waitOnePage(buf, data, nil, fixed(40, 3), false) {
 		t.Error("text that fits is paged, not printed")
 	}
 }
@@ -227,7 +227,7 @@ func TestWaitOnePagePrintsAtEOF(t *testing.T) {
 func TestWaitOnePagePagesBeforeEOF(t *testing.T) {
 	buf, pw, data := onePageInput(t)
 	go pw.Write([]byte("1\n2\n3\n"))
-	if waitOnePage(buf, data, nil, fixed(40, 3)) {
+	if waitOnePage(buf, data, nil, fixed(40, 3), false) {
 		t.Error("text that outgrew the screen is printed")
 	}
 }
@@ -241,7 +241,7 @@ func TestWaitOnePageResizes(t *testing.T) {
 	resize := make(chan os.Signal, 1)
 	result := make(chan bool, 1)
 	go func() {
-		result <- waitOnePage(buf, data, resize, func() (int, int) { return 40, <-sizes })
+		result <- waitOnePage(buf, data, resize, func() (int, int) { return 40, <-sizes }, false)
 	}()
 	sizes <- 10 // nothing read yet
 	pw.Write([]byte(strings.Repeat("line\n", 8)))

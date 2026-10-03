@@ -1,0 +1,27 @@
+An input with no lines has no row: its name is never shown, and the
+cursor is never in it, though it counts among the inputs.
+
+-- size --
+28x4
+-- args --
+a.txt b.txt c.txt
+-- input --
+a1
+-- next-file --
+-- next-file --
+-- input --
+c1
+-- screen --
+── a.txt ───────────────────
+a1
+── c.txt ───────────────────
+a.txt 1/3  line 1/1  wrap
+-- keys --
+Down
+-- screen --
+a1
+── c.txt ───────────────────
+c1
+c.txt 3/3  line 1/1  wrap
+-- cursor --
+2 0

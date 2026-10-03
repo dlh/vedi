@@ -215,6 +215,9 @@ func (a *App) cellPos(x, y int) buffer.Pos {
 	for range y {
 		p = a.nextRow(p)
 	}
+	if p.Col < 0 {
+		p.Col = 0 // the separator: the line below, at the same column
+	}
 	ln := a.lineLayout(p.Line)
 	row, _ := ln.Pos(p.Col)
 	return buffer.Pos{Line: p.Line, Col: ln.Col(row, x+a.xoff)}

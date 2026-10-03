@@ -1,0 +1,36 @@
+A reload of one of several files keeps the rows naming them, and a
+row at the top of the screen stays there. With several files the
+section names the one that changed.
+
+-- size --
+28x4
+-- args --
+a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+b2
+b3
+-- keys --
+Down Down
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b.txt 2/2  line 2/3  wrap
+-- cursor --
+2 0
+-- reload b.txt --
+b1
+b2
+b3
+b4
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b.txt 2/2  line 2/4  wrap
+-- cursor --
+2 0

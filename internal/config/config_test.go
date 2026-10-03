@@ -55,8 +55,8 @@ func TestParse(t *testing.T) {
 		{"map h foo\n", `vedi.conf:1: unknown action "foo"`},
 		{"map Shift+h left\n", `vedi.conf:1: "Shift+h": modifiers on a character key`},
 		{"map h select_copy\n", `vedi.conf:1: unknown action "select_copy"`},
-		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers or auto_reload"},
-		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers or auto_reload"},
+		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators or auto_reload"},
+		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators or auto_reload"},
 		{"map h cycle wrap yes\n", "vedi.conf:1: map takes a key and an action"},
 		{"map h toggle_wrap\n", `vedi.conf:1: unknown action "toggle_wrap"`},
 	}
@@ -441,6 +441,36 @@ func TestEdgeMarkers(t *testing.T) {
 		{"edge_markers\n", "vedi.conf:1: edge_markers takes yes or no"},
 		{"edge_markers maybe\n", "vedi.conf:1: edge_markers takes yes or no"},
 		{"edge_markers yes no\n", "vedi.conf:1: edge_markers takes yes or no"},
+	}
+	for _, tc := range bad {
+		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
+			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
+		}
+	}
+}
+
+// TestFileSeparators: file_separators no leaves out the rows between
+// inputs; yes, the default, draws them; anything else is an error.
+func TestFileSeparators(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"", false},
+		{"file_separators no\n", true},
+		{"file_separators yes\n", false},
+		{"file_separators no\nfile_separators yes\n", false},
+		{"file_separators yes\nmap x quit\nfile_separators no\n", true},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.NoFileSeparators != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want NoFileSeparators %v", tc.src, c, err, tc.want)
+		}
+	}
+	bad := []struct{ src, err string }{
+		{"file_separators\n", "vedi.conf:1: file_separators takes yes or no"},
+		{"file_separators maybe\n", "vedi.conf:1: file_separators takes yes or no"},
+		{"file_separators yes no\n", "vedi.conf:1: file_separators takes yes or no"},
 	}
 	for _, tc := range bad {
 		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {

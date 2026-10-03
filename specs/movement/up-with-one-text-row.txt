@@ -1,0 +1,25 @@
+With one row for text, moving up to an input's first line shows the
+line, not the row naming the input: the cursor must stay on screen.
+
+-- size --
+28x2
+-- args --
+a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- eof --
+-- keys --
+Down
+-- screen --
+b1
+b.txt 2/2  line 1/1  wrap
+-- keys --
+Up
+-- screen --
+a1
+a.txt 1/2  line 1/1  wrap
+-- cursor --
+0 0

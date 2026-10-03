@@ -17,15 +17,16 @@ import (
 
 // Config is what a file sets.
 type Config struct {
-	Keys         []input.Binding  // map lines, in order
-	Clear        bool             // clear_all_shortcuts: the map starts empty
-	NoAutoReload bool             // auto_reload no: a changed file is not read again
-	NoWrap       bool             // wrap no: start in nowrap mode
-	WrapStyle    layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
-	ClipboardCmd string           // clipboard_cmd: copy pipes to this, not OSC 52
-	OpenCmd      string           // open_cmd: each file is read by running this, %s the name
-	TabWidth     int              // tab_width: cells per tab stop; 0 for the default
-	EdgeMarkers  bool             // edge_markers yes: mark text off the sides, and wrapped rows
+	Keys             []input.Binding  // map lines, in order
+	Clear            bool             // clear_all_shortcuts: the map starts empty
+	NoAutoReload     bool             // auto_reload no: a changed file is not read again
+	NoWrap           bool             // wrap no: start in nowrap mode
+	WrapStyle        layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
+	ClipboardCmd     string           // clipboard_cmd: copy pipes to this, not OSC 52
+	OpenCmd          string           // open_cmd: each file is read by running this, %s the name
+	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
+	EdgeMarkers      bool             // edge_markers yes: mark text off the sides, and wrapped rows
+	NoFileSeparators bool             // file_separators no: no row naming each input
 }
 
 // Parse applies src line by line. Errors read name:line: message.
@@ -108,6 +109,11 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 			return verb, errors.New("edge_markers takes yes or no")
 		}
 		c.EdgeMarkers = f[1] == "yes"
+	case "file_separators":
+		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+			return verb, errors.New("file_separators takes yes or no")
+		}
+		c.NoFileSeparators = f[1] == "no"
 	default:
 		return verb, fmt.Errorf("unknown verb %q", verb)
 	}

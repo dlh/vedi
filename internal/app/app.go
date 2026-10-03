@@ -24,19 +24,20 @@ import (
 const Stdin = "<stdin>"
 
 type Options struct {
-	Names       []string // what the status line calls each input, by its part in the buffer
-	Mode        layout.Mode
-	WrapStyle   layout.WrapStyle // where wrap mode breaks rows
-	StartLine   int              // 1-based line to put at the top; 0 for none
-	Follow      bool             // keep the cursor on the last line until EOF (+G)
-	Screen      *Screen
-	Copier      clipboard.Copier
-	Now         func() time.Time // the clock double-clicks are timed by; nil for time.Now
-	MacOS       bool             // there is a ⌘ key
-	Keys        input.Keymap     // nil for the defaults
-	TabWidth    int              // cells per tab stop; 0 for 8
-	EdgeMarkers bool             // mark text off the sides with < and >, a wrapped row with \
-	AutoReload  bool             // a Changed event reads the file again
+	Names          []string // what the status line calls each input, by its part in the buffer
+	Mode           layout.Mode
+	WrapStyle      layout.WrapStyle // where wrap mode breaks rows
+	StartLine      int              // 1-based line to put at the top; 0 for none
+	Follow         bool             // keep the cursor on the last line until EOF (+G)
+	Screen         *Screen
+	Copier         clipboard.Copier
+	Now            func() time.Time // the clock double-clicks are timed by; nil for time.Now
+	MacOS          bool             // there is a ⌘ key
+	Keys           input.Keymap     // nil for the defaults
+	TabWidth       int              // cells per tab stop; 0 for 8
+	EdgeMarkers    bool             // mark text off the sides with < and >, a wrapped row with \
+	FileSeparators bool             // a row names each input, when there are several
+	AutoReload     bool             // a Changed event reads the file again
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -67,6 +68,7 @@ type App struct {
 	style  layout.WrapStyle // where wrap mode breaks rows
 	tab    int              // cells per tab stop; 0 for the default
 	marks  bool             // mark text off the sides with < and >, a wrapped row with \
+	seps   bool             // a row names each input, when there are several
 	auto   bool             // a Changed event reads the file again
 
 	cur     buffer.Pos
@@ -144,6 +146,8 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		style:     opts.WrapStyle,
 		tab:       opts.TabWidth,
 		marks:     opts.EdgeMarkers,
+		seps:      opts.FileSeparators,
+		top:       buffer.Pos{Col: -1}, // the first row: line 0's separator, if it has one
 		auto:      opts.AutoReload,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
@@ -324,7 +328,7 @@ func (a *App) onData() {
 	cur, xoff := a.cur, a.xoff
 	if a.startLine >= 0 && (n > a.startLine || eof) {
 		a.cur = buffer.Pos{Line: min(a.startLine, max(n-1, 0))}
-		a.top = a.cur
+		a.top = a.withSep(a.cur)
 		a.startLine = -1
 	}
 	if a.follow {
@@ -354,6 +358,8 @@ const (
 type text interface {
 	Len() int
 	Line(i int) buffer.Line
+	Parts() []int
+	StartsPart(i int) bool
 	Finished() (bool, error)
 }
 
@@ -361,8 +367,9 @@ type text interface {
 // screen with a status line: text that fits the rows above it at EOF
 // is printed instead of paged. The printed text is the terminal's to
 // lay out: it wraps whatever the mode and its tabs stop every 8 cells
-// whatever tab_width says, so it is measured that way.
-func OnePage(buf text, w, h int) Verdict {
+// whatever tab_width says, so it is measured that way. seps counts a
+// row for each input when there are several, as the pager draws one.
+func OnePage(buf text, w, h int, seps bool) Verdict {
 	// EOF is read before measuring: the reader may append and finish
 	// at any moment, and an EOF seen afterwards would vouch for lines
 	// the measuring missed.
@@ -372,7 +379,11 @@ func OnePage(buf text, w, h int) Verdict {
 	}
 	l := layout.Layout{Width: w, Mode: layout.Wrap}
 	rows := 0
+	seps = seps && len(buf.Parts()) > 1
 	for i := 0; i < buf.Len(); i++ {
+		if seps && buf.StartsPart(i) {
+			rows++ // the row naming the input
+		}
 		if rows += l.Rows(buf.Line(i).Text); rows > textRows(h) {
 			return Page
 		}
@@ -595,11 +606,31 @@ func (a *App) endPos() buffer.Pos {
 	return buffer.Pos{Line: n - 1, Col: len(a.line(n - 1))}
 }
 
+// sepAt reports whether line i has a row above it naming its input:
+// the first line of an input, with separators on and several inputs
+// given. It is Pos{Line: i, Col: -1}, which orders before the line's
+// own rows. An input with no lines starts where the next does and
+// gets none.
+func (a *App) sepAt(i int) bool {
+	return a.seps && len(a.names) > 1 && a.buf.StartsPart(i)
+}
+
+// withSep is row p with its line's separator in its place when p is
+// the line's first row and the line has one: the row that names an
+// input comes into view with its first line.
+func (a *App) withSep(p buffer.Pos) buffer.Pos {
+	if p.Col == 0 && a.sepAt(p.Line) {
+		p.Col = -1
+	}
+	return p
+}
+
 // moveRows moves the cursor n visual rows (negative is up), keeping its
 // cell column where possible, and returns the rows left when the text
 // ran out. Crossing a line resets the column first: lineLayout opens a
 // newline row for the cursor's line, and the old column must not open
-// one on the new line.
+// one on the new line. A row naming an input counts as a row crossed,
+// though the cursor cannot stop on it: one row's move steps over it.
 func (a *App) moveRows(n int) int {
 	ln := a.lineLayout(a.cur.Line)
 	row, x := a.cursorPos(ln)
@@ -607,6 +638,9 @@ func (a *App) moveRows(n int) int {
 		if row+1 < ln.Rows() {
 			row++
 		} else if a.cur.Line+1 < a.buf.Len() {
+			if n > 1 && a.sepAt(a.cur.Line+1) {
+				n--
+			}
 			a.cur = buffer.Pos{Line: a.cur.Line + 1}
 			ln = a.lineLayout(a.cur.Line)
 			row = 0
@@ -619,6 +653,9 @@ func (a *App) moveRows(n int) int {
 		if row > 0 {
 			row--
 		} else if a.cur.Line > 0 {
+			if n < -1 && a.sepAt(a.cur.Line) {
+				n++
+			}
 			a.cur = buffer.Pos{Line: a.cur.Line - 1}
 			ln = a.lineLayout(a.cur.Line)
 			row = ln.Rows() - 1
@@ -872,32 +909,50 @@ func (a *App) drop() {
 // segment, so it can serve as a row start.
 func (a *App) snap(p buffer.Pos) buffer.Pos {
 	n := a.buf.Len()
+	p.Line = max(0, min(p.Line, n-1))
+	// A separator row stays one; the first row of an empty buffer
+	// waits there for the lines, whose first may have a separator.
+	if p.Col < 0 && (n == 0 || a.sepAt(p.Line)) {
+		return buffer.Pos{Line: p.Line, Col: -1}
+	}
 	if n == 0 {
 		return buffer.Pos{}
 	}
-	p.Line = max(0, min(p.Line, n-1))
 	ln := a.lineLayout(p.Line)
 	p.Col = ln.Segments()[ln.SegmentAt(p.Col)].Start
 	return p
 }
 
-// nextRow returns the row start after p, or p at the end.
+// nextRow returns the row start after p, or p at the end: the next
+// line's separator, when it has one, comes before the line.
 func (a *App) nextRow(p buffer.Pos) buffer.Pos {
+	if p.Col < 0 {
+		return buffer.Pos{Line: p.Line}
+	}
 	ln := a.lineLayout(p.Line)
 	if i := ln.SegmentAt(p.Col); i+1 < ln.Rows() {
 		return buffer.Pos{Line: p.Line, Col: ln.Segments()[i+1].Start}
 	}
 	if p.Line+1 < a.buf.Len() {
+		if a.sepAt(p.Line + 1) {
+			return buffer.Pos{Line: p.Line + 1, Col: -1}
+		}
 		return buffer.Pos{Line: p.Line + 1}
 	}
 	return p
 }
 
-// prevRow returns the row start before p, or p at the beginning.
+// prevRow returns the row start before p, or p at the beginning: a
+// line's first row steps back to its separator, when it has one.
 func (a *App) prevRow(p buffer.Pos) buffer.Pos {
-	ln := a.lineLayout(p.Line)
-	if i := ln.SegmentAt(p.Col); i > 0 {
-		return buffer.Pos{Line: p.Line, Col: ln.Segments()[i-1].Start}
+	if p.Col >= 0 {
+		ln := a.lineLayout(p.Line)
+		if i := ln.SegmentAt(p.Col); i > 0 {
+			return buffer.Pos{Line: p.Line, Col: ln.Segments()[i-1].Start}
+		}
+		if a.sepAt(p.Line) {
+			return buffer.Pos{Line: p.Line, Col: -1}
+		}
 	}
 	if p.Line > 0 {
 		prev := a.lineLayout(p.Line - 1).Segments()
@@ -917,9 +972,15 @@ func (a *App) scrollToCursor() {
 	a.cur.Line = max(0, min(a.cur.Line, max(n-1, 0)))
 	a.cur.Col = max(0, min(a.cur.Col, len(a.line(a.cur.Line))))
 	a.top = a.snap(a.top)
+	if n == 0 {
+		return
+	}
 	crow := a.snap(a.cur)
 	if crow.Less(a.top) {
 		a.top = crow
+		if rows > 1 { // a row to spare for the separator
+			a.top = a.withSep(crow)
+		}
 	} else {
 		// rows-1 rows above the cursor, if below top, is the new top.
 		p := crow

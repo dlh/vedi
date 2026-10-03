@@ -1,0 +1,18 @@
+--file-separators draws the rows over a config that turns them off.
+
+-- size --
+28x4
+-- config --
+file_separators no
+-- args --
+--file-separators a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- screen --
+── a.txt ───────────────────
+a1
+── b.txt ───────────────────
+a.txt 1/2  line 1/1  wrap

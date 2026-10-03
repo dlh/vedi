@@ -1,0 +1,18 @@
+-F counts the rows that name the inputs: text that would fit
+without them is paged.
+
+-- size --
+40x4
+-- args --
+-F a.txt b.txt
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+b1
+-- screen --
+── a.txt ───────────────────────────────
+a1
+a2
+a.txt 1/2  line 1/2  wrap         h help

@@ -71,6 +71,11 @@ video. In wrap mode a row whose line continues on the next ends in
 `edge_markers no` is the default. `--edge-markers` and
 `--no-edge-markers` override it for one run.
 
+`file_separators no` leaves out the row that names each input when
+several are given; see [Pager](pager.md#the-inputs-name).
+`file_separators yes` is the default. `--file-separators` and
+`--no-file-separators` override it for one run.
+
 Flags in the `VEDI` environment variable override these for every
 run, and the command line overrides `VEDI`; see
 [Pager](pager.md#vedi).
@@ -82,9 +87,10 @@ and `map`, as the config file does, for the rest of the run:
 `:wrap_style word`, `:tab_width 4`, `:map x quit`. `:22`, or `:goto
 22`, goes to line 22. `:cycle wrap_style` sets a setting to the value
 after its current one, the first after the last; it takes `wrap`,
-`wrap_style`, `edge_markers` and `auto_reload`, and reports the new
-value on the status line unless the line shows it anyway, as it does
-`wrap` and `wrap_style`. A bad line is an error on the status line.
+`wrap_style`, `edge_markers`, `file_separators` and `auto_reload`,
+and reports the new value on the status line unless the line shows
+it anyway, as it does `wrap` and `wrap_style`. A bad line is an error
+on the status line.
 `clear_all_shortcuts` is not taken: it would unbind `:` and `q`.
 
 Tab completes the word being typed: the command, `yes` or `no`, `char`

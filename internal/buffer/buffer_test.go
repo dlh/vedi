@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -571,5 +572,64 @@ func TestReadersDuringFill(t *testing.T) {
 		if n := b.Len(); n != 20_000 {
 			t.Fatalf("Len = %d, want 20000", n)
 		}
+	}
+}
+
+// TestPartsAndStartsPart: Parts is every part start, repeats and all,
+// and StartsPart says whether a part begins at a line.
+func TestPartsAndStartsPart(t *testing.T) {
+	b := New()
+	if got := b.Parts(); len(got) != 0 {
+		t.Fatalf("Parts of a new buffer = %v, want none", got)
+	}
+	b.StartPart()
+	b.Write([]byte("a1\na2"))
+	b.StartPart()
+	b.Write([]byte("b1\nb2\n"))
+	b.StartPart()
+	b.StartPart()
+	b.Write([]byte("d1\n"))
+	b.Finish(nil, true)
+	if got, want := b.Parts(), []int{0, 2, 3, 3}; !slices.Equal(got, want) {
+		t.Errorf("Parts = %v, want %v", got, want)
+	}
+	for line, want := range map[int]bool{0: true, 1: false, 2: true, 3: true, 4: false} {
+		if got := b.StartsPart(line); got != want {
+			t.Errorf("StartsPart(%d) = %v, want %v", line, got, want)
+		}
+	}
+	got := b.Parts()
+	got[0] = 99
+	if b.Parts()[0] != 0 {
+		t.Error("Parts returned the buffer's own slice")
+	}
+}
+
+// TestPart: Part is the input a line came from and the lines it holds,
+// to the next input's start or the end; an empty input yields to the
+// next, and a buffer with no parts is all part 0.
+func TestPart(t *testing.T) {
+	b := New()
+	b.StartPart()
+	b.Write([]byte("a1\na2"))
+	b.StartPart()
+	b.Write([]byte("b1\nb2\n"))
+	b.StartPart()
+	b.StartPart()
+	b.Write([]byte("d1\n"))
+	b.Finish(nil, true)
+	for line, want := range map[int][3]int{0: {0, 0, 2}, 1: {0, 0, 2}, 2: {1, 2, 3}, 3: {3, 3, 4}} {
+		k, start, end := b.Part(line)
+		if got := [3]int{k, start, end}; got != want {
+			t.Errorf("Part(%d) = %v, want %v", line, got, want)
+		}
+	}
+	plain := New()
+	plain.Write([]byte("x\ny\n"))
+	if k, start, end := plain.Part(1); k != 0 || start != 0 || end != 2 {
+		t.Errorf("Part(1) of a buffer with no parts = %d, %d, %d; want 0, 0, 2", k, start, end)
+	}
+	if k, start, end := New().Part(0); k != 0 || start != 0 || end != 0 {
+		t.Errorf("Part(0) of an empty buffer = %d, %d, %d; want zeros", k, start, end)
 	}
 }

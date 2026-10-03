@@ -1,0 +1,21 @@
+A name wider than the screen is cut at the right edge; the row never
+wraps, and nowrap mode scrolls the text past it, never the row.
+
+-- size --
+12x4
+-- args --
+-S a.txt averyveryverylongname.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1 is a long line indeed
+-- keys --
+Down End
+-- screen --
+
+── averyvery
+line indeed
+averyveryver
+-- cursor --
+2 11

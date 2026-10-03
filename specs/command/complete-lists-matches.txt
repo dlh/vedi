@@ -33,7 +33,7 @@ Esc : Tab
 line 1
 
 
-:  auto_reload  clipboard_cmd  cycle  edge_markers  goto  ma
+:  auto_reload  clipboard_cmd  cycle  edge_markers  file_sep
 -- keys --
 Esc : "wrap " Tab
 -- screen --

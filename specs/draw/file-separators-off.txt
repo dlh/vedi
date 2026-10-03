@@ -1,0 +1,28 @@
+file_separators no in the config leaves the rows out: the inputs
+follow one another, and the status line still counts them.
+
+-- size --
+28x4
+-- config --
+file_separators no
+-- args --
+a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- screen --
+a1
+b1
+
+a.txt 1/2  line 1/1  wrap
+-- keys --
+Down
+-- screen --
+a1
+b1
+
+b.txt 2/2  line 1/1  wrap
+-- cursor --
+1 0

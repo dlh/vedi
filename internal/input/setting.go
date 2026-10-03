@@ -16,6 +16,7 @@ var settings = []Setting{
 	{"wrap", []string{"yes", "no"}},
 	{"wrap_style", []string{"char", "word"}},
 	{"edge_markers", []string{"yes", "no"}},
+	{"file_separators", []string{"yes", "no"}},
 	{"auto_reload", []string{"yes", "no"}},
 }
 

@@ -1,0 +1,24 @@
++N on an input's first line starts with the row naming the input at
+the top and line N under it, the cursor on the line.
+
+-- size --
+28x5
+-- args --
++3 a.txt b.txt
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+b1
+b2
+b3
+-- eof --
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b3
+b.txt 2/2  line 1/3  wrap
+-- cursor --
+1 0

@@ -1,0 +1,61 @@
+Lines are numbered within each input: goto N is line N of the
+cursor's input, past its end its last line, and 0 its first. The
+status line counts the same way.
+
+-- args --
+--no-file-separators a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+b3
+b4
+b5
+-- keys --
+: "99" Enter
+-- screen --
+a1
+a2
+a3
+b1
+b2
+a.txt 1/2  line 3/3  wrap         h help
+-- cursor --
+2 0
+-- keys --
+Down : "2" Enter
+-- screen --
+a1
+a2
+a3
+b1
+b2
+b.txt 2/2  line 2/5  wrap         h help
+-- cursor --
+4 0
+-- keys --
+: "99" Enter
+-- screen --
+b1
+b2
+b3
+b4
+b5
+b.txt 2/2  line 5/5  wrap         h help
+-- cursor --
+4 0
+-- keys --
+: "0" Enter
+-- screen --
+b1
+b2
+b3
+b4
+b5
+b.txt 2/2  line 1/5  wrap         h help
+-- cursor --
+0 0

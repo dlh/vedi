@@ -108,6 +108,30 @@ func TestTitleFollowsCursor(t *testing.T) {
 	}
 }
 
+// TestSeparatorStyle: the row naming an input draws the name bold and
+// the dashes dim, so the name reads at a glance and the rule recedes.
+func TestSeparatorStyle(t *testing.T) {
+	scr := testscreen.New(t, 20, 4)
+	buf := buffer.New()
+	buf.StartPart()
+	buf.Write([]byte("a\n"))
+	buf.StartPart()
+	buf.Write([]byte("b\n"))
+	buf.Finish(nil, true)
+	a := newApp(t, scr, buf, Options{Names: []string{"a.txt", "b.txt"}, FileSeparators: true, Copier: clipboard.OSC52{Screen: scr}})
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Draw()
+	if got := row(scr, 0); got != "── a.txt ───────────" {
+		t.Fatalf("row 0 = %q", got)
+	}
+	dim, bold := tcell.StyleDefault.Dim(true), tcell.StyleDefault.Bold(true)
+	for x, want := range map[int]tcell.Style{0: dim, 2: dim, 3: bold, 7: bold, 8: dim, 19: dim} {
+		if got := cellStyle(scr, x, 0); got != want {
+			t.Errorf("cell %d style = %v, want %v", x, got, want)
+		}
+	}
+}
+
 // TestTitleNamesStdinAmongFiles: a "-" among the files is named by its
 // own title, and only while the cursor is in it.
 func TestTitleNamesStdinAmongFiles(t *testing.T) {
@@ -123,7 +147,7 @@ func TestTitleNamesStdinAmongFiles(t *testing.T) {
 	a := newApp(t, scr, buf, Options{Names: []string{"a.txt", Stdin, "b.txt"}, Copier: clipboard.OSC52{Screen: scr}})
 	a.Handle(tcell.NewEventInterrupt(nil))
 	a.Draw()
-	for _, want := range []string{"a.txt  line 1/3", "~/src  line 2/3", "b.txt  line 3/3"} {
+	for _, want := range []string{"a.txt 1/3  line 1/1", "~/src 2/3  line 1/1", "b.txt 3/3  line 1/1"} {
 		if got := row(scr, 3); !strings.HasPrefix(got, want) {
 			t.Errorf("status = %q, want %q first", got, want)
 		}
@@ -521,7 +545,7 @@ func BenchmarkMoveColUnicode(b *testing.B) {
 func TestOnePageUndecidedBeforeEOF(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n"))
-	if v := OnePage(buf, 40, 3); v != Undecided {
+	if v := OnePage(buf, 40, 3, false); v != Undecided {
 		t.Errorf("OnePage = %v, want Undecided", v)
 	}
 }
@@ -531,7 +555,7 @@ func TestOnePageUndecidedBeforeEOF(t *testing.T) {
 func TestOnePagePagesWhenTooLong(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n3\n"))
-	if v := OnePage(buf, 40, 3); v != Page {
+	if v := OnePage(buf, 40, 3, false); v != Page {
 		t.Errorf("OnePage = %v, want Page", v)
 	}
 }
@@ -540,8 +564,73 @@ func TestOnePagePrintsWhenFits(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n"))
 	buf.Finish(nil, true)
-	if v := OnePage(buf, 40, 3); v != Print {
+	if v := OnePage(buf, 40, 3, false); v != Print {
 		t.Errorf("OnePage = %v, want Print", v)
+	}
+}
+
+// TestOnePageCountsSeparators: with several inputs the row naming
+// each takes a row of the screen.
+func TestOnePageCountsSeparators(t *testing.T) {
+	buf := buffer.New()
+	buf.StartPart()
+	buf.Write([]byte("1\n"))
+	buf.StartPart()
+	buf.Write([]byte("2\n"))
+	buf.Finish(nil, true)
+	if v := OnePage(buf, 40, 3, true); v != Page {
+		t.Errorf("OnePage with separators = %v, want Page", v)
+	}
+	if v := OnePage(buf, 40, 3, false); v != Print {
+		t.Errorf("OnePage without separators = %v, want Print", v)
+	}
+	one := buffer.New()
+	one.StartPart()
+	one.Write([]byte("1\n2\n"))
+	one.Finish(nil, true)
+	if v := OnePage(one, 40, 3, true); v != Print {
+		t.Errorf("OnePage with one input = %v, want Print: no row names a lone input", v)
+	}
+}
+
+// TestReloadKeepsSeparatorTop: a top row that is an input's separator
+// stays one across a reload; snap drops it if the line no longer
+// starts an input.
+func TestReloadKeepsSeparatorTop(t *testing.T) {
+	twoParts := func() *buffer.Buffer {
+		b := buffer.New()
+		b.StartPart()
+		b.Write([]byte("a\n"))
+		b.StartPart()
+		b.Write([]byte("b\n"))
+		b.Finish(nil, true)
+		return b
+	}
+	tv := textView{buf: twoParts(), cur: buffer.Pos{Line: 1}, top: buffer.Pos{Line: 1, Col: -1}}
+	tv.reload(twoParts())
+	if want := (buffer.Pos{Line: 1, Col: -1}); tv.top != want {
+		t.Errorf("top = %+v, want %+v", tv.top, want)
+	}
+}
+
+// TestReloadSeparatorTopPastEnd: a separator top past the new end
+// starts over from the first row, the first line's separator if it
+// has one.
+func TestReloadSeparatorTopPastEnd(t *testing.T) {
+	long := buffer.New()
+	long.StartPart()
+	long.Write([]byte("a\nb\nc\n"))
+	long.StartPart()
+	long.Write([]byte("d\n"))
+	long.Finish(nil, true)
+	short := buffer.New()
+	short.StartPart()
+	short.Write([]byte("a\n"))
+	short.Finish(nil, true)
+	tv := textView{buf: long, cur: buffer.Pos{Line: 3}, top: buffer.Pos{Line: 3, Col: -1}}
+	tv.reload(short)
+	if want := (buffer.Pos{Col: -1}); tv.top != want {
+		t.Errorf("top = %+v, want %+v", tv.top, want)
 	}
 }
 
@@ -550,7 +639,7 @@ func TestOnePagePagesOnReadError(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n"))
 	buf.Finish(fmt.Errorf("disk on fire"), true)
-	if v := OnePage(buf, 40, 3); v != Page {
+	if v := OnePage(buf, 40, 3, false); v != Page {
 		t.Errorf("OnePage = %v, want Page", v)
 	}
 }
@@ -575,7 +664,7 @@ func (g growsAtEOF) Finished() (bool, error) {
 // TestOnePageMeasuresAllThatEnded: EOF vouches only for text that was
 // measured after it, never for lines that landed with it.
 func TestOnePageMeasuresAllThatEnded(t *testing.T) {
-	if v := OnePage(growsAtEOF{buffer.New(), new(bool)}, 40, 3); v != Page {
+	if v := OnePage(growsAtEOF{buffer.New(), new(bool)}, 40, 3, false); v != Page {
 		t.Errorf("OnePage = %v, want Page for 100 lines on a three-row screen", v)
 	}
 }
@@ -599,7 +688,7 @@ func TestOnePagePagesOnErrorFoundMeasuring(t *testing.T) {
 	if err := os.Truncate(name, 0); err != nil {
 		t.Fatal(err)
 	}
-	if v := OnePage(buf, 40, 3); v != Page {
+	if v := OnePage(buf, 40, 3, false); v != Page {
 		t.Errorf("OnePage = %v, want Page for a truncated file", v)
 	}
 	if _, err := buf.Finished(); err == nil {
@@ -613,7 +702,7 @@ func TestOnePageOneRowScreen(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n"))
 	buf.Finish(nil, true)
-	if v := OnePage(buf, 40, 1); v != Print {
+	if v := OnePage(buf, 40, 1, false); v != Print {
 		t.Errorf("OnePage = %v, want Print", v)
 	}
 }

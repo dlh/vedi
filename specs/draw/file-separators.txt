@@ -1,0 +1,78 @@
+With several inputs a row names each one, above its first line: two
+dashes, the name as given, and dashes to the edge. It is not a line:
+the cursor never rests on it and no line is numbered for it. The
+view starts at the first input's row. Scrolling counts the rows, the
+wheel too.
+
+-- size --
+28x5
+-- args --
+a.txt - b.txt
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+s1
+-- next-file --
+-- input --
+b1
+b2
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+── <stdin> ─────────────────
+a.txt 1/3  line 1/2  wrap
+-- cursor --
+1 0
+-- keys --
+Down Down
+-- screen --
+a1
+a2
+── <stdin> ─────────────────
+s1
+<stdin> 2/3  line 1/1  wrap
+-- cursor --
+3 0
+-- keys --
+Down
+-- screen --
+── <stdin> ─────────────────
+s1
+── b.txt ───────────────────
+b1
+b.txt 3/3  line 1/2  wrap
+-- cursor --
+3 0
+-- keys --
+Down
+-- screen --
+s1
+── b.txt ───────────────────
+b1
+b2
+b.txt 3/3  line 2/2  wrap
+-- cursor --
+3 0
+-- mouse --
+wheel up 1
+-- screen --
+a1
+a2
+── <stdin> ─────────────────
+s1
+<stdin> 2/3  line 1/1  wrap
+-- cursor --
+3 0
+-- mouse --
+wheel down 1
+-- screen --
+s1
+── b.txt ───────────────────
+b1
+b2
+<stdin> 2/3  line 1/1  wrap
+-- cursor --
+0 0

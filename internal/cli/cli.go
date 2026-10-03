@@ -33,6 +33,7 @@ const Usage = `usage: vedi [flags] [file...]
   --no-open-cmd                read each file as it is
   --tab-width N                draw a tab as N cells (default: 8)
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
+  --[no-]file-separators       with several inputs, draw a row naming each (default: on)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
   -h, --help                   show this help
   -v, --version                print the version
@@ -45,25 +46,27 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	Wrap          *bool             // --wrap, --no-wrap, -S; nil leaves it to the config
-	WrapStyle     *layout.WrapStyle // --wrap-style; nil leaves it to the config
-	QuitIfOnePage bool
-	StartLine     int // 1-based; 0 for none
-	Follow        bool
-	Screen        *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd  *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
-	OpenCmd       *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
-	TabWidth      int         // --tab-width; 0 leaves it to the config
-	Config        string      // "" for the default location
-	AutoReload    *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
-	EdgeMarkers   *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
-	Help          bool
-	Version       bool
+	Wrap           *bool             // --wrap, --no-wrap, -S; nil leaves it to the config
+	WrapStyle      *layout.WrapStyle // --wrap-style; nil leaves it to the config
+	QuitIfOnePage  bool
+	StartLine      int // 1-based; 0 for none
+	Follow         bool
+	Screen         *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
+	ClipboardCmd   *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
+	OpenCmd        *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
+	TabWidth       int         // --tab-width; 0 leaves it to the config
+	Config         string      // "" for the default location
+	AutoReload     *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
+	EdgeMarkers    *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
+	FileSeparators *bool       // --file-separators, --no-file-separators; nil leaves it to the config
+	Help           bool
+	Version        bool
 }
 
 // App converts the options to the app's: a flag, else the config,
 // decides the wrap mode, the wrap style, the clipboard
-// command, the tab width, the edge markers and auto-reload. The
+// command, the tab width, the edge markers, the file separators and
+// auto-reload. The
 // inputs are named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
@@ -88,17 +91,18 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		marks = *o.EdgeMarkers
 	}
 	return app.Options{
-		Names:       inputNames(files),
-		Mode:        mode,
-		WrapStyle:   style,
-		StartLine:   o.StartLine,
-		Follow:      o.Follow,
-		Screen:      o.Screen,
-		Copier:      clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
-		MacOS:       macOS,
-		TabWidth:    tab,
-		EdgeMarkers: marks,
-		AutoReload:  o.Reloads(cfg),
+		Names:          inputNames(files),
+		Mode:           mode,
+		WrapStyle:      style,
+		StartLine:      o.StartLine,
+		Follow:         o.Follow,
+		Screen:         o.Screen,
+		Copier:         clipboard.New(scr, cmd, os.Getenv("TERM_PROGRAM")),
+		MacOS:          macOS,
+		TabWidth:       tab,
+		EdgeMarkers:    marks,
+		FileSeparators: o.Separators(cfg),
+		AutoReload:     o.Reloads(cfg),
 	}
 }
 
@@ -111,6 +115,16 @@ func (o Options) Reloads(cfg config.Config) bool {
 		return *o.AutoReload
 	}
 	return !cfg.NoAutoReload
+}
+
+// Separators says whether a row names each input, when there are
+// several:
+// as the flag says, else the config, else yes.
+func (o Options) Separators(cfg config.Config) bool {
+	if o.FileSeparators != nil {
+		return *o.FileSeparators
+	}
+	return !cfg.NoFileSeparators
 }
 
 // Open is the command each file is read through: the flag's, else
@@ -243,6 +257,10 @@ func (o *Options) parse(args []string, env bool) ([]string, error) {
 			o.EdgeMarkers = new(true)
 		case a == "--no-edge-markers":
 			o.EdgeMarkers = new(false)
+		case a == "--file-separators":
+			o.FileSeparators = new(true)
+		case a == "--no-file-separators":
+			o.FileSeparators = new(false)
 		case a == "--no-clipboard-cmd":
 			o.ClipboardCmd = new("")
 		case a == "--no-open-cmd":

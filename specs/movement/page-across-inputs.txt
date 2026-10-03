@@ -1,0 +1,53 @@
+A page moves the cursor a screenful of rows, the rows naming inputs
+among them, so no input is skipped: here every input is one line and
+a page of four rows is two inputs.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt c.txt d.txt e.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- next-file --
+-- input --
+c1
+-- next-file --
+-- input --
+d1
+-- next-file --
+-- input --
+e1
+-- eof --
+-- keys --
+PgDn
+-- screen --
+── b.txt ───────────────────
+b1
+── c.txt ───────────────────
+c1
+c.txt 3/5  line 1/1  wrap
+-- cursor --
+3 0
+-- keys --
+PgDn
+-- screen --
+── d.txt ───────────────────
+d1
+── e.txt ───────────────────
+e1
+e.txt 5/5  line 1/1  wrap
+-- cursor --
+3 0
+-- keys --
+PgUp
+-- screen --
+── c.txt ───────────────────
+c1
+── d.txt ───────────────────
+d1
+c.txt 3/5  line 1/1  wrap
+-- cursor --
+1 0

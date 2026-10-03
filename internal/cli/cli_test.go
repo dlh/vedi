@@ -326,3 +326,33 @@ func TestEdgeMarkersFlag(t *testing.T) {
 		}
 	}
 }
+
+// TestFileSeparatorsFlag: --file-separators and --no-file-separators
+// decide; without one the config does; without either the rows are
+// drawn.
+func TestFileSeparatorsFlag(t *testing.T) {
+	scr := testscreen.New(t, 80, 24)
+	for _, tc := range []struct {
+		flag *bool
+		cfg  config.Config
+		want bool
+	}{
+		{nil, config.Config{}, true},
+		{nil, config.Config{NoFileSeparators: true}, false},
+		{new(true), config.Config{NoFileSeparators: true}, true},
+		{new(false), config.Config{}, false},
+	} {
+		if got := (Options{FileSeparators: tc.flag}).App(scr, nil, tc.cfg).FileSeparators; got != tc.want {
+			t.Errorf("Options{FileSeparators: %v}.App(%+v).FileSeparators = %v, want %v", tc.flag, tc.cfg, got, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		arg  string
+		want bool
+	}{{"--file-separators", true}, {"--no-file-separators", false}} {
+		o, _, err := Parse([]string{tc.arg}, "")
+		if err != nil || o.FileSeparators == nil || *o.FileSeparators != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want FileSeparators %v", tc.arg, o, err, tc.want)
+		}
+	}
+}

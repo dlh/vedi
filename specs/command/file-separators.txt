@@ -1,0 +1,42 @@
+:file_separators no takes the rows out for the rest of the run, even
+one at the top of the screen; :cycle file_separators puts them back
+and reports the setting.
+
+-- size --
+28x4
+-- args --
+a.txt b.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+b2
+b3
+-- keys --
+Down Down
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b.txt 2/2  line 2/3  wrap
+-- cursor --
+2 0
+-- keys --
+: "file_separators no" Enter
+-- screen --
+b1
+b2
+b3
+b.txt 2/2  line 2/3  wrap
+-- cursor --
+1 0
+-- keys --
+: "cycle file_separators" Enter
+-- screen --
+b1
+b2
+b3
+file_separators yes   h help
+-- cursor --
+1 0

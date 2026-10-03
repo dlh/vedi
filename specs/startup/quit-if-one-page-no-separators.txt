@@ -1,0 +1,13 @@
+The same text with the rows turned off fits, and -F prints it.
+
+-- size --
+40x4
+-- args --
+-F --no-file-separators a.txt b.txt
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+b1
+-- quit --

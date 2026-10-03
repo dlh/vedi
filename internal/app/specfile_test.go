@@ -262,3 +262,8 @@ func TestParseMouse(t *testing.T) {
 		}
 	}
 }
+
+// verb is the section's name without its argument, "reload" for
+// "reload b.txt"; arg is the argument, or "".
+func (sec section) verb() string { v, _, _ := strings.Cut(sec.name, " "); return v }
+func (sec section) arg() string  { _, a, _ := strings.Cut(sec.name, " "); return a }
