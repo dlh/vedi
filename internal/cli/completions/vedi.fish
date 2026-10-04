@@ -22,6 +22,7 @@ complete -c vedi -l file-separators -d 'With several inputs, draw a row naming e
 complete -c vedi -l no-file-separators -d 'Draw no row naming each input'
 complete -c vedi -l status-line -d 'Draw the status line'
 complete -c vedi -l no-status-line -d 'Draw the status line only for a prompt or a message'
+complete -c vedi -l view-style -x -a 'color plain' -d 'Draw the text\'s colors or not'
 complete -c vedi -l config -r -F -d 'Read the config from a file'
 complete -c vedi -l completion -x -a 'bash zsh fish' -d 'Print the completion script for a shell'
 complete -c vedi -s h -l help -d 'Show the help'

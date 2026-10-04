@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 )
@@ -22,6 +23,7 @@ type Config struct {
 	NoAutoReload     bool             // auto_reload no: a changed file is not read again
 	NoWrap           bool             // wrap no: start in nowrap mode
 	WrapStyle        layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
+	ViewStyle        ansi.ViewStyle   // view_style plain: the text is drawn without its colors
 	ClipboardCmd     string           // clipboard_cmd: copy pipes to this, not OSC 52
 	OpenCmd          string           // open_cmd: each file is read by running this, %s the name
 	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
@@ -86,6 +88,14 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 		c.WrapStyle = layout.WrapStyleChar
 		if f[1] == "word" {
 			c.WrapStyle = layout.WrapStyleWord
+		}
+	case "view_style":
+		if len(f) != 2 || (f[1] != "color" && f[1] != "plain") {
+			return verb, errors.New("view_style takes color or plain")
+		}
+		c.ViewStyle = ansi.ViewColor
+		if f[1] == "plain" {
+			c.ViewStyle = ansi.ViewPlain
 		}
 	case "clipboard_cmd":
 		if len(f) < 2 {

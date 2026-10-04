@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
@@ -36,6 +37,7 @@ const Usage = `usage: vedi [flags] [file...]
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
   --[no-]file-separators       with several inputs, draw a row naming each (default: on)
   --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
+  --view-style STYLE           draw the text's colors (color) or not (plain)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
   --completion SHELL           print the completion script for bash, zsh or fish
   -h, --help                   show this help
@@ -57,16 +59,17 @@ type Options struct {
 	OnePageRowsBelow int // --one-page-rows-below; 0 leaves it to the config
 	StartLine        int // 1-based; 0 for none
 	Follow           bool
-	Screen           *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd     *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
-	OpenCmd          *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
-	TabWidth         int         // --tab-width; 0 leaves it to the config
-	Config           string      // "" for the default location
-	AutoReload       *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
-	EdgeMarkers      *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
-	FileSeparators   *bool       // --file-separators, --no-file-separators; nil leaves it to the config
-	StatusLine       *bool       // --status-line, --no-status-line; nil leaves it to the config
-	Completion       string      // --completion: the shell to print the script for
+	Screen           *app.Screen     // set by any of --scrolled-by, --cursor-row, --cursor-col
+	ClipboardCmd     *string         // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
+	OpenCmd          *string         // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
+	TabWidth         int             // --tab-width; 0 leaves it to the config
+	Config           string          // "" for the default location
+	AutoReload       *bool           // --auto-reload, --no-auto-reload; nil leaves it to the config
+	EdgeMarkers      *bool           // --edge-markers, --no-edge-markers; nil leaves it to the config
+	FileSeparators   *bool           // --file-separators, --no-file-separators; nil leaves it to the config
+	StatusLine       *bool           // --status-line, --no-status-line; nil leaves it to the config
+	ViewStyle        *ansi.ViewStyle // --view-style; nil leaves it to the config
+	Completion       string          // --completion: the shell to print the script for
 	Help             bool
 	Version          bool
 }
@@ -74,7 +77,7 @@ type Options struct {
 // App converts the options to the app's: a flag, else the config,
 // decides the wrap mode, the wrap style, the clipboard
 // command, the tab width, the edge markers, the file separators, the
-// status line and auto-reload. The
+// status line, the view style and auto-reload. The
 // inputs are named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
@@ -116,6 +119,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		FileSeparators: o.Separators(cfg),
 		AutoReload:     o.Reloads(cfg),
 		HideStatus:     hide,
+		ViewStyle:      o.View(cfg),
 	}
 }
 
@@ -128,6 +132,15 @@ func (o Options) Reloads(cfg config.Config) bool {
 		return *o.AutoReload
 	}
 	return !cfg.NoAutoReload
+}
+
+// View is how the text's styling is shown: as the flag says, else the
+// config.
+func (o Options) View(cfg config.Config) ansi.ViewStyle {
+	if o.ViewStyle != nil {
+		return *o.ViewStyle
+	}
+	return cfg.ViewStyle
 }
 
 // Separators says whether a row names each input, when there are
@@ -186,6 +199,17 @@ var valueFlags = map[string]func(*Options, string) error{
 			o.WrapStyle = new(layout.WrapStyleChar)
 		case "word":
 			o.WrapStyle = new(layout.WrapStyleWord)
+		default:
+			return fmt.Errorf("%q", v)
+		}
+		return nil
+	},
+	"--view-style": func(o *Options, v string) error {
+		switch v {
+		case "color":
+			o.ViewStyle = new(ansi.ViewColor)
+		case "plain":
+			o.ViewStyle = new(ansi.ViewPlain)
 		default:
 			return fmt.Errorf("%q", v)
 		}

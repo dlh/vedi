@@ -1,0 +1,13 @@
+view_style plain in the config draws the text without its colors and
+attributes; the status line says plain.
+
+-- size --
+40x3
+-- config --
+view_style plain
+-- input --
+line 1
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap  plain    h help

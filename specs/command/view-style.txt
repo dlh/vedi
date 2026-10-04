@@ -1,0 +1,32 @@
+view_style plain or color at the : prompt changes whether the text's
+colors are drawn, for the rest of the run; cycle view_style steps
+through them. The status line shows plain.
+
+-- size --
+40x3
+-- input --
+line 1
+-- keys --
+: "view_style plain" Enter
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap  plain    h help
+-- keys --
+: "view_style color" Enter
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap           h help
+-- keys --
+: "cycle view_style" Enter
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap  plain    h help
+-- keys --
+: "view_style bright" Enter
+-- screen --
+line 1
+
+view_style takes color or plain   h help

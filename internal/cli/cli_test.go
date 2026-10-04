@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
@@ -32,6 +33,10 @@ func TestParse(t *testing.T) {
 		{"wrap style leaves wrap", []string{"-S", "--wrap-style", "word"}, Options{Wrap: new(false), WrapStyle: new(layout.WrapStyleWord)}, nil, false},
 		{"missing wrap style", []string{"--wrap-style"}, Options{}, nil, true},
 		{"bad wrap style", []string{"--wrap-style", "yes"}, Options{}, nil, true},
+		{"view style plain", []string{"--view-style", "plain"}, Options{ViewStyle: new(ansi.ViewPlain)}, nil, false},
+		{"view style color", []string{"--view-style=color"}, Options{ViewStyle: new(ansi.ViewColor)}, nil, false},
+		{"missing view style", []string{"--view-style"}, Options{}, nil, true},
+		{"bad view style", []string{"--view-style", "yes"}, Options{}, nil, true},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},
 		{"plus N", []string{"+12", "f"}, Options{StartLine: 12}, []string{"f"}, false},
 		{"clipboard cmd", []string{"--clipboard-cmd", "pbcopy"}, Options{ClipboardCmd: new("pbcopy")}, nil, false},
@@ -410,6 +415,26 @@ func TestStatusLineFlag(t *testing.T) {
 		o, _, err := Parse([]string{tc.arg}, "")
 		if err != nil || o.StatusLine == nil || *o.StatusLine != tc.want {
 			t.Errorf("Parse(%q) = %+v, %v; want StatusLine %v", tc.arg, o, err, tc.want)
+		}
+	}
+}
+
+// TestAppViewStyle: --view-style decides; without it the config does.
+func TestAppViewStyle(t *testing.T) {
+	scr := testscreen.New(t, 80, 24)
+	plain := config.Config{ViewStyle: ansi.ViewPlain}
+	for _, tc := range []struct {
+		opts Options
+		cfg  config.Config
+		want ansi.ViewStyle
+	}{
+		{Options{}, config.Config{}, ansi.ViewColor},
+		{Options{}, plain, ansi.ViewPlain},
+		{Options{ViewStyle: new(ansi.ViewColor)}, plain, ansi.ViewColor},
+		{Options{ViewStyle: new(ansi.ViewPlain)}, config.Config{}, ansi.ViewPlain},
+	} {
+		if got := tc.opts.App(scr, nil, tc.cfg).ViewStyle; got != tc.want {
+			t.Errorf("%+v.App(%+v).ViewStyle = %v, want %v", tc.opts, tc.cfg, got, tc.want)
 		}
 	}
 }

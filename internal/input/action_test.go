@@ -73,7 +73,7 @@ func TestCommandNames(t *testing.T) {
 // prints back as cycle and the setting; alone or with anything else
 // it is an error naming the settings.
 func TestCycle(t *testing.T) {
-	want := []string{"wrap", "wrap_style", "edge_markers", "file_separators", "auto_reload", "status_line"}
+	want := []string{"wrap", "wrap_style", "edge_markers", "file_separators", "auto_reload", "status_line", "view_style"}
 	if got := SettingNames(); !slices.Equal(got, want) {
 		t.Errorf("SettingNames = %v, want %v", got, want)
 	}
@@ -85,7 +85,7 @@ func TestCycle(t *testing.T) {
 	}
 	for _, text := range []string{"cycle", "cycle tab_width", "cycle wrap yes"} {
 		_, err := ParseCommand(text)
-		if err == nil || !strings.Contains(err.Error(), "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload or status_line") {
+		if err == nil || !strings.Contains(err.Error(), "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line or view_style") {
 			t.Errorf("ParseCommand(%q) = %v", text, err)
 		}
 	}

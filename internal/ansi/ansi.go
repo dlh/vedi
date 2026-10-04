@@ -95,11 +95,22 @@ func Strip(dst, line []byte) []byte {
 	}
 }
 
+// ViewStyle is how much of the text's styling is shown.
+type ViewStyle int
+
+const (
+	ViewColor ViewStyle = iota // colors, attributes and links
+	ViewPlain                  // links alone
+)
+
 // Printer filters text bound for a terminal down to what Parse reads:
-// runes, SGR and OSC 8. Text from anywhere can then color itself and
-// do nothing else: not move the cursor, not write the clipboard. The
-// zero value is ready.
-type Printer struct{ styled, linked bool }
+// runes, SGR and OSC 8; with ViewPlain, no SGR. Text from anywhere
+// can then color itself and do nothing else: not move the cursor, not
+// write the clipboard. The zero value is ready.
+type Printer struct {
+	View           ViewStyle
+	styled, linked bool
+}
 
 // Line is line, without its ending, filtered and appended to dst[:0].
 // A \r is spelled ^M, as the pager draws it: raw, it would let later
@@ -117,6 +128,9 @@ func (p *Printer) Line(dst, line []byte) []byte {
 			}
 			switch {
 			case sgr != nil && isSGR(sgr):
+				if p.View == ViewPlain {
+					break
+				}
 				dst = append(dst, line[i:i+n]...)
 				p.styled = len(sgr) > 0 && string(sgr) != "0"
 			case osc != nil:

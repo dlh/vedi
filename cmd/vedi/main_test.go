@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 )
 
@@ -201,7 +202,7 @@ func TestPrintTextKeepsColorsAndLinks(t *testing.T) {
 	buf := buffer.New()
 	buffer.Fill(strings.NewReader(in), buf, func() {})
 	var out bytes.Buffer
-	printText(&out, buf)
+	printText(&out, buf, ansi.ViewColor)
 	if out.String() != want {
 		t.Errorf("printText = %q, want %q", out.String(), want)
 	}
@@ -214,7 +215,7 @@ func TestPrintTextBareCarriageReturn(t *testing.T) {
 	buf := buffer.New()
 	buffer.Fill(strings.NewReader("one\r\nvisible\r"), buf, func() {})
 	var out bytes.Buffer
-	printText(&out, buf)
+	printText(&out, buf, ansi.ViewColor)
 	if want := "one\r\nvisible^M"; out.String() != want {
 		t.Errorf("printText = %q, want %q", out.String(), want)
 	}
@@ -298,5 +299,17 @@ func TestNotifierChangesHands(t *testing.T) {
 	n.notify()
 	if got != "second" {
 		t.Errorf("notified %q, want second", got)
+	}
+}
+
+// TestPrintTextPlain: with view_style plain -F prints the text
+// without its colors.
+func TestPrintTextPlain(t *testing.T) {
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader("\x1b[31mone\x1b[0m\ntwo\n"), buf, func() {})
+	var out bytes.Buffer
+	printText(&out, buf, ansi.ViewPlain)
+	if want := "one\ntwo\n"; out.String() != want {
+		t.Errorf("printText = %q, want %q", out.String(), want)
 	}
 }

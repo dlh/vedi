@@ -361,3 +361,16 @@ func TestPrinterEnd(t *testing.T) {
 		}
 	}
 }
+
+// TestPrinterPlain: a plain Printer drops SGR and keeps links, and
+// has no style to end.
+func TestPrinterPlain(t *testing.T) {
+	p := Printer{View: ViewPlain}
+	in := "\x1b[1;31mred\x1b[0m \x1b]8;;http://x\x07link"
+	if got, want := string(p.Line(nil, []byte(in))), "red \x1b]8;;http://x\x07link"; got != want {
+		t.Errorf("Line(%q) = %q, want %q", in, got, want)
+	}
+	if got, want := string(p.End(nil)), "\x1b]8;;\x1b\\"; got != want {
+		t.Errorf("End = %q, want %q", got, want)
+	}
+}

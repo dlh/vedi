@@ -45,6 +45,7 @@ and over the defaults; the action `none` unbinds.
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
+| `view_style` | `color` | `--view-style` | `plain` draws the text without its colors. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
@@ -66,6 +67,10 @@ next ends in `\`, and text wraps a column early to leave room for it.
 for a prompt, a message, help or a read error, and goes with the next
 key.
 
+**view_style plain.** The text is drawn in the terminal's default
+colors, without its SGR colors and attributes; links stay, and `-F`
+prints the same. The status line shows `plain`.
+
 **clipboard_cmd** and **open_cmd** take the rest of the line as the
 command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd
 bat --color=always --paging=never %s` work; a pipeline needs a
@@ -85,8 +90,8 @@ but `one_page_rows_below`, and `map`, for the rest of the run:
 
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
 setting to its next value, the first after the last; it takes `wrap`,
-`wrap_style`, `edge_markers`, `file_separators`, `auto_reload` and
-`status_line`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
+`wrap_style`, `edge_markers`, `file_separators`, `auto_reload`,
+`status_line` and `view_style`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
 do. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A
 bad line is an error on the status line.
 

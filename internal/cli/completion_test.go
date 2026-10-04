@@ -111,6 +111,7 @@ func TestCompletionBash(t *testing.T) {
 		{"wrap style prefix", []string{"--wrap-style", "w"}, "word"},
 		{"wrap style eq", []string{"--wrap-style", "="}, "char\nword"},
 		{"wrap style eq prefix", []string{"--wrap-style", "=", "c"}, "char"},
+		{"view style", []string{"--view-style", ""}, "color\nplain"},
 		{"shells", []string{"--completion", ""}, "bash\nzsh\nfish"},
 		{"number", []string{"--tab-width", ""}, ""},
 		{"number eq", []string{"--tab-width", "="}, ""},

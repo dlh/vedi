@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/layout"
@@ -70,6 +71,28 @@ func TestDrawStyles(t *testing.T) {
 	fg := cellStyle(scr, 0, 0).GetForeground()
 	if fg != tcell.PaletteColor(1) {
 		t.Errorf("fg = %v, want red", fg)
+	}
+}
+
+// TestViewStylePlain: view_style plain draws the text in the default
+// style, a control still in reverse video and a link still a link;
+// color brings the styles back.
+func TestViewStylePlain(t *testing.T) {
+	input := "\x1b[1;31mred\r\x1b]8;;http://x\x07link"
+	a, scr := newTestApp(t, 20, 5, input, Options{ViewStyle: ansi.ViewPlain})
+	if st := cellStyle(scr, 0, 0); st != tcell.StyleDefault {
+		t.Errorf("text style = %v, want the default", st)
+	}
+	if st := cellStyle(scr, 3, 0); st != tcell.StyleDefault.Reverse(true) {
+		t.Errorf("control style = %v, want reverse alone", st)
+	}
+	if _, url := cellStyle(scr, 5, 0).GetUrl(); url != "http://x" {
+		t.Errorf("link = %q, want http://x", url)
+	}
+	a.runCommand("view_style color")
+	a.Draw()
+	if fg := cellStyle(scr, 0, 0).GetForeground(); fg != tcell.PaletteColor(1) {
+		t.Errorf("fg after view_style color = %v, want red", fg)
 	}
 }
 

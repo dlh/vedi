@@ -1,0 +1,14 @@
+--view-style color draws the colors over a config that does not.
+
+-- size --
+40x3
+-- config --
+view_style plain
+-- args --
+--view-style color
+-- input --
+line 1
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap           h help

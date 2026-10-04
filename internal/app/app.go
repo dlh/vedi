@@ -12,6 +12,7 @@ import (
 	"unicode"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
@@ -40,6 +41,7 @@ type Options struct {
 	FileSeparators bool             // a row names each input, when there are several
 	AutoReload     bool             // a Changed event reads the file again
 	HideStatus     bool             // the status line shows only for a prompt, a message, help or a read error
+	ViewStyle      ansi.ViewStyle   // how much of the text's styling is drawn
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -73,6 +75,7 @@ type App struct {
 	seps   bool             // a row names each input, when there are several
 	auto   bool             // a Changed event reads the file again
 	hide   bool             // the status line shows only when it has something to say
+	view   ansi.ViewStyle   // how much of the text's styling is drawn
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -153,6 +156,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		top:       buffer.Pos{Col: -1}, // the first row: line 0's separator, if it has one
 		auto:      opts.AutoReload,
 		hide:      opts.HideStatus,
+		view:      opts.ViewStyle,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
 )
@@ -55,8 +56,8 @@ func TestParse(t *testing.T) {
 		{"map h foo\n", `vedi.conf:1: unknown action "foo"`},
 		{"map Shift+h left\n", `vedi.conf:1: "Shift+h": modifiers on a character key`},
 		{"map h select_copy\n", `vedi.conf:1: unknown action "select_copy"`},
-		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload or status_line"},
-		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload or status_line"},
+		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line or view_style"},
+		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line or view_style"},
 		{"map h cycle wrap yes\n", "vedi.conf:1: map takes a key and an action"},
 		{"map h toggle_wrap\n", `vedi.conf:1: unknown action "toggle_wrap"`},
 	}
@@ -521,6 +522,31 @@ func TestStatusLine(t *testing.T) {
 	}
 	for _, src := range []string{"status_line\n", "status_line maybe\n", "status_line yes no\n"} {
 		want := "vedi.conf:1: status_line takes yes or no"
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != want {
+			t.Errorf("Parse(%q) err = %v, want %s", src, err, want)
+		}
+	}
+}
+
+// TestViewStyle: view_style plain draws the text without its colors;
+// color, the default, with them; anything else is an error.
+func TestViewStyle(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want ansi.ViewStyle
+	}{
+		{"", ansi.ViewColor},
+		{"view_style plain\n", ansi.ViewPlain},
+		{"view_style color\n", ansi.ViewColor},
+		{"view_style plain\nview_style color\n", ansi.ViewColor},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.ViewStyle != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want ViewStyle %v", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"view_style\n", "view_style yes\n", "view_style plain color\n"} {
+		want := "vedi.conf:1: view_style takes color or plain"
 		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != want {
 			t.Errorf("Parse(%q) err = %v, want %s", src, err, want)
 		}

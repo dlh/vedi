@@ -28,6 +28,10 @@ _vedi() {
         COMPREPLY=($(compgen -W 'char word' -- "$cur"))
         return
         ;;
+    --view-style)
+        COMPREPLY=($(compgen -W 'color plain' -- "$cur"))
+        return
+        ;;
     --completion)
         COMPREPLY=($(compgen -W 'bash zsh fish' -- "$cur"))
         return
@@ -52,6 +56,7 @@ _vedi() {
             --edge-markers --no-edge-markers
             --file-separators --no-file-separators
             --status-line --no-status-line
+            --view-style
             --config --completion
             -h --help -v --version' -- "$cur"))
         return

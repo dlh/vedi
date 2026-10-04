@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/clipboard"
 	"go.dlh.dev/vedi/internal/config"
@@ -132,7 +133,7 @@ func commonPrefix(a, b string) string {
 // commands is what the : prompt takes: goto, cycle, help, reload,
 // quit and the config verbs but clear_all_shortcuts, which would
 // unbind : and q.
-var commands = []string{"goto", "cycle", "help", "reload", "quit", "wrap", "wrap_style", "tab_width", "edge_markers", "file_separators", "auto_reload", "status_line", "clipboard_cmd", "map"}
+var commands = []string{"goto", "cycle", "help", "reload", "quit", "wrap", "wrap_style", "tab_width", "edge_markers", "file_separators", "auto_reload", "status_line", "view_style", "clipboard_cmd", "map"}
 
 // runCommand runs a : line. A number alone, or goto and a number, goes
 // to that 1-based line, clamped to the buffer; cycle steps a setting;
@@ -213,6 +214,8 @@ func (a *App) runCommand(line string) bool {
 		}
 	case "status_line":
 		a.hide = c.NoStatusLine
+	case "view_style":
+		a.view = c.ViewStyle
 	case "clipboard_cmd":
 		a.copier = clipboard.Command{Cmd: c.ClipboardCmd}
 	case "map":
@@ -224,13 +227,13 @@ func (a *App) runCommand(line string) bool {
 
 // cycle sets a setting to the value after its current one, the first
 // after the last, and reports the new value on the status line unless
-// the line shows it anyway, as it does wrap and wrap_style, or is the
-// setting.
+// the line shows it anyway, as it does wrap, wrap_style and
+// view_style, or is the setting.
 func (a *App) cycle(name string) {
 	s, _ := input.LookupSetting(name)
 	line := name + " " + s.Next(a.setting(name))
 	a.runCommand(line)
-	if name != "wrap" && name != "wrap_style" && name != "status_line" {
+	if name != "wrap" && name != "wrap_style" && name != "status_line" && name != "view_style" {
 		a.status = line
 	}
 }
@@ -254,6 +257,11 @@ func (a *App) setting(name string) string {
 		return yesNo(a.auto)
 	case "status_line":
 		return yesNo(!a.hide)
+	case "view_style":
+		if a.view == ansi.ViewPlain {
+			return "plain"
+		}
+		return "color"
 	}
 	return ""
 }

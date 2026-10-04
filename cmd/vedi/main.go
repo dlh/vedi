@@ -162,11 +162,12 @@ func termSize(tty *os.File) (w, h int) {
 
 // printText is -F printing the text: its runes, colors and links, and
 // no other escape or control, so text from anywhere cannot act on the
-// terminal. It fits a screen, so it is held whole.
-func printText(w io.Writer, buf *buffer.Buffer) {
+// terminal; the colors only as view shows them. It fits a screen, so
+// it is held whole.
+func printText(w io.Writer, buf *buffer.Buffer, view ansi.ViewStyle) {
 	var text bytes.Buffer
 	buf.WriteTo(&text)
-	var p ansi.Printer
+	p := ansi.Printer{View: view}
 	var out []byte
 	for line := range bytes.Lines(text.Bytes()) {
 		// A \r is an ending only before \n; alone at the text's end
@@ -273,7 +274,7 @@ func main() {
 			signal.Stop(resize)
 			tty.Close()
 			if onePage {
-				printText(os.Stdout, buf)
+				printText(os.Stdout, buf, opts.View(cfg))
 				return
 			}
 		}

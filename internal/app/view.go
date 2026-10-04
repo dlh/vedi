@@ -165,7 +165,9 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		case mi < len(matches) && matches[mi] < j:
 			st = MatchStyle
 		default:
-			st = styleAt(runs, ri, i)
+			if a.view == ansi.ViewColor {
+				st = styleAt(runs, ri, i)
+			}
 			if isControl(line.Text[i]) {
 				st = st.Reverse(true)
 			}
@@ -437,6 +439,9 @@ func (a *App) statusText() string {
 		mode = "nowrap"
 	case a.style == layout.WrapStyleWord:
 		mode = "word wrap"
+	}
+	if a.view == ansi.ViewPlain {
+		mode += "  plain"
 	}
 	reading := ""
 	if !eof {

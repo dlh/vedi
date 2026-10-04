@@ -44,6 +44,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{cyc("file_separators")}, doc: "Toggle the rows naming the inputs"},
 		{cmds: []Command{cyc("auto_reload")}, doc: "Toggle reloading a changed file"},
 		{cmds: []Command{cyc("status_line")}, doc: "Toggle the status line"},
+		{cmds: []Command{cyc("view_style")}, doc: "Cycle the view style: color, plain"},
 		{cmds: []Command{act(Reload)}, doc: "Reload the file"},
 	}},
 	{"Moving", []helpRow{
