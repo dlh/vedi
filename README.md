@@ -7,7 +7,11 @@ select text with the keyboard or mouse, and copy it to the clipboard.
 
 ## Install
 
-Download a binary for linux or macOS from the [releases
+With [Homebrew](https://brew.sh):
+
+    brew install dlh/tap/vedi
+
+Or download a binary for linux or macOS from the [releases
 page](https://github.com/dlh/vedi/releases), or build from source:
 
     go install go.dlh.dev/vedi/cmd/vedi@latest

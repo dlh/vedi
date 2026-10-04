@@ -50,3 +50,20 @@ notarize:
         key_id: '{{ .Env.APPLE_API_KEY_ID }}'
         key: '{{ .Env.APPLE_API_KEY_P8_BASE64 }}'
         wait: true
+
+# Publish a cask to the tap; skipped when the token is absent.
+homebrew_casks:
+  - repository:
+      owner: dlh
+      name: homebrew-tap
+      token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
+    commit_author:
+      name: Daniel Lee Harple
+      email: git@dlh.dev
+    homepage: https://github.com/dlh/vedi
+    description: Pager for colored text; select with the keyboard and copy
+    completions:
+      bash: completions/vedi.bash
+      zsh: completions/_vedi
+      fish: completions/vedi.fish
+    skip_upload: '{{ if not (isEnvSet "HOMEBREW_TAP_TOKEN") }}true{{ end }}'

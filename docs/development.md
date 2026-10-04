@@ -65,7 +65,9 @@ that releases it:
 CI builds linux and darwin, amd64 and arm64, and publishes a GitHub
 release with archives, `checksums.txt` and a changelog from the commit
 messages. Each archive holds the completion scripts of
-`internal/cli/completions/` in `completions/`. `vedi -v` prints the tag; `go install ...@v1.2.3` builds
+`internal/cli/completions/` in `completions/`. It then pushes a cask
+to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped
+without `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag; `go install ...@v1.2.3` builds
 print the same from module data.
 
 Darwin binaries are signed with a Developer ID Application certificate
@@ -81,6 +83,11 @@ role.
     APPLE_API_ISSUER_ID            API key issuer ID
     APPLE_API_KEY_ID               API key ID
     APPLE_API_KEY_P8_BASE64        API key .p8, base64
+    HOMEBREW_TAP_TOKEN             GitHub token that pushes to the tap
+
+The tap token is a fine-grained personal access token: Settings →
+Developer settings → Fine-grained tokens, repository
+`dlh/homebrew-tap` only, Contents read and write.
 
 Export the certificate from Keychain Access (My Certificates →
 Developer ID Application → File → Export Items… → .p12). Encode both

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copies release signing secrets from a 1Password item into the GitHub
+# Copies release secrets from a 1Password item into the GitHub
 # "release" environment, which only the release workflow can use.
 set -euo pipefail
 
@@ -10,6 +10,7 @@ readonly SECRETS=(
   APPLE_API_ISSUER_ID
   APPLE_API_KEY_ID
   APPLE_API_KEY_P8_BASE64
+  HOMEBREW_TAP_TOKEN
 )
 
 usage() {
@@ -22,6 +23,7 @@ Fields in the 1Password item must be named after the secrets:
   APPLE_API_ISSUER_ID            App Store Connect API issuer ID
   APPLE_API_KEY_ID               App Store Connect API key ID
   APPLE_API_KEY_P8_BASE64        the key's .p8, base64
+  HOMEBREW_TAP_TOKEN             GitHub token that pushes to dlh/homebrew-tap
 USAGE
 }
 
