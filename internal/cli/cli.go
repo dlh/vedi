@@ -45,6 +45,8 @@ command line wins.
 
 Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
 quit, / search, n/N next/prev, w toggle wrap, q quit.
+
+Docs: https://github.com/dlh/vedi
 `
 
 type Options struct {
