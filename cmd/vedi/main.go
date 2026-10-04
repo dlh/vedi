@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
@@ -158,6 +160,28 @@ func termSize(tty *os.File) (w, h int) {
 	return w, h
 }
 
+// printText is -F printing the text: its runes, colors and links, and
+// no other escape or control, so text from anywhere cannot act on the
+// terminal. It fits a screen, so it is held whole.
+func printText(w io.Writer, buf *buffer.Buffer) {
+	var text bytes.Buffer
+	buf.WriteTo(&text)
+	var p ansi.Printer
+	var out []byte
+	for line := range bytes.Lines(text.Bytes()) {
+		// A \r is an ending only before \n; alone at the text's end
+		// it is filtered like any other.
+		body, nl := bytes.CutSuffix(line, []byte{'\n'})
+		if nl {
+			body = bytes.TrimSuffix(body, []byte{'\r'})
+		}
+		out = p.Line(out, body)
+		w.Write(out)
+		w.Write(line[len(body):])
+	}
+	w.Write(p.End(out))
+}
+
 // waitOnePage is -F before any screen exists: it waits on data, the
 // reader's notifications, until the text outgrows the screen or ends,
 // and reports whether to print it instead of paging. Deciding first
@@ -241,11 +265,11 @@ func main() {
 		if tty, err := os.Open("/dev/tty"); err == nil {
 			resize := make(chan os.Signal, 1)
 			signal.Notify(resize, syscall.SIGWINCH)
-			printText := waitOnePage(buf, data, resize, func() (int, int) { return termSize(tty) }, opts.Separators(cfg))
+			onePage := waitOnePage(buf, data, resize, func() (int, int) { return termSize(tty) }, opts.Separators(cfg))
 			signal.Stop(resize)
 			tty.Close()
-			if printText {
-				buf.WriteTo(os.Stdout)
+			if onePage {
+				printText(os.Stdout, buf)
 				return
 			}
 		}

@@ -1,5 +1,7 @@
--F prints text that fits the screen at EOF, as if by cat: the pager
-never opens, so the terminal never switches to its screen and back.
+-F prints text that fits the screen at EOF: the pager never opens, so
+the terminal never switches to its screen and back. The text is
+printed with its colors and links, and with no other escape sequence
+or control character.
 
 -- size --
 40x4

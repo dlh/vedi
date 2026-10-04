@@ -297,3 +297,67 @@ func TestStripDropsEscapes(t *testing.T) {
 		}
 	}
 }
+
+// TestPrinterKeepsColorsAndLinks: a Printer keeps text, SGR and OSC 8
+// and drops what else could act on the terminal: other escapes, one
+// cut off by the line's end, controls, and a CSI ending in m that is
+// not SGR. A carriage return is spelled out.
+func TestPrinterKeepsColorsAndLinks(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"plain", "plain"},
+		{"", ""},
+		{"a\tb", "a\tb"},
+		{"\x1b[31mred\x1b[0m", "\x1b[31mred\x1b[0m"},
+		{"\x1b[38:2::1:2:3;4:3mx\x1b[m", "\x1b[38:2::1:2:3;4:3mx\x1b[m"},
+		{"\x1b]8;id=a;http://x\x07link\x1b]8;;\x1b\\", "\x1b]8;id=a;http://x\x07link\x1b]8;;\x1b\\"},
+		{"\x1b]2;hunk\x07@@ one", "@@ one"},
+		{"a\x1b]52;c;aGk=\x07b", "ab"},
+		{"a\x1b]1337;File=x\x07b", "ab"},
+		{"a\x1b[2J\x1b[H\x1b[3Ab", "ab"},
+		{"a\x1b[>4;2mb", "ab"},
+		{"a\x1b[?1049hb", "ab"},
+		{"a\x1bP+q\x1b\\b\x1bcc", "abc"},
+		{"ab\x1b]52;cut", "ab"},
+		{"ab\x1b[31", "ab"},
+		{"real\rfake\x08\x07\x7f\x0e", "real^Mfake"},
+		{"a\u009b2Jb\u009d52;c\u009c", "a2Jb52;c"},
+		{"a\x9b2Jb", "a\ufffd2Jb"},
+		{"\x1b]8;;http://x\u009c\x07a", "a"},
+		{"\x1b]8;;http://\xffx\x07a", "a"},
+	} {
+		var p Printer
+		dst := make([]byte, 0, 64)
+		got := p.Line(dst, []byte(tc.in))
+		if string(got) != tc.want {
+			t.Errorf("Line(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+		if len(got) > 0 && &got[0] != &dst[:1][0] {
+			t.Errorf("Line(%q) is not in dst", tc.in)
+		}
+	}
+}
+
+// TestPrinterEnd: End resets a style and closes a link the text left
+// on, across lines, and adds nothing when it left neither.
+func TestPrinterEnd(t *testing.T) {
+	for _, tc := range []struct {
+		lines []string
+		want  string
+	}{
+		{[]string{"plain"}, ""},
+		{[]string{"\x1b[31mred\x1b[0m", "\x1b[1mb\x1b[m"}, ""},
+		{[]string{"\x1b[31mred", "more"}, "\x1b[m"},
+		{[]string{"\x1b[0;1mbold"}, "\x1b[m"},
+		{[]string{"\x1b]8;;http://x\x07link"}, "\x1b]8;;\x1b\\"},
+		{[]string{"\x1b]8;;http://x\x07link\x1b]8;;\x07"}, ""},
+		{[]string{"\x1b[4m\x1b]8;;http://x\x07link"}, "\x1b[m\x1b]8;;\x1b\\"},
+	} {
+		var p Printer
+		for _, line := range tc.lines {
+			p.Line(nil, []byte(line))
+		}
+		if got := p.End(nil); string(got) != tc.want {
+			t.Errorf("End after %q = %q, want %q", tc.lines, got, tc.want)
+		}
+	}
+}

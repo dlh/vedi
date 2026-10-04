@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -188,6 +189,37 @@ func TestOpenParts(t *testing.T) {
 }
 
 // onePageInput is a buffer filled from a pipe the way main fills it for
+// TestPrintTextKeepsColorsAndLinks: -F prints the text, its colors,
+// links and line endings; no other escape or control reaches the
+// terminal, a carriage return inside a line is spelled out, and a
+// style or link left on is ended.
+func TestPrintTextKeepsColorsAndLinks(t *testing.T) {
+	in := "\x1b]2;hunk\x07@@ \x1b[31mone\x1b[0m\r\nplain\n\x1b]0;t\x1b\\\n\x1b]8;;http://x\x07link\x1b]8;;\x07\n" +
+		"\x1b]52;c;aGk=\x07ok\x1b[2J\rfake\n\x1b[1m\x1b]8;;http://y\x07end\x1b]2;t\x07"
+	want := "@@ \x1b[31mone\x1b[0m\r\nplain\n\n\x1b]8;;http://x\x07link\x1b]8;;\x07\n" +
+		"ok^Mfake\n\x1b[1m\x1b]8;;http://y\x07end\x1b[m\x1b]8;;\x1b\\"
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader(in), buf, func() {})
+	var out bytes.Buffer
+	printText(&out, buf)
+	if out.String() != want {
+		t.Errorf("printText = %q, want %q", out.String(), want)
+	}
+}
+
+// TestPrintTextBareCarriageReturn: a carriage return ending the text
+// with no newline after it is not a line ending, and is spelled out
+// like one inside a line.
+func TestPrintTextBareCarriageReturn(t *testing.T) {
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader("one\r\nvisible\r"), buf, func() {})
+	var out bytes.Buffer
+	printText(&out, buf)
+	if want := "one\r\nvisible^M"; out.String() != want {
+		t.Errorf("printText = %q, want %q", out.String(), want)
+	}
+}
+
 // -F: the reader notifies data, until the app takes over.
 func onePageInput(t *testing.T) (*buffer.Buffer, *io.PipeWriter, chan struct{}) {
 	t.Helper()

@@ -8,6 +8,11 @@ shell's equivalent:
 
     export PAGER="vedi -F"
 
+What `-F` prints is what the pager would show: the text, its colors
+and its links. Any other escape sequence or control character is left
+out, and a carriage return inside a line is printed as `^M`, so the
+text cannot move the cursor or write to the clipboard.
+
 ## VEDI
 
 vedi reads flags from the `VEDI` environment variable before those on
@@ -39,9 +44,10 @@ leaves the rows out.
 
 A program can set the terminal's window title as it writes, with the
 escape sequence OSC 0 or 2: `ESC ] 2 ; title BEL`. vedi does not pass
-it to the terminal: the title in effect at the cursor's line replaces
-`<stdin>` in the status line, and `[` and `]` stop at each line that
-sets one, to the same title or to none included.
+it to the terminal, nor print it when `-F` prints the text: the title
+in effect at the cursor's line replaces `<stdin>` in the status line,
+and `[` and `]` stop at each line that sets one, to the same title or
+to none included.
 
 ## git
 

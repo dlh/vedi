@@ -4,6 +4,7 @@ package ansi
 import (
 	"bytes"
 	"math"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v3"
@@ -92,6 +93,82 @@ func Strip(dst, line []byte) []byte {
 		}
 		line = line[i+n:]
 	}
+}
+
+// Printer filters text bound for a terminal down to what Parse reads:
+// runes, SGR and OSC 8. Text from anywhere can then color itself and
+// do nothing else: not move the cursor, not write the clipboard. The
+// zero value is ready.
+type Printer struct{ styled, linked bool }
+
+// Line is line, without its ending, filtered and appended to dst[:0].
+// A \r is spelled ^M, as the pager draws it: raw, it would let later
+// text cover earlier. Unlike Parse it drops C1 controls, which some
+// terminals take for escapes.
+func (p *Printer) Line(dst, line []byte) []byte {
+	dst = dst[:0]
+	for i := 0; i < len(line); {
+		c := line[i]
+		switch {
+		case c == 0x1b:
+			n, sgr, osc, ok := escape(line[i:])
+			if !ok {
+				return dst
+			}
+			switch {
+			case sgr != nil && isSGR(sgr):
+				dst = append(dst, line[i:i+n]...)
+				p.styled = len(sgr) > 0 && string(sgr) != "0"
+			case osc != nil:
+				if url, _, ok := link(osc); ok && utf8.Valid(osc) && !bytes.ContainsFunc(osc, unicode.IsControl) {
+					dst = append(dst, line[i:i+n]...)
+					p.linked = url != ""
+				}
+			}
+			i += n
+		case c == '\r':
+			dst = append(dst, "^M"...)
+			i++
+		case c < 0x20 && c != '\t' || c == 0x7f:
+			i++
+		case c < utf8.RuneSelf:
+			dst = append(dst, c)
+			i++
+		default:
+			r, size := utf8.DecodeRune(line[i:])
+			if !unicode.IsControl(r) {
+				dst = utf8.AppendRune(dst, r)
+			}
+			i += size
+		}
+	}
+	return dst
+}
+
+// End is what ends a style or link the lines left on, appended to
+// dst[:0], so neither runs into what the terminal shows next.
+func (p *Printer) End(dst []byte) []byte {
+	dst = dst[:0]
+	if p.styled {
+		dst = append(dst, "\x1b[m"...)
+	}
+	if p.linked {
+		dst = append(dst, "\x1b]8;;\x1b\\"...)
+	}
+	p.styled, p.linked = false, false
+	return dst
+}
+
+// isSGR reports whether a CSI ending in m is SGR: digits and their
+// separators only. One with a private marker, ESC [ > 4 m, sets a
+// terminal mode instead.
+func isSGR(params []byte) bool {
+	for _, c := range params {
+		if (c < '0' || c > '9') && c != ';' && c != ':' {
+			return false
+		}
+	}
+	return true
 }
 
 // apply takes an escape's effect: SGR on the style, OSC 8 on the link,
