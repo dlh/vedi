@@ -1,0 +1,14 @@
+--one-page-rows-below overrides one_page_rows_below in the config for
+one run.
+
+-- size --
+40x4
+-- args --
+-F --one-page-rows-below 1
+-- config --
+one_page_rows_below 2
+-- input --
+line 1
+line 2
+line 3
+-- quit --

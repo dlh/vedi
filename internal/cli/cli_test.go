@@ -70,6 +70,10 @@ func TestParse(t *testing.T) {
 		{"last auto reload wins", []string{"--no-auto-reload", "--auto-reload"}, Options{AutoReload: new(true)}, nil, false},
 		{"tab width", []string{"--tab-width", "4", "f"}, Options{TabWidth: 4}, []string{"f"}, false},
 		{"tab width eq", []string{"--tab-width=2"}, Options{TabWidth: 2}, nil, false},
+		{"rows below", []string{"-F", "--one-page-rows-below", "2"}, Options{QuitIfOnePage: true, OnePageRowsBelow: 2}, nil, false},
+		{"rows below eq", []string{"--one-page-rows-below=3"}, Options{OnePageRowsBelow: 3}, nil, false},
+		{"missing rows below", []string{"--one-page-rows-below"}, Options{}, nil, true},
+		{"bad rows below", []string{"--one-page-rows-below", "0"}, Options{}, nil, true},
 		{"missing tab width", []string{"--tab-width"}, Options{}, nil, true},
 		{"bad tab width", []string{"--tab-width", "0"}, Options{}, nil, true},
 		{"bad tab width text", []string{"--tab-width", "four"}, Options{}, nil, true},
@@ -252,6 +256,25 @@ func TestAppWrapStyle(t *testing.T) {
 	} {
 		if got := tc.opts.App(scr, nil, tc.cfg); got.Mode != tc.mode || got.WrapStyle != tc.want {
 			t.Errorf("%+v.App(%+v) = mode %v, style %v, want %v, %v", tc.opts, tc.cfg, got.Mode, got.WrapStyle, tc.mode, tc.want)
+		}
+	}
+}
+
+// TestRowsBelow: the flag decides the rows -F leaves below the text;
+// without one the config does; without either it is one.
+func TestRowsBelow(t *testing.T) {
+	for _, tc := range []struct {
+		opts Options
+		cfg  config.Config
+		want int
+	}{
+		{Options{}, config.Config{}, 1},
+		{Options{}, config.Config{OnePageRowsBelow: 3}, 3},
+		{Options{OnePageRowsBelow: 2}, config.Config{OnePageRowsBelow: 3}, 2},
+		{Options{OnePageRowsBelow: 2}, config.Config{}, 2},
+	} {
+		if got := tc.opts.RowsBelow(tc.cfg); got != tc.want {
+			t.Errorf("%+v.RowsBelow(%+v) = %d, want %d", tc.opts, tc.cfg, got, tc.want)
 		}
 	}
 }

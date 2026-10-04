@@ -368,7 +368,7 @@ func (s *scenario) deliver() error {
 		return nil
 	}
 	if s.onePage {
-		switch app.OnePage(s.buf, s.w, s.h, s.opts.Separators(s.config)) {
+		switch app.OnePage(s.buf, s.w, s.h, s.opts.RowsBelow(s.config), s.opts.Separators(s.config)) {
 		case app.Undecided:
 			return nil
 		case app.Print:

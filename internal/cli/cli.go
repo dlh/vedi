@@ -21,6 +21,7 @@ const Usage = `usage: vedi [flags] [file...]
   -S, --[no-]wrap              wrap long lines; -S is --no-wrap (default: on)
   --wrap-style STYLE          wrap at the screen's edge (char) or at words (word)
   -F, --[no-]quit-if-one-page  print the text and quit if it fits the screen (default: off)
+  --one-page-rows-below N      rows -F leaves below the text, for the prompt (default: 1)
   --[no-]auto-reload           read a file again when it changes on disk (default: on)
   +G                           start at the last line and follow until EOF
   +N                           start with line N at the top
@@ -46,21 +47,22 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 `
 
 type Options struct {
-	Wrap           *bool             // --wrap, --no-wrap, -S; nil leaves it to the config
-	WrapStyle      *layout.WrapStyle // --wrap-style; nil leaves it to the config
-	QuitIfOnePage  bool
-	StartLine      int // 1-based; 0 for none
-	Follow         bool
-	Screen         *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
-	ClipboardCmd   *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
-	OpenCmd        *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
-	TabWidth       int         // --tab-width; 0 leaves it to the config
-	Config         string      // "" for the default location
-	AutoReload     *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
-	EdgeMarkers    *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
-	FileSeparators *bool       // --file-separators, --no-file-separators; nil leaves it to the config
-	Help           bool
-	Version        bool
+	Wrap             *bool             // --wrap, --no-wrap, -S; nil leaves it to the config
+	WrapStyle        *layout.WrapStyle // --wrap-style; nil leaves it to the config
+	QuitIfOnePage    bool
+	OnePageRowsBelow int // --one-page-rows-below; 0 leaves it to the config
+	StartLine        int // 1-based; 0 for none
+	Follow           bool
+	Screen           *app.Screen // set by any of --scrolled-by, --cursor-row, --cursor-col
+	ClipboardCmd     *string     // --clipboard-cmd, --no-clipboard-cmd as ""; nil leaves it to the config
+	OpenCmd          *string     // --open-cmd, --no-open-cmd as ""; nil leaves it to the config
+	TabWidth         int         // --tab-width; 0 leaves it to the config
+	Config           string      // "" for the default location
+	AutoReload       *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
+	EdgeMarkers      *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
+	FileSeparators   *bool       // --file-separators, --no-file-separators; nil leaves it to the config
+	Help             bool
+	Version          bool
 }
 
 // App converts the options to the app's: a flag, else the config,
@@ -127,6 +129,15 @@ func (o Options) Separators(cfg config.Config) bool {
 	return !cfg.NoFileSeparators
 }
 
+// RowsBelow is the rows -F leaves below the text: the flag's, else
+// the config's, else 1.
+func (o Options) RowsBelow(cfg config.Config) int {
+	if o.OnePageRowsBelow > 0 {
+		return o.OnePageRowsBelow
+	}
+	return max(cfg.OnePageRowsBelow, 1)
+}
+
 // Open is the command each file is read through: the flag's, else
 // the config's, else "" for none.
 func (o Options) Open(cfg config.Config) string {
@@ -169,14 +180,21 @@ var valueFlags = map[string]func(*Options, string) error{
 		}
 		return nil
 	},
-	"--tab-width": func(o *Options, v string) error {
+	"--tab-width":           positiveInt(func(o *Options) *int { return &o.TabWidth }),
+	"--one-page-rows-below": positiveInt(func(o *Options) *int { return &o.OnePageRowsBelow }),
+}
+
+// positiveInt returns a setter that parses an integer of at least 1
+// into a field.
+func positiveInt(field func(*Options) *int) func(*Options, string) error {
+	return func(o *Options, v string) error {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 1 {
 			return fmt.Errorf("%q", v)
 		}
-		o.TabWidth = n
+		*field(o) = n
 		return nil
-	},
+	}
 }
 
 // screenInt returns a setter that parses an integer of at least min

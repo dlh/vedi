@@ -27,6 +27,7 @@ type Config struct {
 	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
 	EdgeMarkers      bool             // edge_markers yes: mark text off the sides, and wrapped rows
 	NoFileSeparators bool             // file_separators no: no row naming each input
+	OnePageRowsBelow int              // one_page_rows_below: rows -F leaves below the text; 0 for the default
 }
 
 // Parse applies src line by line. Errors read name:line: message.
@@ -104,6 +105,15 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 			return verb, errors.New("tab_width takes a positive number")
 		}
 		c.TabWidth = n
+	case "one_page_rows_below":
+		if len(f) != 2 {
+			return verb, errors.New("one_page_rows_below takes a positive number")
+		}
+		n, err := strconv.Atoi(f[1])
+		if err != nil || n < 1 {
+			return verb, errors.New("one_page_rows_below takes a positive number")
+		}
+		c.OnePageRowsBelow = n
 	case "edge_markers":
 		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
 			return verb, errors.New("edge_markers takes yes or no")

@@ -189,10 +189,10 @@ func printText(w io.Writer, buf *buffer.Buffer) {
 // alternate screen on its way out. The terminal may be resized while
 // it waits, so size is asked at every decision and a resize makes
 // one.
-func waitOnePage(buf *buffer.Buffer, data <-chan struct{}, resize <-chan os.Signal, size func() (w, h int), seps bool) bool {
+func waitOnePage(buf *buffer.Buffer, data <-chan struct{}, resize <-chan os.Signal, size func() (w, h int), below int, seps bool) bool {
 	for {
 		w, h := size()
-		switch app.OnePage(buf, w, h, seps) {
+		switch app.OnePage(buf, w, h, below, seps) {
 		case app.Print:
 			return true
 		case app.Page:
@@ -265,7 +265,7 @@ func main() {
 		if tty, err := os.Open("/dev/tty"); err == nil {
 			resize := make(chan os.Signal, 1)
 			signal.Notify(resize, syscall.SIGWINCH)
-			onePage := waitOnePage(buf, data, resize, func() (int, int) { return termSize(tty) }, opts.Separators(cfg))
+			onePage := waitOnePage(buf, data, resize, func() (int, int) { return termSize(tty) }, opts.RowsBelow(cfg), opts.Separators(cfg))
 			signal.Stop(resize)
 			tty.Close()
 			if onePage {

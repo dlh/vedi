@@ -393,6 +393,29 @@ func TestOpenCmd(t *testing.T) {
 	}
 }
 
+// TestOnePageRowsBelow: one_page_rows_below takes a positive number;
+// zero, the default, leaves the rows to -F.
+func TestOnePageRowsBelow(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want int
+	}{
+		{"", 0},
+		{"one_page_rows_below 2\n", 2},
+		{"one_page_rows_below 2\none_page_rows_below 3\n", 3},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.OnePageRowsBelow != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want OnePageRowsBelow %d", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"one_page_rows_below\n", "one_page_rows_below two\n", "one_page_rows_below 0\n", "one_page_rows_below -1\n", "one_page_rows_below 1 2\n"} {
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != "vedi.conf:1: one_page_rows_below takes a positive number" {
+			t.Errorf("Parse(%q) err = %v, want one_page_rows_below takes a positive number", src, err)
+		}
+	}
+}
+
 // TestTabWidth: tab_width takes a positive number; zero, the default,
 // leaves the tab width to the app.
 func TestTabWidth(t *testing.T) {

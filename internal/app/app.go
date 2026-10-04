@@ -365,12 +365,14 @@ type text interface {
 }
 
 // OnePage is -F's decision for the text buf holds so far, on a w×h
-// screen with a status line: text that fits the rows above it at EOF
-// is printed instead of paged. The printed text is the terminal's to
-// lay out: it wraps whatever the mode and its tabs stop every 8 cells
-// whatever tab_width says, so it is measured that way. seps counts a
-// row for each input when there are several, as the pager draws one.
-func OnePage(buf text, w, h int, seps bool) Verdict {
+// screen: text that at EOF fits with below rows left under it, for
+// the shell's prompt, is printed instead of paged. The last row is
+// the text's however many are asked. The printed text is the
+// terminal's to lay out: it wraps whatever the mode and its tabs stop
+// every 8 cells whatever tab_width says, so it is measured that way.
+// seps counts a row for each input when there are several, as the
+// pager draws one.
+func OnePage(buf text, w, h, below int, seps bool) Verdict {
 	// EOF is read before measuring: the reader may append and finish
 	// at any moment, and an EOF seen afterwards would vouch for lines
 	// the measuring missed.
@@ -379,13 +381,13 @@ func OnePage(buf text, w, h int, seps bool) Verdict {
 		return Page
 	}
 	l := layout.Layout{Width: w, Mode: layout.Wrap}
-	rows := 0
+	rows, fit := 0, max(h-below, 1)
 	seps = seps && len(buf.Parts()) > 1
 	for i := 0; i < buf.Len(); i++ {
 		if seps && buf.StartsPart(i) {
 			rows++ // the row naming the input
 		}
-		if rows += l.Rows(buf.Line(i).Text); rows > textRows(h) {
+		if rows += l.Rows(buf.Line(i).Text); rows > fit {
 			return Page
 		}
 	}

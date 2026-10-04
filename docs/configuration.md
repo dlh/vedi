@@ -43,6 +43,7 @@ and over the defaults; the action `none` unbinds.
 | `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
+| `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
 
@@ -69,8 +70,8 @@ auto-reload run it again. See [Pager](pager.md#bat) and
 
 ## Commands
 
-`:` opens a prompt on the status line. It takes any setting above,
-and `map`, for the rest of the run:
+`:` opens a prompt on the status line. It takes any setting above
+but `one_page_rows_below`, and `map`, for the rest of the run:
 
     :wrap_style word
     :tab_width 4

@@ -545,7 +545,7 @@ func BenchmarkMoveColUnicode(b *testing.B) {
 func TestOnePageUndecidedBeforeEOF(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n"))
-	if v := OnePage(buf, 40, 3, false); v != Undecided {
+	if v := OnePage(buf, 40, 3, 1, false); v != Undecided {
 		t.Errorf("OnePage = %v, want Undecided", v)
 	}
 }
@@ -555,7 +555,7 @@ func TestOnePageUndecidedBeforeEOF(t *testing.T) {
 func TestOnePagePagesWhenTooLong(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n3\n"))
-	if v := OnePage(buf, 40, 3, false); v != Page {
+	if v := OnePage(buf, 40, 3, 1, false); v != Page {
 		t.Errorf("OnePage = %v, want Page", v)
 	}
 }
@@ -564,7 +564,7 @@ func TestOnePagePrintsWhenFits(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n2\n"))
 	buf.Finish(nil, true)
-	if v := OnePage(buf, 40, 3, false); v != Print {
+	if v := OnePage(buf, 40, 3, 1, false); v != Print {
 		t.Errorf("OnePage = %v, want Print", v)
 	}
 }
@@ -578,17 +578,17 @@ func TestOnePageCountsSeparators(t *testing.T) {
 	buf.StartPart()
 	buf.Write([]byte("2\n"))
 	buf.Finish(nil, true)
-	if v := OnePage(buf, 40, 3, true); v != Page {
+	if v := OnePage(buf, 40, 3, 1, true); v != Page {
 		t.Errorf("OnePage with separators = %v, want Page", v)
 	}
-	if v := OnePage(buf, 40, 3, false); v != Print {
+	if v := OnePage(buf, 40, 3, 1, false); v != Print {
 		t.Errorf("OnePage without separators = %v, want Print", v)
 	}
 	one := buffer.New()
 	one.StartPart()
 	one.Write([]byte("1\n2\n"))
 	one.Finish(nil, true)
-	if v := OnePage(one, 40, 3, true); v != Print {
+	if v := OnePage(one, 40, 3, 1, true); v != Print {
 		t.Errorf("OnePage with one input = %v, want Print: no row names a lone input", v)
 	}
 }
@@ -639,7 +639,7 @@ func TestOnePagePagesOnReadError(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n"))
 	buf.Finish(fmt.Errorf("disk on fire"), true)
-	if v := OnePage(buf, 40, 3, false); v != Page {
+	if v := OnePage(buf, 40, 3, 1, false); v != Page {
 		t.Errorf("OnePage = %v, want Page", v)
 	}
 }
@@ -664,7 +664,7 @@ func (g growsAtEOF) Finished() (bool, error) {
 // TestOnePageMeasuresAllThatEnded: EOF vouches only for text that was
 // measured after it, never for lines that landed with it.
 func TestOnePageMeasuresAllThatEnded(t *testing.T) {
-	if v := OnePage(growsAtEOF{buffer.New(), new(bool)}, 40, 3, false); v != Page {
+	if v := OnePage(growsAtEOF{buffer.New(), new(bool)}, 40, 3, 1, false); v != Page {
 		t.Errorf("OnePage = %v, want Page for 100 lines on a three-row screen", v)
 	}
 }
@@ -688,7 +688,7 @@ func TestOnePagePagesOnErrorFoundMeasuring(t *testing.T) {
 	if err := os.Truncate(name, 0); err != nil {
 		t.Fatal(err)
 	}
-	if v := OnePage(buf, 40, 3, false); v != Page {
+	if v := OnePage(buf, 40, 3, 1, false); v != Page {
 		t.Errorf("OnePage = %v, want Page for a truncated file", v)
 	}
 	if _, err := buf.Finished(); err == nil {
@@ -702,8 +702,35 @@ func TestOnePageOneRowScreen(t *testing.T) {
 	buf := buffer.New()
 	buf.Write([]byte("1\n"))
 	buf.Finish(nil, true)
-	if v := OnePage(buf, 40, 1, false); v != Print {
+	if v := OnePage(buf, 40, 1, 1, false); v != Print {
 		t.Errorf("OnePage = %v, want Print", v)
+	}
+}
+
+// TestOnePageRowsBelow: the text fits when it leaves the rows asked
+// for below it, and the last row is the text's however many are asked.
+func TestOnePageRowsBelow(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("1\n2\n"))
+	buf.Finish(nil, true)
+	for _, tc := range []struct {
+		h, below int
+		want     Verdict
+	}{
+		{4, 2, Print},
+		{3, 2, Page},
+		{3, 1, Print},
+		{2, 1, Page},
+	} {
+		if v := OnePage(buf, 40, tc.h, tc.below, false); v != tc.want {
+			t.Errorf("OnePage on %d rows leaving %d = %v, want %v", tc.h, tc.below, v, tc.want)
+		}
+	}
+	one := buffer.New()
+	one.Write([]byte("1\n"))
+	one.Finish(nil, true)
+	if v := OnePage(one, 40, 2, 5, false); v != Print {
+		t.Errorf("OnePage for one line on 2 rows leaving 5 = %v, want Print", v)
 	}
 }
 

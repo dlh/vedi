@@ -13,6 +13,12 @@ and its links. Any other escape sequence or control character is left
 out, and a carriage return inside a line is printed as `^M`, so the
 text cannot move the cursor or write to the clipboard.
 
+`-F` leaves one row below the text for the shell's prompt. Under a
+taller prompt the first lines may scroll off; say how many rows it
+takes:
+
+    export PAGER="vedi -F --one-page-rows-below 2"
+
 ## VEDI
 
 vedi reads flags from the `VEDI` environment variable before those on
