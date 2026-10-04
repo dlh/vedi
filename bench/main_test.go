@@ -11,8 +11,8 @@ import (
 )
 
 // TestRun: every row is measured on vedi built from this tree, on the
-// other pagers that are installed, and on neovim when BALEIA names
-// the plugin's checkout.
+// other pagers that are installed, and on vim when PLUGINS names the
+// directory of its plugin's checkout.
 func TestRun(t *testing.T) {
 	plugins = os.Getenv("PLUGINS")
 	dir := t.TempDir()
@@ -94,8 +94,8 @@ func TestToEndReady(t *testing.T) {
 	s.kill()
 }
 
-// TestCommandPlugins: a relative -plugins is made absolute, since the
-// editors start in the input's directory.
+// TestCommandPlugins: a relative -plugins is made absolute, since vim
+// starts in the input's directory.
 func TestCommandPlugins(t *testing.T) {
 	plugins = "rel"
 	defer func() { plugins = "" }()

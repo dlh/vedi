@@ -16,7 +16,7 @@ func main() {
 	lines := flag.Int("lines", 1_000_000, "lines of input")
 	runs := flag.Int("runs", 5, "runs per pager; the median is reported")
 	timeout := flag.Duration("timeout", time.Minute, "give up on a screen after this long")
-	flag.StringVar(&plugins, "plugins", "", "a directory of plugin checkouts; the editors run when given")
+	flag.StringVar(&plugins, "plugins", "", "a directory of plugin checkouts; vim runs when given")
 	flag.Parse()
 
 	dir, err := os.MkdirTemp("", "vedi-bench")

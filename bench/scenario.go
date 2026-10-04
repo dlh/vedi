@@ -24,18 +24,14 @@ type pager struct {
 	quit     string   // the keys that exit
 }
 
-// plugins is a directory of plugin checkouts, which the editors need
-// to show the colors; empty leaves them out.
+// plugins is a directory of plugin checkouts, which vim needs to show
+// the colors; empty leaves it out.
 var plugins string
 
 // moor searches as each character is typed, so its search-miss time
 // covers four searches, one per character. It prints nothing on a
 // miss; the status line's hint changes after any search. ov draws a
-// tilde row past the last line. neovim runs without the user's
-// configuration, with the ruler in place of the status line, and
-// baleia colors the buffer before the first draw and strips the
-// escapes from it, so a drawn line has the plain text; the buffer is
-// then modified, and quitting takes a bang.
+// tilde row past the last line.
 var pagers = []pager{
 	{"vedi", []string{"{vedi}", "{file}"}, "", "", "not found:", "{n}/{n}", "G", "g", "q"},
 	{"less", []string{"less", "-R", "{file}"}, "", "", "Pattern not found", "(END)", "G", "g", "q"},
@@ -44,10 +40,6 @@ var pagers = []pager{
 	{"vim", []string{"vim", "-N", "-u", "NONE", "-i", "NONE", "-n", "-R",
 		"--cmd", "set rtp^={plugins}/vim-plugin-AnsiEsc ruler",
 		"-c", "runtime! plugin/cecutil.vim plugin/AnsiEscPlugin.vim", "-c", "AnsiEsc", "{file}"},
-		"-", filler[:10], "Pattern not found", "{n},1", "G", "gg", ":q!\r"},
-	{"neovim", []string{"nvim", "-u", "NONE", "-i", "NONE", "-n",
-		"--cmd", "set rtp^={plugins}/baleia.nvim ruler laststatus=0",
-		"-c", "lua require('baleia').setup({async = false}).once(vim.api.nvim_get_current_buf())", "{file}"},
 		"-", filler[:10], "Pattern not found", "{n},1", "G", "gg", ":q!\r"},
 }
 
@@ -65,8 +57,8 @@ func (p pager) needsPlugins() bool {
 func (p pager) ready(n int) string { return strings.ReplaceAll(p.atEnd, "{n}", strconv.Itoa(n)) }
 
 // command is the argv for file, or for stdin when file is "". The
-// plugins directory is made absolute, since the editors start in the
-// input's directory.
+// plugins directory is made absolute, since vim starts in the input's
+// directory.
 func (p pager) command(vedi, file string) []string {
 	dir := plugins
 	if dir != "" {
@@ -121,9 +113,8 @@ func run(p pager, vedi, file string, n int, timeout time.Duration) sample {
 			vedi = abs
 		}
 	}
-	// A pager that took the machine's memory, as neovim does, leaves
-	// the file out of the page cache, so the next one would read it
-	// from disk.
+	// A pager that took the machine's memory leaves the file out of
+	// the page cache, so the next one would read it from disk.
 	if err := warm(file); err != nil {
 		out["first-screen ms"] = cell{err: err}
 		return out

@@ -163,10 +163,9 @@ func (s *session) kill() {
 	s.tty.Close()
 }
 
-// killGroup kills the pager and what it started: neovim runs the
-// editor in a child process, in a session of its own, that would go
-// on without its terminal. The pager leads its own process group,
-// since start set Setsid.
+// killGroup kills the pager and what it started: a child in a session
+// of its own would go on without its terminal. The pager leads its
+// own process group, since start set Setsid.
 func (s *session) killGroup() {
 	pid := s.cmd.Process.Pid
 	if out, err := exec.Command("pgrep", "-P", strconv.Itoa(pid)).Output(); err == nil {

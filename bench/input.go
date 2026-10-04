@@ -1,4 +1,4 @@
-// Command bench compares vedi with less, moor, ov and neovim on a
+// Command bench compares vedi with less, moor, ov and vim on a
 // large file: time to the first screen, to the end and back, for a
 // failed search, to the first screen from stdin, and peak memory.
 package main

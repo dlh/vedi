@@ -64,8 +64,8 @@ where a pager shows yellow. A plugin can color them. AnsiEsc conceals
 them in vim with syntax rules, which vim applies only to the lines it
 draws, after one pass over the file. neovim no longer runs AnsiEsc,
 and its own plugins, baleia.nvim among them, mark up the whole buffer
-before the first screen; the table below has the time and memory for
-that. And vim reads its input to the end before it draws, so a pipe
+before the first screen; a past run, below, has the time and memory
+for that. And vim reads its input to the end before it draws, so a pipe
 shows nothing until the command feeding it exits, and a command that
 never exits shows nothing at all. The copy also needs a vim built with
 clipboard support, or a neovim with a provider such as `pbcopy`, and
@@ -79,22 +79,23 @@ ring, and its ansi-color library can color a buffer after the fact.
 lines, 54 columns of colored text each, and reports the median of
 five runs.
 
-| | vedi | less | moor | ov | vim | neovim |
-|---|---:|---:|---:|---:|---:|---:|
-| first screen from a file, ms | 4.9 | 5.2 | 39.2 | 63.6 | 545.5 | 7334.7 |
-| then to the last line, ms | 95.9 | 235.3 | 110.8 | 2.3 | 9.8 | 0.3 |
-| then back to the first, ms | 0.1 | 0.3 | 0.4 | 0.3 | 5.0 | 0.3 |
-| a search that finds nothing, ms | 11.4 | 1003.7 | 113.4 | 1747.3 | 24.3 | 36.5 |
-| first screen from stdin, ms | 4.7 | 5.0 | 29.4 | 63.0 | 678.1 | 7392.3 |
-| that search, from stdin, ms | 3.8 | 989.8 | 118.6 | 1734.7 | 21.8 | 36.5 |
-| peak memory, file, MB | 10.5 | 2.4 | 345.6 | 75.7 | 99.1 | 2229.0 |
-| peak memory, stdin, MB | 78.7 | 94.2 | 334.4 | 229.6 | 174.7 | 2305.6 |
+| | vedi | less | moor | ov | vim |
+|---|---:|---:|---:|---:|---:|
+| first screen from a file, ms | 4.9 | 5.2 | 39.2 | 63.6 | 545.5 |
+| then to the last line, ms | 95.9 | 235.3 | 110.8 | 2.3 | 9.8 |
+| then back to the first, ms | 0.1 | 0.3 | 0.4 | 0.3 | 5.0 |
+| a search that finds nothing, ms | 11.4 | 1003.7 | 113.4 | 1747.3 | 24.3 |
+| first screen from stdin, ms | 4.7 | 5.0 | 29.4 | 63.0 | 678.1 |
+| that search, from stdin, ms | 3.8 | 989.8 | 118.6 | 1734.7 | 21.8 |
+| peak memory, file, MB | 10.5 | 2.4 | 345.6 | 75.7 | 99.1 |
+| peak memory, stdin, MB | 78.7 | 94.2 | 334.4 | 229.6 | 174.7 |
 
 The search covers the whole input, which is read by then. moor
 searches as each character is typed, so its time is four searches.
-The editors run with their plugins and no other configuration, and
-baleia strips the escapes from neovim's buffer, so that search is
-over plain text.
+vim runs with its plugin and no other configuration.
+
+neovim is no longer in the run. In this one, 0.12.5 with baleia.nvim
+of 2026-06-01 took 7.3 s to the first screen and 2.2 GB of memory.
 
 | Run | |
 |---|---|
@@ -105,4 +106,3 @@ over plain text.
 | moor | 2.19.2 |
 | ov | 0.54.0 |
 | vim | 9.2, AnsiEsc 13i, powerman's fork of 2019-04-07 |
-| neovim | 0.12.5, baleia.nvim of 2026-06-01 |
