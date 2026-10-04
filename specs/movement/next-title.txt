@@ -1,0 +1,42 @@
+] also stops at a line that sets the window title, even to the title
+already in effect, and puts it at the top of the screen. Past the
+last it does nothing. Each "@@" line here starts with a raw OSC 2
+sequence, ESC ] 2 ; hunk BEL.
+
+-- size --
+28x4
+-- input --
+intro
+]2;hunk@@ one
+a
+b
+]2;hunk@@ two
+c
+d
+-- keys --
+]
+-- screen --
+@@ one
+a
+b
+hunk  line 2/7  wrap  h help
+-- cursor --
+0 0
+-- keys --
+]
+-- screen --
+@@ two
+c
+d
+hunk  line 5/7  wrap  h help
+-- cursor --
+0 0
+-- keys --
+]
+-- screen --
+@@ two
+c
+d
+hunk  line 5/7  wrap  h help
+-- cursor --
+0 0

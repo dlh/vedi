@@ -122,6 +122,22 @@ func TestParts(t *testing.T) {
 	}
 }
 
+// TestTitles: Titles is the lines that set a window title, the same
+// title again included, and a line split across writes counted once.
+func TestTitles(t *testing.T) {
+	b := New()
+	b.Write([]byte("intro\n\x1b]2;hunk\x07@@ one\na\n\x1b]2;hu"))
+	b.Write([]byte("nk\x07@@ two\n\x1b[31mred\n"))
+	b.Write([]byte("\x1b]2;\x07cleared"))
+	if got := b.Titles(); !slices.Equal(got, []int{1, 3}) {
+		t.Fatalf("Titles before EOF = %v, want [1 3]", got)
+	}
+	b.Finish(nil, false)
+	if got := b.Titles(); !slices.Equal(got, []int{1, 3, 5}) {
+		t.Fatalf("Titles = %v, want [1 3 5]", got)
+	}
+}
+
 // TestPartsBeforeAnyLine: PartAt before the first part, or on an
 // empty buffer, is part 0.
 func TestPartsBeforeAnyLine(t *testing.T) {

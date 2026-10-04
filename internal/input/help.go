@@ -53,7 +53,7 @@ var helpSections = []helpSection{
 		{cmds: []Command{act(HalfPageUp)}, doc: "Up half a page"},
 		{cmds: []Command{act(WordLeft), act(WordRight)}, doc: "Move by word"},
 		{cmds: []Command{act(First), act(Last)}, doc: "First line, last line"},
-		{cmds: []Command{act(PrevFile), act(NextFile)}, doc: "Previous input, next input"},
+		{cmds: []Command{act(PrevFile), act(NextFile)}, doc: "Previous, next input or title"},
 		{cmds: []Command{act(CommandPrompt)}, doc: "Command prompt; N goes to line N"},
 	}},
 	{"Selecting", []helpRow{

@@ -63,6 +63,7 @@ type Buffer struct {
 	parsers []ansi.Parser
 	written int64
 	parts   []int // the line each input begins at; empty until StartPart
+	titles  []int // the lines that set a window title
 
 	// The writer's alone. A Write indexes its bytes into staged
 	// outside mu, so readers wait only for publish.
@@ -83,11 +84,13 @@ type Buffer struct {
 	nl  bool // the input ended with "\n"
 }
 
-// index is what a run of lines adds to starts, state and parsers.
+// index is what a run of lines adds to starts, state, parsers and
+// titles.
 type index struct {
 	starts  []int64
 	state   []uint32
 	parsers []ansi.Parser
+	titles  []int
 }
 
 // block is block k scanned up to end: n lines from k*BlockLines and
@@ -156,7 +159,9 @@ func (b *Buffer) add(raw []byte, end int64) {
 		b.staged.starts = append(b.staged.starts, b.end)
 		b.staged.state = append(b.staged.state, b.intern(b.parser))
 	}
-	b.parser.Skip(raw)
+	if b.parser.Skip(raw) {
+		b.staged.titles = append(b.staged.titles, b.lines)
+	}
 	b.lines++
 	b.end = end
 }
@@ -177,10 +182,12 @@ func (b *Buffer) publish(written int64) {
 	b.starts = append(b.starts, b.staged.starts...)
 	b.state = append(b.state, b.staged.state...)
 	b.parsers = append(b.parsers, b.staged.parsers...)
+	b.titles = append(b.titles, b.staged.titles...)
 	b.n, b.last, b.written = b.lines, b.end, written
 	b.staged.starts = b.staged.starts[:0]
 	b.staged.state = b.staged.state[:0]
 	b.staged.parsers = b.staged.parsers[:0]
+	b.staged.titles = b.staged.titles[:0]
 }
 
 // Finish marks the end of input: a partial last line becomes a line;
@@ -436,6 +443,14 @@ func (b *Buffer) Parts() []int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	return slices.Clone(b.parts)
+}
+
+// Titles is a copy of the lines that set a window title, ascending:
+// to the title already in effect, or to none, included.
+func (b *Buffer) Titles() []int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return slices.Clone(b.titles)
 }
 
 // StartsPart reports whether an input begins at line i.

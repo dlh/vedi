@@ -28,6 +28,21 @@ The value is split into words as a shell would: quote with `'` or
 
 `VEDI` takes flags only: a file name, `-h` or `-v` there is an error.
 
+## The input's name
+
+The status line starts with the input's name: the file, or `<stdin>`.
+With several files, the name is the file the cursor is in and its
+number among them, `b.txt 2/3`; lines are numbered within it, and
+`:N` goes to its line N. A row above each file names it;
+`file_separators no` in the config, or `--no-file-separators`,
+leaves the rows out.
+
+A program can set the terminal's window title as it writes, with the
+escape sequence OSC 0 or 2: `ESC ] 2 ; title BEL`. vedi does not pass
+it to the terminal: the title in effect at the cursor's line replaces
+`<stdin>` in the status line, and `[` and `]` stop at each line that
+sets one, to the same title or to none included.
+
 ## git
 
 git reads `GIT_PAGER`, then `core.pager`, then `PAGER`, and colors
@@ -73,13 +88,12 @@ pipes its colored diffs through a second pager. In `~/.gitconfig`:
 
 `DELTA_PAGER=vedi -F` in the environment does the same.
 
-## The input's name
+`[` and `]` step through delta's hunks and files once it sets a
+[window title](#the-inputs-name) on each:
 
-The status line starts with the input's name: the file, or `<stdin>`.
-A program that sets the window title with OSC 2 as it writes names
-its output: the title in effect at the cursor's line replaces
-`<stdin>`. With several files, the name is the file the cursor is in
-and its number among them, `b.txt 2/3`; lines are numbered within it,
-and `:N` goes to its line N. A row above each file names it;
-`file_separators no` in the config, or `--no-file-separators`,
-leaves the rows out.
+    git config --global delta.hunk-label $'\e]2;hunk\a•'
+    git config --global delta.file-transformation $'s,(.*),\e]2;$1\a$1,'
+
+The first titles each hunk `hunk`, the second each file with its
+path. git's config has no escape for ESC or BEL; bash's `$'…'` writes
+the bytes themselves.

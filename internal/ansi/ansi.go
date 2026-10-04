@@ -57,18 +57,21 @@ func (p *Parser) Text(dst []rune, line []byte) []rune {
 }
 
 // Skip applies line's escapes and reads nothing else; p ends where
-// Parse would leave it.
-func (p *Parser) Skip(line []byte) {
+// Parse would leave it. It reports whether the line set the title,
+// to the one it had included.
+func (p *Parser) Skip(line []byte) (titled bool) {
 	for {
 		i := bytes.IndexByte(line, 0x1b)
 		if i < 0 {
-			return
+			return titled
 		}
 		n, sgr, osc, ok := escape(line[i:])
 		if !ok {
-			return
+			return titled
 		}
-		p.apply(sgr, osc)
+		if p.apply(sgr, osc) {
+			titled = true
+		}
 		line = line[i+n:]
 	}
 }
@@ -92,17 +95,19 @@ func Strip(dst, line []byte) []byte {
 }
 
 // apply takes an escape's effect: SGR on the style, OSC 8 on the link,
-// OSC 0 or 2 on the title.
-func (p *Parser) apply(sgr, osc []byte) {
+// OSC 0 or 2 on the title, which it reports.
+func (p *Parser) apply(sgr, osc []byte) (titled bool) {
 	if sgr != nil {
 		p.sgr = applySGR(p.sgr, sgr)
 	}
 	if url, id, ok := link(osc); ok {
 		p.url, p.id = url, id
 	}
-	if title, ok := windowTitle(osc); ok {
+	title, titled := windowTitle(osc)
+	if titled {
 		p.title = title
 	}
+	return titled
 }
 
 // windowTitle decodes an OSC 0 or 2 body "2;title" into the title;

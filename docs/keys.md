@@ -16,7 +16,7 @@ do not fit, and the search keys search them. These are the defaults.
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | g, G, <, >, Cmd+Up, Cmd+Down | First line, last line |
-| [, ] | Previous input, next input |
+| [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
 | Shift+PgUp, Shift+PgDn | Extend by a page |

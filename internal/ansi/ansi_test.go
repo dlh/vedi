@@ -211,6 +211,29 @@ func TestTitle(t *testing.T) {
 	}
 }
 
+// TestSkipReportsTitle: Skip says whether the line set a title, the
+// same one again and an empty one included.
+func TestSkipReportsTitle(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		{"\x1b]2;hunk\x07@@", true},
+		{"\x1b[34m\x1b]0;hunk\x1b\\@@\x1b[0m", true},
+		{"\x1b]2;\x07", true},
+		{"plain \x1b[1mtext", false},
+		{"\x1b]8;;http://x\x07link", false},
+		{"\x1b]1;icon\x07", false},
+		{"\x1b]2;cut", false},
+	}
+	p := NewParser()
+	for _, tc := range tests {
+		if got := p.Skip([]byte(tc.in)); got != tc.want {
+			t.Errorf("Skip(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
+
 // TestTextMatchesParse: Text gives Parse's runes, into a reused slice,
 // and moves the state the same way.
 func TestTextMatchesParse(t *testing.T) {

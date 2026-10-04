@@ -1,0 +1,67 @@
+[ and ] stop at lines that set the window title and at the first
+line of each input alike, in order. A file keeps its name in the
+status line. The lines a2 and b3 here start with a raw OSC 2
+sequence, ESC ] 2 ; t BEL.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+]2;ta2
+-- next-file --
+-- input --
+b1
+b2
+]2;tb3
+-- keys --
+]
+-- screen --
+a2
+── b.txt ───────────────────
+b1
+b2
+a.txt 1/2  line 2/2  wrap
+-- cursor --
+0 0
+-- keys --
+]
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b3
+b.txt 2/2  line 1/3  wrap
+-- cursor --
+1 0
+-- keys --
+]
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+b3
+b.txt 2/2  line 3/3  wrap
+-- cursor --
+3 0
+-- keys --
+[ [
+-- screen --
+a2
+── b.txt ───────────────────
+b1
+b2
+a.txt 1/2  line 2/2  wrap
+-- cursor --
+0 0
+-- keys --
+[
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+── b.txt ───────────────────
+a.txt 1/2  line 1/2  wrap
+-- cursor --
+1 0

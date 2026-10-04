@@ -4,6 +4,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -899,10 +900,10 @@ func (a *App) placeTop(p buffer.Pos) {
 	a.top = p
 }
 
-// nextInput moves to the first line of the input after the cursor's;
-// at the last, nowhere. An input with no lines is passed over.
+// nextInput moves to the next stop after the cursor's line; past the
+// last, nowhere. An input with no lines is passed over.
 func (a *App) nextInput() {
-	for _, start := range a.buf.Parts() {
+	for _, start := range a.stops() {
 		if start > a.cur.Line && start < a.buf.Len() {
 			a.jumpToInput(start)
 			return
@@ -910,28 +911,30 @@ func (a *App) nextInput() {
 	}
 }
 
-// prevInput moves to the first line of the cursor's input, or from
-// there to the first line of the input before it; on the first line
-// of the first, nowhere.
+// prevInput moves to the stop the cursor's line is under, or from
+// there to the one before it; on the first line, nowhere.
 func (a *App) prevInput() {
-	_, start, _ := a.input()
-	if a.cur.Line > start {
-		a.jumpToInput(start)
-		return
-	}
-	target := -1
-	for _, s := range a.buf.Parts() {
-		if s < start {
+	target := 0
+	for _, s := range a.stops() {
+		if s < a.cur.Line {
 			target = s
 		}
 	}
-	if target >= 0 {
+	if target < a.cur.Line {
 		a.jumpToInput(target)
 	}
 }
 
-// jumpToInput puts the cursor on line, the first of an input, with
-// the row naming the input, or the line itself, at the top.
+// stops is where [ and ] stop, ascending: the line each input begins
+// at and each line that sets a window title.
+func (a *App) stops() []int {
+	stops := append(a.buf.Parts(), a.buf.Titles()...)
+	slices.Sort(stops)
+	return stops
+}
+
+// jumpToInput puts the cursor on line, a stop, with the row naming
+// its input, or the line itself, at the top.
 func (a *App) jumpToInput(line int) {
 	a.cur = buffer.Pos{Line: line}
 	a.placeTop(a.withSep(a.cur))
