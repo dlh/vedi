@@ -1,0 +1,65 @@
+:status_line no hides the status line for the rest of the run, and
+:cycle status_line brings it back. While it is hidden a prompt or a
+message takes the bottom row, and the next key gives it back to the
+text.
+
+-- size --
+32x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+-- keys --
+: "status_line no" Enter
+-- screen --
+line 1
+line 2
+line 3
+line 4
+-- cursor --
+0 0
+-- keys --
+:
+-- screen --
+line 1
+line 2
+line 3
+:
+-- keys --
+"frob" Enter
+-- screen --
+line 1
+line 2
+line 3
+unknown command "frob"    h help
+-- keys --
+Down
+-- screen --
+line 1
+line 2
+line 3
+line 4
+-- cursor --
+1 0
+-- keys --
+y
+-- screen --
+line 1
+line 2
+line 3
+nothing selected          h help
+-- keys --
+: "cycle status_line" Enter
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 2/4  wrap   h help
+-- keys --
+: "cycle status_line" Enter
+-- screen --
+line 1
+line 2
+line 3
+line 4

@@ -44,6 +44,7 @@ and over the defaults; the action `none` unbinds.
 | `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
+| `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
@@ -60,6 +61,10 @@ edge. The status line shows `word wrap`.
 edge ends in `>`, and one scrolled off the left edge starts with
 `<`, both in reverse video. In wrap mode a row that continues on the
 next ends in `\`, and text wraps a column early to leave room for it.
+
+**status_line no.** The text has the bottom row. The line comes back
+for a prompt, a message, help or a read error, and goes with the next
+key.
 
 **clipboard_cmd** and **open_cmd** take the rest of the line as the
 command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd
@@ -80,9 +85,9 @@ but `one_page_rows_below`, and `map`, for the rest of the run:
 
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
 setting to its next value, the first after the last; it takes `wrap`,
-`wrap_style`, `edge_markers`, `file_separators` and `auto_reload`.
-`clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad
-line is an error on the status line.
+`wrap_style`, `edge_markers`, `file_separators`, `auto_reload` and
+`status_line`. `clear_all_shortcuts` is refused: it would unbind `:`
+and `q`. A bad line is an error on the status line.
 
 Tab completes the word being typed. One match fills it in; several
 fill in what they share and list the rest under the prompt, and Tab

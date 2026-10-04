@@ -83,12 +83,15 @@ func wheel(ev *tcell.EventMouse) (rows, cols int) {
 // to the cell instead, from the cursor when there is none, and the
 // press counts toward no double click.
 func (a *App) press(x, y int, shift bool) {
+	// Measured before act: clearing a message gives a hidden status
+	// line's row back to the text, and the click was on the message.
+	rows := a.textRows()
 	a.act()
 	if a.helping {
 		a.hideHelp()
 		return
 	}
-	if y >= a.textRows() {
+	if y >= rows {
 		return
 	}
 	now := a.now()
@@ -149,14 +152,16 @@ func (a *App) drag(x, y int) {
 }
 
 // edge is the direction the held drag is scrolling: -1 on the top row,
-// 1 on the status row, 0 inside the text or not dragging.
+// 1 on the bottom row, the status line's or not, 0 inside the text or
+// not dragging.
 func (a *App) edge() int {
+	_, h := a.scr.Size()
 	switch {
 	case !a.held || !a.dragging:
 		return 0
 	case a.dragY <= 0:
 		return -1
-	case a.dragY >= a.textRows():
+	case a.dragY >= h-1:
 		return 1
 	}
 	return 0

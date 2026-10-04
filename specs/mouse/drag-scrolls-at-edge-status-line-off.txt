@@ -1,0 +1,30 @@
+With the status line hidden, dragging onto the bottom row scrolls a
+row per tick, as the status row does.
+
+-- size --
+20x3
+-- config --
+status_line no
+-- input --
+one
+two
+three
+four
+five
+-- mouse --
+press 1 0
+move 2 0
+-- screen --
+one
+[two ]
+three
+-- cursor --
+2 0
+-- mouse --
+tick
+-- screen --
+[two ]
+[three ]
+four
+-- cursor --
+2 0

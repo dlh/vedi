@@ -322,13 +322,13 @@ func wrapWords(words []string, sep string, width int) []string {
 }
 
 // drawStatus draws statusText in reverse video on the bottom row, which
-// needs two rows to exist, with "h help", naming whatever key shows
+// needs two rows to exist, unless the line is hidden, with "h help", naming whatever key shows
 // help, at the right edge unless help is unbound or up, a prompt is
 // open, or it would come within two spaces of the text. The : prompt's
 // completions follow it, the one filled in out of reverse video.
 func (a *App) drawStatus(c *canvas) {
 	w, h := c.w, c.h
-	if h < 2 {
+	if h < 2 || !a.StatusShown() {
 		return
 	}
 	st := tcell.StyleDefault.Reverse(true)

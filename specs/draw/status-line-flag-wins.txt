@@ -1,0 +1,14 @@
+--status-line draws the status line over a config that hides it.
+
+-- size --
+32x3
+-- config --
+status_line no
+-- args --
+--status-line
+-- input --
+line 1
+-- screen --
+line 1
+
+<stdin>  line 1/1  wrap   h help

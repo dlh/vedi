@@ -1,0 +1,24 @@
+status_line no in the config hides the status line: the text has the
+bottom row.
+
+-- size --
+20x3
+-- config --
+status_line no
+-- input --
+line 1
+line 2
+line 3
+line 4
+-- screen --
+line 1
+line 2
+line 3
+-- keys --
+Down Down Down
+-- screen --
+line 2
+line 3
+line 4
+-- cursor --
+2 0

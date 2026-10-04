@@ -1,0 +1,25 @@
+With the status line hidden, a click on a message is a click on the
+status line: the message goes and the cursor stays.
+
+-- size --
+32x3
+-- config --
+status_line no
+-- input --
+line 1
+line 2
+line 3
+-- keys --
+Right y
+-- screen --
+line 1
+line 2
+nothing selected          h help
+-- mouse --
+click 2 0
+-- screen --
+line 1
+line 2
+line 3
+-- cursor --
+0 1

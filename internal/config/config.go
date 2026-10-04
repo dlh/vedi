@@ -27,6 +27,7 @@ type Config struct {
 	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
 	EdgeMarkers      bool             // edge_markers yes: mark text off the sides, and wrapped rows
 	NoFileSeparators bool             // file_separators no: no row naming each input
+	NoStatusLine     bool             // status_line no: the status line shows only when it has something to say
 	OnePageRowsBelow int              // one_page_rows_below: rows -F leaves below the text; 0 for the default
 }
 
@@ -124,6 +125,11 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 			return verb, errors.New("file_separators takes yes or no")
 		}
 		c.NoFileSeparators = f[1] == "no"
+	case "status_line":
+		if len(f) != 2 || (f[1] != "yes" && f[1] != "no") {
+			return verb, errors.New("status_line takes yes or no")
+		}
+		c.NoStatusLine = f[1] == "no"
 	default:
 		return verb, fmt.Errorf("unknown verb %q", verb)
 	}

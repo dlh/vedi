@@ -35,6 +35,7 @@ const Usage = `usage: vedi [flags] [file...]
   --tab-width N                draw a tab as N cells (default: 8)
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
   --[no-]file-separators       with several inputs, draw a row naming each (default: on)
+  --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
   --completion SHELL           print the completion script for bash, zsh or fish
   -h, --help                   show this help
@@ -64,6 +65,7 @@ type Options struct {
 	AutoReload       *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
 	EdgeMarkers      *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
 	FileSeparators   *bool       // --file-separators, --no-file-separators; nil leaves it to the config
+	StatusLine       *bool       // --status-line, --no-status-line; nil leaves it to the config
 	Completion       string      // --completion: the shell to print the script for
 	Help             bool
 	Version          bool
@@ -71,8 +73,8 @@ type Options struct {
 
 // App converts the options to the app's: a flag, else the config,
 // decides the wrap mode, the wrap style, the clipboard
-// command, the tab width, the edge markers, the file separators and
-// auto-reload. The
+// command, the tab width, the edge markers, the file separators, the
+// status line and auto-reload. The
 // inputs are named after files, each as given; "-" and no files are
 // "<stdin>".
 func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Options {
@@ -96,6 +98,10 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 	if o.EdgeMarkers != nil {
 		marks = *o.EdgeMarkers
 	}
+	hide := cfg.NoStatusLine
+	if o.StatusLine != nil {
+		hide = !*o.StatusLine
+	}
 	return app.Options{
 		Names:          inputNames(files),
 		Mode:           mode,
@@ -109,6 +115,7 @@ func (o Options) App(scr tcell.Screen, files []string, cfg config.Config) app.Op
 		EdgeMarkers:    marks,
 		FileSeparators: o.Separators(cfg),
 		AutoReload:     o.Reloads(cfg),
+		HideStatus:     hide,
 	}
 }
 
@@ -293,6 +300,10 @@ func (o *Options) parse(args []string, env bool) ([]string, error) {
 			o.FileSeparators = new(true)
 		case a == "--no-file-separators":
 			o.FileSeparators = new(false)
+		case a == "--status-line":
+			o.StatusLine = new(true)
+		case a == "--no-status-line":
+			o.StatusLine = new(false)
 		case a == "--no-clipboard-cmd":
 			o.ClipboardCmd = new("")
 		case a == "--no-open-cmd":

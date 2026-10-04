@@ -39,6 +39,7 @@ type Options struct {
 	EdgeMarkers    bool             // mark text off the sides with < and >, a wrapped row with \
 	FileSeparators bool             // a row names each input, when there are several
 	AutoReload     bool             // a Changed event reads the file again
+	HideStatus     bool             // the status line shows only for a prompt, a message, help or a read error
 	// Open reads the input again for a reload: it returns a buffer
 	// being filled, whose reader calls notify as buffer.Fill does,
 	// and a close for the files under it. Nil when the input cannot
@@ -71,6 +72,7 @@ type App struct {
 	marks  bool             // mark text off the sides with < and >, a wrapped row with \
 	seps   bool             // a row names each input, when there are several
 	auto   bool             // a Changed event reads the file again
+	hide   bool             // the status line shows only when it has something to say
 
 	cur     buffer.Pos
 	anchor  *buffer.Pos // selection anchor; nil when there is no selection
@@ -150,6 +152,7 @@ func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
 		seps:      opts.FileSeparators,
 		top:       buffer.Pos{Col: -1}, // the first row: line 0's separator, if it has one
 		auto:      opts.AutoReload,
+		hide:      opts.HideStatus,
 		follow:    opts.Follow,
 		startLine: opts.StartLine - 1,
 		screen:    opts.Screen,
@@ -261,9 +264,16 @@ func (a *App) Run() {
 	}
 }
 
-// Handle processes one event and reports whether to quit. Data the
-// reader notified of is taken up first, whatever the event.
+// Handle processes one event and reports whether to quit.
 func (a *App) Handle(ev tcell.Event) bool {
+	quit := a.handle(ev)
+	a.uncover()
+	return quit
+}
+
+// handle is Handle before the status line is seen to. Data the reader
+// notified of is taken up first, whatever the event.
+func (a *App) handle(ev tcell.Event) bool {
 	_, interrupt := ev.(*tcell.EventInterrupt)
 	if a.pending.Swap(false) || interrupt {
 		a.swapIfDone()
@@ -586,10 +596,44 @@ func (a *App) lineLayout(i int) layout.Line {
 }
 
 // textRows is the rows left for text: all but the status line, which
-// needs two rows to exist.
+// needs two rows to exist, or all of them while it is hidden.
 func (a *App) textRows() int {
 	_, h := a.scr.Size()
+	if !a.StatusShown() {
+		return h
+	}
 	return textRows(h)
+}
+
+// StatusShown reports whether the status line has a row: always,
+// unless hidden, and then for a prompt, a message, help or a read
+// error.
+func (a *App) StatusShown() bool {
+	if !a.hide || a.searching || a.commanding || a.status != "" || a.helping {
+		return true
+	}
+	_, err := a.buf.Finished()
+	return err != nil
+}
+
+// uncover scrolls a row when a hidden status line has come back over
+// the cursor's row: whatever brought it back placed the cursor while
+// the text still had that row.
+func (a *App) uncover() {
+	if !a.hide || a.helping || a.screen != nil || !a.StatusShown() || a.buf.Len() == 0 {
+		return
+	}
+	p := a.snap(a.top)
+	for range a.textRows() {
+		q := a.nextRow(p)
+		if q == p {
+			return
+		}
+		p = q
+	}
+	if p == a.snap(a.cur) {
+		a.top = a.nextRow(a.snap(a.top))
+	}
 }
 
 // textRows is the rows left for text on a screen h rows tall: all but

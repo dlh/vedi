@@ -1,0 +1,42 @@
+When a hidden status line comes back for a prompt or a message, a
+cursor on the bottom row scrolls up a row to stay in view.
+
+-- size --
+32x3
+-- config --
+status_line no
+-- input --
+line 1
+line 2
+line 3
+line 4
+-- keys --
+Down Down
+-- screen --
+line 1
+line 2
+line 3
+-- cursor --
+2 0
+-- keys --
+/
+-- screen --
+line 2
+line 3
+/
+-- keys --
+Esc
+-- screen --
+line 2
+line 3
+line 4
+-- cursor --
+1 0
+-- keys --
+Down y
+-- screen --
+line 3
+line 4
+nothing selected          h help
+-- cursor --
+1 0

@@ -51,6 +51,7 @@ _vedi() {
             --tab-width
             --edge-markers --no-edge-markers
             --file-separators --no-file-separators
+            --status-line --no-status-line
             --config --completion
             -h --help -v --version' -- "$cur"))
         return

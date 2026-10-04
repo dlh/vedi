@@ -21,6 +21,8 @@ _arguments -S \
     '(--edge-markers --no-edge-markers)--no-edge-markers[do not mark text off the sides or wrapped rows]' \
     '(--file-separators --no-file-separators)--file-separators[with several inputs, draw a row naming each]' \
     '(--file-separators --no-file-separators)--no-file-separators[draw no row naming each input]' \
+    '(--status-line --no-status-line)--status-line[draw the status line]' \
+    '(--status-line --no-status-line)--no-status-line[draw the status line only for a prompt or a message]' \
     '--config=[read the config from this file]:file:_files' \
     '(- *)--completion=[print the completion script for a shell]:shell:(bash zsh fish)' \
     '(- *)'{-h,--help}'[show the help]' \

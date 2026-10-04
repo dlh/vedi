@@ -18,6 +18,7 @@ var settings = []Setting{
 	{"edge_markers", []string{"yes", "no"}},
 	{"file_separators", []string{"yes", "no"}},
 	{"auto_reload", []string{"yes", "no"}},
+	{"status_line", []string{"yes", "no"}},
 }
 
 // SettingNames is what cycle takes, in order.

@@ -225,6 +225,28 @@ func TestReadErrorInStatus(t *testing.T) {
 	}
 }
 
+// TestReadErrorShowsHiddenStatus: a read error brings a hidden status
+// line back, and keeps it through a key.
+func TestReadErrorShowsHiddenStatus(t *testing.T) {
+	a, scr := newTestApp(t, 30, 2, "", Options{HideStatus: true})
+	a.buf.Write([]byte("one\ntwo"))
+	a.buf.Finish(nil, false)
+	a.Handle(tcell.NewEventInterrupt(nil))
+	a.Draw()
+	if got := row(scr, 1); got != "two" {
+		t.Errorf("bottom row = %q, want the text", got)
+	}
+	a.buf.Finish(fmt.Errorf("disk on fire"), false)
+	press(a, key(tcell.KeyRune, 'j', 0))
+	a.Draw()
+	if got := row(scr, 1); got != "read error: disk on fire" {
+		t.Errorf("status = %q", got)
+	}
+	if got := row(scr, 0); got != "two" {
+		t.Errorf("cursor's row = %q, want two", got)
+	}
+}
+
 func TestNotifyCoalesces(t *testing.T) {
 	a, scr := newTestApp(t, 10, 4, "x", Options{})
 	a.Notify()

@@ -84,7 +84,7 @@ Assertions, checked at that point:
 
 | Section | Content |
 |---|---|
-| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`, those the cursor is in in `{{` `}}`; the status row plain, with its runs out of reverse video in `[` `]`; trailing spaces trimmed. |
+| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`, those the cursor is in in `{{` `}}`; the status row, when shown, plain, with its runs out of reverse video in `[` `]`; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |

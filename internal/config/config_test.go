@@ -55,8 +55,8 @@ func TestParse(t *testing.T) {
 		{"map h foo\n", `vedi.conf:1: unknown action "foo"`},
 		{"map Shift+h left\n", `vedi.conf:1: "Shift+h": modifiers on a character key`},
 		{"map h select_copy\n", `vedi.conf:1: unknown action "select_copy"`},
-		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators or auto_reload"},
-		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators or auto_reload"},
+		{"map h cycle\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload or status_line"},
+		{"map h cycle tab_width\n", "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload or status_line"},
 		{"map h cycle wrap yes\n", "vedi.conf:1: map takes a key and an action"},
 		{"map h toggle_wrap\n", `vedi.conf:1: unknown action "toggle_wrap"`},
 	}
@@ -498,6 +498,31 @@ func TestFileSeparators(t *testing.T) {
 	for _, tc := range bad {
 		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.err {
 			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.err)
+		}
+	}
+}
+
+// TestStatusLine: status_line no hides the status line; yes, the
+// default, draws it; anything else is an error.
+func TestStatusLine(t *testing.T) {
+	for _, tc := range []struct {
+		src  string
+		want bool
+	}{
+		{"", false},
+		{"status_line no\n", true},
+		{"status_line yes\n", false},
+		{"status_line no\nstatus_line yes\n", false},
+	} {
+		c, err := Parse("vedi.conf", []byte(tc.src))
+		if err != nil || c.NoStatusLine != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want NoStatusLine %v", tc.src, c, err, tc.want)
+		}
+	}
+	for _, src := range []string{"status_line\n", "status_line maybe\n", "status_line yes no\n"} {
+		want := "vedi.conf:1: status_line takes yes or no"
+		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != want {
+			t.Errorf("Parse(%q) err = %v, want %s", src, err, want)
 		}
 	}
 }

@@ -261,7 +261,7 @@ func runScenario(t *testing.T, a archive, step *stepper) (err error) {
 			if err := s.ready(); err != nil {
 				return fail("%v", err)
 			}
-			if got := dump(s.scr); got != sec.body {
+			if got := dump(s.scr, s.app.StatusShown()); got != sec.body {
 				return fail("screen differs\n%s", sideBySide(sec.body, got))
 			}
 		case "cursor":
@@ -489,14 +489,14 @@ func (s *scenario) notify() {
 // dump renders the screen as the -- screen -- section expects it:
 // reverse-video runs in brackets, search matches in braces, doubled
 // for the matches the cursor is in, the status
-// row plain with its runs out of reverse video in brackets, trailing
+// row, when it is shown, plain with its runs out of reverse video in brackets, trailing
 // spaces trimmed, one line per row.
-func dump(scr *testscreen.Screen) string {
+func dump(scr *testscreen.Screen, statusShown bool) string {
 	w, h := scr.Size()
 	var sb strings.Builder
 	for y := range h {
 		var row strings.Builder
-		status := h >= 2 && y == h-1
+		status := statusShown && h >= 2 && y == h-1
 		rev, match := false, ""
 		for x := 0; x < w; {
 			str, st, cw := scr.Get(x, y)

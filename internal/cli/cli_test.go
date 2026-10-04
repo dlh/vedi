@@ -384,3 +384,32 @@ func TestFileSeparatorsFlag(t *testing.T) {
 		}
 	}
 }
+
+// TestStatusLineFlag: --status-line and --no-status-line decide;
+// without one the config does; without either the line is drawn.
+func TestStatusLineFlag(t *testing.T) {
+	scr := testscreen.New(t, 80, 24)
+	for _, tc := range []struct {
+		flag *bool
+		cfg  config.Config
+		want bool
+	}{
+		{nil, config.Config{}, false},
+		{nil, config.Config{NoStatusLine: true}, true},
+		{new(true), config.Config{NoStatusLine: true}, false},
+		{new(false), config.Config{}, true},
+	} {
+		if got := (Options{StatusLine: tc.flag}).App(scr, nil, tc.cfg).HideStatus; got != tc.want {
+			t.Errorf("Options{StatusLine: %v}.App(%+v).HideStatus = %v, want %v", tc.flag, tc.cfg, got, tc.want)
+		}
+	}
+	for _, tc := range []struct {
+		arg  string
+		want bool
+	}{{"--status-line", true}, {"--no-status-line", false}} {
+		o, _, err := Parse([]string{tc.arg}, "")
+		if err != nil || o.StatusLine == nil || *o.StatusLine != tc.want {
+			t.Errorf("Parse(%q) = %+v, %v; want StatusLine %v", tc.arg, o, err, tc.want)
+		}
+	}
+}
