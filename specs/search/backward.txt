@@ -19,7 +19,7 @@ foo 3
 Enter
 -- screen --
 {foo} 1
-{foo} 2
+{{foo}} 2
 {foo} 3
 
 
@@ -45,7 +45,7 @@ n
 -- keys --
 n
 -- screen --
-{foo} 1
+{{foo}} 1
 {foo} 2
 {foo} 3
 

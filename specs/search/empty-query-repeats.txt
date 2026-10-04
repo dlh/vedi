@@ -23,7 +23,7 @@ no search pattern                 h help
 / Enter
 -- screen --
 {foo} 1
-{foo} 2
+{{foo}} 2
 {foo} 3
 
 
@@ -39,7 +39,7 @@ n
 -- screen --
 {foo} 1
 {foo} 2
-{foo} 3
+{{foo}} 3
 
 
 search wrapped                    h help

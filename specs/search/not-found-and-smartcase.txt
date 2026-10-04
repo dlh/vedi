@@ -30,7 +30,7 @@ not found: FOO                    h help
 / "foo" Enter n
 -- screen --
 {Foo}
-{foo}
+{{foo}}
 
 
 

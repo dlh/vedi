@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -20,6 +21,11 @@ var selStyle = tcell.StyleDefault.Reverse(true)
 // terminal's bright yellow, which themes that mute the base palette
 // tend to leave vivid.
 var MatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
+
+// CurMatchStyle draws the matches the cursor is in: a dark background,
+// which a light cursor shows against as it does not against
+// MatchStyle's.
+var CurMatchStyle = tcell.StyleDefault.Foreground(tcell.PaletteColor(15)).Background(tcell.PaletteColor(5))
 
 // edgeStyle draws the < and > that mark text off the side of the screen
 // in nowrap mode, and the \ that ends a wrapped row: reverse, as control characters are, so they read as
@@ -101,6 +107,20 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 	selStart, selEnd, hasSel := a.selection()
 	runs, ri := line.Runs, 0
 	n, mi := a.matcher.Len(), 0
+	// The cursor's glyph [ci, cj), and the runes [curLo, curHi) of the
+	// matches over it: matches may overlap, and those that do are one.
+	ci, cj, curLo, curHi := -1, -1, 0, 0
+	if a.cur.Line == p.Line {
+		ci, cj = ln.Glyph(a.cur.Col)
+		// Searched, not scanned: a long line is drawn a row at a time,
+		// each with all its matches.
+		for k := sort.SearchInts(matches, ci-n+1); k < len(matches) && matches[k] < cj; k++ {
+			if curHi == 0 {
+				curLo = matches[k]
+			}
+			curHi = matches[k] + n
+		}
+	}
 
 	// The newline is a virtual cell after the last rune, on the last
 	// row: the cursor can rest on it, and it shows as one reverse cell
@@ -115,7 +135,7 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		// The cursor or a match on any rune of the glyph shows on the
 		// glyph, which has no smaller part to show it on.
 		_, j := ln.Glyph(i)
-		if a.cur.Line == p.Line && i <= a.cur.Col && a.cur.Col < j {
+		if i == ci {
 			curX, ok = x, true
 			if i < len(line.Text) {
 				curW = max(1, xs[i+1]-xs[i])
@@ -140,6 +160,8 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		switch {
 		case selected:
 			st = selStyle
+		case i < curHi && curLo < j:
+			st = CurMatchStyle
 		case mi < len(matches) && matches[mi] < j:
 			st = MatchStyle
 		default:

@@ -168,7 +168,7 @@ func TestDrawLinks(t *testing.T) {
 func TestHighlightKeepsLink(t *testing.T) {
 	a, scr := newTestApp(t, 20, 5, "\x1b]8;id=k;http://x\x1b\\a\x1b]8;;\x1b\\a", Options{})
 	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
-	if got, want := cellStyle(scr, 0, 0), MatchStyle.Url("http://x").UrlId("k"); !testscreen.SameStyle(got, want) {
+	if got, want := cellStyle(scr, 0, 0), CurMatchStyle.Url("http://x").UrlId("k"); !testscreen.SameStyle(got, want) {
 		t.Errorf("matched link style = %v, want %v", got, want)
 	}
 	if got := cellStyle(scr, 1, 0); got != MatchStyle {
@@ -203,7 +203,7 @@ func TestLinkStyleIsStable(t *testing.T) {
 		}
 	}
 	check("plain")
-	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
+	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyRune, 'a', 0), key(tcell.KeyEnter, 0, 0))
 	check("matched")
 	press(a, key(tcell.KeyCtrlA, 0, tcell.ModCtrl))
 	check("selected")
@@ -355,9 +355,18 @@ func TestMatchStyleIsConstant(t *testing.T) {
 	a, scr := newTestApp(t, 20, 5, "\x1b[31mo\x1b[mo\x1b[7mo\x1b[m", Options{})
 	press(a, key(tcell.KeyRune, '/', 0), key(tcell.KeyRune, 'o', 0), key(tcell.KeyEnter, 0, 0))
 	want := tcell.StyleDefault.Foreground(tcell.PaletteColor(0)).Background(tcell.PaletteColor(11))
+	cur := tcell.StyleDefault.Foreground(tcell.PaletteColor(15)).Background(tcell.PaletteColor(5))
 	for x, name := range []string{"red", "default", "reverse"} {
-		if got := cellStyle(scr, x, 0); got != want {
-			t.Errorf("matched %s cell style = %v, want %v", name, got, want)
+		// Each o is a match, and the cursor's is drawn apart.
+		for cx := range 3 {
+			w := want
+			if x == cx {
+				w = cur
+			}
+			if got := cellStyle(scr, x, 0); got != w {
+				t.Errorf("cursor on %d: matched %s cell style = %v, want %v", cx, name, got, w)
+			}
+			press(a, key(tcell.KeyRune, 'n', 0))
 		}
 	}
 	// A selected match is drawn as selected.

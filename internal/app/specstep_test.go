@@ -133,6 +133,9 @@ func frame(scr *testscreen.Screen) string {
 			if st == app.MatchStyle {
 				sgr = append(sgr, "30", "103")
 			}
+			if st == app.CurMatchStyle {
+				sgr = append(sgr, "97", "45")
+			}
 			if vis && x == cx && y == cy {
 				sgr = append(sgr, "4")
 			}

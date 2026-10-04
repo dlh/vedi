@@ -10,7 +10,7 @@ bar foo
 Right v / "foo" Enter
 -- screen --
 {f[}oo ]
-[bar ]{foo}
+[bar ]{{foo}}
 
 
 

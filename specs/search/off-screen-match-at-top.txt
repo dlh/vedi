@@ -27,7 +27,7 @@ line 20
 -- keys --
 / "foo" Enter
 -- screen --
-{foo} 7
+{{foo}} 7
 line 8
 {foo} 9
 line 10
@@ -40,7 +40,7 @@ n
 -- screen --
 {foo} 7
 line 8
-{foo} 9
+{{foo}} 9
 line 10
 line 11
 <stdin>  line 9/20  wrap          h help
@@ -52,7 +52,7 @@ n
 line 16
 line 17
 line 18
-{foo} 19
+{{foo}} 19
 line 20
 <stdin>  line 19/20  wrap         h help
 -- cursor --
@@ -60,7 +60,7 @@ line 20
 -- keys --
 N
 -- screen --
-{foo} 9
+{{foo}} 9
 line 10
 line 11
 line 12
@@ -85,7 +85,7 @@ N
 line 16
 line 17
 line 18
-{foo} 19
+{{foo}} 19
 line 20
 <stdin>  line 19/20  wrap         h help
 -- cursor --

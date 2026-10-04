@@ -8,7 +8,7 @@ ábc
 -- keys --
 / "́b" Enter
 -- screen --
-{áb}c
+{{áb}}c
 
 
 <stdin>  line 1/1  wrap           h help

@@ -10,7 +10,7 @@ the whole sequence into view and puts the cursor on it.
 -- keys --
 End / "👩" Enter
 -- screen --
-{👨‍👩‍👧}abcdefgh
+{{👨‍👩‍👧}}abcdefgh
 
 
 search wra

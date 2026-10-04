@@ -9,7 +9,7 @@ bar
 / "foo" Enter / "bar" Enter / Up
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 
@@ -18,7 +18,7 @@ foo
 Up
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 
@@ -27,7 +27,7 @@ foo
 Up
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 
@@ -36,7 +36,7 @@ foo
 Down Down "ba"
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 
@@ -45,7 +45,7 @@ foo
 Up Backspace "z"
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 
@@ -54,7 +54,7 @@ foo
 Down
 -- screen --
 foo
-{bar}
+{{bar}}
 
 
 

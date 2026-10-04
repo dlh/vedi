@@ -21,7 +21,7 @@ Cmd+g Cmd+Shift+g
 -- keys --
 Cmd+Shift+g
 -- screen --
-{foo}
+{{foo}}
 bar {foo}
 {foo}
 

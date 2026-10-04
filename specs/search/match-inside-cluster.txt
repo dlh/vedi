@@ -8,7 +8,7 @@ is highlighted whole: it has no cells of its own to mark.
 -- keys --
 / "👩" Enter
 -- screen --
-{👨‍👩‍👧}x
+{{👨‍👩‍👧}}x
 
 
 <stdin>  line 1/1  wrap           h help

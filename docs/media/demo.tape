@@ -26,14 +26,16 @@ Sleep 1.5s
 # Search: matches light up, and the cursor lands on the first.
 Type "/"
 Sleep 300ms
-Type "velit"
+Type "quis autem"
 Sleep 500ms
 Enter
 Sleep 1s
-Sleep 1s
 
-# The match sits mid-line; J extends the selection down the wrapped rows
-# to the end of the line.
+# n goes to the next match, which starts the paragraph's last
+# sentence; J extends the selection down the wrapped rows to the end
+# of the line.
+Type "n"
+Sleep 1s
 Type@250ms "JJJ"
 Sleep 800ms
 

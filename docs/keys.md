@@ -42,7 +42,8 @@ unshifted, and kitty keeps Shift+click; [terminals.md](terminals.md)
 has the fixes.
 
 The selection is drawn in reverse video and search matches in black
-on bright yellow, whatever the text's own colors. A match off the
+on bright yellow, the match the cursor is in in bright white on
+magenta, whatever the text's own colors. A match off the
 screen scrolls to the top row, or as near as the last screenful
 allows. With `edge_markers yes` in the config, nowrap mode marks text
 off the screen with a `<` or `>` in reverse video at that edge of the

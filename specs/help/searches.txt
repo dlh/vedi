@@ -27,7 +27,7 @@ no search pattern
 -- keys --
 Enter
 -- screen --
-  d  ⌃D                                   Down {half} a page.
+  d  ⌃D                                   Down {{half}} a page.
   u  ⌃U                                   Up {half} a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
 help  motion scrolls, / searches, any other key returns
@@ -36,21 +36,21 @@ hidden
 -- keys --
 n n
 -- screen --
-  d  ⌃D                                   Down {half} a page.
+  d  ⌃D                                   Down {{half}} a page.
   u  ⌃U                                   Up {half} a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
 search wrapped
 -- keys --
 G ? Enter
 -- screen --
-  u  ⌃U                                   Up {half} a page.
+  u  ⌃U                                   Up {{half}} a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   g  G  <  >                              First line, last l
 help  motion scrolls, / searches, any other key returns
 -- keys --
 q
 -- screen --
-{page} 1
+{{page}} 1
 {page} 2
 
 <stdin>  line 1/2  wrap                               h help
