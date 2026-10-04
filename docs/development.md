@@ -64,7 +64,8 @@ that releases it:
 
 CI builds linux and darwin, amd64 and arm64, and publishes a GitHub
 release with archives, `checksums.txt` and a changelog from the commit
-messages. `vedi -v` prints the tag; `go install ...@v1.2.3` builds
+messages. Each archive holds the completion scripts of
+`internal/cli/completions/` in `completions/`. `vedi -v` prints the tag; `go install ...@v1.2.3` builds
 print the same from module data.
 
 Darwin binaries are signed with a Developer ID Application certificate

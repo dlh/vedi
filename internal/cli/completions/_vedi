@@ -1,0 +1,28 @@
+#compdef vedi
+
+_arguments -S \
+    '(-S --no-wrap --wrap)'{-S,--no-wrap}'[do not wrap long lines]' \
+    '(-S --no-wrap --wrap)--wrap[wrap long lines]' \
+    '--wrap-style=[wrap at the screen'\''s edge or at words]:style:(char word)' \
+    '(-F --quit-if-one-page --no-quit-if-one-page)'{-F,--quit-if-one-page}'[print the text and quit if it fits the screen]' \
+    '(-F --quit-if-one-page --no-quit-if-one-page)--no-quit-if-one-page[page text that fits the screen]' \
+    '--one-page-rows-below=[rows -F leaves below the text, for the prompt]:rows:' \
+    '(--auto-reload --no-auto-reload)--auto-reload[read a file again when it changes on disk]' \
+    '(--auto-reload --no-auto-reload)--no-auto-reload[do not read a changed file again]' \
+    '--scrolled-by=[start on the last screenful, scrolled this many rows up]:rows:' \
+    '--cursor-row=[put the cursor on this row of the last screenful]:row:' \
+    '--cursor-col=[put the cursor in this column of the last screenful]:column:' \
+    '(--clipboard-cmd --no-clipboard-cmd)--clipboard-cmd=[pipe copied text to a command instead of OSC 52]:command:_command_names -e' \
+    '(--clipboard-cmd --no-clipboard-cmd)--no-clipboard-cmd[copy with OSC 52, or pbcopy in Terminal.app]' \
+    '(--open-cmd --no-open-cmd)--open-cmd=[read each file by running a command, %s the file]:command:_command_names -e' \
+    '(--open-cmd --no-open-cmd)--no-open-cmd[read each file as it is]' \
+    '--tab-width=[draw a tab as this many cells]:cells:' \
+    '(--edge-markers --no-edge-markers)--edge-markers[mark text off the sides and wrapped rows]' \
+    '(--edge-markers --no-edge-markers)--no-edge-markers[do not mark text off the sides or wrapped rows]' \
+    '(--file-separators --no-file-separators)--file-separators[with several inputs, draw a row naming each]' \
+    '(--file-separators --no-file-separators)--no-file-separators[draw no row naming each input]' \
+    '--config=[read the config from this file]:file:_files' \
+    '(- *)--completion=[print the completion script for a shell]:shell:(bash zsh fish)' \
+    '(- *)'{-h,--help}'[show the help]' \
+    '(- *)'{-v,--version}'[print the version]' \
+    '*:file:_files'

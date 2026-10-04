@@ -219,6 +219,10 @@ func main() {
 		io.WriteString(os.Stdout, cli.Usage)
 		return
 	}
+	if opts.Completion != "" {
+		io.WriteString(os.Stdout, cli.Completion(opts.Completion))
+		return
+	}
 	if opts.Version {
 		if version == "" {
 			if bi, ok := debug.ReadBuildInfo(); ok {

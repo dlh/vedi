@@ -36,6 +36,7 @@ const Usage = `usage: vedi [flags] [file...]
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
   --[no-]file-separators       with several inputs, draw a row naming each (default: on)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
+  --completion SHELL           print the completion script for bash, zsh or fish
   -h, --help                   show this help
   -v, --version                print the version
 
@@ -61,6 +62,7 @@ type Options struct {
 	AutoReload       *bool       // --auto-reload, --no-auto-reload; nil leaves it to the config
 	EdgeMarkers      *bool       // --edge-markers, --no-edge-markers; nil leaves it to the config
 	FileSeparators   *bool       // --file-separators, --no-file-separators; nil leaves it to the config
+	Completion       string      // --completion: the shell to print the script for
 	Help             bool
 	Version          bool
 }
@@ -180,6 +182,13 @@ var valueFlags = map[string]func(*Options, string) error{
 		}
 		return nil
 	},
+	"--completion": func(o *Options, v string) error {
+		if Completion(v) == "" {
+			return fmt.Errorf("%q", v)
+		}
+		o.Completion = v
+		return nil
+	},
 	"--tab-width":           positiveInt(func(o *Options) *int { return &o.TabWidth }),
 	"--one-page-rows-below": positiveInt(func(o *Options) *int { return &o.OnePageRowsBelow }),
 }
@@ -239,13 +248,16 @@ func Parse(args []string, env string) (Options, []string, error) {
 }
 
 // parse lays args over o and returns the files. env is the words of
-// $VEDI, which may only be flags, and not -h or -v.
+// $VEDI, which may only be flags, and not -h, -v or --completion.
 func (o *Options) parse(args []string, env bool) ([]string, error) {
 	var files []string
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		name, val, hasVal := strings.Cut(a, "=")
 		if set, ok := valueFlags[name]; ok {
+			if env && name == "--completion" {
+				return nil, fmt.Errorf("%q is not allowed", name)
+			}
 			if !hasVal {
 				if i+1 >= len(args) {
 					return nil, fmt.Errorf("%s needs an argument", name)

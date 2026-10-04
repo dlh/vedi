@@ -12,6 +12,9 @@ page](https://github.com/dlh/vedi/releases), or build from source:
 
     go install go.dlh.dev/vedi/cmd/vedi@latest
 
+Tab completion for bash, zsh and fish is a file to install; see
+[Shell completion](docs/configuration.md#shell-completion).
+
 ## Usage
 
     vedi [flags] [file...]
@@ -33,6 +36,7 @@ page](https://github.com/dlh/vedi/releases), or build from source:
       --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
       --[no-]file-separators       with several inputs, draw a row naming each (default: on)
       --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
+      --completion SHELL           print the completion script for bash, zsh or fish
       -v, --version                print the version
 
 With no files, `vedi` reads stdin. `h` shows the keys and `q` quits;

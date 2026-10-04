@@ -82,6 +82,10 @@ func TestParse(t *testing.T) {
 		{"missing open cmd", []string{"--open-cmd"}, Options{}, nil, true},
 		{"no open cmd", []string{"--no-open-cmd", "f"}, Options{OpenCmd: new("")}, []string{"f"}, false},
 		{"no open cmd wins", []string{"--open-cmd=bat %s", "--no-open-cmd"}, Options{OpenCmd: new("")}, nil, false},
+		{"completion", []string{"--completion", "bash"}, Options{Completion: "bash"}, nil, false},
+		{"completion eq", []string{"--completion=fish"}, Options{Completion: "fish"}, nil, false},
+		{"bad completion", []string{"--completion", "tcsh"}, Options{}, nil, true},
+		{"missing completion", []string{"--completion"}, Options{}, nil, true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -151,6 +155,7 @@ func TestParseEnvRejects(t *testing.T) {
 		{"dash dash", "-- -S", `VEDI: "--" is not a flag`},
 		{"help", "-h", `VEDI: "-h" is not allowed`},
 		{"version", "--version", `VEDI: "--version" is not allowed`},
+		{"completion", "--completion bash", `VEDI: "--completion" is not allowed`},
 		{"unknown flag", "--bogus", `VEDI: unknown flag "--bogus"`},
 		{"bad value", "--tab-width 0", `VEDI: bad --tab-width "0"`},
 		{"missing value", "--tab-width", "VEDI: --tab-width needs an argument"},

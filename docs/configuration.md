@@ -8,6 +8,7 @@
 - [Defaults](#defaults)
 - [vim](#vim)
 - [emacs](#emacs)
+- [Shell completion](#shell-completion)
 
 ## The file
 
@@ -299,3 +300,22 @@ map Ctrl+g clear_selection
 # Ctrl+Space sets the mark: motions extend the selection until Ctrl+g
 map Ctrl+Space set_mark
 ```
+
+## Shell completion
+
+Tab completes vedi's flags and their values in bash, zsh and fish.
+A release archive holds the scripts in `completions/`; `vedi
+--completion SHELL` prints the same ones. Put one where the shell
+looks:
+
+    # bash, with the bash-completion package
+    vedi --completion bash > ~/.local/share/bash-completion/completions/vedi
+
+    # zsh; the directory must be in $fpath before compinit runs
+    vedi --completion zsh > ~/.zfunc/_vedi
+
+    # fish
+    vedi --completion fish > ~/.config/fish/completions/vedi.fish
+
+Bash without bash-completion reads no directory; save the script
+anywhere and source it from `~/.bashrc`.
