@@ -299,8 +299,7 @@ func (a *App) handle(ev tcell.Event) bool {
 			return false
 		}
 		if a.commanding {
-			a.handleCommandKey(ev)
-			return false
+			return a.handleCommandKey(ev)
 		}
 		return a.handleKey(a.keys.Lookup(ev))
 	case *tcell.EventMouse:

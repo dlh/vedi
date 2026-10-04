@@ -1,0 +1,27 @@
+reload reads the file again, as the key bound to reload does. With an
+argument it says so.
+
+-- args --
+f.txt
+-- input --
+old
+-- file --
+new
+-- keys --
+: "reload now" Enter
+-- screen --
+old
+
+
+
+
+reload takes no argument          h help
+-- keys --
+: "reload" Enter
+-- screen --
+new
+
+
+
+
+f.txt  line 1/1  wrap             h help

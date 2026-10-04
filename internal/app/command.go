@@ -15,11 +15,11 @@ import (
 )
 
 // handleCommandKey edits the : prompt. Enter runs what was typed and
-// closes the prompt, unless Tab's list of commands is showing and the
+// closes the prompt, reporting whether it quit, unless Tab's list of commands is showing and the
 // prompt holds one of them: then it adds the space after the command
 // and keeps the prompt open, for the argument. Esc, Ctrl+g and Ctrl+c
 // just close it.
-func (a *App) handleCommandKey(ev *tcell.EventKey) {
+func (a *App) handleCommandKey(ev *tcell.EventKey) bool {
 	_, before := lastWord(a.stem)
 	listingCommands := a.matches != nil && string(a.command.text) == a.filled && len(before) == 0
 	if ev.Key() != tcell.KeyTab {
@@ -35,12 +35,13 @@ func (a *App) handleCommandKey(ev *tcell.EventKey) {
 		if len(a.command.text) > 0 {
 			a.command.remember()
 		}
-		a.runCommand(string(a.command.text))
+		return a.runCommand(string(a.command.text))
 	case ev.Key() == tcell.KeyTab:
 		a.complete()
 	default:
 		a.command.edit(ev)
 	}
+	return false
 }
 
 // complete fills in the word being typed at the end of the : prompt
@@ -128,18 +129,21 @@ func commonPrefix(a, b string) string {
 	return a[:i]
 }
 
-// commands is what the : prompt takes: goto, cycle and the config
-// verbs but clear_all_shortcuts, which would unbind : and q.
-var commands = []string{"goto", "cycle", "wrap", "wrap_style", "tab_width", "edge_markers", "file_separators", "auto_reload", "status_line", "clipboard_cmd", "map"}
+// commands is what the : prompt takes: goto, cycle, help, reload,
+// quit and the config verbs but clear_all_shortcuts, which would
+// unbind : and q.
+var commands = []string{"goto", "cycle", "help", "reload", "quit", "wrap", "wrap_style", "tab_width", "edge_markers", "file_separators", "auto_reload", "status_line", "clipboard_cmd", "map"}
 
 // runCommand runs a : line. A number alone, or goto and a number, goes
 // to that 1-based line, clamped to the buffer; cycle steps a setting;
-// a config verb sets what it would in a file, for the rest of the run.
-// Nothing typed does nothing; an error is reported on the status line.
-func (a *App) runCommand(line string) {
+// help, reload and quit do what their keys do; a config verb sets
+// what it would in a file, for the rest of the run. Nothing typed does
+// nothing; an error is reported on the status line. It reports
+// whether the line quit.
+func (a *App) runCommand(line string) bool {
 	f := strings.Fields(line)
 	if len(f) == 0 {
-		return
+		return false
 	}
 	if len(f) == 1 && isNumber(f[0]) {
 		f = []string{"goto", f[0]}
@@ -148,32 +152,44 @@ func (a *App) runCommand(line string) {
 	case "goto":
 		if len(f) != 2 || !isNumber(f[1]) {
 			a.status = "goto takes a line number"
-			return
+			return false
 		}
 		n, _ := strconv.Atoi(f[1])
 		_, start, end := a.input()
 		a.cur = buffer.Pos{Line: max(start, min(start+n-1, end-1))}
 		a.drop()
 		a.scrollToCursor()
-		return
+		return false
 	case "cycle":
 		c, err := input.ParseCommand(line)
 		if err != nil {
 			a.status = err.Error()
-			return
+			return false
 		}
 		a.cycle(c.Arg)
-		return
+		return false
+	case "help", "reload", "quit":
+		if len(f) != 1 {
+			a.status = f[0] + " takes no argument"
+			return false
+		}
+		switch f[0] {
+		case "help":
+			a.showHelp()
+		case "reload":
+			a.reload(true)
+		}
+		return f[0] == "quit"
 	}
 	var c config.Config
 	verb, err := config.ParseLine(line, &c)
 	if !slices.Contains(commands, verb) {
 		a.status = fmt.Sprintf("unknown command %q", verb)
-		return
+		return false
 	}
 	if err != nil {
 		a.status = err.Error()
-		return
+		return false
 	}
 	switch verb {
 	case "wrap":
@@ -203,6 +219,7 @@ func (a *App) runCommand(line string) {
 		a.keys = a.keys.Apply(c.Keys)
 	}
 	a.scrollToCursor()
+	return false
 }
 
 // cycle sets a setting to the value after its current one, the first

@@ -1,0 +1,17 @@
+quit quits, as the key bound to quit does. With an argument it says
+so.
+
+-- input --
+abc
+-- keys --
+: "quit 1" Enter
+-- screen --
+abc
+
+
+
+
+quit takes no argument            h help
+-- keys --
+: "quit" Enter
+-- quit --

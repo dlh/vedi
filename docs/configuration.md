@@ -86,8 +86,9 @@ but `one_page_rows_below`, and `map`, for the rest of the run:
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
 setting to its next value, the first after the last; it takes `wrap`,
 `wrap_style`, `edge_markers`, `file_separators`, `auto_reload` and
-`status_line`. `clear_all_shortcuts` is refused: it would unbind `:`
-and `q`. A bad line is an error on the status line.
+`status_line`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
+do. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A
+bad line is an error on the status line.
 
 Tab completes the word being typed. One match fills it in; several
 fill in what they share and list the rest under the prompt, and Tab

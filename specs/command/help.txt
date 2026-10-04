@@ -1,0 +1,31 @@
+help shows the key bindings, as the key bound to help does, and so
+with none bound. With an argument it says so.
+
+-- config --
+map h none
+-- size --
+60x6
+-- input --
+abc
+-- keys --
+: "help" Enter
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+
+  q                                       Quit.
+help  motion scrolls, / searches, any other key returns
+-- cursor --
+hidden
+-- keys --
+q : "help 2" Enter
+-- screen --
+abc
+
+
+
+
+help takes no argument
+-- cursor --
+0 0
