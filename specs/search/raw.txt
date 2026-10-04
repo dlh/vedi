@@ -1,0 +1,26 @@
+With view_style raw, search reads an escape sequence as text: a
+pattern finds part of one, and does not match across one. The input
+here holds the raw SGR sequence ESC [ 31 m inside the word red.
+
+-- size --
+40x3
+-- config --
+view_style raw
+-- input --
+re[31md 31m
+-- keys --
+/ "31m" Enter
+-- screen --
+re[^[][{{31m}}d {31m}
+
+<stdin>  line 1/1  wrap  raw      h help
+-- cursor --
+0 5
+-- keys --
+/ "red" Enter
+-- screen --
+re[^[][31md 31m
+
+not found: red                    h help
+-- cursor --
+0 5

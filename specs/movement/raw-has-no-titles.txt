@@ -1,0 +1,20 @@
+With view_style raw a sequence that sets the window title is text:
+stdin keeps its name and ] does not stop at the line. The second line
+here starts with a raw OSC 2 sequence, ESC ] 2 ; t BEL.
+
+-- size --
+40x4
+-- config --
+view_style raw
+-- input --
+intro
+]2;ta2
+-- keys --
+]
+-- screen --
+intro
+[^[]]2;t[^G]a2
+
+<stdin>  line 1/2  wrap  raw      h help
+-- cursor --
+0 0

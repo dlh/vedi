@@ -35,6 +35,7 @@ func TestParse(t *testing.T) {
 		{"bad wrap style", []string{"--wrap-style", "yes"}, Options{}, nil, true},
 		{"view style plain", []string{"--view-style", "plain"}, Options{ViewStyle: new(ansi.ViewPlain)}, nil, false},
 		{"view style color", []string{"--view-style=color"}, Options{ViewStyle: new(ansi.ViewColor)}, nil, false},
+		{"view style raw", []string{"--view-style", "raw"}, Options{ViewStyle: new(ansi.ViewRaw)}, nil, false},
 		{"missing view style", []string{"--view-style"}, Options{}, nil, true},
 		{"bad view style", []string{"--view-style", "yes"}, Options{}, nil, true},
 		{"plus G", []string{"+G"}, Options{Follow: true}, nil, false},

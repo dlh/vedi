@@ -8,6 +8,7 @@ import (
 	"io"
 	"slices"
 	"sync"
+	"unicode/utf8"
 
 	"go.dlh.dev/vedi/internal/ansi"
 )
@@ -78,6 +79,8 @@ type Buffer struct {
 	block block
 	cache map[int]Line
 	raw   []byte // the scanned block's bytes
+
+	literal bool // see SetLiteral
 
 	eof bool
 	err error
@@ -207,6 +210,22 @@ func (b *Buffer) Finish(err error, trailingNewline bool) {
 	b.mu.Unlock()
 }
 
+// SetLiteral says whether lines are decoded as their bytes: escapes
+// and controls are text, and there are no runs and no titles.
+func (b *Buffer) SetLiteral(on bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.literal != on {
+		b.literal, b.cache = on, nil
+	}
+}
+
+func (b *Buffer) Literal() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.literal
+}
+
 // Line returns line i decoded, or a zero Line when i is out of range
 // or its bytes cannot be read. Decoded lines are kept, cacheLines at
 // a time.
@@ -223,12 +242,17 @@ func (b *Buffer) Line(i int) Line {
 	if !ok {
 		return Line{}
 	}
-	text, runs := p.Parse(raw)
-	b.learn(i, p)
+	var l Line
+	if b.literal {
+		l.Text = ansi.Literal(make([]rune, 0, utf8.RuneCount(raw)), raw)
+	} else {
+		text, runs := p.Parse(raw)
+		b.learn(i, p)
+		l = Line{Text: text, Runs: runs, Title: p.Title()}
+	}
 	if b.cache == nil || len(b.cache) >= cacheLines {
 		b.cache = map[int]Line{}
 	}
-	l := Line{Text: text, Runs: runs, Title: p.Title()}
 	b.cache[i] = l
 	return l
 }
@@ -245,6 +269,9 @@ func (b *Buffer) Text(i int, dst []rune) []rune {
 	raw, p, ok := b.read(i)
 	if !ok {
 		return dst[:0]
+	}
+	if b.literal {
+		return ansi.Literal(dst, raw)
 	}
 	text := p.Text(dst, raw)
 	b.learn(i, p)
@@ -287,8 +314,9 @@ func (b *Buffer) load(k int, dst []byte) ([]byte, error) {
 }
 
 // read is line i's bytes without its "\n" or the "\r" before it, in
-// b.raw, good until the next read, and the parser at its start. A
-// line whose bytes are gone is recorded as the read error.
+// b.raw, good until the next read, and the parser at its start, which
+// a literal buffer has no use for and leaves zero. A line whose bytes
+// are gone is recorded as the read error.
 func (b *Buffer) read(i int) ([]byte, ansi.Parser, bool) {
 	k, j := i>>blockShift, i&(BlockLines-1)
 	if b.block.k != k || b.block.end != b.blockEnd(k) {
@@ -299,6 +327,9 @@ func (b *Buffer) read(i int) ([]byte, ansi.Parser, bool) {
 			b.err = cmp.Or(b.block.err, errTruncated)
 		}
 		return nil, ansi.Parser{}, false
+	}
+	if b.literal {
+		return b.line(j), ansi.Parser{}, true
 	}
 	for m := b.block.known; m <= j; m++ {
 		p := b.block.state[m-1]
@@ -446,10 +477,14 @@ func (b *Buffer) Parts() []int {
 }
 
 // Titles is a copy of the lines that set a window title, ascending:
-// to the title already in effect, or to none, included.
+// to the title already in effect, or to none, included. A literal
+// buffer has none.
 func (b *Buffer) Titles() []int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.literal {
+		return nil
+	}
 	return slices.Clone(b.titles)
 }
 

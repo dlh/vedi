@@ -1,0 +1,29 @@
+Changing view_style to or from raw keeps the cursor on its line and
+clamps its column to the line's new end. The first line here holds
+the raw SGR sequences ESC [ 31 m and ESC [ 0 m.
+
+-- size --
+40x4
+-- config --
+view_style raw
+-- input --
+one
+[31mred[0m
+-- keys --
+Down End
+-- screen --
+one
+[^[][31mred[^[][0m
+
+<stdin>  line 2/2  wrap  raw      h help
+-- cursor --
+1 14
+-- keys --
+: "view_style color" Enter
+-- screen --
+one
+red
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 3

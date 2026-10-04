@@ -528,8 +528,9 @@ func TestStatusLine(t *testing.T) {
 	}
 }
 
-// TestViewStyle: view_style plain draws the text without its colors;
-// color, the default, with them; anything else is an error.
+// TestViewStyle: view_style plain draws the text without its colors,
+// raw with its escapes as text; color, the default, with its colors;
+// anything else is an error.
 func TestViewStyle(t *testing.T) {
 	for _, tc := range []struct {
 		src  string
@@ -538,6 +539,7 @@ func TestViewStyle(t *testing.T) {
 		{"", ansi.ViewColor},
 		{"view_style plain\n", ansi.ViewPlain},
 		{"view_style color\n", ansi.ViewColor},
+		{"view_style raw\n", ansi.ViewRaw},
 		{"view_style plain\nview_style color\n", ansi.ViewColor},
 	} {
 		c, err := Parse("vedi.conf", []byte(tc.src))
@@ -546,7 +548,7 @@ func TestViewStyle(t *testing.T) {
 		}
 	}
 	for _, src := range []string{"view_style\n", "view_style yes\n", "view_style plain color\n"} {
-		want := "vedi.conf:1: view_style takes color or plain"
+		want := "vedi.conf:1: view_style takes color, plain or raw"
 		if _, err := Parse("vedi.conf", []byte(src)); err == nil || err.Error() != want {
 			t.Errorf("Parse(%q) err = %v, want %s", src, err, want)
 		}

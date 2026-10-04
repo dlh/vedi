@@ -29,7 +29,7 @@ _vedi() {
         return
         ;;
     --view-style)
-        COMPREPLY=($(compgen -W 'color plain' -- "$cur"))
+        COMPREPLY=($(compgen -W 'color plain raw' -- "$cur"))
         return
         ;;
     --completion)

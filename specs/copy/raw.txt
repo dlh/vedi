@@ -1,0 +1,11 @@
+With view_style raw, copy sends the escapes with the text. The input
+here holds the raw SGR sequences ESC [ 31 m and ESC [ 0 m.
+
+-- config --
+view_style raw
+-- input --
+[31mred[0m
+-- keys --
+Shift+End y
+-- clipboard --
+[31mred[0m

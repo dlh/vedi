@@ -1,0 +1,15 @@
+view_style raw draws the input's bytes: an escape sequence is text,
+its ESC a ^[ in reverse video, and colors nothing; the status line
+says raw. The input here holds the raw SGR sequences ESC [ 31 m and
+ESC [ 0 m.
+
+-- size --
+40x3
+-- config --
+view_style raw
+-- input --
+[31mred[0m end
+-- screen --
+[^[][31mred[^[][0m end
+
+<stdin>  line 1/1  wrap  raw      h help

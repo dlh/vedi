@@ -89,13 +89,17 @@ func (m Matcher) anchored(b []byte) bool {
 }
 
 // mayMatch reports whether line, undecoded and without its "\n", may
-// hold a match: false only when its text cannot. scratch is reused.
-func (m Matcher) mayMatch(line []byte, scratch *[]byte) bool {
+// hold a match: false only when its text cannot. literal is the
+// buffer's: the text is then every byte. scratch is reused.
+func (m Matcher) mayMatch(line []byte, scratch *[]byte, literal bool) bool {
 	if m.raw == nil {
 		return true
 	}
 	if !m.anchored(line) {
 		return false
+	}
+	if literal {
+		return m.mayMatchLiteral(line, scratch)
 	}
 	plain := ansi.Strip(*scratch, line)
 	*scratch = plain
@@ -109,6 +113,27 @@ func (m Matcher) mayMatch(line []byte, scratch *[]byte) bool {
 			// Dropped from the text, so a match may span it.
 			return true
 		case m.fold && c >= 'A' && c <= 'Z':
+			plain[i] = c - 'A' + 'a'
+		}
+	}
+	return bytes.Contains(plain, m.raw)
+}
+
+// mayMatchLiteral is mayMatch for a literal buffer's line, whose text
+// is every byte: none is dropped for a match to span.
+func (m Matcher) mayMatchLiteral(line []byte, scratch *[]byte) bool {
+	if !m.fold {
+		return bytes.Contains(line, m.raw)
+	}
+	plain := append((*scratch)[:0], line...)
+	*scratch = plain
+	for i, c := range plain {
+		switch {
+		case c >= utf8.RuneSelf:
+			if m.loose {
+				return true
+			}
+		case c >= 'A' && c <= 'Z':
 			plain[i] = c - 'A' + 'a'
 		}
 	}
@@ -173,6 +198,8 @@ type walk struct {
 	text  []rune
 	raw   []byte
 	plain []byte
+
+	literal bool // buf's, when the walk began
 }
 
 func (w *walk) line(i int) []rune {
@@ -228,7 +255,7 @@ func (w *walk) block(k, lo, hi int, back bool) (buffer.Pos, bool) {
 		if li < lo || li >= hi {
 			continue
 		}
-		if w.m.raw != nil && !w.m.mayMatch(w.raw[starts[j]:min(starts[j+1]-1, len(w.raw))], &w.plain) {
+		if w.m.raw != nil && !w.m.mayMatch(w.raw[starts[j]:min(starts[j+1]-1, len(w.raw))], &w.plain, w.literal) {
 			continue
 		}
 		i := -1
@@ -255,7 +282,7 @@ func Next(buf *buffer.Buffer, m Matcher, from buffer.Pos, after bool) (pos buffe
 	if after {
 		col++
 	}
-	w := walk{buf: buf, m: m}
+	w := walk{buf: buf, m: m, literal: buf.Literal()}
 	if i := m.Find(w.line(from.Line), col); i >= 0 {
 		return buffer.Pos{Line: from.Line, Col: i}, false, true
 	}
@@ -278,7 +305,7 @@ func Prev(buf *buffer.Buffer, m Matcher, from buffer.Pos) (pos buffer.Pos, wrapp
 	if n == 0 || m.Empty() {
 		return
 	}
-	w := walk{buf: buf, m: m}
+	w := walk{buf: buf, m: m, literal: buf.Literal()}
 	if i := m.FindLast(w.line(from.Line), from.Col); i >= 0 {
 		return buffer.Pos{Line: from.Line, Col: i}, false, true
 	}

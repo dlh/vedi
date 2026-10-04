@@ -690,3 +690,36 @@ func TestRawOfShortBlockIsError(t *testing.T) {
 		t.Errorf("err = %v, want %v", err, errTruncated)
 	}
 }
+
+// TestLiteral: a literal buffer's lines are their bytes as text, with
+// no runs and no title, across lines; turned off, they parse again.
+func TestLiteral(t *testing.T) {
+	b := New()
+	b.Write([]byte("\x1b]2;t\x07\x1b[31mred\nmore\x1b[0m\n"))
+	b.Finish(nil, true)
+	if got := b.Line(1); string(got.Text) != "more" || len(got.Runs) != 1 || got.Title != "t" {
+		t.Fatalf("Line(1) = %+v", got)
+	}
+	b.SetLiteral(true)
+	if !b.Literal() {
+		t.Error("Literal() = false after SetLiteral(true)")
+	}
+	for i, want := range []string{"\x1b]2;t\x07\x1b[31mred", "more\x1b[0m"} {
+		if got := b.Line(i); string(got.Text) != want || got.Runs != nil || got.Title != "" {
+			t.Errorf("literal Line(%d) = %q, %v, %q; want %q alone", i, string(got.Text), got.Runs, got.Title, want)
+		}
+		if got := b.Text(i, nil); string(got) != want {
+			t.Errorf("literal Text(%d) = %q, want %q", i, string(got), want)
+		}
+	}
+	if got := b.Titles(); len(got) != 0 {
+		t.Errorf("literal Titles = %v, want none", got)
+	}
+	b.SetLiteral(false)
+	if got := b.Line(1); string(got.Text) != "more" || len(got.Runs) != 1 || got.Title != "t" {
+		t.Errorf("Line(1) after SetLiteral(false) = %+v", got)
+	}
+	if got := b.Titles(); !slices.Equal(got, []int{0}) {
+		t.Errorf("Titles = %v, want [0]", got)
+	}
+}

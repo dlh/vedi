@@ -265,6 +265,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer closeInput()
+	buf.SetLiteral(opts.View(cfg) == ansi.ViewRaw) // for -F to measure
 	if opts.QuitIfOnePage {
 		// Without a terminal to size, the screen below fails the same way.
 		if tty, err := os.Open("/dev/tty"); err == nil {

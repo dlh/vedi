@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/app"
 	"go.dlh.dev/vedi/internal/buffer"
 	"go.dlh.dev/vedi/internal/cli"
@@ -355,6 +356,7 @@ func (s *scenario) start() error {
 		return fmt.Errorf("-- next-file --: no more files in -- args --")
 	}
 	s.onePage = s.opts.QuitIfOnePage
+	s.buf.SetLiteral(s.opts.View(s.config) == ansi.ViewRaw)
 	return s.deliver()
 }
 

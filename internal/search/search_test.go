@@ -181,7 +181,7 @@ func TestMayMatch(t *testing.T) {
 		{"kiki", "plain", true},
 	} {
 		var scratch []byte
-		if got := New(tc.pat).mayMatch([]byte(tc.line), &scratch); got != tc.want {
+		if got := New(tc.pat).mayMatch([]byte(tc.line), &scratch, false); got != tc.want {
 			t.Errorf("New(%q).mayMatch(%q) = %v, want %v", tc.pat, tc.line, got, tc.want)
 		}
 	}
@@ -287,5 +287,37 @@ func TestWalkMatchesEveryLineDecoded(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestNextLiteral: in a literal buffer a pattern finds an escape's
+// text, which the byte check must not strip, and does not match
+// across one.
+func TestNextLiteral(t *testing.T) {
+	buf := buffer.New()
+	buf.Write([]byte("plain\nre\x1b[31md\nTAIL 31M\n"))
+	buf.Finish(nil, true)
+	if pos, _, found := Next(buf, New("red"), buffer.Pos{}, false); !found || pos != (buffer.Pos{Line: 1}) {
+		t.Fatalf("Next(red) = %v, %v; want line 1", pos, found)
+	}
+	buf.SetLiteral(true)
+	if pos, _, found := Next(buf, New("31m"), buffer.Pos{}, false); !found || pos != (buffer.Pos{Line: 1, Col: 4}) {
+		t.Errorf("literal Next(31m) = %v, %v; want 1:4", pos, found)
+	}
+	// Folded, and so found by its bytes lowered.
+	if pos, _, found := Prev(buf, New("31m"), buffer.Pos{}); !found || pos != (buffer.Pos{Line: 2, Col: 5}) {
+		t.Errorf("literal Prev(31m) = %v, %v; want 2:5", pos, found)
+	}
+	if pos, _, found := Next(buf, New("red"), buffer.Pos{}, false); found {
+		t.Errorf("literal Next(red) = %v, want none", pos)
+	}
+	if pos, _, found := Next(buf, New("RE\x1b"), buffer.Pos{}, false); found {
+		t.Errorf("literal Next(RE ESC) = %v, want none: the pattern has capitals", pos)
+	}
+	if pos, _, found := Next(buf, New("E\x1b[31MD"), buffer.Pos{}, false); found {
+		t.Errorf("literal Next(E ESC [31MD) = %v, want none", pos)
+	}
+	if pos, _, found := Next(buf, New("re\x1b[31md"), buffer.Pos{Line: 1, Col: 1}, false); !found || pos != (buffer.Pos{Line: 1}) {
+		t.Errorf("literal Next(re ESC [31md) wrapping = %v, %v; want 1:0", pos, found)
 	}
 }

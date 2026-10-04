@@ -4,6 +4,7 @@ import (
 	"sync/atomic"
 
 	"github.com/gdamore/tcell/v3"
+	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/buffer"
 )
 
@@ -66,22 +67,42 @@ func (a *App) swapIfDone() {
 	}
 }
 
-// swap puts buf under the view, or under the view help set aside,
-// and closes the old buffer's files.
+// swap puts buf in the text's place and closes the old buffer's
+// files.
 func (a *App) swap(buf *buffer.Buffer, closeBuf func()) {
-	if a.helping {
-		a.text.reload(buf)
-	} else {
-		t := textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.matcher, a.backward, a.highlight}
-		t.reload(buf)
-		a.buf, a.cur, a.top, a.anchor = t.buf, t.cur, t.top, t.anchor
-		a.laidOut = nil
-		a.scrollToCursor()
-	}
+	a.put(buf)
 	if a.closeBuf != nil {
 		a.closeBuf()
 	}
 	a.closeBuf = closeBuf
+}
+
+// put puts buf, decoded as the view style has it, under the view, or
+// under the view help set aside.
+func (a *App) put(buf *buffer.Buffer) {
+	buf.SetLiteral(a.view == ansi.ViewRaw)
+	if a.helping {
+		a.text.reload(buf)
+		return
+	}
+	t := textView{a.buf, a.cur, a.top, a.anchor, a.xoff, a.mode, a.matcher, a.backward, a.highlight}
+	t.reload(buf)
+	a.buf, a.cur, a.top, a.anchor = t.buf, t.cur, t.top, t.anchor
+	a.laidOut = nil
+	a.scrollToCursor()
+}
+
+// setView changes the view style. To or from raw the lines' text
+// changes under the view, which keeps its place as over a reload.
+func (a *App) setView(v ansi.ViewStyle) {
+	a.view = v
+	buf := a.buf
+	if a.helping {
+		buf = a.text.buf
+	}
+	if buf.Literal() != (v == ansi.ViewRaw) {
+		a.put(buf)
+	}
 }
 
 // reload puts buf in the view's place, keeping the cursor's place in

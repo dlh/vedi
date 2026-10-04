@@ -142,6 +142,7 @@ type click struct {
 }
 
 func New(scr tcell.Screen, buf *buffer.Buffer, opts Options) *App {
+	buf.SetLiteral(opts.ViewStyle == ansi.ViewRaw)
 	a := &App{
 		scr:       scr,
 		buf:       buf,

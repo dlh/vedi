@@ -215,7 +215,7 @@ func (a *App) runCommand(line string) bool {
 	case "status_line":
 		a.hide = c.NoStatusLine
 	case "view_style":
-		a.view = c.ViewStyle
+		a.setView(c.ViewStyle)
 	case "clipboard_cmd":
 		a.copier = clipboard.Command{Cmd: c.ClipboardCmd}
 	case "map":
@@ -258,13 +258,13 @@ func (a *App) setting(name string) string {
 	case "status_line":
 		return yesNo(!a.hide)
 	case "view_style":
-		if a.view == ansi.ViewPlain {
-			return "plain"
-		}
-		return "color"
+		return viewNames[a.view]
 	}
 	return ""
 }
+
+// viewNames is each view style as a config file spells it.
+var viewNames = [...]string{ansi.ViewColor: "color", ansi.ViewPlain: "plain", ansi.ViewRaw: "raw"}
 
 func yesNo(b bool) string {
 	if b {

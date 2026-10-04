@@ -23,7 +23,7 @@ type Config struct {
 	NoAutoReload     bool             // auto_reload no: a changed file is not read again
 	NoWrap           bool             // wrap no: start in nowrap mode
 	WrapStyle        layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
-	ViewStyle        ansi.ViewStyle   // view_style plain: the text is drawn without its colors
+	ViewStyle        ansi.ViewStyle   // view_style plain: the text is drawn without its colors; raw: with its escapes as text
 	ClipboardCmd     string           // clipboard_cmd: copy pipes to this, not OSC 52
 	OpenCmd          string           // open_cmd: each file is read by running this, %s the name
 	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
@@ -90,12 +90,18 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 			c.WrapStyle = layout.WrapStyleWord
 		}
 	case "view_style":
-		if len(f) != 2 || (f[1] != "color" && f[1] != "plain") {
-			return verb, errors.New("view_style takes color or plain")
+		if len(f) != 2 {
+			return verb, errors.New("view_style takes color, plain or raw")
 		}
-		c.ViewStyle = ansi.ViewColor
-		if f[1] == "plain" {
+		switch f[1] {
+		case "color":
+			c.ViewStyle = ansi.ViewColor
+		case "plain":
 			c.ViewStyle = ansi.ViewPlain
+		case "raw":
+			c.ViewStyle = ansi.ViewRaw
+		default:
+			return verb, errors.New("view_style takes color, plain or raw")
 		}
 	case "clipboard_cmd":
 		if len(f) < 2 {

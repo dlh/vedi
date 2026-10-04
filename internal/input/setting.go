@@ -19,7 +19,7 @@ var settings = []Setting{
 	{"file_separators", []string{"yes", "no"}},
 	{"auto_reload", []string{"yes", "no"}},
 	{"status_line", []string{"yes", "no"}},
-	{"view_style", []string{"color", "plain"}},
+	{"view_style", []string{"color", "plain", "raw"}},
 }
 
 // SettingNames is what cycle takes, in order.

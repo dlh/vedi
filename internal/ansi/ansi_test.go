@@ -374,3 +374,29 @@ func TestPrinterPlain(t *testing.T) {
 		t.Errorf("End = %q, want %q", got, want)
 	}
 }
+
+// TestLiteral: Literal decodes every byte as text: an escape's, a
+// control's, and an invalid one as U+FFFD.
+func TestLiteral(t *testing.T) {
+	dst := make([]rune, 0, 16)
+	got := Literal(dst, []byte("\x1b[1ma\x07\tb\xff\u00e9"))
+	if want := "\x1b[1ma\x07\tb\ufffd\u00e9"; string(got) != want {
+		t.Errorf("Literal = %q, want %q", string(got), want)
+	}
+	if &got[0] != &dst[:1][0] {
+		t.Error("Literal is not in dst")
+	}
+}
+
+// TestPrinterRaw: a raw Printer spells ESC and every control but tab
+// as the pager draws them, so no sequence reaches the terminal.
+func TestPrinterRaw(t *testing.T) {
+	p := Printer{View: ViewRaw}
+	in := "\x1b[31mred\x1b]8;;http://x\x07a\tb\r\x7f\u009b2J"
+	if got, want := string(p.Line(nil, []byte(in))), "^[[31mred^[]8;;http://x^Ga\tb^M^?2J"; got != want {
+		t.Errorf("Line(%q) = %q, want %q", in, got, want)
+	}
+	if got := p.End(nil); len(got) != 0 {
+		t.Errorf("End = %q, want nothing", got)
+	}
+}

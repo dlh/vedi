@@ -130,6 +130,7 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		end++
 	}
 	curW := 1 // cells under the cursor
+	colored := a.view == ansi.ViewColor
 	for i := seg.Start; i < end; i++ {
 		x := xs[i] - x0
 		// The cursor or a match on any rune of the glyph shows on the
@@ -165,7 +166,7 @@ func (a *App) drawRow(c *canvas, y int, p buffer.Pos, matches []int) (curX int, 
 		case mi < len(matches) && matches[mi] < j:
 			st = MatchStyle
 		default:
-			if a.view == ansi.ViewColor {
+			if colored {
 				st = styleAt(runs, ri, i)
 			}
 			if isControl(line.Text[i]) {
@@ -440,8 +441,8 @@ func (a *App) statusText() string {
 	case a.style == layout.WrapStyleWord:
 		mode = "word wrap"
 	}
-	if a.view == ansi.ViewPlain {
-		mode += "  plain"
+	if a.view != ansi.ViewColor {
+		mode += "  " + viewNames[a.view]
 	}
 	reading := ""
 	if !eof {

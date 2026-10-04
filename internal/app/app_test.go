@@ -96,6 +96,20 @@ func TestViewStylePlain(t *testing.T) {
 	}
 }
 
+// TestViewStyleRawOnePage: -F measures the text as raw shows it, the
+// escapes taking cells.
+func TestViewStyleRawOnePage(t *testing.T) {
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader("\x1b[31mred\x1b[0m\n"), buf, func() {})
+	if got := OnePage(buf, 10, 2, 1, true); got != Print {
+		t.Fatalf("OnePage = %v, want Print", got)
+	}
+	buf.SetLiteral(true)
+	if got := OnePage(buf, 10, 2, 1, true); got != Page {
+		t.Errorf("literal OnePage = %v, want Page", got)
+	}
+}
+
 // TestTitleNamesStdin: an OSC 2 title in the input names stdin on the
 // status line; a file keeps its name.
 func TestTitleNamesStdin(t *testing.T) {

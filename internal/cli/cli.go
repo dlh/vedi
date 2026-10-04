@@ -37,7 +37,7 @@ const Usage = `usage: vedi [flags] [file...]
   --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
   --[no-]file-separators       with several inputs, draw a row naming each (default: on)
   --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
-  --view-style STYLE           draw the text's colors (color) or not (plain)
+  --view-style STYLE           draw the text in color, without (plain) or with its escapes as text (raw)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
   --completion SHELL           print the completion script for bash, zsh or fish
   -h, --help                   show this help
@@ -210,6 +210,8 @@ var valueFlags = map[string]func(*Options, string) error{
 			o.ViewStyle = new(ansi.ViewColor)
 		case "plain":
 			o.ViewStyle = new(ansi.ViewPlain)
+		case "raw":
+			o.ViewStyle = new(ansi.ViewRaw)
 		default:
 			return fmt.Errorf("%q", v)
 		}

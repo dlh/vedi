@@ -101,12 +101,26 @@ type ViewStyle int
 const (
 	ViewColor ViewStyle = iota // colors, attributes and links
 	ViewPlain                  // links alone
+	ViewRaw                    // none: the escapes are text
 )
 
+// Literal is line's bytes as runes, escapes and controls among them,
+// appended to dst[:0]: the text ViewRaw shows.
+func Literal(dst []rune, line []byte) []rune {
+	dst = dst[:0]
+	for i := 0; i < len(line); {
+		r, size := utf8.DecodeRune(line[i:])
+		dst = append(dst, r)
+		i += size
+	}
+	return dst
+}
+
 // Printer filters text bound for a terminal down to what Parse reads:
-// runes, SGR and OSC 8; with ViewPlain, no SGR. Text from anywhere
-// can then color itself and do nothing else: not move the cursor, not
-// write the clipboard. The zero value is ready.
+// runes, SGR and OSC 8; with ViewPlain, no SGR; with ViewRaw, no
+// escape, each ESC and control spelled ^X as the pager draws it. Text
+// from anywhere can then color itself and do nothing else: not move
+// the cursor, not write the clipboard. The zero value is ready.
 type Printer struct {
 	View           ViewStyle
 	styled, linked bool
@@ -121,7 +135,7 @@ func (p *Printer) Line(dst, line []byte) []byte {
 	for i := 0; i < len(line); {
 		c := line[i]
 		switch {
-		case c == 0x1b:
+		case c == 0x1b && p.View != ViewRaw:
 			n, sgr, osc, ok := escape(line[i:])
 			if !ok {
 				return dst
@@ -144,6 +158,9 @@ func (p *Printer) Line(dst, line []byte) []byte {
 			dst = append(dst, "^M"...)
 			i++
 		case c < 0x20 && c != '\t' || c == 0x7f:
+			if p.View == ViewRaw {
+				dst = append(dst, '^', c^0x40)
+			}
 			i++
 		case c < utf8.RuneSelf:
 			dst = append(dst, c)

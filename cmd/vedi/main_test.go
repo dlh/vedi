@@ -313,3 +313,15 @@ func TestPrintTextPlain(t *testing.T) {
 		t.Errorf("printText = %q, want %q", out.String(), want)
 	}
 }
+
+// TestPrintTextRaw: with view_style raw -F prints the escapes spelled
+// out.
+func TestPrintTextRaw(t *testing.T) {
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader("\x1b[31mone\x1b[0m\r\ntwo\n"), buf, func() {})
+	var out bytes.Buffer
+	printText(&out, buf, ansi.ViewRaw)
+	if want := "^[[31mone^[[0m\r\ntwo\n"; out.String() != want {
+		t.Errorf("printText = %q, want %q", out.String(), want)
+	}
+}

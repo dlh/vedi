@@ -45,7 +45,7 @@ and over the defaults; the action `none` unbinds.
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
-| `view_style` | `color` | `--view-style` | `plain` draws the text without its colors. |
+| `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
@@ -70,6 +70,13 @@ key.
 **view_style plain.** The text is drawn in the terminal's default
 colors, without its SGR colors and attributes; links stay, and `-F`
 prints the same. The status line shows `plain`.
+
+**view_style raw.** The text is the input's bytes: an escape sequence
+is drawn as its characters, the ESC as `^[` in reverse video, and
+colors nothing. Search finds its text and copy sends it. No title
+names stdin, and `[` and `]` stop only at inputs. Changing to or from
+`raw` keeps the cursor's line and clamps its column. `-F` prints the
+escapes spelled out. The status line shows `raw`.
 
 **clipboard_cmd** and **open_cmd** take the rest of the line as the
 command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd

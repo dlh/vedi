@@ -23,7 +23,7 @@ _arguments -S \
     '(--file-separators --no-file-separators)--no-file-separators[draw no row naming each input]' \
     '(--status-line --no-status-line)--status-line[draw the status line]' \
     '(--status-line --no-status-line)--no-status-line[draw the status line only for a prompt or a message]' \
-    '--view-style=[draw the text'\''s colors or not]:style:(color plain)' \
+    '--view-style=[draw the text in color, plain or with its escapes as text]:style:(color plain raw)' \
     '--config=[read the config from this file]:file:_files' \
     '(- *)--completion=[print the completion script for a shell]:shell:(bash zsh fish)' \
     '(- *)'{-h,--help}'[show the help]' \
