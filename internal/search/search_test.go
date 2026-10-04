@@ -2,9 +2,11 @@ package search
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"testing"
+	"unicode"
 
 	"go.dlh.dev/vedi/internal/buffer"
 )
@@ -124,6 +126,166 @@ func BenchmarkNextMiss(b *testing.B) {
 	for b.Loop() {
 		if _, _, found := Next(buf, m, buffer.Pos{}, false); found {
 			b.Fatal("found")
+		}
+	}
+}
+
+// BenchmarkNextMissEveryLine is the miss that rules no block out: the
+// pattern's rarest byte is on every line.
+func BenchmarkNextMissEveryLine(b *testing.B) {
+	var in strings.Builder
+	for i := range 100_000 {
+		fmt.Fprintf(&in, "\x1b[32mline %d\x1b[0m of some text\n", i)
+	}
+	buf := buffer.New()
+	buffer.Fill(strings.NewReader(in.String()), buf, func() {})
+	m := New("some texts")
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, _, found := Next(buf, m, buffer.Pos{}, false); found {
+			b.Fatal("found")
+		}
+	}
+}
+
+// TestMayMatch: the bytes of a line rule it out only when its text
+// cannot match.
+func TestMayMatch(t *testing.T) {
+	for _, tc := range []struct {
+		pat, line string
+		want      bool
+	}{
+		{"foo", "a foo", true},
+		{"foo", "a FOO", true},
+		{"foo", "fo\x1b[31mo", true},
+		{"foo", "bar", false},
+		{"foo", "fo", false},
+		{"foo", "\x1b]0;foo\x07bar", false},
+		{"foo", "ab\x1b]0;foo", false},
+		{"Foo", "a foo", false},
+		{"Foo", "a Foo", true},
+		// A dropped control may sit inside a match.
+		{"foo", "f\x01oo", true},
+		{"foo", "f\x7foo", true},
+		{"foo", "f\too", false},
+		// K and İ fold to k and i.
+		{"kelvin", "\u212Aelvin", true},
+		{"istanbul", "\u0130stanbul", true},
+		{"elvin", "\u212Aelvin", true},
+		{"foo", "\u212Aelvin", false},
+		// Bytes do not fold past ASCII, so they rule nothing out.
+		{"é", "plain", true},
+		{"É", "plain", false},
+		{"É", "CAFÉ", true},
+		{"\uFFFD", "plain", true},
+		{"kiki", "plain", true},
+	} {
+		var scratch []byte
+		if got := New(tc.pat).mayMatch([]byte(tc.line), &scratch); got != tc.want {
+			t.Errorf("New(%q).mayMatch(%q) = %v, want %v", tc.pat, tc.line, got, tc.want)
+		}
+	}
+}
+
+// TestOnlyTwoRunesFoldToASCII: mayMatch counts on K and İ being the
+// only runes past ASCII that lower-case into it.
+func TestOnlyTwoRunesFoldToASCII(t *testing.T) {
+	for r := rune(0x80); r <= unicode.MaxRune; r++ {
+		if l := unicode.ToLower(r); l < 0x80 && r != 0x212A && r != 0x0130 {
+			t.Errorf("%U lowers to %q", r, l)
+		}
+	}
+}
+
+// refNext and refPrev decode and search every line: what Next and
+// Prev must agree with.
+func refNext(buf *buffer.Buffer, m Matcher, from buffer.Pos, after bool) (pos buffer.Pos, wrapped, found bool) {
+	n := buf.Len()
+	if n == 0 || m.Empty() {
+		return
+	}
+	col := from.Col
+	if after {
+		col++
+	}
+	for k := 0; k <= n; k++ {
+		li := (from.Line + k) % n
+		if k > 0 {
+			col = 0
+		}
+		if i := m.Find(buf.Text(li, nil), col); i >= 0 {
+			return buffer.Pos{Line: li, Col: i}, from.Line+k >= n, true
+		}
+	}
+	return
+}
+
+func refPrev(buf *buffer.Buffer, m Matcher, from buffer.Pos) (pos buffer.Pos, wrapped, found bool) {
+	n := buf.Len()
+	if n == 0 || m.Empty() {
+		return
+	}
+	for k := 0; k <= n; k++ {
+		li := ((from.Line-k)%n + n) % n
+		before := math.MaxInt
+		if k == 0 {
+			before = from.Col
+		}
+		if i := m.FindLast(buf.Text(li, nil), before); i >= 0 {
+			return buffer.Pos{Line: li, Col: i}, from.Line-k < 0, true
+		}
+	}
+	return
+}
+
+// TestWalkMatchesEveryLineDecoded: from every position, Next and Prev
+// find what decoding every line finds, over text that bytes alone
+// misjudge and across block edges.
+func TestWalkMatchesEveryLineDecoded(t *testing.T) {
+	odd := []string{
+		"foo bar foo",
+		"fo\x1b[31mo\x1b[0m",
+		"f\x01oo",
+		"FOO Foo",
+		"\u212Aelvin \u0130stanbul",
+		"caf\xc3\xa9 CAF\xc3\x89",
+		"a\xffb",
+		"zoo\r",
+		"ab \x1b]0;foo",
+		"\x1b]0;foo\x07bar",
+		"",
+	}
+	var lines []string
+	for i := range 2*buffer.BlockLines + 9 {
+		lines = append(lines, "x")
+		if i%13 == 5 {
+			lines[i] = odd[i/13%len(odd)]
+		}
+	}
+	lines[buffer.BlockLines-1], lines[buffer.BlockLines] = "foo", "bar"
+	lines = append(lines, "end foo")
+	for _, in := range []string{strings.Join(lines, "\n"), strings.Join(lines[:3], "\r\n") + "\r\n", "foo", "x"} {
+		buf := buffer.New()
+		buffer.Fill(strings.NewReader(in), buf, func() {})
+		for _, pat := range []string{"foo", "Foo", "FOO", "oo", "bar", "k", "i", "ki", "kelvin", "istanbul", "é", "É", "café", "\uFFFD", "a\uFFFDb", "x", "zzz", "end"} {
+			m := New(pat)
+			for li := range buf.Len() {
+				for col := 0; col <= len(buf.Text(li, nil)); col++ {
+					from := at(li, col)
+					for _, after := range []bool{false, true} {
+						pos, wrapped, found := Next(buf, m, from, after)
+						wpos, wwrapped, wfound := refNext(buf, m, from, after)
+						if pos != wpos || wrapped != wwrapped || found != wfound {
+							t.Fatalf("Next(%q, %v, %v) = %v, %v, %v; want %v, %v, %v", pat, from, after, pos, wrapped, found, wpos, wwrapped, wfound)
+						}
+					}
+					pos, wrapped, found := Prev(buf, m, from)
+					wpos, wwrapped, wfound := refPrev(buf, m, from)
+					if pos != wpos || wrapped != wwrapped || found != wfound {
+						t.Fatalf("Prev(%q, %v) = %v, %v, %v; want %v, %v, %v", pat, from, pos, wrapped, found, wpos, wwrapped, wfound)
+					}
+				}
+			}
 		}
 	}
 }

@@ -73,6 +73,24 @@ func (p *Parser) Skip(line []byte) {
 	}
 }
 
+// Strip is line's bytes outside its escapes, appended to dst[:0]: what
+// Parse decodes, before it drops controls.
+func Strip(dst, line []byte) []byte {
+	dst = dst[:0]
+	for {
+		i := bytes.IndexByte(line, 0x1b)
+		if i < 0 {
+			return append(dst, line...)
+		}
+		dst = append(dst, line[:i]...)
+		n, _, _, ok := escape(line[i:])
+		if !ok {
+			return dst
+		}
+		line = line[i+n:]
+	}
+}
+
 // apply takes an escape's effect: SGR on the style, OSC 8 on the link,
 // OSC 0 or 2 on the title.
 func (p *Parser) apply(sgr, osc []byte) {

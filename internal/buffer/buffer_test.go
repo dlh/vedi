@@ -81,7 +81,7 @@ func TestFillStyleCarriesAcrossLines(t *testing.T) {
 func TestLineTitle(t *testing.T) {
 	var sb strings.Builder
 	sb.WriteString("none\n\x1b]2;one\x07a\nb\n")
-	for range 2 * blockLines {
+	for range 2 * BlockLines {
 		sb.WriteString("more\n")
 	}
 	sb.WriteString("\x1b]0;two\x07c\n\x1b]2;\x07d\ne\n")
@@ -362,14 +362,14 @@ func (c *counting) ReadAt(p []byte, off int64) (int, error) {
 // again for every line in it.
 func TestShortBlockIsScannedOnce(t *testing.T) {
 	src := &counting{}
-	for i := range 2 * blockLines {
+	for i := range 2 * BlockLines {
 		src.data = append(src.data, fmt.Sprintf("%d\n", i)...)
 	}
 	b := NewFrom(src)
 	b.Write(src.data)
 	src.data = src.data[:len(src.data)/4] // inside block 0
 	var text []rune
-	for i := range blockLines {
+	for i := range BlockLines {
 		text = b.Text(i, text)
 		b.Line(i)
 	}
@@ -402,7 +402,7 @@ func styledLines(n int) []byte {
 
 // TestMemoryPerLine: a memory-backed buffer keeps about its input plus
 // the index; a file-backed one the index alone, which samples every
-// blockLines lines, so it is small next to the lines. Retained heap,
+// BlockLines lines, so it is small next to the lines. Retained heap,
 // not allocation: parsing escapes allocates and frees as it goes.
 func TestMemoryPerLine(t *testing.T) {
 	const n = 100_000
@@ -465,8 +465,8 @@ func BenchmarkFillFile(b *testing.B) {
 // both sides of a block edge, with the color set before the edge.
 func TestLinesAcrossBlocks(t *testing.T) {
 	var in strings.Builder
-	for i := range 3*blockLines + 5 {
-		if i == blockLines-1 {
+	for i := range 3*BlockLines + 5 {
+		if i == BlockLines-1 {
 			fmt.Fprintf(&in, "\x1b[31m%d\n", i)
 		} else {
 			fmt.Fprintf(&in, "%d\n", i)
@@ -479,11 +479,11 @@ func TestLinesAcrossBlocks(t *testing.T) {
 	} {
 		b := src()
 		Fill(strings.NewReader(in.String()), b, func() {})
-		for _, i := range []int{2*blockLines + 1, 0, blockLines, 3*blockLines + 4, blockLines - 1, 2*blockLines - 1, blockLines + 1, 3 * blockLines} {
+		for _, i := range []int{2*BlockLines + 1, 0, BlockLines, 3*BlockLines + 4, BlockLines - 1, 2*BlockLines - 1, BlockLines + 1, 3 * BlockLines} {
 			if got := string(b.Line(i).Text); got != fmt.Sprint(i) {
 				t.Errorf("%s: line %d = %q", name, i, got)
 			}
-			if runs := b.Line(i).Runs; i >= blockLines-1 && (len(runs) != 1 || runs[0].Style != red) {
+			if runs := b.Line(i).Runs; i >= BlockLines-1 && (len(runs) != 1 || runs[0].Style != red) {
 				t.Errorf("%s: line %d runs = %v, want red", name, i, runs)
 			}
 		}
@@ -494,7 +494,7 @@ func TestLinesAcrossBlocks(t *testing.T) {
 // fills, and bytes after the last "\n" are not a line until Finish.
 func TestLastBlockGrows(t *testing.T) {
 	b := New()
-	for i := range blockLines + 3 {
+	for i := range BlockLines + 3 {
 		b.Write([]byte(fmt.Sprint(i)))
 		if n := b.Len(); n != i {
 			t.Fatalf("before line %d's newline: Len = %d", i, n)
@@ -508,11 +508,11 @@ func TestLastBlockGrows(t *testing.T) {
 		}
 	}
 	b.Write([]byte("partial"))
-	if n := b.Len(); n != blockLines+3 {
+	if n := b.Len(); n != BlockLines+3 {
 		t.Fatalf("Len = %d with a partial line pending", n)
 	}
 	b.Finish(nil, false)
-	if got := string(b.Line(blockLines + 3).Text); got != "partial" {
+	if got := string(b.Line(BlockLines + 3).Text); got != "partial" {
 		t.Fatalf("last line = %q, want partial", got)
 	}
 }
@@ -631,5 +631,46 @@ func TestPart(t *testing.T) {
 	}
 	if k, start, end := New().Part(0); k != 0 || start != 0 || end != 0 {
 		t.Errorf("Part(0) of an empty buffer = %d, %d, %d; want zeros", k, start, end)
+	}
+}
+
+// TestRawIsABlocksBytes: Raw gives block k's bytes as they came,
+// escapes and line endings kept, in the caller's slice; out of range
+// is empty.
+func TestRawIsABlocksBytes(t *testing.T) {
+	var first, second strings.Builder
+	for i := range BlockLines {
+		fmt.Fprintf(&first, "\x1b[31m%d\r\n", i)
+	}
+	second.WriteString("x\ny")
+	b := New()
+	Fill(strings.NewReader(first.String()+second.String()), b, func() {})
+	dst := make([]byte, 0, 1024)
+	got := b.Raw(0, dst)
+	if string(got) != first.String() || &got[0] != &dst[:1][0] {
+		t.Fatalf("Raw(0) = %q, want the first block in dst", got)
+	}
+	if got := b.Raw(1, got); string(got) != second.String() {
+		t.Fatalf("Raw(1) = %q, want %q", got, second.String())
+	}
+	for _, k := range []int{-1, 2} {
+		if got := b.Raw(k, dst); len(got) != 0 {
+			t.Fatalf("Raw(%d) = %q, want empty", k, got)
+		}
+	}
+}
+
+// TestRawOfShortBlockIsError: Raw gives the bytes that are there, and
+// the missing ones are the read error.
+func TestRawOfShortBlockIsError(t *testing.T) {
+	src := &shrinking{data: []byte("one\ntwo\nthree\n")}
+	b := NewFrom(src)
+	b.Write(src.data)
+	src.data = src.data[:8]
+	if got := b.Raw(0, nil); string(got) != "one\ntwo\n" {
+		t.Errorf("Raw(0) = %q, want the bytes left", got)
+	}
+	if _, err := b.Finished(); err != errTruncated {
+		t.Errorf("err = %v, want %v", err, errTruncated)
 	}
 }

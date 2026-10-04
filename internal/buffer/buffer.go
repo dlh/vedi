@@ -33,11 +33,11 @@ type Line struct {
 // cacheLines is how many decoded lines are kept before starting over.
 const cacheLines = 1024
 
-// blockLines is how many lines share one index entry: the index says
+// BlockLines is how many lines share one index entry: the index says
 // where each block starts, and a block is scanned for the lines in it.
 const (
 	blockShift = 6
-	blockLines = 1 << blockShift
+	BlockLines = 1 << blockShift
 )
 
 // errTruncated is the read error when indexed bytes are gone: the file
@@ -46,7 +46,7 @@ var errTruncated = errors.New("input truncated")
 
 // Buffer indexes the input's lines. The bytes live in src: an arena
 // Write fills, or the caller's ReaderAt. The index samples every
-// blockLines lines: where the block starts and, since SGR and OSC 8
+// BlockLines lines: where the block starts and, since SGR and OSC 8
 // carry across lines, the parser there, interned in parsers. Reading
 // a line scans its block, kept until another is read.
 // Safe for one writer and any number of readers.
@@ -58,8 +58,8 @@ type Buffer struct {
 	// Changed under mu, by the writer alone, so it reads them freely.
 	n       int      // lines
 	last    int64    // just past line n-1's "\n", or the input's end
-	starts  []int64  // where line blockLines*k begins
-	state   []uint32 // the parser at line blockLines*k, an index into parsers
+	starts  []int64  // where line BlockLines*k begins
+	state   []uint32 // the parser at line BlockLines*k, an index into parsers
 	parsers []ansi.Parser
 	written int64
 	parts   []int // the line each input begins at; empty until StartPart
@@ -90,7 +90,7 @@ type index struct {
 	parsers []ansi.Parser
 }
 
-// block is block k scanned up to end: n lines from k*blockLines and
+// block is block k scanned up to end: n lines from k*BlockLines and
 // where each ends; err is the read error that cut the scan short. The
 // parser at each line's start is learned as lines are decoded in
 // order, or skipped to: known is how many are. The block is scanned
@@ -99,8 +99,8 @@ type block struct {
 	k, n, known int
 	end         int64
 	err         error
-	ends        [blockLines]int64
-	state       [blockLines]ansi.Parser
+	ends        [BlockLines]int64
+	state       [BlockLines]ansi.Parser
 }
 
 // New is a buffer that keeps what is written to it.
@@ -152,7 +152,7 @@ func (b *Buffer) Write(p []byte) {
 // add indexes one line ending at end, given without its "\n" or the
 // "\r" before it: the first of a block is staged.
 func (b *Buffer) add(raw []byte, end int64) {
-	if b.lines&(blockLines-1) == 0 {
+	if b.lines&(BlockLines-1) == 0 {
 		b.staged.starts = append(b.staged.starts, b.end)
 		b.staged.state = append(b.staged.state, b.intern(b.parser))
 	}
@@ -244,11 +244,46 @@ func (b *Buffer) Text(i int, dst []rune) []rune {
 	return text
 }
 
+// Raw copies block k's bytes, as they came, into dst[:0] and returns
+// them: lines k*BlockLines on, each with its ending, for scanning many
+// lines without decoding any. Bytes that are gone are left out, and
+// recorded as the read error.
+func (b *Buffer) Raw(k int, dst []byte) []byte {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if k < 0 || k >= len(b.starts) {
+		return dst[:0]
+	}
+	raw, err := b.load(k, dst)
+	if err != nil && b.err == nil {
+		b.err = err
+	}
+	return raw
+}
+
+// load reads block k into dst, grown to hold it; err is why the bytes
+// returned are fewer than the block's.
+func (b *Buffer) load(k int, dst []byte) ([]byte, error) {
+	start := b.starts[k]
+	size := int(b.blockEnd(k) - start)
+	if cap(dst) < size {
+		dst = make([]byte, size)
+	}
+	n, err := b.src.ReadAt(dst[:size], start)
+	if n == size {
+		return dst[:size], nil
+	}
+	if err == nil || err == io.EOF || err == io.ErrUnexpectedEOF {
+		err = errTruncated
+	}
+	return dst[:n], err
+}
+
 // read is line i's bytes without its "\n" or the "\r" before it, in
 // b.raw, good until the next read, and the parser at its start. A
 // line whose bytes are gone is recorded as the read error.
 func (b *Buffer) read(i int) ([]byte, ansi.Parser, bool) {
-	k, j := i>>blockShift, i&(blockLines-1)
+	k, j := i>>blockShift, i&(BlockLines-1)
 	if b.block.k != k || b.block.end != b.blockEnd(k) {
 		b.scan(k)
 	}
@@ -270,7 +305,7 @@ func (b *Buffer) read(i int) ([]byte, ansi.Parser, bool) {
 // learn records p, the parser after decoding line i, as the next
 // line's when it is the first not yet known.
 func (b *Buffer) learn(i int, p ansi.Parser) {
-	j := i&(blockLines-1) + 1
+	j := i&(BlockLines-1) + 1
 	if j == b.block.known && j < b.block.n {
 		b.block.state[j] = p
 		b.block.known = j + 1
@@ -300,24 +335,14 @@ func (b *Buffer) blockEnd(k int) int64 {
 func (b *Buffer) scan(k int) {
 	start, end := b.starts[k], b.blockEnd(k)
 	size := int(end - start)
-	if cap(b.raw) < size {
-		b.raw = make([]byte, size)
-	}
-	raw := b.raw[:size]
-	n, err := b.src.ReadAt(raw, start)
-	if n < size {
-		if err == nil || err == io.EOF || err == io.ErrUnexpectedEOF {
-			err = errTruncated
-		}
-		raw = raw[:n]
-	} else {
-		err = nil
-	}
+	raw, err := b.load(k, b.raw)
+	b.raw = raw[:cap(raw)]
+	n := len(raw)
 	b.block.k, b.block.end, b.block.err = k, end, err
 	b.block.n, b.block.known = 0, 1
 	b.block.state[0] = b.parsers[b.state[k]]
 	pos := 0
-	for j := range blockLines {
+	for j := range BlockLines {
 		var lineEnd int
 		if nl := bytes.IndexByte(raw[pos:], '\n'); nl >= 0 {
 			lineEnd = pos + nl + 1

@@ -249,3 +249,28 @@ func TestApplySGRAllocatesNothing(t *testing.T) {
 		}
 	}
 }
+
+// TestStripDropsEscapes: Strip keeps every byte outside an escape, in
+// dst, and nothing from a cut-off escape on.
+func TestStripDropsEscapes(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"plain", "plain"},
+		{"", ""},
+		{"fo\x1b[31mo\x1b[0m", "foo"},
+		{"\x1b]0;title\x07a\x1b]8;;http://x\x1b\\b", "ab"},
+		{"a\x1b(Bb\x1b=c", "abc"},
+		{"a\x01b\tc\r", "a\x01b\tc\r"},
+		{"caf\xc3\xa9 \xff", "caf\xc3\xa9 \xff"},
+		{"ab\x1b[3", "ab"},
+		{"ab\x1b]0;foo", "ab"},
+	} {
+		dst := make([]byte, 0, 32)
+		got := Strip(dst, []byte(tc.in))
+		if string(got) != tc.want {
+			t.Errorf("Strip(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+		if len(got) > 0 && &got[0] != &dst[:1][0] {
+			t.Errorf("Strip(%q) is not in dst", tc.in)
+		}
+	}
+}
