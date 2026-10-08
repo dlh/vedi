@@ -11,7 +11,8 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
   behavior gets a new scenario and a line in `README.md` or `docs/`.
   Expected output is written by hand, never generated.
 - Colors, read errors and the event loop are tested in Go
-  (`internal/app/app_test.go`); everything else belongs in `specs/`.
+  (`internal/app/app_test.go`), as is `open_cmd`, which runs in
+  `cmd/vedi` where no spec reaches; everything else belongs in `specs/`.
 - `go test ./...` must pass before every commit.
 - `docs/development.md` says how to check, commit and release.
 - When updating the benchmarks in `docs/comparison.md`, its vedi

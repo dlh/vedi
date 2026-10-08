@@ -39,16 +39,16 @@ func TestOpenInsideWord(t *testing.T) {
 	}
 }
 
-// TestOpenWithoutPercent: a command without %s runs as given, and its
-// stdin is empty.
+// TestOpenWithoutPercent: a command without %s gets the name as its
+// last argument, and its stdin is empty.
 func TestOpenWithoutPercent(t *testing.T) {
-	c, err := Open([]string{"cat"}, "f.rs")
+	c, err := Open([]string{"echo", "-n"}, "f.rs")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer c.Close()
 	got, err := io.ReadAll(c)
-	if err != nil || string(got) != "" {
+	if err != nil || string(got) != "f.rs" {
 		t.Errorf("read %q, %v", got, err)
 	}
 }

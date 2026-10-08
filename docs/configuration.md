@@ -48,7 +48,7 @@ and over the defaults; the action `none` unbinds.
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
-| `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command; `%s` is the file name. |
+| `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command, by name pattern or for all; `%s` is the file name. |
 
 Flags apply for one run. Flags in the `VEDI` environment variable
 override the file, and the command line overrides `VEDI`; see
@@ -83,8 +83,18 @@ command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd
 bat --color=always --paging=never %s` work; a pipeline needs a
 script. `open_cmd` leaves stdin as it is. A command that fails ends
 the text with a read error naming its exit status and stderr; `R` and
-auto-reload run it again. See [Pager](pager.md#bat) and
-[Pager](pager.md#the-inputs-name).
+auto-reload run it again. See [Pager](pager.md#the-inputs-name).
+
+**open_cmd by file type.** A glob before the command, one with `*`,
+`?` or `[`, limits it to files whose name matches, case ignored:
+
+    open_cmd *.md mdcat --ansi
+    open_cmd *.json jq -C . %s
+    open_cmd bat --color=always --paging=never %s
+
+The last matching pattern line wins; a line without a pattern is for
+the rest. A command without `%s` gets the file name as its last
+argument. `--open-cmd` replaces every line for one run.
 
 ## Commands
 

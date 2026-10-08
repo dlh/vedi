@@ -23,17 +23,16 @@ import (
 	"go.dlh.dev/vedi/internal/config"
 	"go.dlh.dev/vedi/internal/opencmd"
 	"go.dlh.dev/vedi/internal/watch"
-	"go.dlh.dev/vedi/internal/words"
 	"golang.org/x/term"
 )
 
 // openInput is the files, each a part, or stdin when there are none;
-// "-" names stdin. With argv, the open command, each file is read
-// through it and left for the command to open: a named pipe opened
-// twice waits for a second writer. onDisk says every input is a
-// regular file, to watch and read again; paged that its bytes can be
-// read at random, which a command's output, a pipe, cannot.
-func openInput(files, argv []string) (in *buffer.Concat, paged, onDisk bool, closeInput func(), err error) {
+// "-" names stdin. A file openCmd names a command for is read through
+// it and left for the command to open: a named pipe opened twice
+// waits for a second writer. onDisk says every input is a regular
+// file, to watch and read again; paged that its bytes can be read at
+// random, which a command's output, a pipe, cannot.
+func openInput(files []string, openCmd func(string) []string) (in *buffer.Concat, paged, onDisk bool, closeInput func(), err error) {
 	if len(files) == 0 {
 		if fi, err := os.Stdin.Stat(); err == nil && fi.Mode()&os.ModeCharDevice != 0 {
 			return nil, false, false, nil, fmt.Errorf("no input: give a file or pipe something in")
@@ -42,9 +41,13 @@ func openInput(files, argv []string) (in *buffer.Concat, paged, onDisk bool, clo
 	}
 	var parts []buffer.Source
 	var closers []io.Closer
-	onDisk = true
+	onDisk, paged = true, true
 	for _, name := range files {
 		var src buffer.Source = os.Stdin
+		var argv []string
+		if openCmd != nil {
+			argv = openCmd(name)
+		}
 		switch {
 		case name == "-":
 			onDisk = false
@@ -79,10 +82,11 @@ func openInput(files, argv []string) (in *buffer.Concat, paged, onDisk bool, clo
 			}
 			src = c
 			closers = append(closers, c)
+			paged = false
 		}
 		parts = append(parts, src)
 	}
-	return buffer.NewConcat(parts...), onDisk && argv == nil, onDisk, func() { closeAll(closers) }, nil
+	return buffer.NewConcat(parts...), onDisk && paged, onDisk, func() { closeAll(closers) }, nil
 }
 
 func closeAll(closers []io.Closer) {
@@ -94,8 +98,8 @@ func closeAll(closers []io.Closer) {
 // open is the input as a buffer being filled, each file a part of it,
 // paged from disk when it can be and else kept in memory. notify is
 // the reader's, as buffer.Fill calls it.
-func open(files, argv []string, notify func()) (buf *buffer.Buffer, closeInput func(), paged, onDisk bool, err error) {
-	in, paged, onDisk, closeInput, err := openInput(files, argv)
+func open(files []string, openCmd func(string) []string, notify func()) (buf *buffer.Buffer, closeInput func(), paged, onDisk bool, err error) {
+	in, paged, onDisk, closeInput, err := openInput(files, openCmd)
 	if err != nil {
 		return nil, nil, false, false, err
 	}
@@ -109,9 +113,9 @@ func open(files, argv []string, notify func()) (buf *buffer.Buffer, closeInput f
 }
 
 // reopen is the app's Open: the files read again by name.
-func reopen(files, argv []string) func(func()) (*buffer.Buffer, func(), error) {
+func reopen(files []string, openCmd func(string) []string) func(func()) (*buffer.Buffer, func(), error) {
 	return func(notify func()) (*buffer.Buffer, func(), error) {
-		buf, closeInput, _, _, err := open(files, argv, notify)
+		buf, closeInput, _, _, err := open(files, openCmd, notify)
 		return buf, closeInput, err
 	}
 }
@@ -251,12 +255,12 @@ func main() {
 		default:
 		}
 	})
-	argv, err := words.Split(opts.Open(cfg))
+	openCmd, err := opts.Open(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "vedi: open command: %v\n", err)
+		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
 		os.Exit(1)
 	}
-	buf, closeInput, _, onDisk, err := open(files, argv, n.notify)
+	buf, closeInput, _, onDisk, err := open(files, openCmd, n.notify)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "vedi: %v\n", err)
 		if len(files) == 0 {
@@ -301,7 +305,7 @@ func main() {
 	appOpts := opts.App(scr, files, cfg)
 	appOpts.Keys = cfg.Keymap(appOpts.MacOS)
 	if onDisk {
-		appOpts.Open = reopen(files, argv)
+		appOpts.Open = reopen(files, openCmd)
 	}
 	a := app.New(scr, buf, appOpts)
 	defer a.Stop() // before Fini closes the queue

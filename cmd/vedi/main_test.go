@@ -14,6 +14,11 @@ import (
 	"go.dlh.dev/vedi/internal/buffer"
 )
 
+// always is an open command for every file.
+func always(argv []string) func(string) []string {
+	return func(string) []string { return argv }
+}
+
 // TestOpenInputFIFO: a named pipe cannot be read at random, so it is
 // read once and kept in memory.
 func TestOpenInputFIFO(t *testing.T) {
@@ -61,7 +66,7 @@ func TestOpenInputCmd(t *testing.T) {
 	if err := os.WriteFile(name, []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	in, paged, onDisk, closeInput, err := openInput([]string{name}, []string{"sed", "s/l/L/g", "%s"})
+	in, paged, onDisk, closeInput, err := openInput([]string{name}, always([]string{"sed", "s/l/L/g", "%s"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,6 +76,35 @@ func TestOpenInputCmd(t *testing.T) {
 	}
 	got, err := io.ReadAll(in)
 	if err != nil || string(got) != "heLLo\n" {
+		t.Errorf("read %q, %v", got, err)
+	}
+}
+
+// TestOpenInputCmdByName: the open command is chosen per file; a
+// file with none is read as it is, and paged only when every file is.
+func TestOpenInputCmdByName(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"a.md", "b.txt"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("hello\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	byName := func(name string) []string {
+		if strings.HasSuffix(name, ".md") {
+			return []string{"sed", "s/l/L/g"}
+		}
+		return nil
+	}
+	in, paged, onDisk, closeInput, err := openInput([]string{filepath.Join(dir, "a.md"), filepath.Join(dir, "b.txt")}, byName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer closeInput()
+	if paged || !onDisk {
+		t.Errorf("paged %v, onDisk %v with one file read through a command", paged, onDisk)
+	}
+	got, err := io.ReadAll(in)
+	if err != nil || string(got) != "heLLo\nhello\n" {
 		t.Errorf("read %q, %v", got, err)
 	}
 }
@@ -90,7 +124,7 @@ func TestOpenInputCmdStdin(t *testing.T) {
 		w.Write([]byte("hello\n"))
 		w.Close()
 	}()
-	in, _, onDisk, closeInput, err := openInput(nil, []string{"cat", "-n", "%s"})
+	in, _, onDisk, closeInput, err := openInput(nil, always([]string{"cat", "-n", "%s"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,7 +153,7 @@ func TestOpenInputCmdFIFO(t *testing.T) {
 	}
 	done := make(chan result, 1)
 	go func() {
-		in, _, onDisk, closeInput, err := openInput([]string{pipe}, []string{"cat", "%s"})
+		in, _, onDisk, closeInput, err := openInput([]string{pipe}, always([]string{"cat", "%s"}))
 		if err != nil {
 			done <- result{nil, err}
 			return
@@ -145,7 +179,7 @@ func TestOpenInputCmdFIFO(t *testing.T) {
 // before any command runs.
 func TestOpenInputCmdMissingFile(t *testing.T) {
 	name := filepath.Join(t.TempDir(), "missing")
-	_, _, _, _, err := openInput([]string{name}, []string{"cat", "%s"})
+	_, _, _, _, err := openInput([]string{name}, always([]string{"cat", "%s"}))
 	if !os.IsNotExist(err) {
 		t.Errorf("err = %v, want not exist", err)
 	}
@@ -157,7 +191,7 @@ func TestOpenInputCmdNotFound(t *testing.T) {
 	if err := os.WriteFile(name, nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, _, err := openInput([]string{name}, []string{"vedi-no-such-command", "%s"}); err == nil {
+	if _, _, _, _, err := openInput([]string{name}, always([]string{"vedi-no-such-command", "%s"})); err == nil {
 		t.Error("openInput succeeded")
 	}
 }

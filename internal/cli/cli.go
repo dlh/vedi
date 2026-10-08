@@ -162,13 +162,21 @@ func (o Options) RowsBelow(cfg config.Config) int {
 	return max(cfg.OnePageRowsBelow, 1)
 }
 
-// Open is the command each file is read through: the flag's, else
-// the config's, else "" for none.
-func (o Options) Open(cfg config.Config) string {
-	if o.OpenCmd != nil {
-		return *o.OpenCmd
+// Open is the command a file is read through, by name: the flag's
+// for every file, else the config's, else nil for none. The error is
+// a flag that does not split.
+func (o Options) Open(cfg config.Config) (func(name string) []string, error) {
+	if o.OpenCmd == nil {
+		return cfg.OpenCmdFor, nil
 	}
-	return cfg.OpenCmd
+	argv, err := words.Split(*o.OpenCmd)
+	if err != nil {
+		return nil, fmt.Errorf("open command: %v", err)
+	}
+	if len(argv) == 0 {
+		argv = nil
+	}
+	return func(string) []string { return argv }, nil
 }
 
 func inputNames(files []string) []string {

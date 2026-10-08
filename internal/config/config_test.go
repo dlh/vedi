@@ -375,22 +375,70 @@ func TestClipboardCmd(t *testing.T) {
 	}
 }
 
-// TestOpenCmd: open_cmd takes the rest of the line, spaces and all;
-// the last line wins; a bare verb is an error.
+// TestOpenCmd: open_cmd takes a command, split as a shell would, or
+// a glob on the file's base name and then the command; the pattern
+// may be quoted. A bare verb, a pattern alone and a bad pattern are
+// errors.
 func TestOpenCmd(t *testing.T) {
-	for _, tc := range []struct{ src, want string }{
-		{"", ""},
-		{"open_cmd bat --color=always --paging=never %s\n", "bat --color=always --paging=never %s"},
-		{"\topen_cmd\t cat  %s \n", "cat  %s"},
-		{"open_cmd cat %s\nopen_cmd bat %s\n", "bat %s"},
+	for _, tc := range []struct {
+		src  string
+		want []OpenCmd
+	}{
+		{"", nil},
+		{"open_cmd bat --color=always --paging=never %s\n", []OpenCmd{{"", []string{"bat", "--color=always", "--paging=never", "%s"}}}},
+		{"\topen_cmd\t cat  '%s' \n", []OpenCmd{{"", []string{"cat", "%s"}}}},
+		{"open_cmd *.md mdcat %s\nopen_cmd cat %s\n", []OpenCmd{{"*.md", []string{"mdcat", "%s"}}, {"", []string{"cat", "%s"}}}},
+		{"open_cmd [Mm]akefile cat %s\n", []OpenCmd{{"[mm]akefile", []string{"cat", "%s"}}}},
+		{"open_cmd '*.md' cat %s\n", []OpenCmd{{"*.md", []string{"cat", "%s"}}}},
+		{"open_cmd \"my *.md\" cat %s\n", []OpenCmd{{"my *.md", []string{"cat", "%s"}}}},
 	} {
 		c, err := Parse("vedi.conf", []byte(tc.src))
-		if err != nil || c.OpenCmd != tc.want {
-			t.Errorf("Parse(%q) = %+v, %v; want OpenCmd %q", tc.src, c, err, tc.want)
+		if err != nil || !reflect.DeepEqual(c.OpenCmds, tc.want) {
+			t.Errorf("Parse(%q) = %+v, %v; want OpenCmds %+v", tc.src, c.OpenCmds, err, tc.want)
 		}
 	}
-	if _, err := Parse("vedi.conf", []byte("open_cmd\n")); err == nil || err.Error() != "vedi.conf:1: open_cmd takes a command" {
-		t.Errorf("Parse(\"open_cmd\") err = %v, want open_cmd takes a command", err)
+	for _, tc := range []struct{ src, want string }{
+		{"open_cmd\n", "vedi.conf:1: open_cmd takes a command"},
+		{"open_cmd *.md\n", "vedi.conf:1: open_cmd takes a command"},
+		{"open_cmd [md cat %s\n", "vedi.conf:1: open_cmd: bad pattern [md"},
+		{"open_cmd cat '%s\n", "vedi.conf:1: open_cmd: unclosed '"},
+	} {
+		if _, err := Parse("vedi.conf", []byte(tc.src)); err == nil || err.Error() != tc.want {
+			t.Errorf("Parse(%q) err = %v, want %s", tc.src, err, tc.want)
+		}
+	}
+}
+
+// TestOpenCmdFor: a file is read through the last pattern line
+// matching its base name, ignoring case, else the last plain line,
+// else as it is.
+func TestOpenCmdFor(t *testing.T) {
+	c, err := Parse("vedi.conf", []byte(`
+open_cmd *.md mdcat %s
+open_cmd cat %s
+open_cmd *.py bat %s
+open_cmd *.md glow %s
+open_cmd less %s
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		want []string
+	}{
+		{"notes.md", []string{"glow", "%s"}},
+		{"docs/README.MD", []string{"glow", "%s"}},
+		{"a.py", []string{"bat", "%s"}},
+		{"md/x.txt", []string{"less", "%s"}},
+	} {
+		if got := c.OpenCmdFor(tc.name); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("OpenCmdFor(%q) = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+	c, _ = Parse("vedi.conf", []byte("open_cmd *.md mdcat %s\n"))
+	if got := c.OpenCmdFor("a.txt"); got != nil {
+		t.Errorf("OpenCmdFor(a.txt) with only a pattern = %v, want nil", got)
 	}
 }
 

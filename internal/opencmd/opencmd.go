@@ -27,13 +27,19 @@ type Cmd struct {
 	err    error
 }
 
-// Open runs argv with each %s replaced by name, and returns its stdout;
-// the command reads nothing. The error is one of starting it; a
-// failure after that comes from Read.
+// Open runs argv with each %s replaced by name, or name appended when
+// there is none, and returns its stdout; the command reads nothing.
+// The error is one of starting it; a failure after that comes from
+// Read.
 func Open(argv []string, name string) (*Cmd, error) {
-	args := make([]string, len(argv))
+	args := make([]string, len(argv), len(argv)+1)
+	named := false
 	for i, a := range argv {
 		args[i] = strings.ReplaceAll(a, "%s", name)
+		named = named || strings.Contains(a, "%s")
+	}
+	if !named {
+		args = append(args, name)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Cmd{cmd: exec.CommandContext(ctx, args[0], args[1:]...), cancel: cancel}

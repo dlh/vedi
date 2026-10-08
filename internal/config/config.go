@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 	"go.dlh.dev/vedi/internal/ansi"
 	"go.dlh.dev/vedi/internal/input"
 	"go.dlh.dev/vedi/internal/layout"
+	"go.dlh.dev/vedi/internal/words"
 )
 
 // Config is what a file sets.
@@ -25,12 +27,40 @@ type Config struct {
 	WrapStyle        layout.WrapStyle // wrap_style word: wrap mode breaks rows at words
 	ViewStyle        ansi.ViewStyle   // view_style plain: the text is drawn without its colors; raw: with its escapes as text
 	ClipboardCmd     string           // clipboard_cmd: copy pipes to this, not OSC 52
-	OpenCmd          string           // open_cmd: each file is read by running this, %s the name
+	OpenCmds         []OpenCmd        // open_cmd lines, in order
 	TabWidth         int              // tab_width: cells per tab stop; 0 for the default
 	EdgeMarkers      bool             // edge_markers yes: mark text off the sides, and wrapped rows
 	NoFileSeparators bool             // file_separators no: no row naming each input
 	NoStatusLine     bool             // status_line no: the status line shows only when it has something to say
 	OnePageRowsBelow int              // one_page_rows_below: rows -F leaves below the text; 0 for the default
+}
+
+// An OpenCmd is an open_cmd line: files whose base name matches
+// Pattern are read by running Argv, %s the name; Pattern "" is for
+// the files no pattern matches.
+type OpenCmd struct {
+	Pattern string
+	Argv    []string
+}
+
+// OpenCmdFor is the command name is read through: the last pattern
+// line matching its base name, ignoring case, else the last plain
+// line, else nil to read it as it is.
+func (c Config) OpenCmdFor(name string) []string {
+	var plain []string
+	base := strings.ToLower(filepath.Base(name))
+	for _, o := range slices.Backward(c.OpenCmds) {
+		if o.Pattern == "" {
+			if plain == nil {
+				plain = o.Argv
+			}
+			continue
+		}
+		if ok, _ := filepath.Match(o.Pattern, base); ok {
+			return o.Argv
+		}
+	}
+	return plain
 }
 
 // Parse applies src line by line. Errors read name:line: message.
@@ -109,10 +139,11 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 		}
 		c.ClipboardCmd = rest(line, f[0])
 	case "open_cmd":
-		if len(f) < 2 {
-			return verb, errors.New("open_cmd takes a command")
+		o, err := parseOpenCmd(rest(line, f[0]))
+		if err != nil {
+			return verb, err
 		}
-		c.OpenCmd = rest(line, f[0])
+		c.OpenCmds = append(c.OpenCmds, o)
 	case "tab_width":
 		if len(f) != 2 {
 			return verb, errors.New("tab_width takes a positive number")
@@ -150,6 +181,28 @@ func ParseLine(line string, c *Config) (verb string, err error) {
 		return verb, fmt.Errorf("unknown verb %q", verb)
 	}
 	return verb, nil
+}
+
+// parseOpenCmd reads what follows open_cmd: a pattern, when the
+// first word has a glob character, then the command.
+func parseOpenCmd(s string) (OpenCmd, error) {
+	var o OpenCmd
+	argv, err := words.Split(s)
+	if err != nil {
+		return o, fmt.Errorf("open_cmd: %v", err)
+	}
+	if len(argv) > 0 && strings.ContainsAny(argv[0], "*?[") {
+		o.Pattern = strings.ToLower(argv[0])
+		if _, err := filepath.Match(o.Pattern, ""); err != nil {
+			return o, fmt.Errorf("open_cmd: bad pattern %s", argv[0])
+		}
+		argv = argv[1:]
+	}
+	if len(argv) == 0 {
+		return o, errors.New("open_cmd takes a command")
+	}
+	o.Argv = argv
+	return o, nil
 }
 
 func rest(line, verb string) string {

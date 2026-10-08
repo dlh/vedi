@@ -311,24 +311,34 @@ func TestAppTabWidth(t *testing.T) {
 	}
 }
 
-// TestOpenCmd: the flag decides the open command, --no-open-cmd
-// included; without one the config does; without either there is
-// none.
+// TestOpenCmd: the flag decides the open command for every file,
+// --no-open-cmd included; without one the config does, by name;
+// without either there is none. A flag that cannot be split is an
+// error.
 func TestOpenCmd(t *testing.T) {
+	cfg := config.Config{OpenCmds: []config.OpenCmd{{Pattern: "*.md", Argv: []string{"mdcat", "%s"}}}}
 	for _, tc := range []struct {
 		flag *string
 		cfg  config.Config
-		want string
+		want []string
 	}{
-		{nil, config.Config{}, ""},
-		{nil, config.Config{OpenCmd: "cat %s"}, "cat %s"},
-		{new("bat %s"), config.Config{OpenCmd: "cat %s"}, "bat %s"},
-		{new("bat %s"), config.Config{}, "bat %s"},
-		{new(""), config.Config{OpenCmd: "cat %s"}, ""},
+		{nil, config.Config{}, nil},
+		{nil, cfg, []string{"mdcat", "%s"}},
+		{new("bat %s"), cfg, []string{"bat", "%s"}},
+		{new("bat '%s'"), config.Config{}, []string{"bat", "%s"}},
+		{new(""), cfg, nil},
 	} {
-		if got := (Options{OpenCmd: tc.flag}).Open(tc.cfg); got != tc.want {
-			t.Errorf("Options{OpenCmd: %v}.Open(%+v) = %q, want %q", tc.flag, tc.cfg, got, tc.want)
+		open, err := (Options{OpenCmd: tc.flag}).Open(tc.cfg)
+		if err != nil {
+			t.Errorf("Options{OpenCmd: %v}.Open: %v", tc.flag, err)
+			continue
 		}
+		if got := open("a.md"); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("Options{OpenCmd: %v}.Open(%+v)(a.md) = %q, want %q", tc.flag, tc.cfg, got, tc.want)
+		}
+	}
+	if _, err := (Options{OpenCmd: new("bat '%s")}).Open(cfg); err == nil || err.Error() != "open command: unclosed '" {
+		t.Errorf("Open with a bad flag: %v", err)
 	}
 }
 
