@@ -11,7 +11,9 @@ use crate::text::source::{Chunk, Concat};
 /// and messages from the old are dropped.
 pub type Gen = u32;
 
-const READ_SIZE: usize = 64 * 1024;
+// An `Arc`'d chunk carries two counts; with them it fills 64 KiB
+// exactly, where macOS's malloc would round 64 KiB and more up to 80.
+const READ_SIZE: usize = 64 * 1024 - 2 * size_of::<usize>();
 
 /// Reads `src` to its end, sending `sink` each chunk indexed, each
 /// part boundary, and `Done`. A paged buffer reads its files in place,
