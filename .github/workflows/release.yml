@@ -3,25 +3,33 @@ name: release
 on:
   push:
     tags: ['v*']
+  # A snapshot exercises the pipeline before a tag.
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   goreleaser:
-    runs-on: ubuntu-latest
+    # notify links CoreServices on darwin, so those targets need the
+    # macOS SDK.
+    runs-on: macos-latest
     environment: release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
         with:
-          go-version-file: go.mod
-          cache-dependency-path: '**/go.sum'
+          version: 0.15.2
+      - run: cargo install --locked cargo-zigbuild@0.23.4
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
-          args: release --clean
+          args: >-
+            ${{ github.event_name == 'workflow_dispatch'
+            && 'release --snapshot --clean --skip=notarize,publish'
+            || 'release --clean' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}

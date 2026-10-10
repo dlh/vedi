@@ -1,8 +1,21 @@
-A one-row screen shows text and no status line.
+A one-row screen shows text and no status line; the keys move and
+select on it.
 
 -- size --
 10x1
 -- input --
-only
+a
+b
+c
 -- screen --
-only
+a
+-- keys --
+Down
+-- screen --
+b
+-- keys --
+PgDn G g Up End Shift+Down Ctrl+a
+-- screen --
+[c]
+-- cursor --
+0 1

@@ -1,0 +1,12 @@
+An OSC 2 title in standard input names it on the status line instead
+of <stdin>. The line here starts with a raw OSC 2 sequence,
+ESC ] 2 ; ~/src BEL.
+
+-- size --
+30x3
+-- input --
+]2;~/srctext
+-- screen --
+text
+
+~/src  line 1/1  wrap   h help

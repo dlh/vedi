@@ -1,0 +1,31 @@
+Text read while the bindings are shown belongs to the text, not the
+bindings; returning shows it all, read to the end.
+
+-- size --
+80x4
+-- input --
+one
+-- keys --
+h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+help  motion scrolls, / searches, any other key returns
+-- input --
+two
+-- eof --
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+help  motion scrolls, / searches, any other key returns
+-- keys --
+Esc
+-- screen --
+one
+two
+
+<stdin>  line 1/2  wrap                                                   h help
+-- cursor --
+0 0

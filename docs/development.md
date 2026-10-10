@@ -1,18 +1,19 @@
 # Development
 
-Requires Go and make.
+Requires Rust and make.
 
 ## Checks
 
-    make test           vet, staticcheck, go fix -diff, go test ./...
-    make fmt            list unformatted files (fails if any)
-    make tidy           show what go mod tidy would change (fails if any)
-    make bench          benchmarks
-    make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) vs here, BENCH_COUNT (10) runs each
+    make test           clippy, then cargo test --workspace
+    make fmt            show what rustfmt would change (fails if any)
+    make tidy           fail if Cargo.lock is out of date
+    make bench          criterion benchmarks
+    make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) as a baseline, then here against it, BENCH_COUNT (10) samples each
+    make install        cargo install --path vedi --locked
     make bench-pagers   vedi, less, moor, ov and vim on a large file; needs them on PATH
-    make release-check  validate .goreleaser.yaml (needs a git remote)
+    make release-check  validate .goreleaser.yaml (needs goreleaser and a git remote)
     make next-version   print the next tag, from the commits since the last
-    make release-notes  print the changelog the next release would carry
+    make release-notes  print the changelog the next release would carry (needs goreleaser)
     make release-tag    tag HEAD with the next version
     make media          record the README gif; needs vhs on PATH
 
@@ -27,8 +28,8 @@ from stdin, to the end and back, and for a failed search on each, with
 peak RSS. To the end is the rest of the index for vedi and a seek for
 less. The pty answers a device attributes query, as a terminal would,
 and the harness reads the screen, since a pager may redraw only the
-cells that changed. `BENCHFLAGS='-lines N -runs R'` changes the input
-and the repetitions. vim runs with `-plugins DIR`, a directory
+cells that changed. `BENCHFLAGS='--lines N --runs R'` changes the input
+and the repetitions. vim runs with `--plugins DIR`, a directory
 holding a checkout of
 [vim-plugin-AnsiEsc](https://github.com/powerman/vim-plugin-AnsiEsc)
 under that name, which colors the escapes, and is left out without
@@ -61,13 +62,15 @@ that releases it:
     make release-tag
     git push origin v1.2.3
 
-CI builds linux and darwin, amd64 and arm64, and publishes a GitHub
+CI builds linux and darwin, amd64 and arm64, with goreleaser's Rust
+builder and cargo-zigbuild, on a macOS runner since the darwin targets
+link CoreServices and need the macOS SDK. It publishes a GitHub
 release with archives, `checksums.txt` and a changelog from the commit
 messages. Each archive holds the completion scripts of
-`internal/cli/completions/` in `completions/`. It then pushes a cask
-to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped
-without `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag; `go install ...@v1.2.3` builds
-print the same from module data.
+`vedi/completions/` in `completions/`. It then pushes a cask to
+[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped
+without `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as
+`VEDI_VERSION`; builds from a checkout print `git describe`.
 
 Darwin binaries are signed with a Developer ID Application certificate
 and notarized (bare binaries can't be stapled; Gatekeeper checks the
@@ -101,6 +104,8 @@ To load them from a 1Password item whose fields carry the same names:
 
 To try a release locally without tagging:
 
-    go tool -modfile=tools/go.mod goreleaser release --snapshot --clean
+    brew install goreleaser zig
+    cargo install --locked cargo-zigbuild
+    goreleaser release --snapshot --clean --skip=notarize
 
 Output lands in `dist/`, which is ignored.

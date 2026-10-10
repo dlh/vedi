@@ -1,5 +1,5 @@
-# Recorded by `make media`, which builds ./vedi and runs vhs from the
-# repository root. Regenerates demo.gif.
+# Recorded by `make media`, which builds target/release/vedi, puts it
+# on PATH and runs vhs from the repository root. Regenerates demo.gif.
 
 Output docs/media/demo.gif
 
@@ -14,7 +14,7 @@ Set TypingSpeed 60ms
 # file, and a pbpaste function reads it back. VEDI also wraps rows at
 # words.
 Hide
-Type `export PATH=$PWD:$PATH && cd docs/media && clip=$(mktemp) && export VEDI="--wrap-style word --clipboard-cmd 'cat > $clip'" && pbpaste() { cat "$clip"; } && clear`
+Type `cd docs/media && clip=$(mktemp) && export VEDI="--wrap-style word --clipboard-cmd 'cat > $clip'" && pbpaste() { cat "$clip"; } && clear`
 Enter
 Show
 

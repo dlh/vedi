@@ -1,65 +1,50 @@
-.PHONY: build install test bench bench-compare bench-pagers media vet staticcheck fix fmt tidy release-check next-version release-notes release-tag clean
+.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version release-notes release-tag clean
 
 build:
-	go build -o vedi ./cmd/vedi
+	cargo build --release -p vedi
 
 install:
-	go install ./cmd/vedi
+	cargo install --path vedi --locked
 
-test: vet staticcheck fix
-	go test ./...
-	cd bench && go test ./...
+test:
+	cargo clippy --workspace --all-targets -- -D warnings
+	cargo test --workspace
 
 bench:
-	go test -run '^$$' -bench . -benchmem ./...
+	cargo bench -p vedi
 
 BENCH_GIT_BRANCH ?= main
 BENCH_COUNT ?= 10
 
-# Benchmarks at BENCH_GIT_BRANCH vs the working tree, BENCH_COUNT runs each.
+# Benchmarks at BENCH_GIT_BRANCH vs the working tree, BENCH_COUNT samples each.
 bench-compare:
 	bin/bench-compare $(BENCH_GIT_BRANCH) $(BENCH_COUNT)
 
-# Needs less on PATH; takes a few minutes. BENCHFLAGS: -lines, -runs.
+# Needs less on PATH; takes a few minutes. BENCHFLAGS: --lines, --runs.
 bench-pagers: build
-	cd bench && go run . -vedi $(CURDIR)/vedi $(BENCHFLAGS)
+	cargo run --release -q -p bench -- --vedi $(CURDIR)/target/release/vedi $(BENCHFLAGS)
 
 # Needs vhs on PATH (brew install vhs). Rewrites docs/media/demo.gif.
 media: build
-	vhs docs/media/demo.tape
+	PATH="$(CURDIR)/target/release:$$PATH" vhs docs/media/demo.tape
 
-vet:
-	go vet ./...
-	cd bench && go vet ./...
-
-staticcheck:
-	go tool -modfile=tools/go.mod staticcheck ./...
-	cd bench && go tool -modfile=../tools/go.mod staticcheck ./...
-
-# Shows what go fix would change and fails; never rewrites.
-fix:
-	go fix -diff ./...
-	cd bench && go fix -diff ./...
-
-# Lists unformatted files and fails; never rewrites.
+# Shows what rustfmt would change and fails; never rewrites.
 fmt:
-	@out=$$(gofmt -l .); if [ -n "$$out" ]; then echo "$$out"; exit 1; fi
+	cargo fmt --all --check
 
-# Shows what go mod tidy would change and fails; never rewrites.
+# Fails when Cargo.lock is out of date; never rewrites.
 tidy:
-	go mod tidy -diff
-	cd tools && go mod tidy -diff
-	cd bench && go mod tidy -diff
+	cargo metadata --locked --format-version 1 >/dev/null
 
-# Needs a git remote.
+# Needs goreleaser on PATH (brew install goreleaser) and a git remote.
 release-check:
-	go tool -modfile=tools/go.mod goreleaser check
+	goreleaser check
 
 # Prints the next tag, from the commits since the last one.
 next-version:
 	@bin/next-version
 
-# Prints the changelog the next release would carry.
+# Prints the changelog the next release would carry; needs goreleaser on PATH.
 release-notes:
 	@bin/release-notes
 
@@ -69,4 +54,4 @@ release-tag:
 		printf 'tagged %s; release it with:\n\ngit push origin %s\n' "$$tag" "$$tag"
 
 clean:
-	rm -f vedi
+	cargo clean

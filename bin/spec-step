@@ -9,9 +9,6 @@ if [ $# -ne 1 ] || [ ! -f "$1" ]; then
 	exit 2
 fi
 spec=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
-root=$(git rev-parse --show-toplevel)
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-cd "$root/internal/app"
-go test -c -o "$tmp/app.test" .
-"$tmp/app.test" -test.run '^TestSpecs$' -step "$spec"
+cd "$(git rev-parse --show-toplevel)"
+# The test harness prints its own lines around the frames.
+VEDI_SPEC="$spec" VEDI_SPEC_STEP=1 cargo test --quiet -p vedi --test specs specs -- --nocapture

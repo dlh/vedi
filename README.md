@@ -14,7 +14,7 @@ With [Homebrew](https://brew.sh):
 Or download a binary for linux or macOS from the [releases
 page](https://github.com/dlh/vedi/releases), or build from source:
 
-    go install go.dlh.dev/vedi/cmd/vedi@latest
+    cargo install --git https://github.com/dlh/vedi vedi
 
 Tab completion for bash, zsh and fish is a file to install; see
 [Shell completion](docs/configuration.md#shell-completion).

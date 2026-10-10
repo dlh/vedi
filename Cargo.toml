@@ -1,0 +1,15 @@
+[workspace]
+members = ["vedi", "bench"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+# let-chains need 1.88 in edition 2024.
+rust-version = "1.88"
+license = "GPL-3.0-only"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[profile.release]
+strip = true

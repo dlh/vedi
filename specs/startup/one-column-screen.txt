@@ -1,0 +1,25 @@
+A one-column screen wraps every rune to its own row, and the keys
+move, select and copy on it; the status line shows its first cell.
+
+-- size --
+1x4
+-- input --
+abc
+d
+-- screen --
+a
+b
+c
+<
+-- keys --
+Right Right Right Down End Shift+Up Ctrl+a y
+-- screen --
+[c]
+[d]
+
+c
+-- cursor --
+2 0
+-- clipboard --
+abc
+d

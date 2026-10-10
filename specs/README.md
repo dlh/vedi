@@ -1,7 +1,7 @@
 # Specs
 
 Each file here is one behavior of `vedi` and runs as a test
-(`go test ./internal/app/ -run TestSpecs`). The prose at the top says
+(`cargo test -p vedi --test specs`). The prose at the top says
 what the behavior is; the sections below show it. When a behavior
 changes, its file changes in the same commit.
 
@@ -89,4 +89,4 @@ Assertions, checked at that point:
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |
 
-Colors are not covered; those tests stay in `internal/app/app_test.go`.
+Colors are not covered; those tests stay in `vedi/src/app/tests.rs`.
