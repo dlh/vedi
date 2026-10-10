@@ -19,6 +19,9 @@ takes:
 
     export PAGER="vedi -F --one-page-rows-below 2"
 
+Without a terminal, `-F` measures against `COLUMNS` and `LINES`, else
+80×25, and prints what fits.
+
 ## VEDI
 
 vedi reads flags from the `VEDI` environment variable before those on
