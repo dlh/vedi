@@ -232,13 +232,16 @@ impl Buffer {
 
     fn decode(&self, k: usize) -> Decoded {
         let (start, end) = (self.blocks[k].start, self.block_end(k));
-        let mut raw = Vec::new();
-        let err = self.read_at(start, (end - start) as usize, &mut raw).err();
+        let mut scratch = Vec::new();
+        let (raw, err) = match self.bytes(start, (end - start) as usize, &mut scratch) {
+            Ok(raw) => (raw, None),
+            Err(e) => (&scratch[..], Some(e)),
+        };
         let count = self.block_lines(k).len();
         let mut parser = self.parsers[self.blocks[k].parser as usize].clone();
         let mut title: Option<Arc<str>> = None;
         let mut lines = Vec::with_capacity(count);
-        let mut rest = &raw[..];
+        let mut rest = raw;
         while lines.len() < count {
             let line = match rest.iter().position(|&c| c == b'\n') {
                 Some(nl) => {
@@ -277,15 +280,19 @@ impl Buffer {
         line
     }
 
-    /// Replaces `dst` with block `k`'s bytes, line endings and escapes
-    /// kept: for scanning many lines without decoding any. On error,
-    /// `dst` holds the bytes that could be read.
-    pub fn raw_block(&self, k: usize, dst: &mut Vec<u8>) -> Result<(), ReadError> {
+    /// Block `k`'s bytes, line endings and escapes kept: for scanning
+    /// many lines without decoding any. They are borrowed when they lie
+    /// in one chunk in memory, else read into `scratch`, which on error
+    /// holds the bytes that could be read.
+    pub fn raw_block<'a>(
+        &'a self,
+        k: usize,
+        scratch: &'a mut Vec<u8>,
+    ) -> Result<&'a [u8], ReadError> {
         let Some(b) = self.blocks.get(k) else {
-            dst.clear();
-            return Ok(());
+            return Ok(&[]);
         };
-        let r = self.read_at(b.start, (self.block_end(k) - b.start) as usize, dst);
+        let r = self.bytes(b.start, (self.block_end(k) - b.start) as usize, scratch);
         if let Err(e) = &r {
             self.note(e.clone());
         }
@@ -303,6 +310,29 @@ impl Buffer {
 
     fn block_end(&self, k: usize) -> u64 {
         self.blocks.get(k + 1).map_or(self.end, |b| b.start)
+    }
+
+    /// `len` bytes from `off`, borrowed when one chunk holds them all,
+    /// else read into `scratch` as `read_at` would.
+    fn bytes<'a>(
+        &'a self,
+        off: u64,
+        len: usize,
+        scratch: &'a mut Vec<u8>,
+    ) -> Result<&'a [u8], ReadError> {
+        if let Storage::Memory(chunks) = &self.storage
+            && let Some(i) = self
+                .chunk_starts
+                .partition_point(|&s| s <= off)
+                .checked_sub(1)
+        {
+            let at = (off - self.chunk_starts[i]) as usize;
+            if let Some(b) = chunks[i].get(at..at + len) {
+                return Ok(b);
+            }
+        }
+        self.read_at(off, len, scratch)?;
+        Ok(scratch)
     }
 
     /// Replaces `dst` with `len` bytes from `off`, or as many as can be
@@ -796,9 +826,7 @@ pub(crate) mod tests {
         f.finish(None);
         assert_eq!(lines(&f.buf), ["a", "b", "c"]);
         assert_eq!(f.buf.parts(), [0, 1, 1]);
-        let mut raw = Vec::new();
-        f.buf.raw_block(0, &mut raw).unwrap();
-        assert_eq!(raw, b"a\nb\nc");
+        assert_eq!(f.buf.raw_block(0, &mut Vec::new()).unwrap(), b"a\nb\nc");
         assert!(f.buf.read_error().is_none());
     }
 
@@ -1004,13 +1032,31 @@ pub(crate) mod tests {
         let b = memory(format!("{first}{second}").as_bytes());
         assert_eq!(b.blocks(), 2);
         assert_eq!(b.block_lines(1), BLOCK_LINES..BLOCK_LINES + 2);
-        let mut dst = b"junk".to_vec();
-        b.raw_block(0, &mut dst).unwrap();
-        assert_eq!(dst, first.as_bytes());
-        b.raw_block(1, &mut dst).unwrap();
-        assert_eq!(dst, second.as_bytes());
-        b.raw_block(2, &mut dst).unwrap();
-        assert!(dst.is_empty(), "out of range");
+        let mut dst = Vec::new();
+        assert_eq!(b.raw_block(0, &mut dst).unwrap(), first.as_bytes());
+        assert_eq!(b.raw_block(1, &mut dst).unwrap(), second.as_bytes());
+        assert!(b.raw_block(2, &mut dst).unwrap().is_empty(), "out of range");
+    }
+
+    #[test]
+    fn raw_block_borrows_within_a_chunk() {
+        let mut f = Fill::memory(false);
+        f.write(b"ab\n");
+        f.write(b"cd\n");
+        f.finish(None);
+        let mut scratch = b"junk".to_vec();
+        assert_eq!(f.buf.raw_block(0, &mut scratch).unwrap(), b"ab\ncd\n");
+        assert_eq!(scratch, b"ab\ncd\n", "straddling chunks: copied");
+
+        let b = memory(b"ab\ncd\n");
+        let mut scratch = b"junk".to_vec();
+        assert_eq!(b.raw_block(0, &mut scratch).unwrap(), b"ab\ncd\n");
+        assert_eq!(scratch, b"junk", "one chunk: borrowed");
+
+        let (b, _path) = paged(b"ab\ncd\n");
+        let mut scratch = b"junk".to_vec();
+        assert_eq!(b.raw_block(0, &mut scratch).unwrap(), b"ab\ncd\n");
+        assert_eq!(scratch, b"ab\ncd\n", "paged: read");
     }
 
     #[test]

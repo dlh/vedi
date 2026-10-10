@@ -238,7 +238,14 @@ impl<'a> Walk<'a> {
 
     /// `find` within block `k`.
     fn block(&mut self, k: usize, lines: &Range<usize>, dir: Dir) -> Option<Pos> {
-        let m = self.m;
+        let Walk {
+            buf,
+            m,
+            text,
+            raw,
+            plain,
+            literal,
+        } = self;
         let base = k * BLOCK_LINES;
         let mut starts = [0; BLOCK_LINES + 1];
         let mut n = BLOCK_LINES;
@@ -246,18 +253,18 @@ impl<'a> Walk<'a> {
         let filter = m
             .bytes
             .as_ref()
-            .filter(|_| self.buf.raw_block(k, &mut self.raw).is_ok());
-        if let Some(p) = filter {
-            if !p.anchored(&self.raw) {
+            .and_then(|p| Some((p, buf.raw_block(k, raw).ok()?)));
+        if let Some((p, raw)) = filter {
+            if !p.anchored(raw) {
                 return None;
             }
             n = 0;
             let mut at = 0;
-            while at < self.raw.len() && n < BLOCK_LINES {
-                at += self.raw[at..]
+            while at < raw.len() && n < BLOCK_LINES {
+                at += raw[at..]
                     .iter()
                     .position(|&c| c == b'\n')
-                    .unwrap_or(self.raw.len() - at)
+                    .unwrap_or(raw.len() - at)
                     + 1;
                 n += 1;
                 starts[n] = at;
@@ -272,13 +279,13 @@ impl<'a> Walk<'a> {
             if !lines.contains(&li) {
                 continue;
             }
-            if filter.is_some() {
-                let line = &self.raw[starts[j]..(starts[j + 1] - 1).min(self.raw.len())];
-                if !m.may_match(line, &mut self.plain, self.literal) {
+            if let Some((_, raw)) = filter {
+                let line = &raw[starts[j]..(starts[j + 1] - 1).min(raw.len())];
+                if !m.may_match(line, plain, *literal) {
                     continue;
                 }
             }
-            let text = self.line(li);
+            buf.text(li, text);
             let col = match dir {
                 Dir::Forward => m.find(text, 0),
                 Dir::Back => m.find_last(text, usize::MAX),
