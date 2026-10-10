@@ -17,7 +17,12 @@ impl<T: Terminal> App<T> {
     /// no cursor is shown; nor is one scrolled off the side.
     pub fn draw(&mut self) {
         let (w, h) = self.screen.size();
-        let mut g = Grid::new(w, h);
+        let mut g = std::mem::replace(&mut self.frame, Grid::new(0, 0));
+        if (g.width(), g.height()) == (w, h) {
+            g.clear();
+        } else {
+            g = Grid::new(w, h);
+        }
         self.top = self.snap(self.top);
         let mut cur = None;
         if self.start_screen.is_none() {
@@ -29,6 +34,7 @@ impl<T: Terminal> App<T> {
         }
         self.draw_status(&mut g);
         self.screen.present(&g, cur.filter(|&(x, _)| x < w));
+        self.frame = g;
         if self.pending {
             self.last_draw = Some((self.clock)());
         }

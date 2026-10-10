@@ -46,6 +46,19 @@ impl Cell {
             width: 1,
         }
     }
+
+    /// Makes this a blank in `style`, keeping the text's buffer.
+    fn set_blank(&mut self, style: Style) {
+        self.set(" ", style, None, 1);
+    }
+
+    fn set(&mut self, text: &str, style: Style, link: Option<Link>, width: u8) {
+        self.text.clear();
+        self.text.push_str(text);
+        self.style = style;
+        self.link = link;
+        self.width = width;
+    }
 }
 
 #[derive(Debug)]
@@ -87,6 +100,14 @@ impl Grid {
         }
     }
 
+    /// Blanks every cell, keeping their buffers.
+    pub fn clear(&mut self) {
+        for c in &mut self.cells {
+            c.set_blank(Style::default());
+        }
+        self.pending = None;
+    }
+
     pub fn width(&self) -> usize {
         self.w
     }
@@ -112,54 +133,43 @@ impl Grid {
         if x >= self.w || y >= self.h {
             return 0;
         }
-        let text = match self.pending.take() {
+        let joined = match self.pending.take() {
             Some((px, py, mut p)) if (px, py) == (x, y) => {
                 p.push_str(text);
-                p
+                Some(p)
             }
-            _ => text.to_owned(),
+            _ => None,
         };
-        let width = cluster_width(&text);
+        let width = cluster_width(joined.as_deref().unwrap_or(text));
         if width == 0 {
-            self.pending = Some((x, y, text));
+            self.pending = Some((x, y, joined.unwrap_or_else(|| text.to_owned())));
             return 0;
         }
+        let text = joined.as_deref().unwrap_or(text);
         if x + width > self.w {
             return 0;
         }
         let i = y * self.w + x;
         // No half of a wide cluster may survive a put over its other half.
         if self.cells[i].width == 0 && x > 0 {
-            self.cells[i - 1] = Cell::blank();
+            self.cells[i - 1].set_blank(Style::default());
         }
         let last = i + width - 1;
         if self.cells[last].width == 2 && x + width < self.w {
-            self.cells[last + 1] = Cell::blank();
+            self.cells[last + 1].set_blank(Style::default());
         }
         if width == 2 {
-            self.cells[i + 1] = Cell {
-                text: String::new(),
-                style,
-                link: link.clone(),
-                width: 0,
-            };
+            self.cells[i + 1].set("", style, link.clone(), 0);
         }
-        self.cells[i] = Cell {
-            text,
-            style,
-            link,
-            width: width as u8,
-        };
+        self.cells[i].set(text, style, link, width as u8);
         width
     }
 
     /// Blanks row `y` in `style`.
     pub fn fill_row(&mut self, y: usize, style: Style) {
-        let blank = Cell {
-            style,
-            ..Cell::blank()
-        };
-        self.cells[y * self.w..(y + 1) * self.w].fill(blank);
+        for c in &mut self.cells[y * self.w..(y + 1) * self.w] {
+            c.set_blank(style);
+        }
     }
 
     /// Every cell with its `(x, y)`, row by row.
@@ -440,5 +450,19 @@ mod tests {
             assert_eq!(g.get(x, 1).width, 1);
         }
         assert_eq!(*g.get(0, 0), Cell::blank());
+    }
+
+    #[test]
+    fn clear_blanks_every_cell() {
+        let mut g = Grid::new(3, 2);
+        put(&mut g, 0, 0, "日");
+        put(&mut g, 2, 1, "x");
+        g.fill_row(1, Style::default().reverse());
+        put(&mut g, 2, 0, "\u{301}");
+        assert!(g.pending.is_some());
+        g.clear();
+        assert!(g.cells().all(|(_, _, c)| *c == Cell::blank()));
+        put(&mut g, 2, 0, "e");
+        assert_eq!(g.get(2, 0).text, "e", "pending zero-width text dropped");
     }
 }

@@ -32,7 +32,7 @@ use crate::text::buffer::{Buffer, Pos};
 use crate::text::reader::Gen;
 use crate::text::search::Matcher;
 use crate::view::layout::{self, Layout, WrapStyle};
-use crate::view::screen::{Screen, Terminal};
+use crate::view::screen::{Grid, Screen, Terminal};
 use motion::{LaidCache, Row};
 use prompt::Prompt;
 
@@ -64,6 +64,8 @@ enum Focus {
 
 pub struct App<T: Terminal> {
     screen: Screen<T>,
+    /// The last frame drawn, whose cells the next one reuses.
+    frame: Grid,
     buf: Buffer,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
@@ -155,6 +157,7 @@ impl<T: Terminal> App<T> {
         buffer.set_literal(opts.view_style == ViewStyle::Raw);
         let mut a = App {
             screen: Screen::new(term),
+            frame: Grid::new(0, 0),
             buf: buffer,
             generation,
             copier: opts.copier,
