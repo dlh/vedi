@@ -27,10 +27,11 @@ pub use options::{Clock, Copier, Opener, Options, STDIN, StartScreen};
 
 use crate::input::action::{Action, Command};
 use crate::input::keymap::Keymap;
+use crate::input::setting::Settings;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
-use crate::view::layout::{self, Layout, WrapStyle};
+use crate::view::layout::{self, Layout};
 use crate::view::screen::{Grid, Screen, Terminal};
 use motion::{LaidCache, Row};
 
@@ -71,19 +72,7 @@ pub struct App<T: Terminal> {
     clock: Clock,
     names: Vec<String>,
     keys: Keymap,
-    wrap_mode: layout::Mode,
-    wrap_style: WrapStyle,
-    /// Cells per tab stop; 0 for the default.
-    tab: usize,
-    /// Mark text off the sides with < and >, a wrapped row with \.
-    marks: bool,
-    /// A row names each input, when there are several.
-    seps: bool,
-    /// A `Changed` event reads the file again.
-    auto: bool,
-    /// The status line shows only when it has something to say.
-    hide: bool,
-    view: ViewStyle,
+    settings: Settings,
 
     cur: Pos,
     /// The selection anchor; `None` when there is no selection.
@@ -129,7 +118,7 @@ pub struct App<T: Terminal> {
 impl<T: Terminal> App<T> {
     /// Takes `buffer` as read so far: `generation` is its reader's.
     pub fn new(term: T, mut buffer: Buffer, generation: Gen, opts: Options) -> App<T> {
-        buffer.set_literal(opts.view_style == ViewStyle::Raw);
+        buffer.set_literal(opts.settings.view_style == ViewStyle::Raw);
         let mut a = App {
             screen: Screen::new(term),
             frame: Grid::new(0, 0),
@@ -139,14 +128,7 @@ impl<T: Terminal> App<T> {
             clock: opts.clock,
             names: opts.names,
             keys: opts.keys,
-            wrap_mode: opts.mode,
-            wrap_style: opts.wrap_style,
-            tab: opts.tab_width,
-            marks: opts.edge_markers,
-            seps: opts.file_separators,
-            auto: opts.auto_reload,
-            hide: opts.hide_status,
-            view: opts.view_style,
+            settings: opts.settings,
             cur: Pos::default(),
             anchor: None,
             marking: false,
@@ -339,7 +321,7 @@ impl<T: Terminal> App<T> {
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
             Event::Changed => {
-                if self.auto {
+                if self.settings.auto_reload {
                     self.reload(false);
                 }
             }
@@ -434,7 +416,7 @@ impl<T: Terminal> App<T> {
     /// the last column is then the marker's, and text wraps a column
     /// early. Under three columns there is no room.
     fn wrap_marks(&self, w: usize) -> bool {
-        self.marks && self.wrap_mode == layout::Mode::Wrap && w > 2
+        self.settings.edge_markers && self.settings.mode == layout::Mode::Wrap && w > 2
     }
 
     fn layout(&self) -> Layout {
@@ -442,9 +424,9 @@ impl<T: Terminal> App<T> {
         let width = if self.wrap_marks(w) { w - 1 } else { w };
         Layout {
             width,
-            mode: self.wrap_mode,
-            tab: self.tab,
-            wrap_style: self.wrap_style,
+            mode: self.settings.mode,
+            tab: self.settings.tab_width,
+            wrap_style: self.settings.wrap_style,
         }
     }
 

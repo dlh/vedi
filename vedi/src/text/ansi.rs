@@ -195,14 +195,14 @@ pub enum ViewStyle {
 }
 
 impl FromStr for ViewStyle {
-    type Err = String;
+    type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, String> {
+    fn from_str(s: &str) -> Result<Self, ()> {
         match s {
             "color" => Ok(ViewStyle::Color),
             "plain" => Ok(ViewStyle::Plain),
             "raw" => Ok(ViewStyle::Raw),
-            _ => Err("view_style takes color, plain or raw".to_string()),
+            _ => Err(()),
         }
     }
 }
@@ -1105,9 +1105,6 @@ mod tests {
             assert_eq!(name.parse::<ViewStyle>(), Ok(view));
             assert_eq!(view.to_string(), name);
         }
-        assert_eq!(
-            "bold".parse::<ViewStyle>(),
-            Err("view_style takes color, plain or raw".to_string())
-        );
+        assert_eq!("bold".parse::<ViewStyle>(), Err(()));
     }
 }

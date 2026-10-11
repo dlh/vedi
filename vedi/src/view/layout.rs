@@ -52,13 +52,13 @@ pub enum WrapStyle {
 }
 
 impl FromStr for WrapStyle {
-    type Err = String;
+    type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, String> {
+    fn from_str(s: &str) -> Result<Self, ()> {
         match s {
             "char" => Ok(WrapStyle::Char),
             "word" => Ok(WrapStyle::Word),
-            _ => Err("wrap_style takes char or word".to_string()),
+            _ => Err(()),
         }
     }
 }

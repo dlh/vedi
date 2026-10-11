@@ -11,31 +11,23 @@ use glob::Pattern;
 use crate::input::action::Command;
 use crate::input::key::{Key, Mods};
 use crate::input::keymap::{Binding, DEFAULTS, Keymap};
+use crate::input::setting::{self, Settings};
 use crate::sys::words;
-use crate::text::ansi::ViewStyle;
-use crate::view::layout::WrapStyle;
+use crate::view::layout::Mode;
 
-/// What a file sets; `None` is a setting it leaves alone.
+/// What a file sets.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Config {
     /// map lines, in order.
     pub keys: Vec<Binding>,
     /// clear_all_shortcuts: the map starts empty.
     pub clear: bool,
-    pub auto_reload: Option<bool>,
-    pub wrap: Option<bool>,
-    pub wrap_style: Option<WrapStyle>,
-    pub view_style: Option<ViewStyle>,
     /// Copy pipes to this, not OSC 52.
     pub clipboard_cmd: Option<String>,
     /// open_cmd lines, in order.
     pub open_cmds: Vec<OpenCmd>,
-    pub tab_width: Option<usize>,
-    pub edge_markers: Option<bool>,
-    pub file_separators: Option<bool>,
-    pub status_line: Option<bool>,
-    /// Rows -F leaves below the text.
-    pub one_page_rows_below: Option<usize>,
+    /// The setting lines laid over the defaults, later lines winning.
+    pub settings: Settings,
 }
 
 /// An open_cmd line: files whose base name matches `pattern`, both
@@ -149,19 +141,22 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
         return Ok(None);
     }
     let rest = line.trim()[verb.len()..].trim();
+    // The one word after the verb; "" for none or several.
     let arg = match f[..] {
-        [_, arg] => Some(arg),
-        _ => None,
+        [_, arg] => arg,
+        _ => "",
     };
-    let yes_no = || match arg {
-        Some("yes") => Ok(Some(true)),
-        Some("no") => Ok(Some(false)),
-        _ => Err(format!("{verb} takes yes or no")),
-    };
-    let positive = || match arg.map(str::parse::<usize>) {
-        Some(Ok(n)) if n > 0 => Ok(Some(n)),
+    // A verb with values is checked here, so its arm need not.
+    if let Some(v) = setting::lookup(verb)
+        && !v.values.contains(&arg)
+    {
+        return Err(format!("{verb} takes {}", setting::or_list(v.values)));
+    }
+    let positive = || match arg.parse::<usize>() {
+        Ok(n) if n > 0 => Ok(n),
         _ => Err(format!("{verb} takes a positive number")),
     };
+    let s = &mut c.settings;
     match verb {
         "map" => {
             if f.len() != 3 && !(f.len() == 4 && f[2] == "cycle") {
@@ -178,26 +173,19 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
             c.keys.clear();
             c.clear = true;
         }
-        "auto_reload" => c.auto_reload = yes_no()?,
-        "wrap" => c.wrap = yes_no()?,
-        "edge_markers" => c.edge_markers = yes_no()?,
-        "file_separators" => c.file_separators = yes_no()?,
-        "status_line" => c.status_line = yes_no()?,
-        "wrap_style" => {
-            c.wrap_style = Some(match arg {
-                Some("char") => WrapStyle::Char,
-                Some("word") => WrapStyle::Word,
-                _ => return Err("wrap_style takes char or word".to_string()),
-            })
+        "auto_reload" => s.auto_reload = arg == "yes",
+        "wrap" => {
+            s.mode = if arg == "yes" {
+                Mode::Wrap
+            } else {
+                Mode::NoWrap
+            }
         }
-        "view_style" => {
-            c.view_style = Some(match arg {
-                Some("color") => ViewStyle::Color,
-                Some("plain") => ViewStyle::Plain,
-                Some("raw") => ViewStyle::Raw,
-                _ => return Err("view_style takes color, plain or raw".to_string()),
-            })
-        }
+        "edge_markers" => s.edge_markers = arg == "yes",
+        "file_separators" => s.file_separators = arg == "yes",
+        "status_line" => s.status_line = arg == "yes",
+        "wrap_style" => s.wrap_style = arg.parse().expect("checked"),
+        "view_style" => s.view_style = arg.parse().expect("checked"),
         "clipboard_cmd" => {
             if rest.is_empty() {
                 return Err("clipboard_cmd takes a command".to_string());
@@ -205,8 +193,8 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
             c.clipboard_cmd = Some(rest.to_string());
         }
         "open_cmd" => c.open_cmds.push(parse_open_cmd(rest)?),
-        "tab_width" => c.tab_width = positive()?,
-        "one_page_rows_below" => c.one_page_rows_below = positive()?,
+        "tab_width" => s.tab_width = positive()?,
+        "one_page_rows_below" => s.one_page_rows_below = positive()?,
         _ => return Err(format!("unknown verb {verb:?}")),
     }
     Ok(Some(verb))
@@ -265,6 +253,8 @@ mod tests {
     use super::*;
     use crate::input::help::{Row, Section};
     use crate::input::key::KeyCode;
+    use crate::text::ansi::ViewStyle;
+    use crate::view::layout::WrapStyle;
 
     fn key(name: &str) -> Key {
         name.parse().unwrap()
@@ -365,7 +355,7 @@ mod tests {
             parse_line("  wrap_style  word ", &mut c),
             Ok(Some("wrap_style"))
         );
-        assert_eq!(c.wrap_style, Some(WrapStyle::Word));
+        assert_eq!(c.settings.wrap_style, WrapStyle::Word);
         assert_eq!(
             parse_line("clipboard_cmd sh -c false", &mut c),
             Ok(Some("clipboard_cmd"))
@@ -572,19 +562,19 @@ mod tests {
         );
     }
 
-    /// Each yes-or-no setting: unset by default, the last line wins, and
-    /// anything but yes or no is an error.
-    fn check_yes_no(name: &str, get: fn(&Config) -> Option<bool>) {
+    /// Each yes-or-no setting: its default without a line, the last
+    /// line wins, and anything but yes or no is an error.
+    fn check_yes_no(name: &str, get: fn(&Settings) -> bool) {
         let tests = [
-            (String::new(), None),
-            (format!("{name} no\n"), Some(false)),
-            (format!("{name} yes\n"), Some(true)),
-            (format!("{name} no\n{name} yes\n"), Some(true)),
-            (format!("{name} yes\nmap x quit\n{name} no\n"), Some(false)),
+            (String::new(), get(&Settings::default())),
+            (format!("{name} no\n"), false),
+            (format!("{name} yes\n"), true),
+            (format!("{name} no\n{name} yes\n"), true),
+            (format!("{name} yes\nmap x quit\n{name} no\n"), false),
         ];
         for (src, want) in tests {
             assert_eq!(
-                parse("vedi.conf", &src).map(|c| get(&c)),
+                parse("vedi.conf", &src).map(|c| get(&c.settings)),
                 Ok(want),
                 "{src:?}"
             );
@@ -597,41 +587,41 @@ mod tests {
 
     #[test]
     fn auto_reload() {
-        check_yes_no("auto_reload", |c| c.auto_reload);
+        check_yes_no("auto_reload", |s| s.auto_reload);
     }
 
     #[test]
     fn wrap() {
-        check_yes_no("wrap", |c| c.wrap);
+        check_yes_no("wrap", |s| s.mode == Mode::Wrap);
     }
 
     #[test]
     fn edge_markers() {
-        check_yes_no("edge_markers", |c| c.edge_markers);
+        check_yes_no("edge_markers", |s| s.edge_markers);
     }
 
     #[test]
     fn file_separators() {
-        check_yes_no("file_separators", |c| c.file_separators);
+        check_yes_no("file_separators", |s| s.file_separators);
     }
 
     #[test]
     fn status_line() {
-        check_yes_no("status_line", |c| c.status_line);
+        check_yes_no("status_line", |s| s.status_line);
     }
 
     #[test]
     fn wrap_style() {
         let tests = [
-            ("", None),
-            ("wrap_style word\n", Some(WrapStyle::Word)),
-            ("wrap_style char\n", Some(WrapStyle::Char)),
-            ("wrap_style word\nwrap_style char\n", Some(WrapStyle::Char)),
-            ("wrap_style word\nwrap no\n", Some(WrapStyle::Word)),
+            ("", WrapStyle::Char),
+            ("wrap_style word\n", WrapStyle::Word),
+            ("wrap_style char\n", WrapStyle::Char),
+            ("wrap_style word\nwrap_style char\n", WrapStyle::Char),
+            ("wrap_style word\nwrap no\n", WrapStyle::Word),
         ];
         for (src, want) in tests {
             assert_eq!(
-                parse("vedi.conf", src).map(|c| c.wrap_style),
+                parse("vedi.conf", src).map(|c| c.settings.wrap_style),
                 Ok(want),
                 "{src:?}"
             );
@@ -648,18 +638,15 @@ mod tests {
     #[test]
     fn view_style() {
         let tests = [
-            ("", None),
-            ("view_style plain\n", Some(ViewStyle::Plain)),
-            ("view_style color\n", Some(ViewStyle::Color)),
-            ("view_style raw\n", Some(ViewStyle::Raw)),
-            (
-                "view_style plain\nview_style color\n",
-                Some(ViewStyle::Color),
-            ),
+            ("", ViewStyle::Color),
+            ("view_style plain\n", ViewStyle::Plain),
+            ("view_style color\n", ViewStyle::Color),
+            ("view_style raw\n", ViewStyle::Raw),
+            ("view_style plain\nview_style color\n", ViewStyle::Color),
         ];
         for (src, want) in tests {
             assert_eq!(
-                parse("vedi.conf", src).map(|c| c.view_style),
+                parse("vedi.conf", src).map(|c| c.settings.view_style),
                 Ok(want),
                 "{src:?}"
             );
@@ -818,13 +805,13 @@ open_cmd less %s
     #[test]
     fn one_page_rows_below() {
         let tests = [
-            ("", None),
-            ("one_page_rows_below 2\n", Some(2)),
-            ("one_page_rows_below 2\none_page_rows_below 3\n", Some(3)),
+            ("", 1),
+            ("one_page_rows_below 2\n", 2),
+            ("one_page_rows_below 2\none_page_rows_below 3\n", 3),
         ];
         for (src, want) in tests {
             assert_eq!(
-                parse("vedi.conf", src).map(|c| c.one_page_rows_below),
+                parse("vedi.conf", src).map(|c| c.settings.one_page_rows_below),
                 Ok(want),
                 "{src:?}"
             );
@@ -842,15 +829,15 @@ open_cmd less %s
     #[test]
     fn tab_width() {
         let tests = [
-            ("", None),
-            ("tab_width 4\n", Some(4)),
-            ("tab_width 8\n", Some(8)),
-            ("tab_width 2\ntab_width 4\n", Some(4)),
-            ("tab_width 4\nmap x quit\n", Some(4)),
+            ("", 0),
+            ("tab_width 4\n", 4),
+            ("tab_width 8\n", 8),
+            ("tab_width 2\ntab_width 4\n", 4),
+            ("tab_width 4\nmap x quit\n", 4),
         ];
         for (src, want) in tests {
             assert_eq!(
-                parse("vedi.conf", src).map(|c| c.tab_width),
+                parse("vedi.conf", src).map(|c| c.settings.tab_width),
                 Ok(want),
                 "{src:?}"
             );

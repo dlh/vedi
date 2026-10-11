@@ -161,7 +161,7 @@ impl<T: Terminal> App<T> {
     /// line of an input, with separators on and several inputs given.
     /// An input with no lines starts where the next does and gets none.
     pub(super) fn sep_at(&self, i: usize) -> bool {
-        self.seps && self.names.len() > 1 && self.buf.starts_part(i)
+        self.settings.file_separators && self.names.len() > 1 && self.buf.starts_part(i)
     }
 
     /// Row `p` with its line's separator in its place when `p` is the
@@ -468,7 +468,7 @@ impl<T: Terminal> App<T> {
             }
         }
         let l = self.layout();
-        if self.wrap_mode != Mode::NoWrap || l.width == 0 {
+        if self.settings.mode != Mode::NoWrap || l.width == 0 {
             self.xoff = 0;
             return;
         }
@@ -484,7 +484,7 @@ impl<T: Terminal> App<T> {
             1
         };
         let width = xs[xs.len() - 1];
-        let mark = usize::from(self.marks);
+        let mark = usize::from(self.settings.edge_markers);
         let right = |xoff: usize| if width > xoff + l.width { mark } else { 0 };
         if x < self.xoff + mark {
             self.xoff = x.saturating_sub(mark);
@@ -531,7 +531,7 @@ impl<T: Terminal> App<T> {
             self.start_screen = None;
         }
         self.scroll_to_cursor();
-        if self.cur == cur && self.wrap_mode == Mode::NoWrap {
+        if self.cur == cur && self.settings.mode == Mode::NoWrap {
             self.xoff = xoff;
         }
     }

@@ -331,7 +331,7 @@ impl<T: Terminal> App<T> {
         self.act();
         let l = self.layout();
         let rows = self.text_rows();
-        if self.wrap_mode != Mode::NoWrap || l.width == 0 || rows == 0 || self.buf.is_empty() {
+        if self.settings.mode != Mode::NoWrap || l.width == 0 || rows == 0 || self.buf.is_empty() {
             return;
         }
         self.top = self.snap(self.top);

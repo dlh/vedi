@@ -15,7 +15,7 @@ impl<T: Terminal> App<T> {
     /// Whether the status line has a row: always, unless hidden, and
     /// then for a prompt, a message, help or a read error.
     pub fn status_shown(&self) -> bool {
-        !self.hide
+        self.settings.status_line
             || self.focus != Focus::Viewing
             || self.status.is_some()
             || self.read_error().is_some()
@@ -33,7 +33,7 @@ impl<T: Terminal> App<T> {
     /// cursor's row: whatever brought it back placed the cursor while
     /// the text still had that row.
     pub(super) fn uncover(&mut self) {
-        if !self.hide
+        if self.settings.status_line
             || self.text.is_some()
             || self.start_screen.is_some()
             || !self.status_shown()
@@ -109,14 +109,14 @@ impl<T: Terminal> App<T> {
         if let Some(e) = self.read_error() {
             return format!("read error: {e}");
         }
-        let mut mode = match (self.wrap_mode, self.wrap_style) {
+        let mut mode = match (self.settings.mode, self.settings.wrap_style) {
             (WrapMode::NoWrap, _) => "nowrap",
             (_, WrapStyle::Word) => "word wrap",
             _ => "wrap",
         }
         .to_string();
-        if self.view != ViewStyle::Color {
-            mode = format!("{mode}  {}", self.view);
+        if self.settings.view_style != ViewStyle::Color {
+            mode = format!("{mode}  {}", self.settings.view_style);
         }
         let mut reading = if self.buf.finished().is_some() {
             ""

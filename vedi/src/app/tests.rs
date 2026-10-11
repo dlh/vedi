@@ -33,8 +33,7 @@ impl Copier for Clip {
 fn options() -> Options {
     Options {
         names: vec![STDIN.to_string()],
-        mode: layout::Mode::Wrap,
-        wrap_style: WrapStyle::Char,
+        settings: Settings::default(),
         start_line: None,
         follow: false,
         screen: None,
@@ -42,12 +41,6 @@ fn options() -> Options {
         clock: Box::new(Instant::now),
         macos: false,
         keys: config::default_keymap(false),
-        tab_width: 0,
-        edge_markers: false,
-        file_separators: true,
-        auto_reload: true,
-        hide_status: false,
-        view_style: ViewStyle::Color,
         open: None,
     }
 }
@@ -152,7 +145,10 @@ fn draw_styles() {
 #[test]
 fn view_style_plain() {
     let opts = Options {
-        view_style: ViewStyle::Plain,
+        settings: Settings {
+            view_style: ViewStyle::Plain,
+            ..Settings::default()
+        },
         ..options()
     };
     let mut a = app(20, 5, "\x1b[1;31mred\r\x1b]8;;http://x\x07link", opts);
@@ -277,7 +273,10 @@ fn read_error_in_status() {
 #[test]
 fn read_error_shows_hidden_status() {
     let opts = Options {
-        hide_status: true,
+        settings: Settings {
+            status_line: false,
+            ..Settings::default()
+        },
         ..options()
     };
     let (mut a, mut ix) = reading(30, 2, opts);

@@ -62,7 +62,7 @@ impl<T: Terminal> App<T> {
     /// under the view help set aside. The old buffer's files close with
     /// it.
     fn put(&mut self, mut buf: Buffer) {
-        buf.set_literal(self.view == ViewStyle::Raw);
+        buf.set_literal(self.settings.view_style == ViewStyle::Raw);
         self.change_text(|b| *b = buf);
     }
 

@@ -519,10 +519,10 @@ impl Scenario<'_, '_> {
         self.file = file;
         self.files = files;
         self.rows_below = rows_below;
-        self.seps = opts.file_separators;
+        self.seps = opts.settings.file_separators;
         self.keys = opts.keys.clone();
         if let Some(buf) = &mut self.buf {
-            buf.set_literal(opts.view_style == ViewStyle::Raw);
+            buf.set_literal(opts.settings.view_style == ViewStyle::Raw);
         }
         self.pending_opts = Some(opts);
         self.deliver()
@@ -567,11 +567,14 @@ impl Scenario<'_, '_> {
         let disks = Rc::clone(&self.disks);
         let file = !files.is_empty() && !files.iter().any(|f| f == "-");
         opts.open = file.then(|| Box::new(move |_| Ok(disk_buffer(&disks.borrow()))) as Opener);
+        let rows_below = flags
+            .quit_if_one_page
+            .then_some(opts.settings.one_page_rows_below);
         Ok(Startup {
             opts,
             files,
             file,
-            rows_below: flags.quit_if_one_page.then(|| flags.rows_below(cfg)),
+            rows_below,
         })
     }
 }

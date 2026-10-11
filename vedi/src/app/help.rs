@@ -47,7 +47,7 @@ impl<T: Terminal> App<T> {
             top: self.top,
             anchor: self.anchor.take(),
             xoff: self.xoff,
-            wrap_mode: self.wrap_mode,
+            wrap_mode: self.settings.mode,
             matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
             backward: self.search.backward,
             highlight: self.search.highlight,
@@ -57,7 +57,7 @@ impl<T: Terminal> App<T> {
         self.cur = Pos::default();
         self.top = Row::text(Pos::default());
         self.xoff = 0;
-        self.wrap_mode = Mode::NoWrap;
+        self.settings.mode = Mode::NoWrap;
         self.search.backward = false;
         self.search.highlight = false;
         self.laid.clear();
@@ -89,7 +89,7 @@ impl<T: Terminal> App<T> {
         self.top = t.top;
         self.anchor = t.anchor;
         self.xoff = t.xoff;
-        self.wrap_mode = t.wrap_mode;
+        self.settings.mode = t.wrap_mode;
         self.search.matcher = t.matcher;
         self.search.backward = t.backward;
         self.search.highlight = t.highlight;

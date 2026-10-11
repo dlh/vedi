@@ -221,8 +221,7 @@ impl fmt::Display for ActionError {
             ActionError::Unknown(name) => write!(f, "unknown action {name:?}"),
             ActionError::Cycle => {
                 let names: Vec<&str> = setting::names().collect();
-                let (last, rest) = names.split_last().expect("settings");
-                write!(f, "cycle takes {} or {last}", rest.join(", "))
+                write!(f, "cycle takes {}", setting::or_list(&names))
             }
         }
     }

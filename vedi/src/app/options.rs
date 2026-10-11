@@ -2,10 +2,9 @@ use std::io;
 use std::time::Instant;
 
 use crate::input::keymap::Keymap;
-use crate::text::ansi::ViewStyle;
+use crate::input::setting::Settings;
 use crate::text::buffer::Buffer;
 use crate::text::reader::Gen;
-use crate::view::layout::{Mode, WrapStyle};
 
 /// The name of input read from stdin, which a window title in the
 /// input renames.
@@ -27,8 +26,7 @@ pub type Opener = Box<dyn FnMut(Gen) -> io::Result<Buffer>>;
 pub struct Options {
     /// What the status line calls each input, by its part in the buffer.
     pub names: Vec<String>,
-    pub mode: Mode,
-    pub wrap_style: WrapStyle,
+    pub settings: Settings,
     /// 1-based line to put at the top.
     pub start_line: Option<usize>,
     /// Keep the cursor on the last line until EOF (+G).
@@ -39,18 +37,6 @@ pub struct Options {
     /// There is a ⌘ key.
     pub macos: bool,
     pub keys: Keymap,
-    /// Cells per tab stop; 0 for 8.
-    pub tab_width: usize,
-    /// Mark text off the sides with < and >, a wrapped row with \.
-    pub edge_markers: bool,
-    /// A row names each input, when there are several.
-    pub file_separators: bool,
-    /// A `Changed` event reads the file again.
-    pub auto_reload: bool,
-    /// The status line shows only for a prompt, a message, help or a
-    /// read error.
-    pub hide_status: bool,
-    pub view_style: ViewStyle,
     /// `None` when the input cannot be read again, as a pipe cannot.
     pub open: Option<Opener>,
 }

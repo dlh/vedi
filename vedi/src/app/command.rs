@@ -10,28 +10,19 @@ use crate::input::setting;
 use crate::sys::clipboard::CommandCopier;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
-use crate::view::layout::Mode;
 use crate::view::screen::Terminal;
 
-/// What the : prompt takes: goto, cycle, help, reload, quit and the
-/// config verbs but clear_all_shortcuts, which would unbind : and q.
-const COMMANDS: &[&str] = &[
-    "goto",
-    "cycle",
-    "help",
-    "reload",
-    "quit",
-    "wrap",
-    "wrap_style",
-    "tab_width",
-    "edge_markers",
-    "file_separators",
-    "auto_reload",
-    "status_line",
-    "view_style",
-    "clipboard_cmd",
-    "map",
-];
+/// What the : prompt runs itself; the config verbs follow.
+const BUILTINS: &[&str] = &["goto", "cycle", "help", "reload", "quit"];
+
+/// What the : prompt takes.
+fn commands() -> impl Iterator<Item = &'static str> {
+    BUILTINS.iter().copied().chain(setting::at_prompt())
+}
+
+fn is_command(name: &str) -> bool {
+    commands().any(|c| c == name)
+}
 
 #[derive(Default)]
 pub(super) struct State {
@@ -56,6 +47,17 @@ impl State {
         }
     }
 
+    /// Whether the listing is of commands.
+    fn listing_commands(&self) -> bool {
+        self.listing().is_some() && last_word(&self.stem).1.is_empty()
+    }
+
+    /// The stem up to the word being completed.
+    fn base(&self) -> &str {
+        let (word, _) = last_word(&self.stem);
+        &self.stem[..self.stem.len() - word.len()]
+    }
+
     /// Fills in the word being typed at the end of the : prompt from the
     /// candidates for its place: with one, the word and a space; with
     /// several, what they share, listing them sorted; with none,
@@ -64,10 +66,8 @@ impl State {
     fn complete(&mut self) {
         if let Some((ms, at)) = self.listing() {
             let pos = at.map_or(0, |p| p + 1);
-            let (word, _) = last_word(&self.stem);
-            let base = &self.stem[..self.stem.len() - word.len()];
             let (text, at) = match ms.get(pos) {
-                Some(m) => (format!("{base}{m} "), Some(pos)),
+                Some(m) => (format!("{}{m} ", self.base()), Some(pos)),
                 None => (self.stem.clone(), None),
             };
             self.match_pos = at;
@@ -76,12 +76,12 @@ impl State {
         }
         self.stem = self.line.text();
         let (word, before) = last_word(&self.stem);
-        let base = &self.stem[..self.stem.len() - word.len()];
         let mut found: Vec<String> = candidates(&before)
             .into_iter()
-            .filter(|c| c.starts_with(&word))
+            .filter(|c| c.starts_with(word))
             .collect();
         found.sort();
+        let base = self.base();
         match &found[..] {
             [] => {}
             [one] => {
@@ -91,8 +91,8 @@ impl State {
             [first, rest @ ..] => {
                 let shared = rest.iter().fold(first.as_str(), |s, c| common_prefix(s, c));
                 let text = format!("{base}{shared}");
-                self.matches = Some(found.clone());
                 self.match_pos = None;
+                self.matches = Some(found);
                 self.fill(&text);
             }
         }
@@ -120,15 +120,15 @@ impl<T: Terminal> App<T> {
     pub(super) fn command_key(&mut self, key: Key) -> Flow {
         let key = key.normalized();
         let c = &mut self.command;
-        let (_, before) = last_word(&c.stem);
-        let listing_commands = c.listing().is_some() && before.is_empty();
+        // Any key but Tab takes the listing down.
+        let listing_commands = c.listing_commands();
         if key.code != KeyCode::Tab {
             c.matches = None;
         }
         let command = c.filled.trim_end_matches(' ');
         match key.code {
             _ if cancels(key) => self.focus = Focus::Viewing,
-            KeyCode::Enter if listing_commands && COMMANDS.contains(&command) => {
+            KeyCode::Enter if listing_commands && is_command(command) => {
                 let text = format!("{command} ");
                 c.fill(&text);
             }
@@ -148,88 +148,69 @@ impl<T: Terminal> App<T> {
         Flow::Continue
     }
 
-    /// Runs a : line. A number alone, or goto and a number, goes to
-    /// that 1-based line, clamped to the input; cycle steps a setting;
-    /// help, reload and quit do what their keys do; a config verb sets
-    /// what it would in a file, for the rest of the run. Nothing typed
-    /// does nothing; an error is reported on the status line.
+    /// Runs a : line, reporting an error on the status line.
     pub(super) fn run_command(&mut self, line: &str) -> Flow {
-        let mut f: Vec<&str> = line.split_whitespace().collect();
-        let Some(&verb) = f.first() else {
-            return Flow::Continue;
+        match self.command(line) {
+            Ok(flow) => flow,
+            Err(e) => {
+                self.status = Some(e);
+                Flow::Continue
+            }
+        }
+    }
+
+    /// A number alone, or goto and a number, goes to that 1-based line,
+    /// clamped to the input; cycle steps a setting; help, reload and
+    /// quit do what their keys do; a config verb sets what it would in
+    /// a file, for the rest of the run. Nothing typed does nothing.
+    fn command(&mut self, line: &str) -> Result<Flow, String> {
+        let f: Vec<&str> = line.split_whitespace().collect();
+        match f[..] {
+            [] => {}
+            [n] | ["goto", n] if is_number(n) => self.goto(n),
+            ["goto", ..] => return Err("goto takes a line number".into()),
+            [verb @ ("help" | "reload" | "quit"), _, ..] => {
+                return Err(format!("{verb} takes no argument"));
+            }
+            ["cycle" | "help" | "reload" | "quit", ..] => {
+                let c: Command = line.parse().map_err(|e| format!("{e}"))?;
+                return Ok(self.view_key(Some(c)));
+            }
+            [verb, ..] if is_command(verb) => self.set(verb, line)?,
+            [verb, ..] => return Err(format!("unknown command {verb:?}")),
+        }
+        Ok(Flow::Continue)
+    }
+
+    fn goto(&mut self, n: &str) {
+        // Past usize is past the end all the same.
+        let n = n.parse::<usize>().unwrap_or(usize::MAX);
+        let (_, lines) = self.buf.part(self.cur.line);
+        let line = lines
+            .start
+            .saturating_add(n)
+            .saturating_sub(1)
+            .min(lines.end.saturating_sub(1))
+            .max(lines.start);
+        self.cur = Pos { line, col: 0 };
+        self.drop();
+        self.scroll_to_cursor();
+    }
+
+    /// Sets what a config line would.
+    fn set(&mut self, verb: &str, line: &str) -> Result<(), String> {
+        let mut c = Config {
+            settings: self.settings.clone(),
+            ..Config::default()
         };
-        if f.len() == 1 && is_number(verb) {
-            f = vec!["goto", verb];
-        }
-        match f[0] {
-            "goto" => {
-                if f.len() != 2 || !is_number(f[1]) {
-                    self.status = Some("goto takes a line number".into());
-                    return Flow::Continue;
-                }
-                // Past usize is past the end all the same.
-                let n = f[1].parse::<usize>().unwrap_or(usize::MAX);
-                let (_, lines) = self.buf.part(self.cur.line);
-                let line = lines
-                    .start
-                    .saturating_add(n)
-                    .saturating_sub(1)
-                    .min(lines.end.saturating_sub(1))
-                    .max(lines.start);
-                self.cur = Pos { line, col: 0 };
-                self.drop();
-                self.scroll_to_cursor();
-                return Flow::Continue;
-            }
-            "cycle" => {
-                match line.parse::<Command>() {
-                    Ok(c) => self.cycle(c.arg.as_deref().unwrap_or_default()),
-                    Err(e) => self.status = Some(e.to_string()),
-                }
-                return Flow::Continue;
-            }
-            "help" | "reload" | "quit" => {
-                if f.len() != 1 {
-                    self.status = Some(format!("{} takes no argument", f[0]));
-                    return Flow::Continue;
-                }
-                match f[0] {
-                    "help" => self.show_help(),
-                    "reload" => self.reload(true),
-                    _ => return Flow::Quit,
-                }
-                return Flow::Continue;
-            }
-            _ => {}
-        }
-        if !COMMANDS.contains(&verb) {
-            self.status = Some(format!("unknown command {verb:?}"));
-            return Flow::Continue;
-        }
-        let mut c = Config::default();
-        if let Err(e) = config::parse_line(line, &mut c) {
-            self.status = Some(e);
-            return Flow::Continue;
-        }
+        config::parse_line(line, &mut c)?;
+        self.settings = c.settings;
         match verb {
-            "wrap" => self.set_mode(if c.wrap == Some(false) {
-                Mode::NoWrap
-            } else {
-                Mode::Wrap
-            }),
-            "wrap_style" => self.wrap_style = c.wrap_style.unwrap_or_default(),
-            "tab_width" => self.tab = c.tab_width.unwrap_or_default(),
-            "edge_markers" => self.marks = c.edge_markers.unwrap_or_default(),
-            "file_separators" => self.seps = c.file_separators.unwrap_or(true),
-            "auto_reload" => {
-                self.auto = c.auto_reload.unwrap_or(true);
-                // A change during a reload asked for another.
-                if !self.auto {
-                    self.dirty = false;
-                }
-            }
-            "status_line" => self.hide = c.status_line == Some(false),
-            "view_style" => self.set_view(c.view_style.unwrap_or_default()),
+            // The horizontal scroll starts over.
+            "wrap" => self.xoff = 0,
+            // A change during a reload asked for another.
+            "auto_reload" if !self.settings.auto_reload => self.dirty = false,
+            "view_style" => self.set_literal(),
             "clipboard_cmd" => {
                 self.copier = Box::new(CommandCopier::new(c.clipboard_cmd.unwrap_or_default()))
             }
@@ -237,51 +218,28 @@ impl<T: Terminal> App<T> {
             _ => {}
         }
         self.scroll_to_cursor();
-        Flow::Continue
+        Ok(())
     }
 
     /// Sets a setting to the value after its current one, the first
     /// after the last, and reports the new value on the status line
-    /// unless the line shows it anyway, as it does wrap, wrap_style and
-    /// view_style, or is the setting.
+    /// unless the line shows it anyway.
     pub(super) fn cycle(&mut self, name: &str) {
         let Some(s) = setting::lookup(name) else {
             return;
         };
-        let line = format!("{name} {}", s.next(&self.setting(name)));
+        let line = format!("{name} {}", s.next(&self.settings.value(name)));
         self.run_command(&line);
-        if !matches!(name, "wrap" | "wrap_style" | "status_line" | "view_style") {
+        if !s.shown {
             self.status = Some(line);
         }
     }
 
-    /// The current value of a setting cycle takes, as a config file
-    /// spells it.
-    fn setting(&self, name: &str) -> String {
-        match name {
-            "wrap" => yes_no(self.wrap_mode == Mode::Wrap),
-            "wrap_style" => self.wrap_style.to_string(),
-            "edge_markers" => yes_no(self.marks),
-            "file_separators" => yes_no(self.seps),
-            "auto_reload" => yes_no(self.auto),
-            "status_line" => yes_no(!self.hide),
-            "view_style" => self.view.to_string(),
-            _ => String::new(),
-        }
-    }
-
-    /// Switches between wrap and nowrap; the horizontal scroll starts
-    /// over.
-    fn set_mode(&mut self, m: Mode) {
-        self.wrap_mode = m;
-        self.xoff = 0;
-    }
-
-    /// Changes the view style. To or from raw the lines' text changes
-    /// under the view, which keeps its place as over a reload.
-    fn set_view(&mut self, v: ViewStyle) {
-        self.view = v;
-        let raw = v == ViewStyle::Raw;
+    /// Decodes the text as the view style has it. To or from raw the
+    /// lines' text changes under the view, which keeps its place as
+    /// over a reload.
+    fn set_literal(&mut self) {
+        let raw = self.settings.view_style == ViewStyle::Raw;
         if self.text_buf().literal() == raw {
             return;
         }
@@ -291,21 +249,20 @@ impl<T: Terminal> App<T> {
 
 /// Splits a prompt into the word being typed, "" after a space, and
 /// the words before it.
-fn last_word(text: &str) -> (String, Vec<String>) {
-    let mut before: Vec<String> = text.split_whitespace().map(String::from).collect();
+fn last_word(text: &str) -> (&str, Vec<&str>) {
+    let mut before: Vec<&str> = text.split_whitespace().collect();
     let word = match before.last() {
         Some(_) if !text.ends_with(' ') => before.pop().unwrap_or_default(),
-        _ => String::new(),
+        _ => "",
     };
     (word, before)
 }
 
 /// The words that may come after `before`, the words before the one
 /// being completed: a command first, then its argument.
-fn candidates(before: &[String]) -> Vec<String> {
-    let strs: Vec<&str> = before.iter().map(String::as_str).collect();
-    match strs[..] {
-        [] => COMMANDS.iter().map(|&c| c.to_string()).collect(),
+fn candidates(before: &[&str]) -> Vec<String> {
+    match before {
+        [] => commands().map(String::from).collect(),
         ["cycle"] => setting::names().map(String::from).collect(),
         [s] => setting::lookup(s).map_or_else(Vec::new, |s| {
             s.values.iter().map(|&v| v.to_string()).collect()
@@ -325,10 +282,6 @@ fn common_prefix<'a>(a: &'a str, b: &str) -> &'a str {
     &a[..n]
 }
 
-fn yes_no(b: bool) -> String {
-    if b { "yes" } else { "no" }.to_string()
-}
-
 fn is_number(s: &str) -> bool {
     !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit())
 }
@@ -339,14 +292,10 @@ mod tests {
 
     #[test]
     fn last_word_splits() {
-        let words = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-        assert_eq!(last_word(""), (String::new(), vec![]));
-        assert_eq!(last_word("wr"), ("wr".to_string(), vec![]));
-        assert_eq!(last_word("wrap "), (String::new(), words(&["wrap"])));
-        assert_eq!(
-            last_word("map x sel"),
-            ("sel".to_string(), words(&["map", "x"]))
-        );
+        assert_eq!(last_word(""), ("", vec![]));
+        assert_eq!(last_word("wr"), ("wr", vec![]));
+        assert_eq!(last_word("wrap "), ("", vec!["wrap"]));
+        assert_eq!(last_word("map x sel"), ("sel", vec!["map", "x"]));
     }
 
     #[test]

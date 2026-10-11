@@ -78,7 +78,8 @@ fn run() -> Result<(), Fail> {
         Err(e) => return Err(e.to_string().into()),
     };
     let open_cmd = opts.open_cmd(&cfg)?;
-    let view = opts.view(&cfg);
+    let settings = opts.settings(&cfg);
+    let view = settings.view_style;
 
     let (tx, rx) = mpsc::channel();
     let killers = Killers::default();
@@ -95,8 +96,8 @@ fn run() -> Result<(), Fail> {
         if let Ok(tty) = File::open("/dev/tty").or_else(|_| File::open("/dev/null")) {
             let size = tty::size(&tty);
             let _resize = tty::sigwinch(tx.clone(), tty);
-            let below = opts.rows_below(&cfg);
-            let seps = opts.separators(&cfg);
+            let below = settings.one_page_rows_below;
+            let seps = settings.file_separators;
             if wait_one_page(&mut buf, &rx, size, below, seps) {
                 let _ = print_text(&mut stdout, &buf, view);
                 return Ok(());

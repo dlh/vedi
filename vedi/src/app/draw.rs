@@ -111,7 +111,7 @@ impl<T: Terminal> App<T> {
         // row: the cursor can rest on it, and it shows as one reverse
         // cell when selected.
         let end = seg.end + usize::from(segi + 1 == ln.rows());
-        let colored = self.view == ViewStyle::Color;
+        let colored = self.settings.view_style == ViewStyle::Color;
         let (mut cur_x, mut cur_w) = (None, 1);
         let mut ri = 0;
         let mut i = seg.start;
@@ -178,7 +178,7 @@ impl<T: Terminal> App<T> {
         // screen.
         let width = xs[n];
         let mut shown = cur_x.is_some();
-        if self.marks && self.wrap_mode == Mode::NoWrap {
+        if self.settings.edge_markers && self.settings.mode == Mode::NoWrap {
             if self.xoff > 0 && width > 0 {
                 put(g, 0, y, "<", EDGE, None);
                 shown = shown && cur_x != Some(0);

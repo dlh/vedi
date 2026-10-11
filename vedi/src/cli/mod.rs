@@ -8,10 +8,9 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::app::{self, Copier, STDIN, StartScreen};
-use crate::input::config::Config;
+use crate::input::config::{self, Config};
+use crate::input::setting::Settings;
 use crate::sys::words;
-use crate::text::ansi::ViewStyle;
-use crate::view::layout::{Mode, WrapStyle};
 
 pub use completion::completion;
 pub use parse::parse;
@@ -51,34 +50,35 @@ quit, / search, n/N next/prev, w toggle wrap, q quit.
 Docs: https://github.com/dlh/vedi
 "#;
 
-/// The flags; `None` leaves a setting to the config.
+/// The flags.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Options {
-    pub wrap: Option<bool>,
-    pub wrap_style: Option<WrapStyle>,
+    /// The setting flags as config lines, in order, laid over the
+    /// file's.
+    pub lines: Vec<String>,
     pub quit_if_one_page: bool,
-    pub one_page_rows_below: Option<usize>,
     /// 1-based.
     pub start_line: Option<usize>,
     pub follow: bool,
     /// Set by any of --scrolled-by, --cursor-row, --cursor-col.
     pub screen: Option<StartScreen>,
-    /// `Some(None)` is --no-clipboard-cmd.
-    pub clipboard_cmd: Option<Option<String>>,
-    /// `Some(None)` is --no-open-cmd.
-    pub open_cmd: Option<Option<String>>,
-    pub tab_width: Option<usize>,
+    pub clipboard_cmd: CmdFlag,
+    pub open_cmd: CmdFlag,
     /// `None` for the default location.
     pub config: Option<PathBuf>,
-    pub auto_reload: Option<bool>,
-    pub edge_markers: Option<bool>,
-    pub file_separators: Option<bool>,
-    pub status_line: Option<bool>,
-    pub view_style: Option<ViewStyle>,
     /// The shell to print the completion script for.
     pub completion: Option<String>,
     pub help: bool,
     pub version: bool,
+}
+
+/// --X-cmd CMD, --no-X-cmd, or neither, leaving it to the config.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub enum CmdFlag {
+    #[default]
+    Unset,
+    Off,
+    Cmd(String),
 }
 
 /// Reads a file through a command: its argv by file name, %s the
@@ -108,11 +108,7 @@ impl Options {
         };
         app::Options {
             names,
-            mode: match self.wrap.or(cfg.wrap) {
-                Some(false) => Mode::NoWrap,
-                _ => Mode::Wrap,
-            },
-            wrap_style: self.wrap_style.or(cfg.wrap_style).unwrap_or_default(),
+            settings: self.settings(cfg),
             start_line: self.start_line,
             follow: self.follow,
             screen: self.screen,
@@ -120,37 +116,20 @@ impl Options {
             clock: Box::new(Instant::now),
             macos,
             keys: cfg.keymap(macos),
-            tab_width: self.tab_width.or(cfg.tab_width).unwrap_or(0),
-            edge_markers: self.edge_markers.or(cfg.edge_markers).unwrap_or(false),
-            file_separators: self.separators(cfg),
-            auto_reload: self.reloads(cfg),
-            hide_status: !self.status_line.or(cfg.status_line).unwrap_or(true),
-            view_style: self.view(cfg),
             open: None,
         }
     }
 
-    /// How the text's styling is shown.
-    pub fn view(&self, cfg: &Config) -> ViewStyle {
-        self.view_style.or(cfg.view_style).unwrap_or_default()
-    }
-
-    /// Whether a row names each input, when there are several.
-    pub fn separators(&self, cfg: &Config) -> bool {
-        self.file_separators.or(cfg.file_separators).unwrap_or(true)
-    }
-
-    /// The rows -F leaves below the text.
-    pub fn rows_below(&self, cfg: &Config) -> usize {
-        self.one_page_rows_below
-            .or(cfg.one_page_rows_below)
-            .unwrap_or(1)
-            .max(1)
-    }
-
-    /// Whether a file that changes on disk is read again.
-    pub fn reloads(&self, cfg: &Config) -> bool {
-        self.auto_reload.or(cfg.auto_reload).unwrap_or(true)
+    /// The settings: the flag lines laid over the file's.
+    pub fn settings(&self, cfg: &Config) -> Settings {
+        let mut c = Config {
+            settings: cfg.settings.clone(),
+            ..Config::default()
+        };
+        for line in &self.lines {
+            config::parse_line(line, &mut c).expect("checked as the flag was parsed");
+        }
+        c.settings
     }
 
     /// The command each file is read through: the flag's for every
@@ -158,8 +137,8 @@ impl Options {
     /// The error is a flag that does not split.
     pub fn open_cmd(&self, cfg: &Config) -> Result<Option<OpenCmdFor>, String> {
         let flag = match &self.open_cmd {
-            None if cfg.open_cmds.is_empty() => return Ok(None),
-            None => {
+            CmdFlag::Unset if cfg.open_cmds.is_empty() => return Ok(None),
+            CmdFlag::Unset => {
                 let cfg = Config {
                     open_cmds: cfg.open_cmds.clone(),
                     ..Config::default()
@@ -168,8 +147,8 @@ impl Options {
                     cfg.open_cmd_for(name).map(<[String]>::to_vec)
                 })));
             }
-            Some(None) => return Ok(None),
-            Some(Some(flag)) => flag,
+            CmdFlag::Off => return Ok(None),
+            CmdFlag::Cmd(flag) => flag,
         };
         let argv = words::split(flag).map_err(|e| format!("open command: {e}"))?;
         if argv.is_empty() {
@@ -182,8 +161,9 @@ impl Options {
     /// clipboard.
     pub fn clipboard_cmd(&self, cfg: &Config) -> Option<String> {
         match &self.clipboard_cmd {
-            Some(flag) => flag.clone(),
-            None => cfg.clipboard_cmd.clone(),
+            CmdFlag::Unset => cfg.clipboard_cmd.clone(),
+            CmdFlag::Off => None,
+            CmdFlag::Cmd(flag) => Some(flag.clone()),
         }
         .filter(|c| !c.is_empty())
     }
@@ -201,44 +181,51 @@ impl Copier for NoCopier {
 mod tests {
     use super::*;
     use crate::input::config::OpenCmd;
+    use crate::input::setting;
+    use crate::text::ansi::ViewStyle;
+    use crate::view::layout::{Mode, WrapStyle};
+
+    /// The usage text names each flag a setting has.
+    #[test]
+    fn usage_names_flag_verbs() {
+        for v in setting::VERBS.iter().filter(|v| v.flag) {
+            let flag = v.name.replace('_', "-");
+            let want = if v.yes_no() {
+                format!("--[no-]{flag} ")
+            } else {
+                format!("--{flag} ")
+            };
+            assert!(USAGE.contains(&want), "{want:?} is not in USAGE");
+        }
+    }
 
     fn none() -> Options {
         Options::default()
     }
 
-    fn cfg() -> Config {
-        Config::default()
+    fn cfg(src: &str) -> Config {
+        config::parse("vedi.conf", src).unwrap()
+    }
+
+    /// The options with `src` as the setting flags' lines.
+    fn flags(src: &str) -> Options {
+        Options {
+            lines: src.lines().map(String::from).collect(),
+            ..none()
+        }
     }
 
     /// The flag decides; without one the config does; without either a
     /// changed file is read again.
     #[test]
     fn reloads() {
-        for (flag, c, want) in [
-            (None, cfg(), true),
-            (
-                None,
-                Config {
-                    auto_reload: Some(false),
-                    ..cfg()
-                },
-                false,
-            ),
-            (Some(false), cfg(), false),
-            (
-                Some(true),
-                Config {
-                    auto_reload: Some(false),
-                    ..cfg()
-                },
-                true,
-            ),
+        for (f, c, want) in [
+            ("", "", true),
+            ("", "auto_reload no", false),
+            ("auto_reload no", "", false),
+            ("auto_reload yes", "auto_reload no", true),
         ] {
-            let o = Options {
-                auto_reload: flag,
-                ..none()
-            };
-            assert_eq!(o.reloads(&c), want, "{flag:?} {c:?}");
+            assert_eq!(flags(f).settings(&cfg(c)).auto_reload, want, "{f:?} {c:?}");
         }
     }
 
@@ -249,13 +236,12 @@ mod tests {
             ..StartScreen::default()
         };
         let o = Options {
-            wrap: Some(false),
             start_line: Some(3),
             screen: Some(screen),
-            ..none()
+            ..flags("wrap no")
         };
-        let got = o.app(&[], &cfg(), false);
-        assert_eq!(got.mode, Mode::NoWrap);
+        let got = o.app(&[], &cfg(""), false);
+        assert_eq!(got.settings.mode, Mode::NoWrap);
         assert_eq!(got.start_line, Some(3));
         assert_eq!(got.screen, Some(screen));
         assert!(got.open.is_none());
@@ -265,20 +251,15 @@ mod tests {
     /// the config does.
     #[test]
     fn app_config() {
-        let c = Config {
-            wrap: Some(false),
-            clipboard_cmd: Some("wl-copy".into()),
-            ..cfg()
-        };
-        let cmd = |s: &str| Some(Some(s.to_string()));
+        let c = cfg("wrap no\nclipboard_cmd wl-copy\n");
+        let cmd = |s: &str| CmdFlag::Cmd(s.to_string());
         for (o, c, mode, want) in [
-            (none(), cfg(), Mode::Wrap, None),
+            (none(), cfg(""), Mode::Wrap, None),
             (none(), c.clone(), Mode::NoWrap, Some("wl-copy")),
             (
                 Options {
-                    wrap: Some(true),
                     clipboard_cmd: cmd("pbcopy"),
-                    ..none()
+                    ..flags("wrap yes")
                 },
                 c.clone(),
                 Mode::Wrap,
@@ -286,7 +267,7 @@ mod tests {
             ),
             (
                 Options {
-                    clipboard_cmd: Some(None),
+                    clipboard_cmd: CmdFlag::Off,
                     ..none()
                 },
                 c.clone(),
@@ -302,17 +283,9 @@ mod tests {
                 Mode::NoWrap,
                 None,
             ),
-            (
-                Options {
-                    wrap: Some(false),
-                    ..none()
-                },
-                cfg(),
-                Mode::NoWrap,
-                None,
-            ),
+            (flags("wrap no"), cfg(""), Mode::NoWrap, None),
         ] {
-            assert_eq!(o.app(&[], &c, false).mode, mode, "{o:?} {c:?}");
+            assert_eq!(o.settings(&c).mode, mode, "{o:?} {c:?}");
             assert_eq!(o.clipboard_cmd(&c).as_deref(), want, "{o:?} {c:?}");
         }
     }
@@ -321,55 +294,25 @@ mod tests {
     /// does.
     #[test]
     fn app_wrap_style() {
-        let word = Config {
-            wrap_style: Some(WrapStyle::Word),
-            ..cfg()
-        };
-        for (o, c, mode, want) in [
-            (none(), cfg(), Mode::Wrap, WrapStyle::Char),
-            (none(), word.clone(), Mode::Wrap, WrapStyle::Word),
+        for (f, c, mode, want) in [
+            ("", "", Mode::Wrap, WrapStyle::Char),
+            ("", "wrap_style word", Mode::Wrap, WrapStyle::Word),
+            ("wrap_style word", "wrap no", Mode::NoWrap, WrapStyle::Word),
             (
-                Options {
-                    wrap_style: Some(WrapStyle::Word),
-                    ..none()
-                },
-                Config {
-                    wrap: Some(false),
-                    ..cfg()
-                },
-                Mode::NoWrap,
-                WrapStyle::Word,
-            ),
-            (
-                Options {
-                    wrap_style: Some(WrapStyle::Char),
-                    ..none()
-                },
-                word.clone(),
+                "wrap_style char",
+                "wrap_style word",
                 Mode::Wrap,
                 WrapStyle::Char,
             ),
-            (
-                Options {
-                    wrap: Some(true),
-                    ..none()
-                },
-                word.clone(),
-                Mode::Wrap,
-                WrapStyle::Word,
-            ),
-            (
-                Options {
-                    wrap: Some(false),
-                    ..none()
-                },
-                word.clone(),
-                Mode::NoWrap,
-                WrapStyle::Word,
-            ),
+            ("wrap yes", "wrap_style word", Mode::Wrap, WrapStyle::Word),
+            ("wrap no", "wrap_style word", Mode::NoWrap, WrapStyle::Word),
         ] {
-            let got = o.app(&[], &c, false);
-            assert_eq!((got.mode, got.wrap_style), (mode, want), "{o:?} {c:?}");
+            let got = flags(f).app(&[], &cfg(c), false);
+            assert_eq!(
+                (got.settings.mode, got.settings.wrap_style),
+                (mode, want),
+                "{f:?} {c:?}"
+            );
         }
     }
 
@@ -377,31 +320,17 @@ mod tests {
     /// the config does; without either it is one.
     #[test]
     fn rows_below() {
-        for (flag, c, want) in [
-            (None, cfg(), 1),
-            (
-                None,
-                Config {
-                    one_page_rows_below: Some(3),
-                    ..cfg()
-                },
-                3,
-            ),
-            (
-                Some(2),
-                Config {
-                    one_page_rows_below: Some(3),
-                    ..cfg()
-                },
-                2,
-            ),
-            (Some(2), cfg(), 2),
+        for (f, c, want) in [
+            ("", "", 1),
+            ("", "one_page_rows_below 3", 3),
+            ("one_page_rows_below 2", "one_page_rows_below 3", 2),
+            ("one_page_rows_below 2", "", 2),
         ] {
-            let o = Options {
-                one_page_rows_below: flag,
-                ..none()
-            };
-            assert_eq!(o.rows_below(&c), want, "{flag:?} {c:?}");
+            assert_eq!(
+                flags(f).settings(&cfg(c)).one_page_rows_below,
+                want,
+                "{f:?} {c:?}"
+            );
         }
     }
 
@@ -409,31 +338,13 @@ mod tests {
     /// without either it is zero, the app's default.
     #[test]
     fn app_tab_width() {
-        for (flag, c, want) in [
-            (None, cfg(), 0),
-            (
-                None,
-                Config {
-                    tab_width: Some(4),
-                    ..cfg()
-                },
-                4,
-            ),
-            (
-                Some(2),
-                Config {
-                    tab_width: Some(4),
-                    ..cfg()
-                },
-                2,
-            ),
-            (Some(2), cfg(), 2),
+        for (f, c, want) in [
+            ("", "", 0),
+            ("", "tab_width 4", 4),
+            ("tab_width 2", "tab_width 4", 2),
+            ("tab_width 2", "", 2),
         ] {
-            let o = Options {
-                tab_width: flag,
-                ..none()
-            };
-            assert_eq!(o.app(&[], &c, false).tab_width, want, "{flag:?} {c:?}");
+            assert_eq!(flags(f).settings(&cfg(c)).tab_width, want, "{f:?} {c:?}");
         }
     }
 
@@ -447,16 +358,16 @@ mod tests {
                 pattern: Some(glob::Pattern::new("*.md").unwrap()),
                 argv: vec!["mdcat".into(), "%s".into()],
             }],
-            ..cfg()
+            ..Config::default()
         };
-        let cmd = |s: &str| Some(Some(s.to_string()));
+        let cmd = |s: &str| CmdFlag::Cmd(s.to_string());
         for (flag, c, want) in [
-            (None, cfg(), None),
-            (None, c.clone(), Some(vec!["mdcat", "%s"])),
+            (CmdFlag::Unset, cfg(""), None),
+            (CmdFlag::Unset, c.clone(), Some(vec!["mdcat", "%s"])),
             (cmd("bat %s"), c.clone(), Some(vec!["bat", "%s"])),
-            (cmd("bat '%s'"), cfg(), Some(vec!["bat", "%s"])),
+            (cmd("bat '%s'"), cfg(""), Some(vec!["bat", "%s"])),
             (cmd(""), c.clone(), None),
-            (Some(None), c.clone(), None),
+            (CmdFlag::Off, c.clone(), None),
         ] {
             let o = Options {
                 open_cmd: flag.clone(),
@@ -481,31 +392,13 @@ mod tests {
     /// config does; without either the markers are off.
     #[test]
     fn edge_markers() {
-        for (flag, c, want) in [
-            (None, cfg(), false),
-            (
-                None,
-                Config {
-                    edge_markers: Some(true),
-                    ..cfg()
-                },
-                true,
-            ),
-            (Some(true), cfg(), true),
-            (
-                Some(false),
-                Config {
-                    edge_markers: Some(true),
-                    ..cfg()
-                },
-                false,
-            ),
+        for (f, c, want) in [
+            ("", "", false),
+            ("", "edge_markers yes", true),
+            ("edge_markers yes", "", true),
+            ("edge_markers no", "edge_markers yes", false),
         ] {
-            let o = Options {
-                edge_markers: flag,
-                ..none()
-            };
-            assert_eq!(o.app(&[], &c, false).edge_markers, want, "{flag:?} {c:?}");
+            assert_eq!(flags(f).settings(&cfg(c)).edge_markers, want, "{f:?} {c:?}");
         }
     }
 
@@ -513,35 +406,16 @@ mod tests {
     /// the config does; without either the rows are drawn.
     #[test]
     fn file_separators() {
-        for (flag, c, want) in [
-            (None, cfg(), true),
-            (
-                None,
-                Config {
-                    file_separators: Some(false),
-                    ..cfg()
-                },
-                false,
-            ),
-            (
-                Some(true),
-                Config {
-                    file_separators: Some(false),
-                    ..cfg()
-                },
-                true,
-            ),
-            (Some(false), cfg(), false),
+        for (f, c, want) in [
+            ("", "", true),
+            ("", "file_separators no", false),
+            ("file_separators yes", "file_separators no", true),
+            ("file_separators no", "", false),
         ] {
-            let o = Options {
-                file_separators: flag,
-                ..none()
-            };
-            assert_eq!(o.separators(&c), want, "{flag:?} {c:?}");
             assert_eq!(
-                o.app(&[], &c, false).file_separators,
+                flags(f).settings(&cfg(c)).file_separators,
                 want,
-                "{flag:?} {c:?}"
+                "{f:?} {c:?}"
             );
         }
     }
@@ -550,53 +424,26 @@ mod tests {
     /// config does; without either the line is drawn.
     #[test]
     fn status_line() {
-        for (flag, c, hide) in [
-            (None, cfg(), false),
-            (
-                None,
-                Config {
-                    status_line: Some(false),
-                    ..cfg()
-                },
-                true,
-            ),
-            (
-                Some(true),
-                Config {
-                    status_line: Some(false),
-                    ..cfg()
-                },
-                false,
-            ),
-            (Some(false), cfg(), true),
+        for (f, c, hide) in [
+            ("", "", false),
+            ("", "status_line no", true),
+            ("status_line yes", "status_line no", false),
+            ("status_line no", "", true),
         ] {
-            let o = Options {
-                status_line: flag,
-                ..none()
-            };
-            assert_eq!(o.app(&[], &c, false).hide_status, hide, "{flag:?} {c:?}");
+            assert_eq!(!flags(f).settings(&cfg(c)).status_line, hide, "{f:?} {c:?}");
         }
     }
 
     /// --view-style decides; without it the config does.
     #[test]
     fn app_view_style() {
-        let plain = Config {
-            view_style: Some(ViewStyle::Plain),
-            ..cfg()
-        };
-        for (flag, c, want) in [
-            (None, cfg(), ViewStyle::Color),
-            (None, plain.clone(), ViewStyle::Plain),
-            (Some(ViewStyle::Color), plain.clone(), ViewStyle::Color),
-            (Some(ViewStyle::Plain), cfg(), ViewStyle::Plain),
+        for (f, c, want) in [
+            ("", "", ViewStyle::Color),
+            ("", "view_style plain", ViewStyle::Plain),
+            ("view_style color", "view_style plain", ViewStyle::Color),
+            ("view_style plain", "", ViewStyle::Plain),
         ] {
-            let o = Options {
-                view_style: flag,
-                ..none()
-            };
-            assert_eq!(o.view(&c), want, "{flag:?} {c:?}");
-            assert_eq!(o.app(&[], &c, false).view_style, want, "{flag:?} {c:?}");
+            assert_eq!(flags(f).settings(&cfg(c)).view_style, want, "{f:?} {c:?}");
         }
     }
 
@@ -605,7 +452,7 @@ mod tests {
     fn app_names() {
         let names = |files: &[&str]| {
             let files: Vec<OsString> = files.iter().map(OsString::from).collect();
-            none().app(&files, &cfg(), false).names
+            none().app(&files, &cfg(""), false).names
         };
         assert_eq!(names(&[]), [STDIN]);
         assert_eq!(names(&["a", "-", "b"]), ["a", STDIN, "b"]);

@@ -1,10 +1,12 @@
-//! By hand: +N and +G are not flags any parser knows.
+//! By hand: +N and +G are not flags any parser knows, and a setting
+//! flag is a config line, so one parser reads the value.
 
 use std::borrow::Cow;
 use std::ffi::OsString;
 
 use crate::app::StartScreen;
-use crate::cli::{Options, completion};
+use crate::cli::{CmdFlag, Options, completion};
+use crate::input::{config, setting};
 use crate::sys::words;
 
 /// Parses `$VEDI`, flags for every run, and then the command line,
@@ -27,27 +29,31 @@ pub fn parse(args: &[OsString], env: &str) -> Result<(Options, Vec<OsString>), S
     Ok((o, files))
 }
 
-/// The flags that take a value, as `--flag V` or `--flag=V`.
-const VALUE_FLAGS: &[&str] = &[
-    "--scrolled-by",
-    "--cursor-row",
-    "--cursor-col",
-    "--clipboard-cmd",
-    "--open-cmd",
-    "--config",
-    "--wrap-style",
-    "--view-style",
-    "--completion",
-    "--tab-width",
-    "--one-page-rows-below",
-];
-
 /// An integer of at least `min`.
 fn int(v: &str, min: i64) -> Option<usize> {
     v.parse::<i64>()
         .ok()
         .filter(|&n| n >= min)
         .and_then(|n| usize::try_from(n).ok())
+}
+
+/// The value of flag `name`: after its = in the arg, else the next arg.
+fn value<'a>(
+    name: &str,
+    val: Option<&'a str>,
+    args: &'a [OsString],
+    i: &mut usize,
+) -> Result<Cow<'a, str>, String> {
+    match val {
+        Some(v) => Ok(Cow::Borrowed(v)),
+        None => {
+            let v = args
+                .get(*i)
+                .ok_or_else(|| format!("{name} needs an argument"))?;
+            *i += 1;
+            Ok(v.to_string_lossy())
+        }
+    }
 }
 
 impl Options {
@@ -67,39 +73,29 @@ impl Options {
                 Some((n, v)) => (n, Some(v)),
                 None => (a, None),
             };
-            if VALUE_FLAGS.contains(&name) {
+            if let Some((verb, fixed)) = setting::flag_verb(name) {
+                let val = match fixed {
+                    Some(_) if val.is_some() => return Err(format!("{name} takes no value")),
+                    Some(v) => Cow::Borrowed(v),
+                    None => value(name, val, args, &mut i)?,
+                };
+                self.setting(name, verb.name, &val)?;
+                continue;
+            }
+            if let Some(set) = value_flag(name) {
                 if env && name == "--completion" {
                     return Err(format!("{name:?} is not allowed"));
                 }
-                let val = match val {
-                    Some(v) => Cow::Borrowed(v),
-                    None => {
-                        let v = args
-                            .get(i)
-                            .ok_or_else(|| format!("{name} needs an argument"))?;
-                        i += 1;
-                        v.to_string_lossy()
-                    }
-                };
-                self.set(name, &val)
-                    .ok_or_else(|| format!("bad {name} {val:?}"))?;
+                let val = value(name, val, args, &mut i)?;
+                set(self, &val).ok_or_else(|| format!("bad {name} {val:?}"))?;
                 continue;
             }
             match a {
-                "-S" | "--no-wrap" => self.wrap = Some(false),
-                "--wrap" => self.wrap = Some(true),
+                "-S" => self.setting(a, "wrap", "no")?,
                 "-F" | "--quit-if-one-page" => self.quit_if_one_page = true,
                 "--no-quit-if-one-page" => self.quit_if_one_page = false,
-                "--auto-reload" => self.auto_reload = Some(true),
-                "--no-auto-reload" => self.auto_reload = Some(false),
-                "--edge-markers" => self.edge_markers = Some(true),
-                "--no-edge-markers" => self.edge_markers = Some(false),
-                "--file-separators" => self.file_separators = Some(true),
-                "--no-file-separators" => self.file_separators = Some(false),
-                "--status-line" => self.status_line = Some(true),
-                "--no-status-line" => self.status_line = Some(false),
-                "--no-clipboard-cmd" => self.clipboard_cmd = Some(None),
-                "--no-open-cmd" => self.open_cmd = Some(None),
+                "--no-clipboard-cmd" => self.clipboard_cmd = CmdFlag::Off,
+                "--no-open-cmd" => self.open_cmd = CmdFlag::Off,
                 "+G" => self.follow = true,
                 _ if a.starts_with('+') => {
                     self.start_line =
@@ -132,44 +128,80 @@ impl Options {
         Ok(files)
     }
 
-    /// Sets value flag `name`; `None` for a bad value.
-    fn set(&mut self, name: &str, v: &str) -> Option<()> {
-        fn screen(o: &mut Options) -> &mut StartScreen {
-            o.screen.get_or_insert_with(StartScreen::default)
-        }
-        match name {
-            "--scrolled-by" => screen(self).scrolled_by = int(v, 0)?,
-            "--cursor-row" => screen(self).cursor_row = int(v, 1)?,
-            "--cursor-col" => screen(self).cursor_col = int(v, 1)?,
-            "--clipboard-cmd" => self.clipboard_cmd = Some(Some(v.to_string())),
-            "--open-cmd" => self.open_cmd = Some(Some(v.to_string())),
-            "--config" => self.config = Some(v.into()),
-            "--wrap-style" => self.wrap_style = Some(v.parse().ok()?),
-            "--view-style" => self.view_style = Some(v.parse().ok()?),
-            "--completion" => {
-                completion(v)?;
-                self.completion = Some(v.to_string());
+    /// Keeps the config line `verb val` for flag `flag`, checked now so
+    /// a bad flag is reported before a bad file. The error names the
+    /// flag in the verb's place and quotes the value, which a flag in
+    /// $VEDI or an alias leaves out of sight.
+    fn setting(&mut self, flag: &str, verb: &str, val: &str) -> Result<(), String> {
+        let line = format!("{verb} {val}");
+        config::parse_line(&line, &mut config::Config::default()).map_err(|e| {
+            match e.strip_prefix(verb) {
+                Some(rest) => format!("{flag}{rest}, not {val:?}"),
+                None => e,
             }
-            "--tab-width" => self.tab_width = Some(int(v, 1)?),
-            "--one-page-rows-below" => self.one_page_rows_below = Some(int(v, 1)?),
-            _ => unreachable!("{name} is in VALUE_FLAGS"),
-        }
-        Some(())
+        })?;
+        self.lines.push(line);
+        Ok(())
     }
+}
+
+type Set = fn(&mut Options, &str) -> Option<()>;
+
+/// The setter for value flag `name`, as `--flag V` or `--flag=V`;
+/// `None` for any other arg. A setter returns `None` for a bad value.
+fn value_flag(name: &str) -> Option<Set> {
+    fn screen(o: &mut Options) -> &mut StartScreen {
+        o.screen.get_or_insert_with(StartScreen::default)
+    }
+    let set: Set = match name {
+        "--scrolled-by" => |o, v| {
+            screen(o).scrolled_by = int(v, 0)?;
+            Some(())
+        },
+        "--cursor-row" => |o, v| {
+            screen(o).cursor_row = int(v, 1)?;
+            Some(())
+        },
+        "--cursor-col" => |o, v| {
+            screen(o).cursor_col = int(v, 1)?;
+            Some(())
+        },
+        "--clipboard-cmd" => |o, v| {
+            o.clipboard_cmd = CmdFlag::Cmd(v.to_string());
+            Some(())
+        },
+        "--open-cmd" => |o, v| {
+            o.open_cmd = CmdFlag::Cmd(v.to_string());
+            Some(())
+        },
+        "--config" => |o, v| {
+            o.config = Some(v.into());
+            Some(())
+        },
+        "--completion" => |o, v| {
+            completion(v)?;
+            o.completion = Some(v.to_string());
+            Some(())
+        },
+        _ => return None,
+    };
+    Some(set)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::text::ansi::ViewStyle;
-    use crate::view::layout::WrapStyle;
+
+    fn strs(s: &[&str]) -> Vec<String> {
+        s.iter().map(|s| s.to_string()).collect()
+    }
 
     fn oss(s: &[&str]) -> Vec<OsString> {
         s.iter().map(OsString::from).collect()
     }
 
-    fn cmd(s: &str) -> Option<Option<String>> {
-        Some(Some(s.to_string()))
+    fn cmd(s: &str) -> CmdFlag {
+        CmdFlag::Cmd(s.to_string())
     }
 
     fn screen(o: &mut Options, row: usize, col: usize) {
@@ -210,7 +242,7 @@ mod tests {
             name.clone(),
         ];
         let (o, files) = parse(&args, "").unwrap();
-        assert_eq!(o.wrap, Some(false));
+        assert_eq!(o.lines, strs(&["wrap no"]));
         assert_eq!(files, [name.clone(), name]);
     }
 
@@ -222,57 +254,62 @@ mod tests {
             (
                 "nowrap short",
                 &["-S", "a"],
-                |o| o.wrap = Some(false),
+                |o| o.lines = strs(&["wrap no"]),
                 &["a"],
             ),
-            ("nowrap long", &["--no-wrap"], |o| o.wrap = Some(false), &[]),
-            ("wrap", &["--wrap"], |o| o.wrap = Some(true), &[]),
+            (
+                "nowrap long",
+                &["--no-wrap"],
+                |o| o.lines = strs(&["wrap no"]),
+                &[],
+            ),
+            ("wrap", &["--wrap"], |o| o.lines = strs(&["wrap yes"]), &[]),
             (
                 "last wrap wins",
                 &["-S", "--wrap"],
-                |o| o.wrap = Some(true),
+                |o| o.lines = strs(&["wrap no", "wrap yes"]),
                 &[],
             ),
             (
                 "wrap style word",
                 &["--wrap-style", "word"],
-                |o| o.wrap_style = Some(WrapStyle::Word),
+                |o| o.lines = strs(&["wrap_style word"]),
                 &[],
             ),
             (
                 "wrap style char",
                 &["--wrap-style=char"],
-                |o| o.wrap_style = Some(WrapStyle::Char),
+                |o| o.lines = strs(&["wrap_style char"]),
                 &[],
             ),
             (
                 "last wrap style wins",
                 &["--wrap-style", "word", "--wrap-style", "char"],
-                |o| o.wrap_style = Some(WrapStyle::Char),
+                |o| o.lines = strs(&["wrap_style word", "wrap_style char"]),
                 &[],
             ),
             (
                 "wrap style leaves wrap",
                 &["-S", "--wrap-style", "word"],
-                |o| (o.wrap, o.wrap_style) = (Some(false), Some(WrapStyle::Word)),
+                |o| o.lines = strs(&["wrap no", "wrap_style word"]),
                 &[],
             ),
             (
                 "view style plain",
                 &["--view-style", "plain"],
-                |o| o.view_style = Some(ViewStyle::Plain),
+                |o| o.lines = strs(&["view_style plain"]),
                 &[],
             ),
             (
                 "view style color",
                 &["--view-style=color"],
-                |o| o.view_style = Some(ViewStyle::Color),
+                |o| o.lines = strs(&["view_style color"]),
                 &[],
             ),
             (
                 "view style raw",
                 &["--view-style", "raw"],
-                |o| o.view_style = Some(ViewStyle::Raw),
+                |o| o.lines = strs(&["view_style raw"]),
                 &[],
             ),
             ("plus G", &["+G"], |o| o.follow = true, &[]),
@@ -351,7 +388,7 @@ mod tests {
             (
                 "flag after file",
                 &["a", "-S"],
-                |o| o.wrap = Some(false),
+                |o| o.lines = strs(&["wrap no"]),
                 &["a"],
             ),
             (
@@ -363,13 +400,13 @@ mod tests {
             (
                 "no clipboard cmd",
                 &["--no-clipboard-cmd"],
-                |o| o.clipboard_cmd = Some(None),
+                |o| o.clipboard_cmd = CmdFlag::Off,
                 &[],
             ),
             (
                 "no clipboard cmd wins",
                 &["--clipboard-cmd", "pbcopy", "--no-clipboard-cmd"],
-                |o| o.clipboard_cmd = Some(None),
+                |o| o.clipboard_cmd = CmdFlag::Off,
                 &[],
             ),
             (
@@ -381,43 +418,43 @@ mod tests {
             (
                 "auto reload",
                 &["--auto-reload"],
-                |o| o.auto_reload = Some(true),
+                |o| o.lines = strs(&["auto_reload yes"]),
                 &[],
             ),
             (
                 "no auto reload",
                 &["--no-auto-reload", "f"],
-                |o| o.auto_reload = Some(false),
+                |o| o.lines = strs(&["auto_reload no"]),
                 &["f"],
             ),
             (
                 "last auto reload wins",
                 &["--no-auto-reload", "--auto-reload"],
-                |o| o.auto_reload = Some(true),
+                |o| o.lines = strs(&["auto_reload no", "auto_reload yes"]),
                 &[],
             ),
             (
                 "tab width",
                 &["--tab-width", "4", "f"],
-                |o| o.tab_width = Some(4),
+                |o| o.lines = strs(&["tab_width 4"]),
                 &["f"],
             ),
             (
                 "tab width eq",
                 &["--tab-width=2"],
-                |o| o.tab_width = Some(2),
+                |o| o.lines = strs(&["tab_width 2"]),
                 &[],
             ),
             (
                 "rows below",
                 &["-F", "--one-page-rows-below", "2"],
-                |o| (o.quit_if_one_page, o.one_page_rows_below) = (true, Some(2)),
+                |o| (o.quit_if_one_page, o.lines) = (true, strs(&["one_page_rows_below 2"])),
                 &[],
             ),
             (
                 "rows below eq",
                 &["--one-page-rows-below=3"],
-                |o| o.one_page_rows_below = Some(3),
+                |o| o.lines = strs(&["one_page_rows_below 3"]),
                 &[],
             ),
             (
@@ -435,13 +472,13 @@ mod tests {
             (
                 "no open cmd",
                 &["--no-open-cmd", "f"],
-                |o| o.open_cmd = Some(None),
+                |o| o.open_cmd = CmdFlag::Off,
                 &["f"],
             ),
             (
                 "no open cmd wins",
                 &["--open-cmd=bat %s", "--no-open-cmd"],
-                |o| o.open_cmd = Some(None),
+                |o| o.open_cmd = CmdFlag::Off,
                 &[],
             ),
             (
@@ -459,37 +496,37 @@ mod tests {
             (
                 "edge markers",
                 &["--edge-markers"],
-                |o| o.edge_markers = Some(true),
+                |o| o.lines = strs(&["edge_markers yes"]),
                 &[],
             ),
             (
                 "no edge markers",
                 &["--no-edge-markers"],
-                |o| o.edge_markers = Some(false),
+                |o| o.lines = strs(&["edge_markers no"]),
                 &[],
             ),
             (
                 "file separators",
                 &["--file-separators"],
-                |o| o.file_separators = Some(true),
+                |o| o.lines = strs(&["file_separators yes"]),
                 &[],
             ),
             (
                 "no file separators",
                 &["--no-file-separators"],
-                |o| o.file_separators = Some(false),
+                |o| o.lines = strs(&["file_separators no"]),
                 &[],
             ),
             (
                 "status line",
                 &["--status-line"],
-                |o| o.status_line = Some(true),
+                |o| o.lines = strs(&["status_line yes"]),
                 &[],
             ),
             (
                 "no status line",
                 &["--no-status-line"],
-                |o| o.status_line = Some(false),
+                |o| o.lines = strs(&["status_line no"]),
                 &[],
             ),
         ];
@@ -527,10 +564,64 @@ mod tests {
             ("missing open cmd", &["--open-cmd"]),
             ("bad completion", &["--completion", "tcsh"]),
             ("missing completion", &["--completion"]),
+            ("wrap with value", &["--wrap=yes"]),
+            ("no before a value flag", &["--no-tab-width"]),
+            ("config spelling", &["--wrap_style", "word"]),
+            ("empty tab width", &["--tab-width="]),
+            ("tab width with a space", &["--tab-width", "4 5"]),
+            ("bad view style eq", &["--view-style=bold"]),
+            ("bad rows below eq", &["--one-page-rows-below=0"]),
         ];
         for &(name, args) in cases {
             let got = parse(&oss(args), "");
             assert!(got.is_err(), "{name}: {got:?}, want an error");
+        }
+    }
+
+    /// A setting flag's error is the config line's, naming the flag
+    /// where the line names the verb.
+    #[test]
+    fn flag_errors_name_the_flag() {
+        let cases: &[(&str, &[&str], &str)] = &[
+            (
+                "bad tab width",
+                &["--tab-width", "0"],
+                "--tab-width takes a positive number, not \"0\"",
+            ),
+            (
+                "empty tab width",
+                &["--tab-width="],
+                "--tab-width takes a positive number, not \"\"",
+            ),
+            (
+                "bad wrap style",
+                &["--wrap-style", "yes"],
+                "--wrap-style takes char or word, not \"yes\"",
+            ),
+            (
+                "bad view style",
+                &["--view-style=bold"],
+                "--view-style takes color, plain or raw, not \"bold\"",
+            ),
+            (
+                "bad rows below",
+                &["--one-page-rows-below", "0"],
+                "--one-page-rows-below takes a positive number, not \"0\"",
+            ),
+            (
+                "value with a space",
+                &["--tab-width", "4 5"],
+                "--tab-width takes a positive number, not \"4 5\"",
+            ),
+            ("wrap with value", &["--wrap=yes"], "--wrap takes no value"),
+            (
+                "missing value",
+                &["--wrap-style"],
+                "--wrap-style needs an argument",
+            ),
+        ];
+        for &(name, args, want) in cases {
+            assert_eq!(parse(&oss(args), ""), Err(want.to_string()), "{name}");
         }
     }
 
@@ -543,7 +634,7 @@ mod tests {
                 "flags",
                 "-F -S",
                 &["f"],
-                |o| (o.quit_if_one_page, o.wrap) = (true, Some(false)),
+                |o| (o.quit_if_one_page, o.lines) = (true, strs(&["wrap no"])),
                 &["f"],
             ),
             ("blank", " \t ", &[], |_| {}, &[]),
@@ -551,7 +642,7 @@ mod tests {
                 "arg wins",
                 "-S --tab-width 4",
                 &["--wrap", "--tab-width=2"],
-                |o| (o.wrap, o.tab_width) = (Some(true), Some(2)),
+                |o| o.lines = strs(&["wrap no", "tab_width 4", "wrap yes", "tab_width 2"]),
                 &[],
             ),
             (
@@ -565,14 +656,14 @@ mod tests {
                 "no open cmd beats env",
                 "--open-cmd 'bat %s'",
                 &["--no-open-cmd"],
-                |o| o.open_cmd = Some(None),
+                |o| o.open_cmd = CmdFlag::Off,
                 &[],
             ),
             (
                 "no clipboard cmd beats env",
                 "--clipboard-cmd pbcopy",
                 &["--no-clipboard-cmd"],
-                |o| o.clipboard_cmd = Some(None),
+                |o| o.clipboard_cmd = CmdFlag::Off,
                 &[],
             ),
             (
@@ -695,7 +786,16 @@ mod tests {
                 r#"VEDI: "--completion" is not allowed"#,
             ),
             ("unknown flag", "--bogus", r#"VEDI: unknown flag "--bogus""#),
-            ("bad value", "--tab-width 0", r#"VEDI: bad --tab-width "0""#),
+            (
+                "bad value",
+                "--tab-width 0",
+                "VEDI: --tab-width takes a positive number, not \"0\"",
+            ),
+            (
+                "yes no with value",
+                "--wrap=yes",
+                "VEDI: --wrap takes no value",
+            ),
             (
                 "missing value",
                 "--tab-width",
