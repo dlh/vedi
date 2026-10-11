@@ -30,8 +30,8 @@ fn scratch() -> Option<File> {
     Some(f)
 }
 
-/// A failed command's error as Go words it, `exit status N` or
-/// `signal: N`, with what it wrote to `stderr`.
+/// A failed command's error, `exit status N` or `signal: N`, with
+/// what it wrote to `stderr`.
 fn failure(status: ExitStatus, stderr: Option<&mut File>) -> String {
     let err = match status.code() {
         Some(c) => format!("exit status {c}"),
@@ -49,8 +49,9 @@ fn failure(status: ExitStatus, stderr: Option<&mut File>) -> String {
     }
 }
 
-/// An error as Go words it: an OS error is its lowercase strerror,
-/// without Rust's "(os error N)".
+/// An error as the status line shows it: an OS error is its lowercase
+/// strerror, without Rust's "(os error N)", a number that tells the
+/// reader nothing.
 pub fn strerror(e: &io::Error) -> String {
     let s = e.to_string();
     let s = match e.raw_os_error() {

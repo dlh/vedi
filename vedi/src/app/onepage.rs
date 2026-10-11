@@ -23,8 +23,8 @@ pub enum Verdict {
 /// counts a row for each input when there are several, as the pager
 /// draws one.
 pub fn one_page(buf: &Buffer, w: usize, h: usize, below: usize, seps: bool) -> Verdict {
-    // EOF before measuring, as Go read it; here nothing can append in
-    // between.
+    // EOF first: nothing appends between it and the measuring, so the
+    // rows counted are the whole text's.
     let eof = match buf.finished() {
         Some(Err(_)) => return Verdict::Page,
         Some(Ok(())) => true,

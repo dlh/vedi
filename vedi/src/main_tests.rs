@@ -220,7 +220,7 @@ fn reload_prunes_reaped_commands() {
 }
 
 // The old input's command reads on until the reload's text ends, when
-// the app swaps it in, as Go closed the old input after the swap.
+// the app swaps it in; killed sooner, the text on screen would end early.
 #[test]
 fn reload_kills_old_commands_at_its_end() {
     let d = TempDir::new();

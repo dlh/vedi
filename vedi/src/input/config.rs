@@ -242,8 +242,8 @@ enum Glob {
 #[derive(Debug, PartialEq, Eq)]
 struct BadGlob;
 
-/// Whether `name` matches `pattern`, as Go's filepath.Match on a base
-/// name: * ? [class] and \ escapes. A bad pattern is an error whatever
+/// Whether `name` matches `pattern`, a shell glob (* ? [class] and \
+/// escapes) on a base name. A bad pattern is an error whatever
 /// the name, so open_cmd can reject it when it is read.
 fn glob_match(pattern: &str, name: &str) -> Result<bool, BadGlob> {
     let mut toks = Vec::new();
@@ -867,7 +867,7 @@ open_cmd less %s
         assert_eq!(c.open_cmd_for("a.txt"), None);
     }
 
-    /// The pattern syntax open_cmd takes, as Go's filepath.Match reads it.
+    /// The pattern syntax open_cmd takes.
     #[test]
     fn glob() {
         for (pattern, name, want) in [

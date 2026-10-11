@@ -13,7 +13,7 @@ const LINES: usize = 100_000;
 /// The reader's buffer, so the indexer sees chunks as it does live.
 const CHUNK: usize = 64 << 10;
 
-/// Go's `bench/input.go`: a marker, then colored filler, 54 columns.
+/// A line number, then colored filler, 54 columns.
 fn input(n: usize) -> Vec<u8> {
     let mut out = Vec::new();
     for i in 1..=n {

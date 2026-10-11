@@ -113,9 +113,9 @@ fn run() -> Result<(), Fail> {
     panic::set_hook(Box::new(move |info| {
         term::restore_after_panic();
         default_hook(info);
-        // Go's panic ends the process from any goroutine; a thread's
-        // here would leave the pager running on a restored terminal.
-        // exit runs no Drop, so `KillOnExit` cannot.
+        // A thread's panic would leave the pager running on a restored
+        // terminal, so it ends the process. exit runs no Drop, so
+        // `KillOnExit` cannot.
         if thread::current().name() != Some("main") {
             hook_killers.kill_all();
             std::process::exit(2);
@@ -160,8 +160,8 @@ struct Input {
     killers: Vec<Killer>,
 }
 
-/// Stdin a character device, /dev/null as much as a terminal, has
-/// nothing piped in: what Go's main checked.
+/// Stdin a character device has nothing piped in. /dev/null is one
+/// too, so it is refused like a terminal, not paged as empty text.
 fn stdin_is_char_device() -> bool {
     use std::os::fd::AsFd;
     use std::os::unix::fs::FileTypeExt;
@@ -234,7 +234,8 @@ fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input
     })
 }
 
-/// A command that would not start, as Go's exec words it.
+/// A command that would not start, naming the program and, the usual
+/// cause, that `$PATH` has no such file.
 fn exec_error(argv: &[String], e: &io::Error) -> String {
     let prog = argv.first().map_or("", String::as_str);
     match e.kind() {
@@ -254,7 +255,7 @@ impl Killers {
     /// An empty buffer for `input`, its reader started on `generation`
     /// and sending to `tx`. The commands already running are killed
     /// once it ends, as the app then swaps it in: until then the old
-    /// text is still read and shown, as Go closed it after the swap.
+    /// text is still read and shown.
     fn start(&self, input: Input, view: ViewStyle, generation: Gen, tx: &Sender<Event>) -> Buffer {
         // Kept until reaped, so exit reaches a set whose reload never
         // ended.

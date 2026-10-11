@@ -11,7 +11,7 @@ use std::thread;
 use crate::app::Event;
 
 /// The size, columns by rows, of the terminal open on `tty`, falling
-/// back to `COLUMNS` and `LINES`, then 80×25, as tcell does. A pager's
+/// back to `COLUMNS` and `LINES`, then the classic 80×25. A pager's
 /// stdin is the pipe and its stdout may be too, so neither is asked.
 pub fn size(tty: &File) -> (usize, usize) {
     // SAFETY: winsize is plain data, zeroed is valid.

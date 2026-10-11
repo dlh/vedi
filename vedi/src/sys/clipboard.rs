@@ -26,8 +26,8 @@ fn command(cmd: Option<String>, term_program: &str) -> Option<String> {
 
 /// Asks the terminal to set the clipboard, with no acknowledgement.
 pub struct Osc52<W: Write> {
-    /// `None` on a legacy terminal, which is sent nothing, as tcell
-    /// sends it nothing.
+    /// `None` on a legacy terminal, which has no clipboard to set and
+    /// may show the sequence instead.
     out: Option<W>,
 }
 
@@ -162,7 +162,7 @@ mod tests {
         }
     }
 
-    // tcell sends no OSC 52 to a legacy terminal.
+    // Nothing to a legacy terminal, which has no clipboard to set.
     #[test]
     fn osc52_legacy_terminal_is_a_no_op() {
         for term in [

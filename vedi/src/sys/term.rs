@@ -35,9 +35,9 @@ fn set_size((w, h): (usize, usize)) {
     SIZE.store((w as u64) << 32 | h as u64 & 0xffff_ffff, Ordering::SeqCst);
 }
 
-// tcell's drag events: presses, releases and motion with a button
-// down. crossterm's EnableMouseCapture also asks for every motion
-// (1003), a report per move.
+// Presses, releases and motion with a button down. crossterm's
+// EnableMouseCapture also asks for every motion (1003), a report per
+// move that nothing here reads.
 const MOUSE_ON: &[u8] = b"\x1b[?1000h\x1b[?1002h\x1b[?1006h";
 const MOUSE_OFF: &[u8] = b"\x1b[?1006l\x1b[?1002l\x1b[?1000l";
 // XTSHIFTESCAPE: Shift+click to the pager, which the terminal
@@ -45,7 +45,7 @@ const MOUSE_OFF: &[u8] = b"\x1b[?1006l\x1b[?1002l\x1b[?1000l";
 const SHIFT_ESCAPE_ON: &[u8] = b"\x1b[>1s";
 const SHIFT_ESCAPE_OFF: &[u8] = b"\x1b[>0s";
 
-/// The terminal on /dev/tty, as tcell's was: stdout may be a pipe.
+/// The terminal on /dev/tty: stdout may be a pipe.
 /// Raw, on the alternate screen, with the mouse; Drop puts it back.
 pub struct Crossterm {
     tty: File,
@@ -261,7 +261,7 @@ fn key(k: ct::KeyEvent) -> Option<Key> {
 }
 
 /// Button 1 and the wheel. Anything else, motion with no button or
-/// another button, is button 1 not held, as Go read tcell's events.
+/// another button, is button 1 not held, so no drag outlives its button.
 fn mouse(m: ct::MouseEvent) -> Mouse {
     let kind = match m.kind {
         MouseEventKind::Down(MouseButton::Left) => MouseKind::Press,
@@ -291,8 +291,8 @@ mod tests {
         ct::KeyEvent::new(code, mods)
     }
 
-    // Go's TestTerminalBytes: each byte sequence as crossterm's parser
-    // reports it, then as the key map names it.
+    // Each byte sequence as crossterm's parser reports it, then as the
+    // key map names it.
     #[test]
     fn terminal_keys() {
         use ct::KeyCode as C;

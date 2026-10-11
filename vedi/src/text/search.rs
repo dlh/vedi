@@ -35,8 +35,8 @@ impl Prefilter {
     }
 }
 
-/// `char`'s simple lower case, as Go's `unicode.ToLower`: the full
-/// mapping's first char, since only İ lowers to more than one.
+/// `char`'s simple lower case, the full mapping's first char: one char
+/// for one keeps a match's length, and only İ lowers to more than one.
 fn lower(c: char) -> char {
     c.to_lowercase().next().unwrap_or(c)
 }

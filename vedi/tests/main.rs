@@ -159,7 +159,7 @@ fn bad_flag_errors_with_usage() {
     );
 }
 
-// Usage only when no file was named, as Go's main did.
+// No usage: the flags were fine, the name was not.
 #[test]
 fn missing_file_errors() {
     let d = TempDir::new();

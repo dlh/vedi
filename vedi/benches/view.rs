@@ -10,8 +10,7 @@ use vedi::view::style::{Color, Style};
 const W: usize = 200;
 const H: usize = 60;
 
-/// Go's `BenchmarkCells` lines: ASCII skips the segmenter, the rest
-/// run it.
+/// A line per script: ASCII skips the segmenter, the rest run it.
 const KINDS: [(&str, &str, usize); 6] = [
     ("ascii", "some plain text, about eighty bytes wide, ", 2),
     ("latin", "café naïve résumé façade coöperate ", 2),

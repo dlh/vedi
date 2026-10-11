@@ -67,7 +67,7 @@ pub struct Grid {
     h: usize,
     cells: Vec<Cell>,
     /// A zero-width cluster put at `(x, y)`, which the next put there
-    /// takes in, as tcell's did: layout gives such a cluster no cell.
+    /// takes in: layout gives such a cluster no cell of its own.
     pending: Option<(usize, usize, String)>,
 }
 
@@ -227,7 +227,7 @@ impl<T: Terminal> Screen<T> {
         self.term.draw(&mut cells);
         self.term.set_cursor(cursor);
         // A terminal that cannot be written to has gone; the app learns
-        // that from its input ending, as tcell's did.
+        // that from its input ending, so the error has nothing to add.
         let _ = self.term.flush();
         match &mut self.last {
             Some(l) => l.clone_from(grid),

@@ -16,8 +16,9 @@ use super::{failure, scratch};
 use crate::text::buffer::ReadError;
 use crate::text::source::Source;
 
-/// How long Drop waits for a killed command to be reaped, as Go's
-/// `WaitDelay`.
+/// How long Drop waits for a killed command to be reaped: SIGKILL
+/// takes effect at once unless the command is stuck in the kernel,
+/// and then no wait would do.
 const WAIT_DELAY: Duration = Duration::from_secs(1);
 
 /// A running command's output. Its failure, with its stderr, is the
@@ -47,7 +48,7 @@ impl Killer {
         }
         // SAFETY: kill takes no pointers. The group is the child's,
         // unreaped when checked; one reaped since, its id reused within
-        // that window, would be killed, as Go's Process.Kill risks too.
+        // that window, would be killed; the window is one syscall wide.
         unsafe { libc::kill(-self.pid, libc::SIGKILL) };
     }
 
