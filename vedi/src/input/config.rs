@@ -6,6 +6,8 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use glob::Pattern;
+
 use crate::input::action::Command;
 use crate::input::key::{Key, Mods};
 use crate::input::keymap::{Binding, DEFAULTS, Keymap};
@@ -36,12 +38,12 @@ pub struct Config {
     pub one_page_rows_below: Option<usize>,
 }
 
-/// An open_cmd line: files whose base name matches `pattern` are read
-/// by running `argv`, %s the name; `None` is for the files no pattern
-/// matches.
+/// An open_cmd line: files whose base name matches `pattern`, both
+/// lowercased, are read by running `argv`, %s the name; `None` is for
+/// the files no pattern matches.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct OpenCmd {
-    pub pattern: Option<String>,
+    pub pattern: Option<Pattern>,
     pub argv: Vec<String>,
 }
 
@@ -84,6 +86,7 @@ impl Config {
     /// matching its base name, ignoring case, else the last plain line,
     /// else `None` to read it as it is.
     pub fn open_cmd_for(&self, name: &str) -> Option<&[String]> {
+        // Both sides lowercased: the glob crate folds ASCII only.
         let base = Path::new(name)
             .file_name()
             .map_or(name.into(), |b| b.to_string_lossy())
@@ -94,7 +97,7 @@ impl Config {
                 None => {
                     plain.get_or_insert(&o.argv[..]);
                 }
-                Some(p) if glob_match(p, &base) == Ok(true) => return Some(&o.argv),
+                Some(p) if p.matches(&base) => return Some(&o.argv),
                 Some(_) => {}
             }
         }
@@ -216,99 +219,14 @@ fn parse_open_cmd(s: &str) -> Result<OpenCmd, String> {
     let mut pattern = None;
     if argv.first().is_some_and(|w| w.contains(['*', '?', '['])) {
         let first = argv.remove(0);
-        let p = first.to_lowercase();
-        if glob_match(&p, "").is_err() {
-            return Err(format!("open_cmd: bad pattern {first}"));
-        }
+        let p = Pattern::new(&first.to_lowercase())
+            .map_err(|_| format!("open_cmd: bad pattern {first}"))?;
         pattern = Some(p);
     }
     if argv.is_empty() {
         return Err("open_cmd takes a command".to_string());
     }
     Ok(OpenCmd { pattern, argv })
-}
-
-enum Glob {
-    Char(char),
-    Any,
-    Star,
-    /// Negated, and its ranges.
-    Class(bool, Vec<(char, char)>),
-}
-
-/// A pattern that does not parse: an unclosed class, an empty one, a
-/// range with an end missing, or a trailing backslash.
-#[derive(Debug, PartialEq, Eq)]
-struct BadGlob;
-
-/// Whether `name` matches `pattern`, a shell glob (* ? [class] and \
-/// escapes) on a base name. A bad pattern is an error whatever
-/// the name, so open_cmd can reject it when it is read.
-fn glob_match(pattern: &str, name: &str) -> Result<bool, BadGlob> {
-    let mut toks = Vec::new();
-    let mut it = pattern.chars();
-    let esc = |it: &mut std::str::Chars| match it.next() {
-        Some('\\') => it.next().ok_or(BadGlob),
-        Some(c) => Ok(c),
-        None => Err(BadGlob),
-    };
-    while let Some(c) = it.next() {
-        toks.push(match c {
-            '*' => Glob::Star,
-            '?' => Glob::Any,
-            '\\' => Glob::Char(it.next().ok_or(BadGlob)?),
-            '[' => {
-                let neg = it.as_str().starts_with('^');
-                if neg {
-                    it.next();
-                }
-                let mut ranges = Vec::new();
-                loop {
-                    if it.as_str().starts_with(']') && !ranges.is_empty() {
-                        it.next();
-                        break;
-                    }
-                    if it.as_str().starts_with(['-', ']']) {
-                        return Err(BadGlob);
-                    }
-                    let lo = esc(&mut it)?;
-                    let hi = match it.as_str().strip_prefix('-') {
-                        Some(rest) => {
-                            if rest.starts_with(']') {
-                                return Err(BadGlob);
-                            }
-                            it.next();
-                            esc(&mut it)?
-                        }
-                        None => lo,
-                    };
-                    ranges.push((lo, hi));
-                }
-                Glob::Class(neg, ranges)
-            }
-            c => Glob::Char(c),
-        });
-    }
-    Ok(match_tokens(&toks, &name.chars().collect::<Vec<_>>()))
-}
-
-fn match_tokens(toks: &[Glob], name: &[char]) -> bool {
-    let Some((t, rest)) = toks.split_first() else {
-        return name.is_empty();
-    };
-    if let Glob::Star = t {
-        return (0..=name.len()).any(|i| match_tokens(rest, &name[i..]));
-    }
-    let Some((&c, name)) = name.split_first() else {
-        return false;
-    };
-    let ok = match t {
-        Glob::Char(p) => *p == c,
-        Glob::Any => true,
-        Glob::Class(neg, ranges) => ranges.iter().any(|&(lo, hi)| lo <= c && c <= hi) != *neg,
-        Glob::Star => unreachable!(),
-    };
-    ok && match_tokens(rest, name)
 }
 
 /// Where the file is looked for: $XDG_CONFIG_HOME/vedi/vedi.conf, else
@@ -792,7 +710,7 @@ mod tests {
     #[test]
     fn open_cmd() {
         let o = |pattern: Option<&str>, argv: &[&str]| OpenCmd {
-            pattern: pattern.map(String::from),
+            pattern: pattern.map(|p| Pattern::new(p).unwrap()),
             argv: strings(argv),
         };
         let tests = [
@@ -806,6 +724,7 @@ mod tests {
                 "open_cmd *.md mdcat %s\nopen_cmd cat %s\n",
                 vec![o(Some("*.md"), &["mdcat", "%s"]), o(None, &["cat", "%s"])],
             ),
+            // Kept lowercased, to match a lowercased name.
             (
                 "open_cmd [Mm]akefile cat %s\n",
                 vec![o(Some("[mm]akefile"), &["cat", "%s"])],
@@ -866,27 +785,33 @@ open_cmd less %s
         assert_eq!(c.open_cmd_for("a.txt"), None);
     }
 
-    /// The pattern syntax open_cmd takes.
+    /// The pattern syntax open_cmd takes: *, ?, [a-c] and [!a-c], with
+    /// [*] for a literal star; case is ignored.
     #[test]
     fn glob() {
         for (pattern, name, want) in [
             ("*.md", "a.md", true),
             ("*.md", "a.mdx", false),
+            ("*.md", "A.MD", true),
+            ("*é.txt", "CAFÉ.TXT", true),
+            ("*É.TXT", "café.txt", true),
             ("a?c", "abc", true),
             ("a?c", "ac", false),
-            ("[mm]akefile", "makefile", true),
-            ("[^a-c]x", "dx", true),
-            ("[^a-c]x", "bx", false),
             ("[a-c]x", "bx", true),
-            (r"\*", "*", true),
-            (r"\*", "a", false),
-            ("*", "", true),
+            ("[!a-c]x", "dx", true),
+            ("[!a-c]x", "bx", false),
+            ("[*].md", "*.md", true),
+            ("[*].md", "a.md", false),
             ("a*b*c", "axxbyyc", true),
         ] {
-            assert_eq!(glob_match(pattern, name), Ok(want), "{pattern} {name}");
+            let c = parse("vedi.conf", &format!("open_cmd {pattern} cat %s\n")).unwrap();
+            assert_eq!(c.open_cmd_for(name).is_some(), want, "{pattern} {name}");
         }
-        for pattern in ["[md", "[]a]", "[-a]", r"a\", "[a-]", "x[^]"] {
-            assert_eq!(glob_match(pattern, ""), Err(BadGlob), "{pattern} parsed");
+        for pattern in ["[md", "x[!]"] {
+            assert_eq!(
+                parse_err(&format!("open_cmd {pattern} cat %s\n")),
+                format!("vedi.conf:1: open_cmd: bad pattern {pattern}")
+            );
         }
     }
 

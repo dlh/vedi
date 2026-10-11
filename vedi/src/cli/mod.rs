@@ -444,7 +444,7 @@ mod tests {
     fn open_cmd() {
         let c = Config {
             open_cmds: vec![OpenCmd {
-                pattern: Some("*.md".into()),
+                pattern: Some(glob::Pattern::new("*.md").unwrap()),
                 argv: vec!["mdcat".into(), "%s".into()],
             }],
             ..cfg()

@@ -86,7 +86,8 @@ the text with a read error naming its exit status and stderr; `R` and
 auto-reload run it again. See [Pager](pager.md#the-inputs-name).
 
 **open_cmd by file type.** A glob before the command, one with `*`,
-`?` or `[`, limits it to files whose name matches, case ignored:
+`?` or `[`, limits it to files whose name matches, case ignored;
+`[!a-c]` excludes, `[*]` is a literal star:
 
     open_cmd *.md mdcat --ansi
     open_cmd *.json jq -C . %s
