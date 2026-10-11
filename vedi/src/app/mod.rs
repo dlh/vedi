@@ -28,7 +28,7 @@ pub use options::{Clock, Copier, Opener, Options, STDIN, StartScreen};
 use crate::input::action::{Action, Command};
 use crate::input::keymap::Keymap;
 use crate::text::ansi::ViewStyle;
-use crate::text::buffer::{Buffer, Pos};
+use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
 use crate::view::layout::{self, Layout, WrapStyle};
 use crate::view::screen::{Grid, Screen, Terminal};
@@ -206,22 +206,34 @@ impl<T: Terminal> App<T> {
                     Err(_) => return,
                 },
             };
-            loop {
-                let progress = matches!(ev, Event::Progress(..));
-                if self.handle(ev) == Flow::Quit {
-                    return;
-                }
-                if !progress {
-                    self.draw();
-                    break;
-                }
+            // Queued progress is taken up once: a source that writes a
+            // line at a time would otherwise decode the last block per
+            // line.
+            let mut applied = false;
+            let ev = loop {
+                let Event::Progress(g, p) = ev else {
+                    break Some(ev);
+                };
+                applied |= self.apply(g, p);
                 match rx.try_recv() {
                     Ok(next) => ev = next,
-                    Err(_) => {
-                        if self.redraw_due() {
-                            self.draw();
-                        }
-                        break;
+                    Err(_) => break None,
+                }
+            };
+            if applied {
+                self.take_up();
+                self.uncover();
+            }
+            match ev {
+                Some(ev) => {
+                    if self.handle(ev) == Flow::Quit {
+                        return;
+                    }
+                    self.draw();
+                }
+                None => {
+                    if self.redraw_due() {
+                        self.draw();
                     }
                 }
             }
@@ -259,6 +271,29 @@ impl<T: Terminal> App<T> {
         }
     }
 
+    /// Applies the reader's progress to its buffer and reports whether
+    /// it was taken: a stale generation's is dropped.
+    fn apply(&mut self, g: Gen, p: Progress) -> bool {
+        if g == self.generation {
+            self.text_buf_mut().apply(p);
+        } else if let Some(n) = &mut self.next
+            && n.generation == g
+        {
+            n.buf.apply(p);
+        } else {
+            return false;
+        }
+        self.pending = true;
+        true
+    }
+
+    /// Takes applied progress up: swaps in a finished reload and places
+    /// the view on the new text.
+    fn take_up(&mut self) {
+        self.swap_if_done();
+        self.on_data();
+    }
+
     /// Processes one event and reports whether to quit.
     pub fn handle(&mut self, ev: Event) -> Flow {
         let flow = self.dispatch(ev);
@@ -269,18 +304,9 @@ impl<T: Terminal> App<T> {
     fn dispatch(&mut self, ev: Event) -> Flow {
         match ev {
             Event::Progress(g, p) => {
-                if g == self.generation {
-                    self.text_buf_mut().apply(p);
-                } else if let Some(n) = &mut self.next
-                    && n.generation == g
-                {
-                    n.buf.apply(p);
-                } else {
-                    return Flow::Continue;
+                if self.apply(g, p) {
+                    self.take_up();
                 }
-                self.pending = true;
-                self.swap_if_done();
-                self.on_data();
             }
             Event::Resize(..) => {
                 self.screen.sync();

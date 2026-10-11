@@ -106,6 +106,8 @@ pub struct Buffer {
     trailing_newline: bool,
     cache: RefCell<Option<Decoded>>,
     read_err: RefCell<Option<ReadError>>,
+    #[cfg(test)]
+    decodes: std::cell::Cell<usize>,
 }
 
 impl Buffer {
@@ -135,7 +137,15 @@ impl Buffer {
             trailing_newline: true,
             cache: RefCell::new(None),
             read_err: RefCell::new(None),
+            #[cfg(test)]
+            decodes: std::cell::Cell::new(0),
         }
+    }
+
+    /// How many blocks `line` has decoded.
+    #[cfg(test)]
+    pub fn decodes(&self) -> usize {
+        self.decodes.get()
     }
 
     pub fn apply(&mut self, p: Progress) {
@@ -241,6 +251,8 @@ impl Buffer {
     }
 
     fn decode(&self, k: usize) -> Decoded {
+        #[cfg(test)]
+        self.decodes.set(self.decodes.get() + 1);
         let (start, end) = (self.blocks[k].start, self.block_end(k));
         let mut scratch = Vec::new();
         let (raw, err) = match self.bytes(start, (end - start) as usize, &mut scratch) {

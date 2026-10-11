@@ -333,6 +333,37 @@ fn run_ends_with_screen() {
         .expect("run did not return");
 }
 
+/// Progress queued together is taken up once: a source that writes a
+/// line at a time would otherwise decode the last block per line.
+#[test]
+fn queued_progress_decodes_once() {
+    let (done_tx, done_rx) = channel();
+    thread::spawn(move || {
+        let opts = Options {
+            follow: true,
+            ..options()
+        };
+        let (mut a, mut ix) = reading(10, 4, opts);
+        let (tx, rx) = channel::<Event>();
+        for _ in 0..20 {
+            let indexed = ix.feed(b"x\n");
+            let p = Progress::Data {
+                chunk: Some(Arc::from(&b"x\n"[..])),
+                indexed,
+            };
+            tx.send(Event::Progress(GEN, p)).unwrap();
+        }
+        drop(tx);
+        a.run(rx);
+        let _ = done_tx.send((a.buf.decodes(), a.cursor().line));
+    });
+    let (decodes, line) = done_rx
+        .recv_timeout(Duration::from_secs(5))
+        .expect("run did not return");
+    assert_eq!(line, 19, "the view followed");
+    assert_eq!(decodes, 1);
+}
+
 #[test]
 fn highlight_keeps_link() {
     let mut a = app(
