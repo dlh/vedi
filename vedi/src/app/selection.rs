@@ -37,7 +37,7 @@ impl<T: Terminal> App<T> {
             self.anchor = None;
             self.marking = false;
         } else {
-            self.highlight = false;
+            self.search.highlight = false;
         }
     }
 

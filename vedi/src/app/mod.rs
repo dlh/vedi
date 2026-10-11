@@ -30,11 +30,9 @@ use crate::input::keymap::Keymap;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos};
 use crate::text::reader::Gen;
-use crate::text::search::Matcher;
 use crate::view::layout::{self, Layout, WrapStyle};
 use crate::view::screen::{Grid, Screen, Terminal};
 use motion::{LaidCache, Row};
-use prompt::Prompt;
 
 /// How often the reader's data is drawn, at most.
 const REDRAW_EVERY: Duration = Duration::from_millis(50);
@@ -105,35 +103,12 @@ pub struct App<T: Terminal> {
     /// A one-shot message, cleared by the next key.
     status: Option<String>,
     focus: Focus,
-    /// The / and ? prompts' line.
-    query: Prompt,
-    matcher: Matcher,
-    /// The last search was ?, and so n goes up and N down.
-    backward: bool,
-    highlight: bool,
-    /// The : prompt's line.
-    command: Prompt,
-    /// What the last Tab found, shown while the line is as it left it.
-    matches: Option<Vec<String>>,
-    /// The match filled in; `None` for what was typed.
-    match_pos: Option<usize>,
-    /// The line before the first Tab.
-    stem: String,
-    /// The line as the last Tab left it.
-    filled: String,
+    search: search::State,
+    /// The : prompt and its completion.
+    command: command::State,
     /// The text and its view, set aside while help is up.
     text: Option<help::TextView>,
-    /// The last button-1 press, for multiple clicks and drags.
-    last_press: Option<mouse::Click>,
-    /// Button 1 is down.
-    held: bool,
-    /// And went down on the text, so motion selects.
-    dragging: bool,
-    /// The cell the drag last reached.
-    drag_x: usize,
-    drag_y: usize,
-    /// When the auto-scroll tick a drag at an edge armed is due.
-    ticking: Option<Instant>,
+    mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
     /// A reload being read.
@@ -183,22 +158,10 @@ impl<T: Terminal> App<T> {
             start_screen: opts.screen,
             status: None,
             focus: Focus::Viewing,
-            query: Prompt::default(),
-            matcher: Matcher::new(""),
-            backward: false,
-            highlight: false,
-            command: Prompt::default(),
-            matches: None,
-            match_pos: None,
-            stem: String::new(),
-            filled: String::new(),
+            search: search::State::new(),
+            command: command::State::default(),
             text: None,
-            last_press: None,
-            held: false,
-            dragging: false,
-            drag_x: 0,
-            drag_y: 0,
-            ticking: None,
+            mouse: mouse::State::default(),
             open: opts.open,
             next: None,
             dirty: false,
@@ -273,7 +236,7 @@ impl<T: Terminal> App<T> {
         } else {
             None
         };
-        match (hold, self.ticking) {
+        match (hold, self.mouse.ticking) {
             (Some(a), Some(b)) => Some(a.min(b)),
             (a, b) => a.or(b),
         }
@@ -421,8 +384,8 @@ impl<T: Terminal> App<T> {
                 self.move_rows(1);
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
-            Action::SearchNext => self.find(self.backward, true),
-            Action::SearchPrev => self.find(!self.backward, true),
+            Action::SearchNext => self.find(self.search.backward, true),
+            Action::SearchPrev => self.find(!self.search.backward, true),
             Action::CommandPrompt => self.open_command(),
             Action::Cycle => self.cycle(c.arg.as_deref().unwrap_or_default()),
             Action::Help => self.show_help(),

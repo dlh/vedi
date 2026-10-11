@@ -48,18 +48,18 @@ impl<T: Terminal> App<T> {
             anchor: self.anchor.take(),
             xoff: self.xoff,
             wrap_mode: self.wrap_mode,
-            matcher: mem::replace(&mut self.matcher, Matcher::new("")),
-            backward: self.backward,
-            highlight: self.highlight,
+            matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
+            backward: self.search.backward,
+            highlight: self.search.highlight,
         });
         self.focus = Focus::Helping;
-        self.dragging = false;
+        self.mouse.end_drag();
         self.cur = Pos::default();
         self.top = Row::text(Pos::default());
         self.xoff = 0;
         self.wrap_mode = Mode::NoWrap;
-        self.backward = false;
-        self.highlight = false;
+        self.search.backward = false;
+        self.search.highlight = false;
         self.laid.clear();
     }
 
@@ -90,9 +90,9 @@ impl<T: Terminal> App<T> {
         self.anchor = t.anchor;
         self.xoff = t.xoff;
         self.wrap_mode = t.wrap_mode;
-        self.matcher = t.matcher;
-        self.backward = t.backward;
-        self.highlight = t.highlight;
+        self.search.matcher = t.matcher;
+        self.search.backward = t.backward;
+        self.search.highlight = t.highlight;
         self.focus = Focus::Viewing;
         self.laid.clear();
         self.scroll_to_cursor();
@@ -112,11 +112,11 @@ impl<T: Terminal> App<T> {
                 return;
             }
             Action::SearchNext => {
-                self.find(self.backward, true);
+                self.find(self.search.backward, true);
                 return;
             }
             Action::SearchPrev => {
-                self.find(!self.backward, true);
+                self.find(!self.search.backward, true);
                 return;
             }
             _ => {}

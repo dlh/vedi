@@ -23,7 +23,7 @@ const AUTO_SCROLL_TICK: Duration = Duration::from_millis(50);
 
 /// The last button-1 press, for multiple clicks and drags.
 #[derive(Copy, Clone, Debug)]
-pub(super) struct Click {
+struct Click {
     at: Instant,
     x: usize,
     y: usize,
@@ -33,13 +33,67 @@ pub(super) struct Click {
     n: usize,
 }
 
+#[derive(Default)]
+pub(super) struct State {
+    last_press: Option<Click>,
+    /// Button 1 is down.
+    held: bool,
+    /// And went down on the text, so motion selects.
+    dragging: bool,
+    /// The cell the drag last reached.
+    drag_x: usize,
+    drag_y: usize,
+    /// When the auto-scroll tick a drag at an edge armed is due.
+    pub ticking: Option<Instant>,
+}
+
+impl State {
+    /// Button 1 is up: nothing drags until the next press.
+    pub fn release(&mut self) {
+        self.held = false;
+        self.dragging = false;
+        self.ticking = None;
+    }
+
+    /// The drag is over, though the button may still be down: motion
+    /// until the release does nothing.
+    pub fn end_drag(&mut self) {
+        self.dragging = false;
+    }
+
+    /// Which click of a double or triple click a press at `now` on
+    /// (`x`, `y`) is: one more than the last press's when it was on the
+    /// same cell within `DOUBLE_CLICK`, else the first.
+    fn click_count(&self, x: usize, y: usize, now: Instant) -> usize {
+        match self.last_press {
+            Some(l) if (l.x, l.y) == (x, y) && now.duration_since(l.at) <= DOUBLE_CLICK => l.n + 1,
+            _ => 1,
+        }
+    }
+
+    /// The direction a held drag is scrolling on a screen `h` rows
+    /// high: -1 on the top row, 1 on the bottom row, the status line's
+    /// or not, 0 inside the text or not dragging.
+    fn edge(&self, h: usize) -> isize {
+        if !self.held || !self.dragging {
+            0
+        } else if self.drag_y == 0 {
+            -1
+        } else if self.drag_y + 1 >= h {
+            1
+        } else {
+            0
+        }
+    }
+}
+
 impl<T: Terminal> App<T> {
     /// A press returns from help like any key. The mouse is ignored at
     /// the / and : prompts, and a press from before one is forgotten.
     pub(super) fn handle_mouse(&mut self, m: Mouse) {
         if matches!(self.focus, Focus::Searching { .. } | Focus::Commanding) {
-            self.held = false;
-            self.dragging = false;
+            self.mouse.held = false;
+            self.mouse.dragging = false;
             return;
         }
         let helping = self.text.is_some();
@@ -51,20 +105,16 @@ impl<T: Terminal> App<T> {
                 (_, cols) if cols != 0 => self.scroll_view_sideways(cols),
                 _ => {}
             },
-            MouseKind::Release => {
-                self.held = false;
-                self.dragging = false;
-                self.ticking = None;
-            }
+            MouseKind::Release => self.mouse.release(),
             // Motion with the button down looks like a press; only a
             // press on the text drags.
-            MouseKind::Press | MouseKind::Drag if self.held => {
-                if self.dragging {
+            MouseKind::Press | MouseKind::Drag if self.mouse.held => {
+                if self.mouse.dragging {
                     self.drag(m.x, m.y);
                 }
             }
             MouseKind::Press | MouseKind::Drag => {
-                self.held = true;
+                self.mouse.held = true;
                 self.press(m.x, m.y, m.shift);
             }
         }
@@ -88,16 +138,13 @@ impl<T: Terminal> App<T> {
             return;
         }
         let now = (self.clock)();
-        let n = match self.last_press {
-            Some(l) if (l.x, l.y) == (x, y) && now.duration_since(l.at) <= DOUBLE_CLICK => l.n + 1,
-            _ => 1,
-        };
-        self.dragging = true;
-        self.ticking = None;
+        let n = self.mouse.click_count(x, y, now);
+        self.mouse.dragging = true;
+        self.mouse.ticking = None;
         if shift {
             self.anchor.get_or_insert(self.cur);
             self.cur = self.cell_pos(x, y);
-            self.last_press = Some(Click {
+            self.mouse.last_press = Some(Click {
                 at: now,
                 x,
                 y,
@@ -108,7 +155,7 @@ impl<T: Terminal> App<T> {
             return;
         }
         self.cur = self.cell_pos(x, y);
-        self.last_press = Some(Click {
+        self.mouse.last_press = Some(Click {
             at: now,
             x,
             y,
@@ -138,30 +185,19 @@ impl<T: Terminal> App<T> {
     /// stays held.
     fn drag(&mut self, x: usize, y: usize) {
         if self.anchor.is_none() {
-            self.anchor = self.last_press.map(|l| l.pos);
+            self.anchor = self.mouse.last_press.map(|l| l.pos);
         }
-        (self.drag_x, self.drag_y) = (x, y);
+        (self.mouse.drag_x, self.mouse.drag_y) = (x, y);
         self.cur = self.cell_pos(x, y.min(self.text_rows().saturating_sub(1)));
         self.scroll_to_cursor();
-        if self.edge() != 0 && self.ticking.is_none() {
-            self.ticking = Some((self.clock)() + AUTO_SCROLL_TICK);
+        if self.edge() != 0 && self.mouse.ticking.is_none() {
+            self.mouse.ticking = Some((self.clock)() + AUTO_SCROLL_TICK);
         }
     }
 
-    /// The direction the held drag is scrolling: -1 on the top row, 1 on
-    /// the bottom row, the status line's or not, 0 inside the text or
-    /// not dragging.
     fn edge(&self) -> isize {
         let (_, h) = self.screen.size();
-        if !self.held || !self.dragging {
-            0
-        } else if self.drag_y == 0 {
-            -1
-        } else if self.drag_y + 1 >= h {
-            1
-        } else {
-            0
-        }
+        self.mouse.edge(h)
     }
 
     /// Scrolls a row for a drag still held at an edge and extends the
@@ -169,17 +205,17 @@ impl<T: Terminal> App<T> {
     /// tick. A tick before the armed one is due, or when none is armed,
     /// is the redraw hold's or an earlier drag's.
     pub(super) fn tick(&mut self) {
-        let Some(at) = self.ticking else {
+        let Some(at) = self.mouse.ticking else {
             return;
         };
         if (self.clock)() < at {
             return;
         }
-        self.ticking = None;
+        self.mouse.ticking = None;
         let d = self.edge();
         if d != 0 {
             self.scroll_view(d);
-            self.drag(self.drag_x, self.drag_y);
+            self.drag(self.mouse.drag_x, self.mouse.drag_y);
         }
     }
 

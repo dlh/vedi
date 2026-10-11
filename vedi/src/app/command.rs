@@ -1,7 +1,7 @@
 //! The : prompt: a line number, a setting for the rest of the run, or
 //! what a key does, with Tab completion.
 
-use crate::app::prompt::cancels;
+use crate::app::prompt::{Prompt, cancels};
 use crate::app::{App, Flow, Focus};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
@@ -33,47 +33,27 @@ const COMMANDS: &[&str] = &[
     "map",
 ];
 
-impl<T: Terminal> App<T> {
-    pub(super) fn open_command(&mut self) {
-        self.focus = Focus::Commanding;
-        self.dragging = false;
-        self.command.open();
-    }
+#[derive(Default)]
+pub(super) struct State {
+    pub line: Prompt,
+    /// What the last Tab found, shown while the line is as it left it.
+    matches: Option<Vec<String>>,
+    /// The match filled in; `None` for what was typed.
+    match_pos: Option<usize>,
+    /// The line before the first Tab.
+    stem: String,
+    /// The line as the last Tab left it.
+    filled: String,
+}
 
-    /// Edits the : prompt. Enter runs what was typed and closes the
-    /// prompt, unless Tab's list of commands is showing and the prompt
-    /// holds one of them: then it adds the space after the command and
-    /// keeps the prompt open, for the argument. Esc, Ctrl+g and Ctrl+c
-    /// just close it.
-    pub(super) fn command_key(&mut self, key: Key) -> Flow {
-        let key = key.normalized();
-        let (_, before) = last_word(&self.stem);
-        let listing_commands =
-            self.matches.is_some() && self.command.text() == self.filled && before.is_empty();
-        if key.code != KeyCode::Tab {
-            self.matches = None;
+impl State {
+    /// The matches the last Tab found, while the line is as it left it,
+    /// and which of them it filled in.
+    pub fn listing(&self) -> Option<(&[String], Option<usize>)> {
+        match &self.matches {
+            Some(ms) if self.line.text() == self.filled => Some((ms, self.match_pos)),
+            _ => None,
         }
-        let command = self.filled.trim_end_matches(' ');
-        match key.code {
-            _ if cancels(key) => self.focus = Focus::Viewing,
-            KeyCode::Enter if listing_commands && COMMANDS.contains(&command) => {
-                let text = format!("{command} ");
-                self.set_command(&text);
-            }
-            KeyCode::Enter => {
-                self.focus = Focus::Viewing;
-                if !self.command.is_empty() {
-                    self.command.remember();
-                }
-                let line = self.command.text();
-                return self.run_command(&line);
-            }
-            KeyCode::Tab => self.complete(),
-            _ => {
-                self.command.edit(key);
-            }
-        }
-        Flow::Continue
     }
 
     /// Fills in the word being typed at the end of the : prompt from the
@@ -82,23 +62,19 @@ impl<T: Terminal> App<T> {
     /// nothing. Tab again, the line as the last left it, fills in each
     /// match in turn and then what was typed.
     fn complete(&mut self) {
-        if let Some(ms) = &self.matches
-            && self.command.text() == self.filled
-        {
-            let pos = self.match_pos.map_or(0, |p| p + 1);
-            if pos == ms.len() {
-                self.match_pos = None;
-                let stem = self.stem.clone();
-                self.set_command(&stem);
-                return;
-            }
-            self.match_pos = Some(pos);
+        if let Some((ms, at)) = self.listing() {
+            let pos = at.map_or(0, |p| p + 1);
             let (word, _) = last_word(&self.stem);
-            let text = format!("{}{} ", &self.stem[..self.stem.len() - word.len()], ms[pos]);
-            self.set_command(&text);
+            let base = &self.stem[..self.stem.len() - word.len()];
+            let (text, at) = match ms.get(pos) {
+                Some(m) => (format!("{base}{m} "), Some(pos)),
+                None => (self.stem.clone(), None),
+            };
+            self.match_pos = at;
+            self.fill(&text);
             return;
         }
-        self.stem = self.command.text();
+        self.stem = self.line.text();
         let (word, before) = last_word(&self.stem);
         let base = &self.stem[..self.stem.len() - word.len()];
         let mut found: Vec<String> = candidates(&before)
@@ -110,22 +86,66 @@ impl<T: Terminal> App<T> {
             [] => {}
             [one] => {
                 let text = format!("{base}{one} ");
-                self.set_command(&text);
+                self.fill(&text);
             }
             [first, rest @ ..] => {
                 let shared = rest.iter().fold(first.as_str(), |s, c| common_prefix(s, c));
                 let text = format!("{base}{shared}");
                 self.matches = Some(found.clone());
                 self.match_pos = None;
-                self.set_command(&text);
+                self.fill(&text);
             }
         }
     }
 
     /// What a Tab leaves on the prompt.
-    fn set_command(&mut self, text: &str) {
-        self.command.text = text.chars().collect();
+    fn fill(&mut self, text: &str) {
+        self.line.text = text.chars().collect();
         self.filled = text.to_string();
+    }
+}
+
+impl<T: Terminal> App<T> {
+    pub(super) fn open_command(&mut self) {
+        self.focus = Focus::Commanding;
+        self.mouse.end_drag();
+        self.command.line.open();
+    }
+
+    /// Edits the : prompt. Enter runs what was typed and closes the
+    /// prompt, unless Tab's list of commands is showing and the prompt
+    /// holds one of them: then it adds the space after the command and
+    /// keeps the prompt open, for the argument. Esc, Ctrl+g and Ctrl+c
+    /// just close it.
+    pub(super) fn command_key(&mut self, key: Key) -> Flow {
+        let key = key.normalized();
+        let c = &mut self.command;
+        let (_, before) = last_word(&c.stem);
+        let listing_commands = c.listing().is_some() && before.is_empty();
+        if key.code != KeyCode::Tab {
+            c.matches = None;
+        }
+        let command = c.filled.trim_end_matches(' ');
+        match key.code {
+            _ if cancels(key) => self.focus = Focus::Viewing,
+            KeyCode::Enter if listing_commands && COMMANDS.contains(&command) => {
+                let text = format!("{command} ");
+                c.fill(&text);
+            }
+            KeyCode::Enter => {
+                self.focus = Focus::Viewing;
+                if !c.line.is_empty() {
+                    c.line.remember();
+                }
+                let line = c.line.text();
+                return self.run_command(&line);
+            }
+            KeyCode::Tab => c.complete(),
+            _ => {
+                c.line.edit(key);
+            }
+        }
+        Flow::Continue
     }
 
     /// Runs a : line. A number alone, or goto and a number, goes to

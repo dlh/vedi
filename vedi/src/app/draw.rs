@@ -50,9 +50,9 @@ impl<T: Terminal> App<T> {
         let mut matches = Vec::new();
         let mut match_line = None;
         while y < rows && p.line < self.buf.len() {
-            if self.highlight && match_line != Some(p.line) {
+            if self.search.highlight && match_line != Some(p.line) {
                 self.buf.text(p.line, &mut self.scratch);
-                matches = self.matcher.all(&self.scratch);
+                matches = self.search.matcher.all(&self.scratch);
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches) {
@@ -88,7 +88,7 @@ impl<T: Terminal> App<T> {
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
-        let m = self.matcher.len();
+        let m = self.search.matcher.len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
         let ci = (self.cur.line == p.line).then(|| {
             let (ci, cj) = ln.glyph(self.cur.col);

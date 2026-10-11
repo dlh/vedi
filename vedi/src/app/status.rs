@@ -71,16 +71,11 @@ impl<T: Terminal> App<T> {
         let text: Vec<char> = self.status_text().chars().collect();
         let mut width = runes(g, 0, h - 1, &text, st);
         if self.focus == Focus::Commanding
-            && let Some(ms) = &self.matches
-            && self.command.text() == self.filled
+            && let Some((ms, at)) = self.command.listing()
         {
             for (i, m) in ms.iter().enumerate() {
                 width += 2;
-                let ms = if self.match_pos == Some(i) {
-                    Style::default()
-                } else {
-                    st
-                };
+                let ms = if at == Some(i) { Style::default() } else { st };
                 let m: Vec<char> = m.chars().collect();
                 width += runes(g, width, h - 1, &m, ms);
             }
@@ -100,9 +95,9 @@ impl<T: Terminal> App<T> {
 
     fn status_text(&self) -> String {
         match self.focus {
-            Focus::Searching { back: true } => return format!("?{}", self.query.text()),
-            Focus::Searching { back: false } => return format!("/{}", self.query.text()),
-            Focus::Commanding => return format!(":{}", self.command.text()),
+            Focus::Searching { back: true } => return format!("?{}", self.search.query.text()),
+            Focus::Searching { back: false } => return format!("/{}", self.search.query.text()),
+            Focus::Commanding => return format!(":{}", self.command.line.text()),
             Focus::Helping if self.status.is_none() => {
                 return "help  motion scrolls, / searches, any other key returns".into();
             }
