@@ -3,6 +3,9 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD;
+
 use super::{failure, scratch};
 use crate::app::Copier;
 
@@ -47,29 +50,11 @@ impl<W: Write> Copier for Osc52<W> {
         let Some(out) = &mut self.out else {
             return Ok(());
         };
-        let seq = format!("\x1b]52;c;{}\x1b\\", base64(text.as_bytes()));
+        let seq = format!("\x1b]52;c;{}\x1b\\", STANDARD.encode(text));
         out.write_all(seq.as_bytes())
             .and_then(|()| out.flush())
             .map_err(|e| e.to_string())
     }
-}
-
-fn base64(data: &[u8]) -> String {
-    const ABC: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut s = String::with_capacity(data.len().div_ceil(3) * 4);
-    for c in data.chunks(3) {
-        let n = u32::from(c[0]) << 16
-            | u32::from(c.get(1).copied().unwrap_or(0)) << 8
-            | u32::from(c.get(2).copied().unwrap_or(0));
-        for i in 0..4 {
-            if i <= c.len() {
-                s.push(char::from(ABC[(n >> (18 - 6 * i) & 63) as usize]));
-            } else {
-                s.push('=');
-            }
-        }
-    }
-    s
 }
 
 /// Pipes text to a shell command's stdin. A failure's error carries the
@@ -146,20 +131,6 @@ mod tests {
         let mut c = Osc52::new(Vec::new(), "xterm-256color");
         assert_eq!(c.copy("héllo\nworld"), Ok(()));
         assert_eq!(c.out.unwrap(), b"\x1b]52;c;aMOpbGxvCndvcmxk\x1b\\");
-    }
-
-    #[test]
-    fn base64_pads() {
-        let tests = [
-            ("", ""),
-            ("f", "Zg=="),
-            ("fo", "Zm8="),
-            ("foo", "Zm9v"),
-            ("foob", "Zm9vYg=="),
-        ];
-        for (text, want) in tests {
-            assert_eq!(base64(text.as_bytes()), want, "{text:?}");
-        }
     }
 
     // Nothing to a legacy terminal, which has no clipboard to set.

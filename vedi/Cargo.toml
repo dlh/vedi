@@ -14,6 +14,7 @@ name = "vedi"
 bench = false
 
 [dependencies]
+base64 = "0.23.1"
 crossterm = { version = "0.29.0", features = ["use-dev-tty"] }
 libc = "0.2.190"
 notify = "8.2.0"
