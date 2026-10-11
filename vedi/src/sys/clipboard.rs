@@ -173,16 +173,16 @@ mod tests {
         assert_eq!(CommandCopier::new("cat >/dev/null").copy("hi"), Ok(()));
         assert_eq!(
             CommandCopier::new("false").copy("hi"),
-            Err("exit status 1".to_string())
+            Err("exit status: 1".to_string())
         );
         assert_eq!(
             CommandCopier::new("echo nope >&2; exit 3").copy("hi"),
-            Err("exit status 3: nope".to_string())
+            Err("exit status: 3: nope".to_string())
         );
         // A byte that is not UTF-8 loses nothing but itself.
         assert_eq!(
             CommandCopier::new("printf 'bad \\377 byte' >&2; exit 3").copy("hi"),
-            Err("exit status 3: bad \u{fffd} byte".to_string())
+            Err("exit status: 3: bad \u{fffd} byte".to_string())
         );
     }
 
@@ -224,7 +224,7 @@ mod tests {
             "xterm",
             out.clone(),
         );
-        assert_eq!(c.copy("hi"), Err("exit status 4".to_string()));
+        assert_eq!(c.copy("hi"), Err("exit status: 4".to_string()));
         assert_eq!(out.text(), "");
     }
 }

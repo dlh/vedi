@@ -63,7 +63,7 @@ impl std::error::Error for ConfigError {}
 
 #[derive(Debug)]
 pub enum LoadError {
-    NotFound,
+    NotFound(io::Error),
     Io(io::Error),
     Parse(ConfigError),
 }
@@ -71,8 +71,7 @@ pub enum LoadError {
 impl fmt::Display for LoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            LoadError::NotFound => f.write_str("no such file or directory"),
-            LoadError::Io(e) => write!(f, "{e}"),
+            LoadError::NotFound(e) | LoadError::Io(e) => write!(f, "{e}"),
             LoadError::Parse(e) => write!(f, "{e}"),
         }
     }
@@ -337,7 +336,7 @@ pub fn load(path: &Path) -> Result<Config, LoadError> {
         return Ok(Config::default());
     }
     let src = fs::read(path).map_err(|e| match e.kind() {
-        io::ErrorKind::NotFound => LoadError::NotFound,
+        io::ErrorKind::NotFound => LoadError::NotFound(e),
         _ => LoadError::Io(e),
     })?;
     parse(&path.display().to_string(), &String::from_utf8_lossy(&src)).map_err(LoadError::Parse)
@@ -634,7 +633,7 @@ mod tests {
         let dir = TempDir(std::env::temp_dir().join(format!("vedi-config-{}", std::process::id())));
         fs::create_dir_all(&dir.0).unwrap();
         let path = dir.0.join("vedi.conf");
-        assert!(matches!(load(&path), Err(LoadError::NotFound)));
+        assert!(matches!(load(&path), Err(LoadError::NotFound(_))));
         assert_eq!(load(Path::new("")).unwrap(), Config::default());
         fs::write(&path, "map h left\n").unwrap();
         let c = load(&path).unwrap();

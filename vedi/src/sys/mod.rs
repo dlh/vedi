@@ -6,9 +6,8 @@ pub mod watch;
 pub mod words;
 
 use std::fs::{self, File};
-use std::io::{self, Read, Seek};
+use std::io::{Read, Seek};
 use std::os::unix::fs::OpenOptionsExt;
-use std::os::unix::process::ExitStatusExt;
 use std::process::ExitStatus;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -30,13 +29,9 @@ fn scratch() -> Option<File> {
     Some(f)
 }
 
-/// A failed command's error, `exit status N` or `signal: N`, with
-/// what it wrote to `stderr`.
+/// A failed command's exit status with what it wrote to `stderr`.
 fn failure(status: ExitStatus, stderr: Option<&mut File>) -> String {
-    let err = match status.code() {
-        Some(c) => format!("exit status {c}"),
-        None => format!("signal: {}", status.signal().unwrap_or_default()),
-    };
+    let err = status.to_string();
     let mut msg = Vec::new();
     if let Some(f) = stderr {
         let _ = f.rewind();
@@ -46,35 +41,5 @@ fn failure(status: ExitStatus, stderr: Option<&mut File>) -> String {
     match String::from_utf8_lossy(&msg).trim() {
         "" => err,
         msg => format!("{err}: {msg}"),
-    }
-}
-
-/// An error as the status line shows it: an OS error is its lowercase
-/// strerror, without Rust's "(os error N)", a number that tells the
-/// reader nothing.
-pub fn strerror(e: &io::Error) -> String {
-    let s = e.to_string();
-    let s = match e.raw_os_error() {
-        Some(n) => s
-            .strip_suffix(&format!(" (os error {n})"))
-            .unwrap_or(&s)
-            .to_string(),
-        None => return s,
-    };
-    let mut c = s.chars();
-    c.next()
-        .map(|f| f.to_lowercase().chain(c).collect())
-        .unwrap_or(s)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn strerror_as_go() {
-        let e = io::Error::from_raw_os_error(libc::ENOENT);
-        assert_eq!(strerror(&e), "no such file or directory");
-        assert_eq!(strerror(&io::Error::other("Mine")), "Mine");
     }
 }

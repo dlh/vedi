@@ -168,7 +168,7 @@ fn missing_file_errors() {
     assert_eq!(out.code, 1);
     assert_eq!(
         out.stderr,
-        format!("vedi: open {p}: no such file or directory\n")
+        format!("vedi: open {p}: No such file or directory (os error 2)\n")
     );
 }
 
@@ -283,7 +283,7 @@ fn missing_config_errors() {
     assert_eq!(out.code, 1);
     assert_eq!(
         out.stderr,
-        format!("vedi: open {p}: no such file or directory\n")
+        format!("vedi: open {p}: No such file or directory (os error 2)\n")
     );
 }
 
@@ -432,7 +432,7 @@ fn open_cmd_missing_file() {
     assert_eq!(out.code, 1);
     assert_eq!(
         out.stderr,
-        format!("vedi: stat {p}: no such file or directory\n")
+        format!("vedi: stat {p}: No such file or directory (os error 2)\n")
     );
     assert!(!Path::new(&marker).exists());
 }
@@ -448,6 +448,6 @@ fn open_cmd_not_found() {
     assert_eq!(out.code, 1);
     assert_eq!(
         out.stderr,
-        "vedi: exec: \"vedi-no-such-command\": executable file not found in $PATH\n"
+        "vedi: exec vedi-no-such-command: No such file or directory (os error 2)\n"
     );
 }

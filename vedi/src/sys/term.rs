@@ -17,7 +17,7 @@ use crossterm::terminal::{
     self as ctt, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
 };
 
-use super::{strerror, tty};
+use super::tty;
 use crate::app::{Event, Mouse, MouseKind};
 use crate::input::key::{Key, KeyCode, Mods};
 use crate::view::render::Renderer;
@@ -63,8 +63,8 @@ impl Crossterm {
             .read(true)
             .write(true)
             .open("/dev/tty")
-            .map_err(|e| io::Error::new(e.kind(), format!("open /dev/tty: {}", strerror(&e))))?;
-        ctt::enable_raw_mode().map_err(|e| io::Error::new(e.kind(), strerror(&e)))?;
+            .map_err(|e| io::Error::new(e.kind(), format!("open /dev/tty: {e}")))?;
+        ctt::enable_raw_mode()?;
         set_size(tty::size(&tty));
         ENTERED.store(true, Ordering::SeqCst);
         let (raw_tx, raw) = mpsc::channel();

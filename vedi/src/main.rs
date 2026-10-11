@@ -17,7 +17,7 @@ use vedi::input::config::{self, Config, LoadError};
 use vedi::sys::opencmd::{self, Killer};
 use vedi::sys::term::{self, Crossterm};
 use vedi::sys::watch::Watch;
-use vedi::sys::{clipboard, strerror, tty};
+use vedi::sys::{clipboard, tty};
 use vedi::text::ansi::{Printer, ViewStyle};
 use vedi::text::buffer::{Buffer, PagedPart, Progress, Storage};
 use vedi::text::reader::{self, Gen};
@@ -71,12 +71,9 @@ fn run() -> Result<(), Fail> {
     let path = opts.config.clone().unwrap_or_else(config::path);
     let cfg = match config::load(&path) {
         Ok(cfg) => cfg,
-        Err(LoadError::NotFound) if opts.config.is_none() => Config::default(),
-        Err(LoadError::NotFound) => {
-            return Err(format!("open {}: no such file or directory", path.display()).into());
-        }
-        Err(LoadError::Io(e)) => {
-            return Err(format!("open {}: {}", path.display(), strerror(&e)).into());
+        Err(LoadError::NotFound(_)) if opts.config.is_none() => Config::default(),
+        Err(LoadError::NotFound(e) | LoadError::Io(e)) => {
+            return Err(format!("open {}: {e}", path.display()).into());
         }
         Err(e) => return Err(e.to_string().into()),
     };
@@ -201,21 +198,18 @@ fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input
         let shown = Path::new(name).display();
         match open_cmd.and_then(|f| f(&name.to_string_lossy())) {
             Some(argv) => {
-                let md =
-                    fs::metadata(name).map_err(|e| format!("stat {shown}: {}", strerror(&e)))?;
+                let md = fs::metadata(name).map_err(|e| format!("stat {shown}: {e}"))?;
                 on_disk &= md.is_file();
-                let c = opencmd::open(&argv, name).map_err(|e| exec_error(&argv, &e))?;
+                let c = opencmd::open(&argv, name).map_err(|e| format!("exec {}: {e}", argv[0]))?;
                 killers.push(c.killer());
                 parts.push(Box::new(c));
                 paged = None;
             }
             None => {
-                let f = File::open(name).map_err(|e| format!("open {shown}: {}", strerror(&e)))?;
+                let f = File::open(name).map_err(|e| format!("open {shown}: {e}"))?;
                 on_disk &= f.metadata().is_ok_and(|m| m.is_file());
                 if let Some(p) = &mut paged {
-                    let file = f
-                        .try_clone()
-                        .map_err(|e| format!("open {shown}: {}", strerror(&e)))?;
+                    let file = f.try_clone().map_err(|e| format!("open {shown}: {e}"))?;
                     p.push(PagedPart { file, start: 0 });
                 }
                 parts.push(Box::new(f));
@@ -232,16 +226,6 @@ fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input
         on_disk,
         killers,
     })
-}
-
-/// A command that would not start, naming the program and, the usual
-/// cause, that `$PATH` has no such file.
-fn exec_error(argv: &[String], e: &io::Error) -> String {
-    let prog = argv.first().map_or("", String::as_str);
-    match e.kind() {
-        io::ErrorKind::NotFound => format!("exec: {prog:?}: executable file not found in $PATH"),
-        _ => format!("exec: {prog:?}: {}", strerror(e)),
-    }
 }
 
 /// The commands reading the inputs, killed when vedi exits and when a

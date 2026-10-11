@@ -258,7 +258,7 @@ mod tests {
         let mut c = open(&argv, OsStr::new("f")).unwrap();
         assert_eq!(
             read_all(&mut c),
-            ("partial\n".into(), Some("exit status 3: oops".into()))
+            ("partial\n".into(), Some("exit status: 3: oops".into()))
         );
     }
 
@@ -324,7 +324,7 @@ mod tests {
             .recv_timeout(Duration::from_secs(1))
             .expect("the read did not return");
         reader.join().unwrap();
-        assert_eq!(got, (String::new(), Some("signal: 9".into())));
+        assert_eq!(got, (String::new(), Some("signal: 9 (SIGKILL)".into())));
         // SAFETY: signal 0 only checks that the process exists.
         let alive = unsafe { libc::kill(killer.pid, 0) } == 0;
         assert!(!alive, "the command is still there");

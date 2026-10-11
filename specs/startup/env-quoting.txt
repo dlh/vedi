@@ -14,4 +14,4 @@ Shift+Right y
 
 
 
-copy failed: exit status 1        h help
+copy failed: exit status: 1       h help
