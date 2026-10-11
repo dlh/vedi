@@ -3,7 +3,6 @@
 
 use std::fmt;
 use std::str::FromStr;
-use std::sync::OnceLock;
 
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -11,26 +10,7 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 /// The cells cluster `g` takes. A terminal gives a cluster at most two
 /// cells, whatever its chars sum to, so the measure is capped there.
 pub(crate) fn cluster_width(g: &str) -> usize {
-    let w = if east_asian() {
-        g.width_cjk()
-    } else {
-        g.width()
-    };
-    w.min(2)
-}
-
-/// Whether `RUNEWIDTH_EASTASIAN` widens East Asian ambiguous characters,
-/// as it does for the terminal: a cluster must take the cells the screen
-/// gives it.
-pub(crate) fn east_asian() -> bool {
-    static EAST_ASIAN: OnceLock<bool> = OnceLock::new();
-    *EAST_ASIAN.get_or_init(|| {
-        std::env::var("RUNEWIDTH_EASTASIAN").is_ok_and(|v| {
-            ["1", "true", "yes"]
-                .iter()
-                .any(|t| v.eq_ignore_ascii_case(t))
-        })
-    })
+    g.width().min(2)
 }
 
 /// Whether a line wraps at the width or runs past it.
@@ -119,12 +99,7 @@ impl Layout {
         if c.is_ascii() {
             return 1;
         }
-        let w = if east_asian() {
-            c.width_cjk()
-        } else {
-            c.width()
-        };
-        w.unwrap_or(0)
+        c.width().unwrap_or(0)
     }
 
     /// `text.len() + 1` entries: where each char starts, then the total
