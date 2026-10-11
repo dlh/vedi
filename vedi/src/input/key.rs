@@ -135,7 +135,7 @@ impl Key {
                 }
                 '\x7f' => code = KeyCode::Backspace,
                 '\x01'..='\x1a' => {
-                    code = KeyCode::Char((b'a' + c as u8 - 1) as char);
+                    code = KeyCode::Char(char::from(b'a' - 1 + c as u8));
                     mods.insert(Mods::CTRL);
                 }
                 _ => {}

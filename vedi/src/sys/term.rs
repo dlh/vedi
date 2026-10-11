@@ -122,8 +122,11 @@ impl Terminal for Crossterm {
     }
 
     fn set_cursor(&mut self, at: Option<(usize, usize)>) {
+        // Past what the protocol can address, the cursor is hidden as
+        // off screen.
+        let at = at.and_then(|(x, y)| Some((u16::try_from(x).ok()?, u16::try_from(y).ok()?)));
         let _ = match at {
-            Some((x, y)) => queue!(self.out, MoveTo(x as u16, y as u16), Show),
+            Some((x, y)) => queue!(self.out, MoveTo(x, y), Show),
             None => queue!(self.out, Hide),
         };
         self.renderer.cursor_moved();

@@ -20,7 +20,7 @@ pub fn size(tty: &File) -> (usize, usize) {
     // to a live one.
     let ok = unsafe { libc::ioctl(tty.as_raw_fd(), libc::TIOCGWINSZ, &mut ws) } == 0;
     let got = if ok {
-        (ws.ws_col as usize, ws.ws_row as usize)
+        (usize::from(ws.ws_col), usize::from(ws.ws_row))
     } else {
         (0, 0)
     };

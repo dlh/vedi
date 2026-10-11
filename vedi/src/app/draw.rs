@@ -270,7 +270,7 @@ fn glyph(
         }
         c if c < ' ' => {
             put(g, x, y, "^", st, link.clone());
-            let caret = ((c as u8) + 0x40) as char;
+            let caret = char::from(c as u8 + 0x40);
             put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
         }
         _ => put(g, x, y, text, st, link),
