@@ -20,9 +20,13 @@ jobs:
         with:
           fetch-depth: 0
       - run: rustup toolchain install
-      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
-        with:
-          version: 0.15.2
+      - name: install zig
+        run: |
+          cd "$RUNNER_TEMP"
+          curl -sSfL -O https://ziglang.org/download/0.15.2/zig-aarch64-macos-0.15.2.tar.xz
+          echo "3cc2bab367e185cdfb27501c4b30b1b0653c28d9f73df8dc91488e66ece5fa6b  zig-aarch64-macos-0.15.2.tar.xz" | shasum -a 256 -c
+          tar xf zig-aarch64-macos-0.15.2.tar.xz
+          echo "$PWD/zig-aarch64-macos-0.15.2" >> "$GITHUB_PATH"
       - run: cargo install --locked cargo-zigbuild@0.23.4
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
