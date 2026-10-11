@@ -77,8 +77,8 @@ impl<T: Terminal> App<T> {
             return None;
         };
         let w = g.width();
-        let line = self.buf.line(p.line);
         let ln = self.line_layout(p.line);
+        let line = self.buf.line(p.line);
         let xs = ln.cells();
         let segi = ln.segment_at(col);
         let seg = ln.segments()[segi];

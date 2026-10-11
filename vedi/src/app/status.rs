@@ -148,7 +148,7 @@ impl<T: Terminal> App<T> {
             .get(self.buf.part_at(self.cur.line))
             .map_or(STDIN, String::as_str);
         if name == STDIN
-            && let Some(title) = self.buf.line(self.cur.line).title
+            && let Some(title) = self.buf.line(self.cur.line).title.clone()
             && !title.is_empty()
         {
             return title.to_string();

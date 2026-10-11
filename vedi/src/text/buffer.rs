@@ -1,7 +1,7 @@
 //! The input as bytes, in memory or on disk, with lines decoded on
 //! demand from the index.
 
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::fmt;
 use std::fs::File;
 use std::io::{self, Write};
@@ -198,33 +198,43 @@ impl Buffer {
     }
 
     /// Line `i` decoded; empty when out of range or its bytes cannot be
-    /// read.
-    pub fn line(&self, i: usize) -> Line {
-        self.with_line(i, Line::clone).unwrap_or_default()
+    /// read. The guard holds the block cache: another block decoded
+    /// while it lives panics.
+    pub fn line(&self, i: usize) -> Ref<'_, Line> {
+        static EMPTY: Line = Line {
+            text: Vec::new(),
+            runs: Vec::new(),
+            title: None,
+        };
+        self.cached(i)
+            .unwrap_or_else(|| Ref::map(self.cache.borrow(), |_| &EMPTY))
     }
 
     /// Replaces `dst` with line `i`'s chars, as `line` would give them.
     pub fn text(&self, i: usize, dst: &mut Vec<char>) {
         dst.clear();
-        self.with_line(i, |l| dst.extend_from_slice(&l.text));
+        if let Some(l) = self.cached(i) {
+            dst.extend_from_slice(&l.text);
+        }
     }
 
-    fn with_line<T>(&self, i: usize, f: impl FnOnce(&Line) -> T) -> Option<T> {
+    fn cached(&self, i: usize) -> Option<Ref<'_, Line>> {
         if i >= self.n {
             return None;
         }
         let k = i / BLOCK_LINES;
         let end = self.block_end(k);
-        let mut cache = self.cache.borrow_mut();
-        // The last block is decoded again as lines join it.
-        if !matches!(&*cache, Some(d) if d.block == k && d.end == end) {
-            *cache = Some(self.decode(k));
+        // The last block is decoded again as lines join it. The hit test
+        // borrows shared, so a hit works while a line guard lives.
+        if !matches!(&*self.cache.borrow(), Some(d) if d.block == k && d.end == end) {
+            *self.cache.borrow_mut() = Some(self.decode(k));
         }
-        let d = cache.as_ref()?;
-        match d.lines.get(i % BLOCK_LINES) {
-            Some(l) => Some(f(l)),
-            None => {
-                self.note(d.err.clone().unwrap_or(ReadError::Truncated));
+        let cache = self.cache.borrow();
+        match Ref::filter_map(cache, |c| c.as_ref()?.lines.get(i % BLOCK_LINES)) {
+            Ok(l) => Some(l),
+            Err(c) => {
+                let err = c.as_ref().and_then(|d| d.err.clone());
+                self.note(err.unwrap_or(ReadError::Truncated));
                 None
             }
         }
@@ -648,7 +658,7 @@ pub(crate) mod tests {
     #[test]
     fn fill_style_carries_across_lines() {
         let b = memory(b"\x1b[31ma\nb");
-        let runs = b.line(1).runs;
+        let runs = b.line(1).runs.clone();
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].style, red());
     }
@@ -735,7 +745,7 @@ pub(crate) mod tests {
     #[test]
     fn line_out_of_range() {
         let b = Fill::memory(false).buf;
-        assert_eq!(b.line(0), Line::default());
+        assert_eq!(*b.line(0), Line::default());
         assert!(b.is_empty());
     }
 
@@ -773,19 +783,19 @@ pub(crate) mod tests {
     fn state_carries_out_of_order() {
         let b = memory(b"\x1b[31ma\n\x1b]8;;http://x\x1b\\b\ncut \x1b[3\nc\n\x1b[0md");
         let url = |r: &Run| r.link.as_ref().map(|l| l.url.to_string());
-        let runs = b.line(3).runs;
+        let runs = b.line(3).runs.clone();
         assert_eq!(runs.len(), 1, "line 3 (read first)");
         assert_eq!(
             (runs[0].style, url(&runs[0])),
             (red(), Some("http://x".into()))
         );
-        let runs = b.line(4).runs;
+        let runs = b.line(4).runs.clone();
         assert_eq!(runs.len(), 1, "line 4");
         assert_eq!(
             (runs[0].style, url(&runs[0])),
             (Style::default(), Some("http://x".into()))
         );
-        let runs = b.line(0).runs;
+        let runs = b.line(0).runs.clone();
         assert_eq!(runs.len(), 1, "line 0");
         assert_eq!(runs[0].style, red());
         assert_eq!(text(&b.line(2)), "cut ");
@@ -806,7 +816,7 @@ pub(crate) mod tests {
     fn paged_reads_lines_from_the_file() {
         let (b, _) = paged(b"a\n\x1b[1mb\r\nc");
         assert_eq!(lines(&b), ["a", "b", "c"]);
-        let runs = b.line(1).runs;
+        let runs = b.line(1).runs.clone();
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].style, Style::default().bold());
         assert!(!b.trailing_newline());
@@ -849,7 +859,7 @@ pub(crate) mod tests {
         f.write(b"abc\n");
         f.finish(None);
         assert_eq!(f.buf.len(), 1);
-        assert_eq!(f.buf.line(0), Line::default());
+        assert_eq!(*f.buf.line(0), Line::default());
         let mut dst = Vec::new();
         f.buf.text(0, &mut dst);
         assert!(dst.is_empty());
@@ -869,7 +879,7 @@ pub(crate) mod tests {
             b.read_error().is_none(),
             "after reading a line that is there"
         );
-        assert_eq!(b.line(2), Line::default());
+        assert_eq!(*b.line(2), Line::default());
         assert!(matches!(b.read_error(), Some(ReadError::Truncated)));
     }
 
@@ -877,7 +887,7 @@ pub(crate) mod tests {
     fn rewritten_block_is_error() {
         let (b, path) = paged(b"a\nb\n");
         fs::write(&path, b"abcd").unwrap();
-        assert_eq!(b.line(1), Line::default());
+        assert_eq!(*b.line(1), Line::default());
         assert!(matches!(b.read_error(), Some(ReadError::Truncated)));
     }
 
@@ -893,7 +903,7 @@ pub(crate) mod tests {
         }
         // Restored, the block is not read again: the short one stays decoded.
         fs::write(&path, &input).unwrap();
-        assert_eq!(b.line(BLOCK_LINES - 1), Line::default());
+        assert_eq!(*b.line(BLOCK_LINES - 1), Line::default());
     }
 
     #[test]
@@ -906,7 +916,7 @@ pub(crate) mod tests {
             .unwrap()
             .set_len(10)
             .unwrap();
-        assert_eq!(b.line(150), Line::default());
+        assert_eq!(*b.line(150), Line::default());
         assert!(matches!(b.read_error(), Some(ReadError::Truncated)));
         assert_eq!(ReadError::Truncated.to_string(), "input truncated");
     }
@@ -975,7 +985,7 @@ pub(crate) mod tests {
         let mut f = Fill::paged(vec![File::open(&path).unwrap()]);
         f.write(b"one\ntwo\n");
         fs::write(&path, b"one\nt").unwrap();
-        assert_eq!(f.buf.line(1), Line::default());
+        assert_eq!(*f.buf.line(1), Line::default());
         assert_eq!(text(&f.buf.line(0)), "one", "its bytes are still there");
         f.finish(None);
         assert!(matches!(f.buf.finished(), Some(Ok(()))));
@@ -1094,7 +1104,10 @@ pub(crate) mod tests {
             .enumerate()
         {
             let l = b.line(i);
-            assert_eq!((text(&l), l.runs.len(), l.title), (want.into(), 0, None));
+            assert_eq!(
+                (text(&l), l.runs.len(), l.title.clone()),
+                (want.into(), 0, None)
+            );
             let mut dst = Vec::new();
             b.text(i, &mut dst);
             assert_eq!(dst.iter().collect::<String>(), want);
@@ -1124,21 +1137,22 @@ pub(crate) mod tests {
         f.part();
         f.write(b"a\nbc");
         f.finish(None);
-        assert_eq!(f.buf.line(1), Line::default());
+        assert_eq!(*f.buf.line(1), Line::default());
         assert!(matches!(f.buf.read_error(), Some(ReadError::Truncated)));
     }
 
     #[test]
     fn set_literal_redecodes() {
         let mut b = memory(b"\x1b[31mred\x1b[0m\n");
-        let l = b.line(0);
-        assert_eq!((text(&l), l.runs.len()), ("red".into(), 1));
+        let probe = |b: &Buffer| {
+            let l = b.line(0);
+            (text(&l), l.runs.len())
+        };
+        assert_eq!(probe(&b), ("red".into(), 1));
         b.set_literal(true);
-        let l = b.line(0);
-        assert_eq!((text(&l), l.runs.len()), ("\x1b[31mred\x1b[0m".into(), 0));
+        assert_eq!(probe(&b), ("\x1b[31mred\x1b[0m".into(), 0));
         b.set_literal(false);
-        let l = b.line(0);
-        assert_eq!((text(&l), l.runs.len()), ("red".into(), 1));
+        assert_eq!(probe(&b), ("red".into(), 1));
     }
 
     #[test]
