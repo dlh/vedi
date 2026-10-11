@@ -7,10 +7,9 @@ use std::io::{self, Write};
 use std::panic;
 use std::path::Path;
 use std::process::ExitCode;
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
-use std::time::Duration;
 
 use vedi::app::{App, Event, Verdict, one_page};
 use vedi::cli::{self, OpenCmdFor, USAGE};
@@ -25,10 +24,6 @@ use vedi::text::reader::{self, Gen};
 use vedi::text::source::{Concat, Source};
 
 const MACOS: bool = cfg!(target_os = "macos");
-
-/// How often -F, waiting on the reader, looks for a resize: mpsc
-/// cannot wait on both.
-const RESIZE_POLL: Duration = Duration::from_millis(50);
 
 /// Why vedi stops early; printed once the terminal is put back.
 struct Fail {
@@ -101,11 +96,11 @@ fn run() -> Result<(), Fail> {
         // With no terminal to size, -F still prints what fits the
         // environment's size or 80×25; only paging needs one.
         if let Ok(tty) = File::open("/dev/tty").or_else(|_| File::open("/dev/null")) {
-            let resize = tty::sigwinch();
+            let size = tty::size(&tty);
+            let _resize = tty::sigwinch(tx.clone(), tty);
             let below = opts.rows_below(&cfg);
             let seps = opts.separators(&cfg);
-            let size = || tty::size(&tty);
-            if wait_one_page(&mut buf, &rx, &resize, size, below, seps) {
+            if wait_one_page(&mut buf, &rx, size, below, seps) {
                 let _ = print_text(&mut stdout, &buf, view);
                 return Ok(());
             }
@@ -309,37 +304,35 @@ impl Drop for KillOnExit {
 /// -F before any screen exists: applies the reader's progress until the
 /// text outgrows the screen or ends, and reports whether to print it
 /// instead of paging. Deciding first keeps short text from flashing
-/// through the alternate screen. The terminal may be resized meanwhile,
-/// so it is sized at each decision and a resize makes one.
+/// through the alternate screen. A resize makes a decision at the new
+/// size.
 fn wait_one_page(
     buf: &mut Buffer,
     rx: &Receiver<Event>,
-    resize: &Receiver<()>,
-    mut size: impl FnMut() -> (usize, usize),
+    (mut w, mut h): (usize, usize),
     below: usize,
     seps: bool,
 ) -> bool {
     loop {
-        let (w, h) = size();
         match one_page(buf, w, h, below, seps) {
             Verdict::Print => return true,
             Verdict::Page => return false,
             Verdict::Undecided => {}
         }
+        // One event, then whatever is queued, so a burst is measured once.
+        let mut ev = rx.recv();
         loop {
-            match rx.recv_timeout(RESIZE_POLL) {
-                Ok(Event::Progress(_, p)) => {
-                    buf.apply(p);
-                    while let Ok(Event::Progress(_, p)) = rx.try_recv() {
-                        buf.apply(p);
-                    }
-                    break;
-                }
-                // Only the reader sends before the app exists.
+            match ev {
+                Ok(Event::Progress(_, p)) => buf.apply(p),
+                Ok(Event::Resize(nw, nh)) => (w, h) = (nw, nh),
+                // Only the reader and the resize thread send before the
+                // app exists.
                 Ok(_) => {}
-                Err(RecvTimeoutError::Timeout) if resize.try_recv().is_ok() => break,
-                Err(RecvTimeoutError::Timeout) => {}
-                Err(RecvTimeoutError::Disconnected) => return false,
+                Err(_) => return false,
+            }
+            match rx.try_recv() {
+                Ok(e) => ev = Ok(e),
+                Err(_) => break,
             }
         }
     }

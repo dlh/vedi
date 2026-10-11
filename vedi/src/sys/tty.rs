@@ -3,10 +3,12 @@
 
 use std::fs::File;
 use std::io::{self, Read, Write};
-use std::os::fd::{AsFd, AsRawFd, FromRawFd};
+use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd};
 use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::mpsc::{self, Receiver};
+use std::sync::mpsc::Sender;
 use std::thread;
+
+use crate::app::Event;
 
 /// The size, columns by rows, of the terminal open on `tty`, falling
 /// back to `COLUMNS` and `LINES`, then 80×25, as tcell does. A pager's
@@ -94,16 +96,15 @@ fn errno() -> *mut libc::c_int {
 )))]
 compile_error!("errno access is not implemented for this target");
 
-/// A `()` per SIGWINCH. Called once: a second call takes the signal
-/// from the first.
-pub fn sigwinch() -> Receiver<()> {
-    let (tx, rx) = mpsc::channel();
+/// An `Event::Resize` on `tx` per SIGWINCH, sized from `tty`, until
+/// the guard drops. Called once: a second call takes the signal from
+/// the first.
+pub fn sigwinch(tx: Sender<Event>, tty: File) -> Sigwinch {
     let mut fds = [0; 2];
     // SAFETY: pipe writes two descriptors into the array.
     if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
-        // No resize is ever reported, but the channel does not close.
-        std::mem::forget(tx);
-        return rx;
+        // No resize is ever reported.
+        return Sigwinch(None);
     }
     for fd in fds {
         // SAFETY: fcntl on a descriptor just made; no pointers.
@@ -119,30 +120,48 @@ pub fn sigwinch() -> Receiver<()> {
             on_sigwinch as extern "C" fn(libc::c_int) as libc::sighandler_t,
         )
     };
-    // SAFETY: the read end is ours alone from here.
-    let mut pipe = unsafe { File::from_raw_fd(fds[0]) };
+    // SAFETY: both ends are ours alone from here.
+    let (mut pipe, write_end) =
+        unsafe { (File::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
     thread::Builder::new()
         .name("vedi-sigwinch".into())
         .spawn(move || {
             let mut buf = [0; 64];
             loop {
-                let n = match pipe.read(&mut buf) {
+                match pipe.read(&mut buf) {
                     Ok(0) => return,
-                    Ok(n) => n,
+                    Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(_) => return,
-                };
-                if (0..n).any(|_| tx.send(()).is_err()) {
+                }
+                let (w, h) = size(&tty);
+                if tx.send(Event::Resize(w, h)).is_err() {
                     return;
                 }
             }
         })
         .expect("spawn sigwinch thread");
-    rx
+    Sigwinch(Some(write_end))
+}
+
+/// Holds the pipe's write end; dropping it puts the signal back to its
+/// default and ends the thread.
+pub struct Sigwinch(Option<OwnedFd>);
+
+impl Drop for Sigwinch {
+    fn drop(&mut self) {
+        if self.0.is_none() {
+            return;
+        }
+        // SAFETY: restores the default disposition; no pointers.
+        unsafe { libc::signal(libc::SIGWINCH, libc::SIG_DFL) };
+        PIPE.store(-1, Ordering::Relaxed);
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::mpsc;
     use std::time::Duration;
 
     use super::*;
@@ -167,10 +186,14 @@ mod tests {
 
     #[test]
     fn sigwinch_forwards() {
-        let rx = sigwinch();
+        let (tx, rx) = mpsc::channel();
+        let _guard = sigwinch(tx, File::open("/dev/null").unwrap());
         // SAFETY: raise sends a signal to this thread; the handler is
         // installed.
         assert_eq!(unsafe { libc::raise(libc::SIGWINCH) }, 0);
-        assert_eq!(rx.recv_timeout(Duration::from_secs(2)), Ok(()));
+        assert!(matches!(
+            rx.recv_timeout(Duration::from_secs(2)),
+            Ok(Event::Resize(w, h)) if w > 0 && h > 0
+        ));
     }
 }

@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::mpsc::SyncSender;
 
 use vedi::text::index::Indexer;
 use vedi::text::source::Chunk;
@@ -141,19 +140,13 @@ fn one_page_input() -> (Buffer, io::PipeWriter, Receiver<Event>) {
     (buf, w, rx)
 }
 
-fn never() -> Receiver<()> {
-    let (tx, rx) = mpsc::channel();
-    std::mem::forget(tx);
-    rx
-}
-
 // -F waits for the input to end, and text that fits is then printed.
 #[test]
 fn wait_one_page_prints_at_eof() {
     let (mut buf, mut w, rx) = one_page_input();
     w.write_all(b"hello\n").unwrap();
     drop(w);
-    assert!(wait_one_page(&mut buf, &rx, &never(), || (40, 3), 1, false));
+    assert!(wait_one_page(&mut buf, &rx, (40, 3), 1, false));
 }
 
 // Text that outgrows the screen is paged as soon as it does, with the
@@ -162,14 +155,7 @@ fn wait_one_page_prints_at_eof() {
 fn wait_one_page_pages_before_eof() {
     let (mut buf, mut w, rx) = one_page_input();
     w.write_all(b"1\n2\n3\n").unwrap();
-    assert!(!wait_one_page(
-        &mut buf,
-        &rx,
-        &never(),
-        || (40, 3),
-        1,
-        false
-    ));
+    assert!(!wait_one_page(&mut buf, &rx, (40, 3), 1, false));
 }
 
 // A terminal that shrinks while -F waits is measured again at its new
@@ -179,30 +165,19 @@ fn wait_one_page_pages_before_eof() {
 fn wait_one_page_resizes() {
     let (tx, rx) = mpsc::channel();
     let mut buf = Buffer::new(Storage::Memory(Vec::new()), false);
-    // The rows for each decision, so the test sees each one made.
-    let (sizes, rows): (SyncSender<usize>, _) = mpsc::sync_channel(0);
-    let (resize_tx, resize) = mpsc::channel();
-    let waiting = thread::spawn(move || {
-        wait_one_page(
-            &mut buf,
-            &rx,
-            &resize,
-            || (40, rows.recv().unwrap()),
-            1,
-            false,
-        )
-    });
-    sizes.send(10).unwrap(); // nothing read yet
     let text = "line\n".repeat(8);
     let indexed = Indexer::new().feed(text.as_bytes());
     let chunk = Some(Arc::from(text.as_bytes()));
     tx.send(Event::Progress(0, Progress::Data { chunk, indexed }))
         .unwrap();
-    sizes.send(10).unwrap(); // eight lines fit ten rows: still waiting
-    resize_tx.send(()).unwrap();
-    sizes.send(3).unwrap();
-    assert!(
-        !waiting.join().unwrap(),
+    tx.send(Event::Resize(40, 3)).unwrap();
+    // On a thread: ignoring the resize would wait forever, as `tx` is
+    // held open.
+    let (done, decided) = mpsc::channel();
+    thread::spawn(move || done.send(wait_one_page(&mut buf, &rx, (40, 10), 1, false)));
+    assert_eq!(
+        decided.recv_timeout(Duration::from_secs(2)),
+        Ok(false),
         "eight lines on three rows are printed"
     );
 }
