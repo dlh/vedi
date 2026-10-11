@@ -28,8 +28,9 @@ from stdin, to the end and back, and for a failed search on each, with
 peak RSS. To the end is the rest of the index for vedi and a seek for
 less. The pty answers a device attributes query, as a terminal would,
 and the harness reads the screen, since a pager may redraw only the
-cells that changed. `BENCHFLAGS='--lines N --runs R'` changes the input
-and the repetitions. vim runs with `--plugins DIR`, a directory
+cells that changed. Each pager runs with its defaults: the config home
+is a directory without one. `BENCHFLAGS='--lines N --runs R'` changes
+the input and the repetitions. vim runs with `--plugins DIR`, a directory
 holding a checkout of
 [vim-plugin-AnsiEsc](https://github.com/powerman/vim-plugin-AnsiEsc)
 under that name, which colors the escapes, and is left out without

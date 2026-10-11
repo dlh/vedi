@@ -76,7 +76,7 @@ pub fn start(
     let mut cmd = Command::new(&argv[0]);
     cmd.args(&argv[1..])
         .env_clear()
-        .envs(env(std::env::vars_os()));
+        .envs(env(std::env::vars_os(), dir));
     if let Some(dir) = dir {
         cmd.current_dir(dir);
     }
@@ -176,14 +176,27 @@ fn openpty() -> io::Result<(File, File)> {
 }
 
 /// The environment with LESS* and VEDI removed and TERM set, so each
-/// pager runs with its defaults and less writes no history.
-pub fn env(vars: impl IntoIterator<Item = (OsString, OsString)>) -> Vec<(OsString, OsString)> {
+/// pager runs with its defaults and less writes no history. The config
+/// home is `dir`, the pager's directory, which holds only the input:
+/// a vedi.conf of the user's, with an open_cmd say, is not found.
+pub fn env(
+    vars: impl IntoIterator<Item = (OsString, OsString)>,
+    dir: Option<&Path>,
+) -> Vec<(OsString, OsString)> {
     let mut e: Vec<_> = vars
         .into_iter()
-        .filter(|(k, _)| !k.as_bytes().starts_with(b"LESS") && k != "VEDI" && k != "TERM")
+        .filter(|(k, _)| {
+            !k.as_bytes().starts_with(b"LESS")
+                && k != "VEDI"
+                && k != "TERM"
+                && (dir.is_none() || k != "XDG_CONFIG_HOME")
+        })
         .collect();
     e.push(("TERM".into(), "xterm-256color".into()));
     e.push(("LESSHISTFILE".into(), "-".into()));
+    if let Some(dir) = dir {
+        e.push(("XDG_CONFIG_HOME".into(), dir.into()));
+    }
     e
 }
 
@@ -335,7 +348,8 @@ mod tests {
     }
 
     /// Each pager runs with its defaults, so the variables that
-    /// configure less and vedi are dropped, and TERM is fixed.
+    /// configure less and vedi are dropped, TERM is fixed, and the
+    /// config home is the pager's directory, which holds no config.
     #[test]
     fn environment() {
         let given = [
@@ -343,18 +357,26 @@ mod tests {
             ("LESSOPEN", "|cat %s"),
             ("VEDI", "-F -S"),
             ("TERM", "dumb"),
+            ("XDG_CONFIG_HOME", "/home/me/.config"),
             ("KEEP", "1"),
         ];
-        let got: HashMap<OsString, OsString> = env(given.map(|(k, v)| (k.into(), v.into())))
-            .into_iter()
-            .collect();
+        let vars = || given.map(|(k, v)| (k.into(), v.into()));
+        let got: HashMap<OsString, OsString> =
+            env(vars(), Some(Path::new("/work"))).into_iter().collect();
         for k in ["LESS", "LESSOPEN", "VEDI"] {
             assert!(!got.contains_key(OsStr::new(k)), "{k} kept");
         }
         let get = |k: &str| got.get(OsStr::new(k)).and_then(|v| v.to_str());
         assert_eq!(get("TERM"), Some("xterm-256color"));
         assert_eq!(get("LESSHISTFILE"), Some("-"));
+        assert_eq!(get("XDG_CONFIG_HOME"), Some("/work"));
         assert_eq!(get("KEEP"), Some("1"));
+        let got: HashMap<OsString, OsString> = env(vars(), None).into_iter().collect();
+        assert_eq!(
+            got.get(OsStr::new("XDG_CONFIG_HOME"))
+                .and_then(|v| v.to_str()),
+            Some("/home/me/.config")
+        );
     }
 
     /// A shell stand-in for a pager prints the file, waits for a key,
