@@ -28,17 +28,18 @@ archives:
 checksum:
   name_template: checksums.txt
 
-# The changelog is feat, fix and perf; the rest changes nothing a user
-# sees. Each type takes an optional scope and !, as bin/next-version does.
+# The changelog is feat, fix, perf and any breaking change; the rest
+# changes nothing a user sees. A type takes an optional scope and !, as
+# bin/next-version does.
 changelog:
   filters:
     exclude:
-      - '^refactor(\([^)]*\))?!?:'
-      - '^test(\([^)]*\))?!?:'
-      - '^docs(\([^)]*\))?!?:'
-      - '^build(\([^)]*\))?!?:'
-      - '^ci(\([^)]*\))?!?:'
-      - '^chore(\([^)]*\))?!?:'
+      - '^refactor(\([^)]*\))?:'
+      - '^test(\([^)]*\))?:'
+      - '^docs(\([^)]*\))?:'
+      - '^build(\([^)]*\))?:'
+      - '^ci(\([^)]*\))?:'
+      - '^chore(\([^)]*\))?:'
   groups:
     - title: Features
       regexp: '^feat(\([^)]*\))?!?:'
