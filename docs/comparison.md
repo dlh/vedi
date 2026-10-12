@@ -81,14 +81,14 @@ five runs.
 
 | | vedi | less | moor | ov | vim |
 |---|---:|---:|---:|---:|---:|
-| first screen from a file, ms | 5.5 | 5.4 | 35.9 | 64.9 | 540.4 |
-| then to the last line, ms | 105.2 | 237.6 | 111.5 | 2.5 | 9.0 |
-| then back to the first, ms | 0.1 | 0.3 | 0.4 | 0.2 | 4.7 |
-| a search that finds nothing, ms | 11.2 | 938.5 | 117.1 | 1761.9 | 22.9 |
-| first screen from stdin, ms | 4.4 | 4.7 | 28.4 | 62.3 | 654.5 |
-| that search, from stdin, ms | 3.6 | 932.7 | 113.9 | 1715.7 | 20.7 |
-| peak memory, file, MB | 10.4 | 2.4 | 349.6 | 75.9 | 99.1 |
-| peak memory, stdin, MB | 78.7 | 94.2 | 359.2 | 229.3 | 174.8 |
+| first screen from a file, ms | 5.0 | 5.3 | 34.8 | 64.8 | 544.3 |
+| then to the last line, ms | 79.3 | 238.2 | 107.8 | 2.6 | 9.1 |
+| then back to the first, ms | 0.2 | 0.3 | 0.4 | 0.2 | 4.9 |
+| a search that finds nothing, ms | 15.9 | 991.4 | 122.6 | 1769.7 | 23.4 |
+| first screen from stdin, ms | 4.7 | 4.9 | 28.3 | 63.4 | 663.7 |
+| that search, from stdin, ms | 5.5 | 970.1 | 115.6 | 1724.8 | 21.7 |
+| peak memory, file, MB | 8.5 | 2.4 | 345.7 | 76.0 | 99.0 |
+| peak memory, stdin, MB | 76.8 | 94.2 | 353.9 | 228.0 | 174.7 |
 
 The search covers the whole input, which is read by then. moor
 searches as each character is typed, so its time is four searches.
@@ -100,9 +100,9 @@ with baleia.nvim of 2026-06-01 took 7.3 s to the first screen and
 
 | Run | |
 |---|---|
-| Date | 2026-10-04 |
+| Date | 2026-10-12 |
 | Machine | Apple M3 Max, macOS 26.3 |
-| vedi | 1.11.0 |
+| vedi | 2.0.0 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
