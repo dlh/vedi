@@ -242,6 +242,14 @@ fn warm(file: &Path) -> io::Result<()> {
     io::copy(&mut File::open(file)?, &mut io::sink()).map(drop)
 }
 
+/// A core idle since the last pager's exit starts the next one slowly:
+/// vedi after vim measured 6.5 ms to its first screen, 5.2 after ov.
+/// The spin wakes it before the clock starts.
+fn wake() {
+    let t = Instant::now();
+    while t.elapsed() < Duration::from_millis(100) {}
+}
+
 fn ms(since: Instant) -> f64 {
     since.elapsed().as_secs_f64() * 1000.0
 }
@@ -272,6 +280,7 @@ impl Run<'_> {
     }
 
     fn file(&mut self) {
+        wake();
         let t0 = Instant::now();
         let s = self.start(self.file.file_name(), None);
         let Some(mut s) = self.check(Row::FirstScreen, s) else {
@@ -313,6 +322,7 @@ impl Run<'_> {
             return;
         };
         thread::spawn(move || io::copy(&mut f, &mut w));
+        wake();
         let t0 = Instant::now();
         let s = self.start(None, Some(r.into()));
         let Some(mut s) = self.check(Row::Stdin, s) else {

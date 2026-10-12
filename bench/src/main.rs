@@ -73,6 +73,12 @@ fn bench(args: &Args) -> io::Result<HashMap<&'static str, Vec<Sample>>> {
     let dir = TempDir::new()?;
     let file = dir.path().join("input.txt");
     input::write_input(&file, args.lines)?;
+    // macOS checks a binary on its first exec, 150 ms or so, and `make
+    // bench-pagers` makes vedi's afresh every time; a run before any
+    // timing takes that.
+    let _ = std::process::Command::new(&args.vedi)
+        .arg("--version")
+        .output();
     let bench = Bench {
         vedi: args.vedi.clone(),
         plugins: args.plugins.clone(),
