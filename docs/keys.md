@@ -39,8 +39,9 @@ do not fit, and the search keys search them. These are the defaults.
 The Cmd+ keys are macOS only, and reach vedi where the terminal passes
 them on: kitty does, Cmd+c when it has no selection of its own;
 Terminal.app keeps them. Terminal.app also sends some Shift+ keys
-unshifted, and kitty keeps Shift+click; [terminals.md](terminals.md)
-has the fixes.
+unshifted, macOS terminals compose Option+ keys unless told to send
+Alt, and kitty keeps Shift+click; [terminals.md](terminals.md) has the
+fixes.
 
 The selection is drawn in reverse video and search matches in black
 on bright yellow, the match the cursor is in in bright white on

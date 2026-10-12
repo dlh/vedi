@@ -10,6 +10,9 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
 - A behavior change edits its scenario in the same commit; a new
   behavior gets a new scenario and a line in `README.md` or `docs/`.
   Expected output is written by hand, never generated.
+- A default key works in terminals as shipped. One that needs a
+  terminal setting is not bound; `docs/development.md` says what
+  terminals send.
 - Colors, read errors and the event loop are tested in Rust
   (`vedi/src/app/tests.rs`), as is `open_cmd`, which runs in the binary
   where no spec reaches (`vedi/tests/main.rs`); everything else belongs

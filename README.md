@@ -72,7 +72,7 @@ apply however it is started.
 - [Keys](docs/keys.md): every key, for moving, selecting, copying and searching
 - [Configuration](docs/configuration.md): `vedi.conf`, settings and rebinding
 - [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
-- [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys and kitty's scrollback
+- [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys, Option as Alt and kitty's scrollback
 - [Comparison](docs/comparison.md): how vedi differs from less, moor, ov, tmux, vim and neovim, with benchmarks
 - [Development](docs/development.md): checks, commits and releases
 

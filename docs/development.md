@@ -51,6 +51,24 @@ is built from them: `feat:`, `fix:` and `perf:` each get a section;
 `refactor:`, `test:`, `docs:`, `build:`, `ci:` and `chore:` are left
 out, since they change nothing a user sees.
 
+## Keys
+
+vedi asks a terminal that speaks the kitty keyboard protocol for its
+first flag only, disambiguate escape codes. Under it a chord that
+produces text arrives as that text: Shift+Space is a space, and
+Option+key on macOS is the composed character unless the terminal is
+set to send Alt. Such a chord cannot be a default binding: a default
+works in terminals as shipped, and a setting the user applies belongs
+in `docs/terminals.md`. Shift+Space as page up was tried and dropped
+for this.
+
+The protocol's report-all-keys flag would deliver the key, but the
+composed text then comes only in the associated-text field, which
+crossterm 0.29 drops; prompts would lose dead-key and IME input.
+[crossterm#965](https://github.com/crossterm-rs/crossterm/issues/965)
+tracks it. `kitty +kitten show_key -m kitty` shows what kitty sends
+with every flag on.
+
 ## Releases
 
 `make next-version` prints the next tag: a breaking change (`type!:`

@@ -22,6 +22,21 @@ its shifted presses in `kitty.conf`:
 
 Each removes a kitty default.
 
+## Option as Alt
+
+On macOS the Option key composes a character unless the terminal is
+told to send Alt: Alt+v, Alt+b and Alt+f arrive as `√`, `∫` and `ƒ`,
+which nothing is bound to. Each terminal has a setting:
+
+| Terminal | Setting |
+|---|---|
+| kitty | `macos_option_as_alt yes` in `kitty.conf` |
+| Ghostty | `macos-option-as-alt = true` |
+| iTerm2 | Profiles → Keys → Left Option key: Esc+ |
+| Terminal.app | Profiles → Keyboard → Use Option as Meta key |
+
+Option then no longer types symbols in that terminal.
+
 ## macOS Terminal.app
 
 Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞ or ⇧⇟, so
