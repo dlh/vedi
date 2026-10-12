@@ -22,6 +22,13 @@ committing. Behaviors are specified and tested in `specs/`; see
 `specs/README.md`. `bin/spec-step FILE` steps through one, showing the screen
 after each section.
 
+The man page, `vedi/man/vedi.1`, is hand-written mdoc. A change to a flag, a
+default key, a setting or a `:` command edits it in the same commit, and its
+`.Dd` date. `make test` checks that it names every flag of the usage text, every
+key of `defaults.conf`, every config verb and every `:` command, and, where
+mandoc is on PATH, that `mandoc -T lint` passes: macOS ships mandoc, and the
+linux CI container installs it. `man vedi/man/vedi.1` shows it.
+
 Prose in `.md` files wraps at 80 columns; tables and code blocks do not.
 `.git-blame-ignore-revs` lists the commits that only rewrapped, for
 `git config blame.ignoreRevsFile .git-blame-ignore-revs`.
@@ -92,10 +99,11 @@ builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
 publishes a GitHub release with archives, `checksums.txt` and a changelog from
 the commit messages. Each archive holds the completion scripts of
-`vedi/completions/` in `completions/` and the Markdown of `docs/` in `docs/`. It
-then pushes a cask to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap),
-skipped without `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as
-`VEDI_VERSION`; builds from a checkout print `git describe`.
+`vedi/completions/` in `completions/`, the man page `vedi/man/vedi.1` in `man/`
+and the Markdown of `docs/` in `docs/`. It then pushes a cask to
+[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
+`HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds
+from a checkout print `git describe`.
 
 Darwin binaries are signed with a Developer ID Application certificate and
 notarized (bare binaries can't be stapled; Gatekeeper checks the ticket online).

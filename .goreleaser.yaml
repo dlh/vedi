@@ -25,6 +25,8 @@ archives:
       - README.md
       - src: vedi/completions/*
         dst: completions
+      - src: vedi/man/*
+        dst: man
       - src: docs/*.md
         dst: docs
 
@@ -84,4 +86,5 @@ homebrew_casks:
       bash: completions/vedi.bash
       zsh: completions/_vedi
       fish: completions/vedi.fish
+    manpages: [man/vedi.1]
     skip_upload: '{{ if not (isEnvSet "HOMEBREW_TAP_TOKEN") }}true{{ end }}'

@@ -16,7 +16,8 @@ Or download a binary for linux or macOS from the
 
     cargo install --git https://github.com/dlh/vedi vedi
 
-Tab completion for bash, zsh and fish is a file to install; see
+Homebrew installs the man page and tab completion for bash, zsh and fish; an
+archive holds them in `man/` and `completions/`. See
 [Shell completion](docs/configuration.md#shell-completion).
 
 ## Usage

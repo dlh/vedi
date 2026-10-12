@@ -4,7 +4,7 @@ pub mod event;
 pub mod onepage;
 pub mod options;
 
-mod command;
+pub(crate) mod command;
 mod complete;
 mod copy;
 mod draw;

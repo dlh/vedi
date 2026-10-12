@@ -15,6 +15,9 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
 - Colors, read errors and the event loop are tested in Rust
   (`vedi/src/app/tests.rs`), as is `open_cmd`, which runs in the binary where no
   spec reaches (`vedi/tests/main.rs`); everything else belongs in `specs/`.
+- `vedi/man/vedi.1` is written by hand, in mdoc. A change to a flag, a
+  default key, a setting or a `:` command edits it in the same commit, and its
+  `.Dd` date; tests check it names each and that `mandoc -T lint` passes.
 - `make test` must pass before every commit.
 - `docs/development.md` says how to check, commit and release.
 - When updating the benchmarks in `docs/comparison.md`, its vedi version is the

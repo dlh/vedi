@@ -57,7 +57,7 @@ mod tests {
     }
 
     fn word_char(c: char) -> bool {
-        c.is_ascii_lowercase() || c == '-'
+        c.is_ascii_lowercase() || c == '-' || c == '_'
     }
 
     /// `f` stands as a word of its own: no letter or - either side.
@@ -97,6 +97,81 @@ mod tests {
                 assert!(found, "{sh}: no {f}");
             }
         }
+    }
+
+    /// The man page with its \- escapes as dashes and its \& escapes
+    /// gone. A dash in a flag must be \- so groff draws a minus sign,
+    /// not a hyphen; mandoc does not check that.
+    fn man_page() -> String {
+        let page = include_str!("../../man/vedi.1");
+        for line in page.lines() {
+            let words: Vec<&str> = line.split(' ').collect();
+            for w in words.windows(2).filter(|w| w[0] == "Fl") {
+                assert!(
+                    !w[1].replace("\\-", "").contains('-'),
+                    "man: {} has a bare dash",
+                    w[1]
+                );
+            }
+        }
+        page.replace("\\-", "-").replace("\\&", "")
+    }
+
+    /// A flag added to the usage text fails here until the man page
+    /// names it. Fl supplies the first dash.
+    #[test]
+    fn man_flags() {
+        let page = man_page();
+        for f in usage_flags() {
+            assert!(names(&page, &format!("Fl {}", &f[1..])), "man: no {f}");
+        }
+    }
+
+    /// Every default binding is in the page as the key it is spelled
+    /// with in the config file.
+    #[test]
+    fn man_keys() {
+        let page = man_page();
+        let keys = crate::input::keymap::DEFAULTS
+            .lines()
+            .filter_map(|l| l.strip_prefix("map "))
+            .map(|l| l.split(' ').next().unwrap());
+        for key in keys {
+            assert!(names(&page, &format!("Ic {key}")), "man: no {key}");
+        }
+    }
+
+    /// Every config verb and every : command is in the page.
+    #[test]
+    fn man_settings_and_commands() {
+        let page = man_page();
+        let verbs = crate::input::setting::VERBS.iter().map(|v| v.name);
+        for name in verbs.chain(crate::app::command::commands()) {
+            assert!(names(&page, &format!("Cm {name}")), "man: no {name}");
+        }
+    }
+
+    /// mandoc lints the man page where it is installed: macOS ships
+    /// it, and the linux CI container installs it. -W warning leaves
+    /// out the notes about the host's own man database.
+    #[test]
+    fn man_syntax() {
+        let Some(bin) = on_path("mandoc") else {
+            eprintln!("skip: no mandoc");
+            return;
+        };
+        let page = Path::new(env!("CARGO_MANIFEST_DIR")).join("man/vedi.1");
+        let out = Command::new(bin)
+            .args(["-T", "lint", "-W", "warning"])
+            .arg(&page)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "mandoc: {}: {}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr)
+        );
     }
 
     #[test]

@@ -16,7 +16,7 @@ use crate::view::screen::Terminal;
 const BUILTINS: &[&str] = &["goto", "cycle", "help", "reload", "quit", "write"];
 
 /// What the : prompt takes.
-pub(super) fn commands() -> impl Iterator<Item = &'static str> {
+pub(crate) fn commands() -> impl Iterator<Item = &'static str> {
     BUILTINS.iter().copied().chain(setting::at_prompt())
 }
 

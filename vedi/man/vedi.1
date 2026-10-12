@@ -1,0 +1,286 @@
+.Dd October 23, 2026
+.Dt VEDI 1
+.Os
+.Sh NAME
+.Nm vedi
+.Nd page colored text, select it with the keyboard, copy it
+.Sh SYNOPSIS
+.Nm
+.Op Ar flags
+.Op Ar file ...
+.Nm
+.Fl \-completion Ar shell
+.Sh DESCRIPTION
+.Nm
+pages terminal output.
+SGR colors and attributes, 24-bit color included, and OSC 8 hyperlinks are
+drawn as the terminal would.
+Shift with the arrows, or the mouse, selects text, and Ctrl+c copies it as
+plain text.
+With no
+.Ar file
+it reads standard input.
+A file that changes on disk is read again, so a log that grows is followed.
+.Pp
+Flags in the
+.Ev VEDI
+environment variable apply to every run; the command line wins.
+Each setting flag has a line in the config file, see
+.Sx FILES ;
+the flag overrides it for one run.
+.Bl -tag -width Ds
+.It Fl S , Fl \-wrap , Fl \-no\-wrap
+Wrap long lines;
+.Fl S
+is
+.Fl \-no\-wrap .
+Default: on.
+.It Fl \-wrap\-style Ar style
+Wrap at the screen's edge
+.Pq Cm char ,
+or at words
+.Pq Cm word .
+Default:
+.Cm char .
+.It Fl F , Fl \-quit\-if\-one\-page , Fl \-no\-quit\-if\-one\-page
+Print the text and quit if it fits the screen, as
+.Xr cat 1
+would; the pager opens only for more.
+Default: off.
+.It Fl \-one\-page\-rows\-below Ar n
+Rows
+.Fl F
+leaves below the text, for the shell's prompt.
+Default: 1.
+.It Fl \-auto\-reload , Fl \-no\-auto\-reload
+Read a file again when it changes on disk.
+Default: on.
+.It Cm +G
+Start at the last line and follow until end of file.
+.It Cm + Ns Ar n
+Start with line
+.Ar n
+at the top.
+.It Fl \-scrolled\-by Ar n
+Start on the last screenful, scrolled
+.Ar n
+rows up.
+.It Fl \-cursor\-row Ar n
+Put the cursor on row
+.Ar n
+of the last screenful.
+.It Fl \-cursor\-col Ar n
+Put the cursor in column
+.Ar n
+of the last screenful.
+.It Fl \-clipboard\-cmd Ar cmd
+Pipe copied text to
+.Ar cmd
+instead of writing it with OSC 52.
+.It Fl \-no\-clipboard\-cmd
+Copy with OSC 52, or
+.Xr pbcopy 1
+in Terminal.app.
+.It Fl \-open\-cmd Ar cmd
+Read each file by running
+.Ar cmd ,
+with
+.Ql %s
+replaced by the file's name, or the name as the last argument.
+.It Fl \-no\-open\-cmd
+Read each file as it is.
+.It Fl \-tab\-width Ar n
+Draw a tab as
+.Ar n
+cells.
+Default: 8.
+.It Fl \-edge\-markers , Fl \-no\-edge\-markers
+Mark text off the sides of the screen with
+.Ql <
+and
+.Ql > ,
+and a row that wraps with
+.Ql \e .
+Default: off.
+.It Fl \-file\-separators , Fl \-no\-file\-separators
+With several inputs, draw a row naming each.
+Default: on.
+.It Fl \-status\-line , Fl \-no\-status\-line
+Draw the status line; off, only for a prompt or a message.
+Default: on.
+.It Fl \-view\-style Ar style
+Draw the text in color
+.Pq Cm color ,
+without
+.Pq Cm plain ,
+or with its escapes as text
+.Pq Cm raw .
+Default:
+.Cm color .
+.It Fl \-config Ar file
+Read the config from
+.Ar file .
+.It Fl \-completion Ar shell
+Print the completion script for
+.Cm bash ,
+.Cm zsh
+or
+.Cm fish
+and exit.
+.It Fl h , Fl \-help
+Print the usage and exit.
+.It Fl v , Fl \-version
+Print the version and exit.
+.El
+.Sh KEYS
+The defaults.
+.Ic h
+shows those in effect; the config file rebinds any of them.
+.Ic Cmd+
+keys are macOS only, where the terminal passes them on.
+.Bl -tag -width "Ctrl+c, Cmd+c, y" -compact
+.It Ic Up , Ic Down , Ic Left , Ic Right , Ic Home , Ic End , Ic j , Ic k , \
+Ic 0 , Ic $ , Ic Cmd+Left , Ic Cmd+Right
+Move the cursor.
+.It Ic PgDn , Ic Space , Ic f , Ic Ctrl+f , Ic Ctrl+v
+Down a page.
+.It Ic PgUp , Ic b , Ic Ctrl+b , Ic Alt+v
+Up a page.
+.It Ic d , Ic Ctrl+d
+Down half a page.
+.It Ic u , Ic Ctrl+u
+Up half a page.
+.It Ic Ctrl+Left , Ic Ctrl+Right , Ic Alt+Left , Ic Alt+Right , Ic Alt+b , \
+Ic Alt+f
+Move by word.
+.It Ic g , Ic G , Ic < , Ic > , Ic Cmd+Up , Ic Cmd+Down
+First line, last line.
+.It Ic T , Ic M , Ic B
+Top, middle, bottom row of the screen.
+.It Ic \&[ , Ic \&]
+Previous, next input or title.
+.It Ic J , Ic K , Ic Shift+Up , Ic Shift+Down , Ic Shift+Left , \
+Ic Shift+Right , Ic Shift+Home , Ic Shift+End , Ic Cmd+Shift+Left , \
+Ic Cmd+Shift+Right , Ic Cmd+Shift+Up , Ic Cmd+Shift+Down
+Extend the selection.
+.It Ic Shift+PgUp , Ic Shift+PgDn
+Extend by a page.
+.It Ic Ctrl+Shift+Left , Ic Ctrl+Shift+Right , Ic Alt+Shift+Left , \
+Ic Alt+Shift+Right
+Extend by word.
+.It Ic Ctrl+a , Ic Cmd+a
+Select all.
+.It Ic Esc
+Clear the selection, then the search highlight.
+.It Ic Ctrl+c , Ic Cmd+c , Ic y
+Copy the selection as plain text.
+.It Ic Enter
+Copy the selection and quit; with none, down a line.
+.It Ic /
+Search; ignores case unless capitalized; empty repeats.
+.It Ic \&?
+Search backward.
+.It Ic n , Ic N , Ic Cmd+g , Ic Cmd+Shift+g
+Next and previous match;
+.Ic \&?
+swaps them.
+.It Ic \&:
+Command prompt; see
+.Sx COMMANDS .
+.It Ic w
+Toggle wrap.
+.It Ic R
+Reload the file.
+.It Ic O
+Toggle reading through
+.Cm open_cmd .
+.It Ic q
+Quit.
+.It Ic h
+Show the key bindings.
+.El
+.Pp
+Click and drag select; a double-click the word, a triple-click the line.
+.Sh COMMANDS
+.Ic \&:
+opens a prompt on the status line.
+It takes any setting of the config file but
+.Cm clipboard_cmd ,
+.Cm open_cmd
+and
+.Cm one_page_rows_below ,
+for the rest of the run, and these:
+.Bl -tag -width Ds
+.It Ar n , Cm goto Ar n
+Go to line
+.Ar n .
+.It Cm cycle Ar setting
+Step a setting to its next value, the first after the last:
+.Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
+.Cm auto_reload , Cm status_line , Cm view_style
+or
+.Cm open_cmd .
+.It Cm map Ar key action
+Bind a key, as in the config file.
+.It Cm help , Cm reload , Cm quit
+What
+.Ic h ,
+.Ic R
+and
+.Ic q
+do.
+.It Cm write Ar file
+Save the text as shown, or the selection, to a new file;
+.Cm write!
+replaces one that exists.
+.El
+.Pp
+Tab completes the word; Up and Down recall earlier commands.
+.Sh ENVIRONMENT
+.Bl -tag -width XDG_CONFIG_HOME
+.It Ev VEDI
+Flags read before the command line, split as a shell would.
+.It Ev XDG_CONFIG_HOME
+Where the config file is looked for, instead of
+.Pa ~/.config .
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa ~/.config/vedi/vedi.conf
+One directive per line; blank lines and
+.Ql #
+comments are skipped.
+A setting is its flag with
+.Ql _
+for
+.Ql \- :
+.Cm wrap , Cm wrap_style , Cm tab_width , Cm edge_markers , Cm file_separators ,
+.Cm auto_reload , Cm status_line , Cm view_style , Cm one_page_rows_below ,
+.Cm clipboard_cmd
+and
+.Cm open_cmd ,
+which a glob before the command limits to the files it matches.
+.Cm map Ar key action
+binds a key, later lines winning, and the action
+.Cm none
+unbinds;
+.Cm clear_all_shortcuts
+drops every binding so far, the defaults included.
+.El
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+As the pager for the shell, git and man:
+.Bd -literal -offset indent
+export PAGER="vedi \-F"
+export MANPAGER="sh \-c \(aqcol \-bx | vedi \-F\(aq"
+.Ed
+.Pp
+Where OSC 52 does not reach the clipboard:
+.Bd -literal -offset indent
+vedi \-\-clipboard\-cmd \(aqxclip \-selection clipboard\(aq build.log
+.Ed
+.Sh SEE ALSO
+.Xr less 1
+.Pp
+.Lk https://github.com/dlh/vedi
