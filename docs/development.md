@@ -45,8 +45,9 @@ vedi 1.9.0 and then dropped.
 `media` runs `docs/media/demo.tape` with
 [vhs](https://github.com/charmbracelet/vhs) (`brew install vhs`, which brings
 ttyd and ffmpeg) over the checked-in `docs/media/sample.txt`, lorem ipsum with
-SGR colors and an OSC 8 link. Run it after a change to the drawing, and commit
-the gif it rewrites.
+SGR colors and an OSC 8 link. vedi runs with its defaults: the config home is
+`docs/media`, which holds no config. Run it after a change to the drawing, and
+commit the gif it rewrites.
 
 Commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/). The release

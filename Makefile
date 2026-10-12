@@ -24,9 +24,10 @@ bench-compare:
 bench-pagers: build
 	cargo run --release -q -p bench -- --vedi $(CURDIR)/target/release/vedi $(BENCHFLAGS)
 
-# Needs vhs on PATH (brew install vhs). Rewrites docs/media/demo.gif.
+# Needs vhs on PATH (brew install vhs). Rewrites docs/media/demo.gif. The
+# config home holds no vedi.conf, so the demo runs with the defaults.
 media: build
-	PATH="$(CURDIR)/target/release:$$PATH" vhs docs/media/demo.tape
+	PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media" vhs docs/media/demo.tape
 
 # Shows what rustfmt would change and fails; never rewrites.
 fmt:
