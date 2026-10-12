@@ -1,7 +1,7 @@
 # Keys
 
-`h` shows the bindings in effect; the motions scroll them when they
-do not fit, and the search keys search them. These are the defaults.
+`h` shows the bindings in effect; the motions scroll them when they do not fit,
+and the search keys search them. These are the defaults.
 
 | Key | Action |
 |---|---|
@@ -36,24 +36,21 @@ do not fit, and the search keys search them. These are the defaults.
 | Tab | Complete; again, the next match |
 | Esc, Ctrl+g, Ctrl+c | Cancel |
 
-The Cmd+ keys are macOS only, and reach vedi where the terminal passes
-them on: kitty does, Cmd+c when it has no selection of its own;
-Terminal.app keeps them. Terminal.app also sends some Shift+ keys
-unshifted, macOS terminals compose Option+ keys unless told to send
-Alt, and kitty keeps Shift+click; [terminals.md](terminals.md) has the
-fixes.
+The Cmd+ keys are macOS only, and reach vedi where the terminal passes them on:
+kitty does, Cmd+c when it has no selection of its own; Terminal.app keeps them.
+Terminal.app also sends some Shift+ keys unshifted, macOS terminals compose
+Option+ keys unless told to send Alt, and kitty keeps Shift+click;
+[terminals.md](terminals.md) has the fixes.
 
-The selection is drawn in reverse video and search matches in black
-on bright yellow, the match the cursor is in in bright white on
-magenta, whatever the text's own colors. A match off the
-screen scrolls to the top row, or as near as the last screenful
-allows. With `edge_markers yes` in the config, nowrap mode marks text
-off the screen with a `<` or `>` in reverse video at that edge of the
+The selection is drawn in reverse video and search matches in black on bright
+yellow, the match the cursor is in in bright white on magenta, whatever the
+text's own colors. A match off the screen scrolls to the top row, or as near as
+the last screenful allows. With `edge_markers yes` in the config, nowrap mode
+marks text off the screen with a `<` or `>` in reverse video at that edge of the
 row, and wrap mode ends a row that continues below with a `\`.
 
-Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file
-named by `--config`, and `clear_all_shortcuts` there starts the map
-from nothing. The `set_mark` action, unbound by default, starts a
-selection that every motion extends, as `v` does in vim. See
-[configuration.md](configuration.md), which ends with vim and emacs
-maps.
+Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file named by
+`--config`, and `clear_all_shortcuts` there starts the map from nothing. The
+`set_mark` action, unbound by default, starts a selection that every motion
+extends, as `v` does in vim. See [configuration.md](configuration.md), which
+ends with vim and emacs maps.

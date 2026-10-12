@@ -12,10 +12,9 @@
 
 ## The file
 
-vedi reads `~/.config/vedi/vedi.conf` (or `$XDG_CONFIG_HOME/vedi/vedi.conf`),
-or the file named by `--config`. Without a file it uses the
-[defaults](#defaults). A bad line stops vedi before it opens, naming
-the file and line.
+vedi reads `~/.config/vedi/vedi.conf` (or `$XDG_CONFIG_HOME/vedi/vedi.conf`), or
+the file named by `--config`. Without a file it uses the [defaults](#defaults).
+A bad line stops vedi before it opens, naming the file and line.
 
 One directive per line. Blank lines and `#` comments are skipped.
 
@@ -30,9 +29,9 @@ One directive per line. Blank lines and `#` comments are skipped.
     map j down
     map k up
 
-`map <key> <action>` binds a key. Later lines win over earlier ones
-and over the defaults; the action `none` unbinds.
-`clear_all_shortcuts` drops every binding so far, defaults included.
+`map <key> <action>` binds a key. Later lines win over earlier ones and over the
+defaults; the action `none` unbinds. `clear_all_shortcuts` drops every binding
+so far, defaults included.
 
 ## Settings
 
@@ -50,109 +49,102 @@ and over the defaults; the action `none` unbinds.
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command, by name pattern or for all; `%s` is the file name. |
 
-Flags apply for one run. Flags in the `VEDI` environment variable
-override the file, and the command line overrides `VEDI`; see
-[Pager](pager.md#vedi).
+Flags apply for one run. Flags in the `VEDI` environment variable override the
+file, and the command line overrides `VEDI`; see [Pager](pager.md#vedi).
 
-**wrap_style word.** A word that does not fit moves to the next row,
-taking the space after it; one wider than the screen breaks at the
-edge. The status line shows `word wrap`.
+**wrap_style word.** A word that does not fit moves to the next row, taking the
+space after it; one wider than the screen breaks at the edge. The status line
+shows `word wrap`.
 
-**edge_markers yes.** In nowrap mode a row that runs past the right
-edge ends in `>`, and one scrolled off the left edge starts with
-`<`, both in reverse video. In wrap mode a row that continues on the
-next ends in `\`, and text wraps a column early to leave room for it.
+**edge_markers yes.** In nowrap mode a row that runs past the right edge ends in
+`>`, and one scrolled off the left edge starts with `<`, both in reverse video.
+In wrap mode a row that continues on the next ends in `\`, and text wraps a
+column early to leave room for it.
 
-**status_line no.** The text has the bottom row. The line comes back
-for a prompt, a message, help or a read error, and goes with the next
-key.
+**status_line no.** The text has the bottom row. The line comes back for a
+prompt, a message, help or a read error, and goes with the next key.
 
-**view_style plain.** The text is drawn in the terminal's default
-colors, without its SGR colors and attributes; links stay, and `-F`
-prints the same. The status line shows `plain`.
+**view_style plain.** The text is drawn in the terminal's default colors,
+without its SGR colors and attributes; links stay, and `-F` prints the same. The
+status line shows `plain`.
 
-**view_style raw.** The text is the input's bytes: an escape sequence
-is drawn as its characters, the ESC as `^[` in reverse video, and
-colors nothing. Search finds its text and copy sends it. No title
-names stdin, and `[` and `]` stop only at inputs. Changing to or from
-`raw` keeps the cursor's line and clamps its column. `-F` prints the
-escapes spelled out. The status line shows `raw`.
+**view_style raw.** The text is the input's bytes: an escape sequence is drawn
+as its characters, the ESC as `^[` in reverse video, and colors nothing. Search
+finds its text and copy sends it. No title names stdin, and `[` and `]` stop
+only at inputs. Changing to or from `raw` keeps the cursor's line and clamps its
+column. `-F` prints the escapes spelled out. The status line shows `raw`.
 
-**clipboard_cmd** and **open_cmd** take the rest of the line as the
-command, so `clipboard_cmd xclip -selection clipboard` and `open_cmd
-bat --color=always --paging=never %s` work; a pipeline needs a
-script. `open_cmd` leaves stdin as it is. A command that fails ends
-the text with a read error naming its exit status and stderr; `R` and
-auto-reload run it again. See [Pager](pager.md#the-inputs-name).
+**clipboard_cmd** and **open_cmd** take the rest of the line as the command, so
+`clipboard_cmd xclip -selection clipboard` and
+`open_cmd bat --color=always --paging=never %s` work; a pipeline needs a script.
+`open_cmd` leaves stdin as it is. A command that fails ends the text with a read
+error naming its exit status and stderr; `R` and auto-reload run it again. See
+[Pager](pager.md#the-inputs-name).
 
-**open_cmd by file type.** A glob before the command, one with `*`,
-`?` or `[`, limits it to files whose name matches, case ignored;
-`[!a-c]` excludes, `[*]` is a literal star:
+**open_cmd by file type.** A glob before the command, one with `*`, `?` or `[`,
+limits it to files whose name matches, case ignored; `[!a-c]` excludes, `[*]` is
+a literal star:
 
     open_cmd *.md mdcat --ansi
     open_cmd *.json jq -C . %s
     open_cmd bat --color=always --paging=never %s
 
-The last matching pattern line wins; a line without a pattern is for
-the rest. A command without `%s` gets the file name as its last
-argument. `--open-cmd` replaces every line for one run.
+The last matching pattern line wins; a line without a pattern is for the rest. A
+command without `%s` gets the file name as its last argument. `--open-cmd`
+replaces every line for one run.
 
-`O`, `cycle open_cmd`, reads the files as they are, and again through
-their commands; the status line names the command for the file at
-the cursor, or `''`. The selection is cleared.
+`O`, `cycle open_cmd`, reads the files as they are, and again through their
+commands; the status line names the command for the file at the cursor, or `''`.
+The selection is cleared.
 
 ## Commands
 
-`:` opens a prompt on the status line. It takes any setting above
-but `one_page_rows_below`, and `map`, for the rest of the run:
+`:` opens a prompt on the status line. It takes any setting above but
+`one_page_rows_below`, and `map`, for the rest of the run:
 
     :wrap_style word
     :tab_width 4
     :map x quit
 
-`:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
-setting to its next value, the first after the last; it takes `wrap`,
-`wrap_style`, `edge_markers`, `file_separators`, `auto_reload`,
-`status_line`, `view_style` and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
-do. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A
-bad line is an error on the status line.
+`:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a setting to
+its next value, the first after the last; it takes `wrap`, `wrap_style`,
+`edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`
+and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
+`clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
+error on the status line.
 
-Tab completes the word being typed. One match fills it in; several
-fill in what they share and list the rest under the prompt, and Tab
-again steps through them. Up and Down recall earlier commands; Esc,
-Ctrl+g and Ctrl+c cancel.
+Tab completes the word being typed. One match fills it in; several fill in what
+they share and list the rest under the prompt, and Tab again steps through them.
+Up and Down recall earlier commands; Esc, Ctrl+g and Ctrl+c cancel.
 
 ## Keys
 
-A key is one of `Up Down Left Right Home End PgUp PgDn Enter Esc Tab
-Backspace Space`, or a single character, with any of `Shift+`,
-`Ctrl+`, `Alt+`, `Cmd+` in front: `q`, `Ctrl+f`, `Alt+Shift+Left`,
-`Ctrl+Space`.
+A key is one of
+`Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, or a
+single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in front: `q`,
+`Ctrl+f`, `Alt+Shift+Left`, `Ctrl+Space`.
 
 - `Ctrl+f` and `Ctrl+F` are the same key.
-- A shifted character is just that character: `G`, not `Shift+g`.
-  Only `Cmd+` takes `Shift+` on a character, and `Cmd+G` is
-  `Cmd+Shift+g`. `Shift+Space` is not a key a terminal can send.
-- `Cmd+` keys reach vedi only on macOS, and only where the terminal
-  passes them on.
-- Under the kitty keyboard protocol a shifted character with `Alt+`
-  or `Cmd+`, as `Alt+<`, is read as on a US layout.
+- A shifted character is just that character: `G`, not `Shift+g`. Only `Cmd+`
+  takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`. `Shift+Space` is
+  not a key a terminal can send.
+- `Cmd+` keys reach vedi only on macOS, and only where the terminal passes them
+  on.
+- Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,
+  as `Alt+<`, is read as on a US layout.
 
 `h` shows the bindings in effect.
 
 ## Actions
 
-The [defaults](#defaults) below name every action, with three
-exceptions:
+The [defaults](#defaults) below name every action, with three exceptions:
 
-- Each movement has a `select_` twin that extends the selection
-  instead of clearing it: `left` and `select_left`, `page_down` and
-  `select_page_down`.
-- `set_mark` starts a selection that every motion then extends until
-  `set_mark` again, `clear_selection` or a click ends it: vim's `v`,
-  emacs's `Ctrl+Space`.
-- `cycle <setting>` steps a setting, as in [Commands](#commands). It
-  is the one action that takes an argument.
+- Each movement has a `select_` twin that extends the selection instead of
+  clearing it: `left` and `select_left`, `page_down` and `select_page_down`.
+- `set_mark` starts a selection that every motion then extends until `set_mark`
+  again, `clear_selection` or a click ends it: vim's `v`, emacs's `Ctrl+Space`.
+- `cycle <setting>` steps a setting, as in [Commands](#commands). It is the one
+  action that takes an argument.
 
 ## Defaults
 
@@ -339,10 +331,9 @@ map Ctrl+Space set_mark
 
 ## Shell completion
 
-Tab completes vedi's flags and their values in bash, zsh and fish.
-A release archive holds the scripts in `completions/`; `vedi
---completion SHELL` prints the same ones. Put one where the shell
-looks:
+Tab completes vedi's flags and their values in bash, zsh and fish. A release
+archive holds the scripts in `completions/`; `vedi --completion SHELL` prints
+the same ones. Put one where the shell looks:
 
     # bash, with the bash-completion package
     vedi --completion bash > ~/.local/share/bash-completion/completions/vedi
@@ -353,5 +344,5 @@ looks:
     # fish
     vedi --completion fish > ~/.config/fish/completions/vedi.fish
 
-Bash without bash-completion reads no directory; save the script
-anywhere and source it from `~/.bashrc`.
+Bash without bash-completion reads no directory; save the script anywhere and
+source it from `~/.bashrc`.

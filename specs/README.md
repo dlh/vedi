@@ -1,25 +1,24 @@
 # Specs
 
 Each file here is one behavior of `vedi` and runs as a test
-(`cargo test -p vedi --test specs`). The prose at the top says
-what the behavior is; the sections below show it. When a behavior
-changes, its file changes in the same commit.
+(`cargo test -p vedi --test specs`). The prose at the top says what the behavior
+is; the sections below show it. When a behavior changes, its file changes in the
+same commit.
 
 ## Stepping through one
 
     bin/spec-step specs/mouse/click-moves-cursor.txt
 
-prints each section as it runs and the screen it leaves, in a frame
-the scenario's size, with the cursor's cell underlined. It waits for
-Enter before each action; `q` runs to the end, as does stdin that is
-not a terminal.
+prints each section as it runs and the screen it leaves, in a frame the
+scenario's size, with the cursor's cell underlined. It waits for Enter before
+each action; `q` runs to the end, as does stdin that is not a terminal.
 
 ## Format
 
-Scenarios live at `specs/<feature>/<behavior>.txt`, one directory deep;
-the runner only globs that shape. Free text before the first
-`-- name --` line describes the behavior. Sections run in order, so
-keys and assertions interleave.
+Scenarios live at `specs/<feature>/<behavior>.txt`, one directory deep; the
+runner only globs that shape. Free text before the first `-- name --` line
+describes the behavior. Sections run in order, so keys and assertions
+interleave.
 
 ```
 Shift+Down extends the selection to the same column on the next line.
@@ -56,19 +55,18 @@ Setup:
 | `-- next-file --` | Input from here on comes from the next name in `-- args --`, for the status line's name. |
 | `-- eof --` | Ends the input. Without one, input is complete before the first draw. |
 
-`size`, `args`, `env`, `os` and `config` come before the first key. `-- input --` and
-`-- eof --` may also come after keys: that is how `+G` follow, `+N`
-waiting for its line and `--cursor-row` waiting for EOF are described;
-each later `input` appends and delivers the reader's notification. An
-`-- eof --` anywhere in the file keeps the input open from the first
-draw, so a file may end with a bare `-- eof --` to say "input was
-still being read" (see `startup/follow-stops-on-key.txt`).
+`size`, `args`, `env`, `os` and `config` come before the first key.
+`-- input --` and `-- eof --` may also come after keys: that is how `+G` follow,
+`+N` waiting for its line and `--cursor-row` waiting for EOF are described; each
+later `input` appends and delivers the reader's notification. An `-- eof --`
+anywhere in the file keeps the input open from the first draw, so a file may end
+with a bare `-- eof --` to say "input was still being read" (see
+`startup/follow-stops-on-key.txt`).
 
-With `-F` the pager opens only once the text is known not to fit,
-as `main` opens it: an `input` that outgrows the screen opens it, and
-an `eof` with the text still fitting quits to print instead. Until
-one or the other there is no screen to act on or assert about, and
-a section that tries fails.
+With `-F` the pager opens only once the text is known not to fit, as `main`
+opens it: an `input` that outgrows the screen opens it, and an `eof` with the
+text still fitting quits to print instead. Until one or the other there is no
+screen to act on or assert about, and a section that tries fails.
 
 Actions:
 
@@ -89,8 +87,8 @@ Assertions, checked at that point:
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |
 
-An `open_cmd` in `-- config --` runs no command: `-- input --` is what
-it printed, and a `-- file --` before the first key what the file
-holds. `O` reads the file; `O` again reads the input sections again.
+An `open_cmd` in `-- config --` runs no command: `-- input --` is what it
+printed, and a `-- file --` before the first key what the file holds. `O` reads
+the file; `O` again reads the input sections again.
 
 Colors are not covered; those tests stay in `vedi/src/app/tests.rs`.

@@ -1,7 +1,7 @@
 # vedi
 
-See it, select it, copy it. A pager for colored terminal output:
-select text with the keyboard or mouse, and copy it to the clipboard.
+See it, select it, copy it. A pager for colored terminal output: select text
+with the keyboard or mouse, and copy it to the clipboard.
 
 ![vedi searching, selecting and copying colored text](docs/media/demo.gif)
 
@@ -11,8 +11,8 @@ With [Homebrew](https://brew.sh):
 
     brew install dlh/tap/vedi
 
-Or download a binary for linux or macOS from the [releases
-page](https://github.com/dlh/vedi/releases), or build from source:
+Or download a binary for linux or macOS from the
+[releases page](https://github.com/dlh/vedi/releases), or build from source:
 
     cargo install --git https://github.com/dlh/vedi vedi
 
@@ -45,35 +45,36 @@ Tab completion for bash, zsh and fish is a file to install; see
       --completion SHELL           print the completion script for bash, zsh or fish
       -v, --version                print the version
 
-With no files, `vedi` reads stdin. `h` shows the keys and `q` quits;
-Shift with the arrows, or the mouse, selects, and Ctrl+c or Cmd+c
-copies.
+With no files, `vedi` reads stdin. `h` shows the keys and `q` quits; Shift with
+the arrows, or the mouse, selects, and Ctrl+c or Cmd+c copies.
 
-SGR colors and attributes, including 24-bit color, and OSC 8
-hyperlinks are drawn as the terminal would. Copy sends plain text.
+SGR colors and attributes, including 24-bit color, and OSC 8 hyperlinks are
+drawn as the terminal would. Copy sends plain text.
 
-`:` opens a command prompt, where any setting from the config file
-can be changed for the rest of the run.
+`:` opens a command prompt, where any setting from the config file can be
+changed for the rest of the run.
 
-A file that changes on disk is read again, so a log that grows is
-followed.
+A file that changes on disk is read again, so a log that grows is followed.
 
-`-F` is for a pager that should get out of the way: text that fits on
-one screen is printed as if by `cat`, and the pager opens only for
-more. To make vedi your pager:
+`-F` is for a pager that should get out of the way: text that fits on one screen
+is printed as if by `cat`, and the pager opens only for more. To make vedi your
+pager:
 
     export PAGER="vedi -F"
 
-vedi also reads flags from the `VEDI` environment variable, so they
-apply however it is started.
+vedi also reads flags from the `VEDI` environment variable, so they apply
+however it is started.
 
 ## Documentation
 
 - [Keys](docs/keys.md): every key, for moving, selecting, copying and searching
 - [Configuration](docs/configuration.md): `vedi.conf`, settings and rebinding
-- [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and delta
-- [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys, Option as Alt and kitty's scrollback
-- [Comparison](docs/comparison.md): how vedi differs from less, moor, ov, tmux, vim and neovim, with benchmarks
+- [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and
+  delta
+- [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys,
+  Option as Alt and kitty's scrollback
+- [Comparison](docs/comparison.md): how vedi differs from less, moor, ov, tmux,
+  vim and neovim, with benchmarks
 - [Development](docs/development.md): checks, commits and releases
 
 ## License
