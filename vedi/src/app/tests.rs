@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use super::*;
 use crate::app::event::{Mouse, MouseKind};
 use crate::app::motion::Row;
-use crate::app::reload::reload_view;
+use crate::app::reload::{Place, reload_view};
 use crate::input::config;
 use crate::input::key::Key;
 use crate::text::buffer::tests::{Fill, temp};
@@ -584,7 +584,11 @@ fn reload_keeps_separator_top() {
         &mut cur,
         &mut top,
         &mut anchor,
-        false,
+        Place {
+            at_end: false,
+            cur: 1,
+            anchor: None,
+        },
     );
     assert_eq!(top, Row::sep(1));
 }
@@ -599,7 +603,18 @@ fn reload_separator_top_past_end() {
     f.finish(None);
     let mut scratch = Vec::new();
     let (mut cur, mut top, mut anchor) = (Pos { line: 3, col: 0 }, Row::sep(3), None);
-    reload_view(&f.buf, &mut scratch, &mut cur, &mut top, &mut anchor, false);
+    reload_view(
+        &f.buf,
+        &mut scratch,
+        &mut cur,
+        &mut top,
+        &mut anchor,
+        Place {
+            at_end: false,
+            cur: 0,
+            anchor: None,
+        },
+    );
     assert_eq!(top, Row::sep(0));
     assert_eq!(cur, Pos::default());
 }

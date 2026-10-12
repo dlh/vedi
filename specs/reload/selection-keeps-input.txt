@@ -1,0 +1,32 @@
+A selection's anchor stays in its input over a reload, as the cursor
+does: a file that shrank leaves the selection within it, not reaching
+into the next file.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+-- keys --
+Down Down End Shift+Up Shift+Home
+-- reload a.txt --
+a1
+-- screen --
+── a.txt ───────────────────
+[a1]
+── b.txt ───────────────────
+b1
+a.txt 1/2  line 1/1  wrap
+-- cursor --
+1 0
+-- keys --
+y
+-- clipboard --
+a1

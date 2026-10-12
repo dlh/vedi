@@ -70,27 +70,27 @@ impl<T: Terminal> App<T> {
     /// aside, and keeps that view's place as `reload_view` does.
     pub(super) fn change_text(&mut self, f: impl FnOnce(&mut Buffer)) {
         if let Some(t) = &mut self.text {
-            let at_end = t.cur.line + 1 >= t.buf.len();
+            let place = Place::of(&t.buf, t.cur, t.anchor);
             f(&mut t.buf);
-            t.reload(at_end, &mut self.scratch);
+            t.reload(place, &mut self.scratch);
             return;
         }
-        let at_end = self.cur.line + 1 >= self.buf.len();
+        let place = Place::of(&self.buf, self.cur, self.anchor);
         f(&mut self.buf);
-        self.text_changed(at_end);
+        self.text_changed(place);
     }
 
     /// Keeps the view's place after the lines changed under it, as
     /// `reload_view` does, then drops the layouts and scrolls to the
     /// cursor.
-    fn text_changed(&mut self, at_end: bool) {
+    fn text_changed(&mut self, place: Place) {
         reload_view(
             &self.buf,
             &mut self.scratch,
             &mut self.cur,
             &mut self.top,
             &mut self.anchor,
-            at_end,
+            place,
         );
         self.laid.clear();
         self.scroll_to_cursor();
@@ -100,7 +100,7 @@ impl<T: Terminal> App<T> {
 impl TextView {
     /// `reload_view` for the view help set aside; help's return scrolls
     /// to the cursor.
-    pub(super) fn reload(&mut self, at_end: bool, scratch: &mut Vec<char>) {
+    pub(super) fn reload(&mut self, place: Place, scratch: &mut Vec<char>) {
         let TextView {
             buf,
             cur,
@@ -108,16 +108,38 @@ impl TextView {
             anchor,
             ..
         } = self;
-        reload_view(buf, scratch, cur, top, anchor, at_end);
+        reload_view(buf, scratch, cur, top, anchor, place);
+    }
+}
+
+/// Where a view was before its text changed, for `reload_view`.
+#[derive(Copy, Clone, Debug)]
+pub(super) struct Place {
+    /// The cursor was on the last line.
+    pub(super) at_end: bool,
+    /// The cursor's input, and the anchor's.
+    pub(super) cur: usize,
+    pub(super) anchor: Option<usize>,
+}
+
+impl Place {
+    pub(super) fn of(buf: &Buffer, cur: Pos, anchor: Option<Pos>) -> Place {
+        Place {
+            at_end: cur.line + 1 >= buf.len(),
+            cur: buf.part_at(cur.line),
+            anchor: anchor.map(|a| buf.part_at(a.line)),
+        }
     }
 }
 
 /// Keeps a view's place in text that changed under it: a cursor that
-/// was on the last line (`at_end`) goes to the new last line, and every
-/// position is clamped, the line to the last and the column to the
-/// line's end. A top past the new end starts over from the first row,
-/// so a text shorter than the screen fills it from the top; a separator
-/// top stays one, which `snap` drops if the line no longer starts an
+/// was on the last line goes to the new last line, and every position
+/// is clamped, the line to the last and the column to the line's end.
+/// The cursor and the anchor each stay in the input they were in: a
+/// file above that shrank would otherwise hand them to the next. A
+/// top past the new end starts over from the first row, so a text
+/// shorter than the screen fills it from the top; a separator top
+/// stays one, which `snap` drops if the line no longer starts an
 /// input.
 pub(super) fn reload_view(
     buf: &Buffer,
@@ -125,7 +147,7 @@ pub(super) fn reload_view(
     cur: &mut Pos,
     top: &mut Row,
     anchor: &mut Option<Pos>,
-    at_end: bool,
+    place: Place,
 ) {
     let n = buf.len();
     let clamp = |p: Pos, scratch: &mut Vec<char>| {
@@ -139,10 +161,29 @@ pub(super) fn reload_view(
             col: p.col.min(scratch.len()),
         }
     };
-    if at_end {
-        cur.line = n.saturating_sub(1);
-    }
-    *cur = clamp(*cur, scratch);
+    // `line` within input `part`; an input that emptied yields to the
+    // next.
+    let within = |part: usize, line: usize| {
+        let parts = buf.parts();
+        let Some(&start) = parts.get(part).filter(|_| n > 0) else {
+            return line;
+        };
+        let lo = start.min(n - 1);
+        let hi = parts.get(part + 1).map_or(n, |&e| e.max(lo + 1)).min(n) - 1;
+        line.clamp(lo, hi)
+    };
+    let line = if place.at_end {
+        n.saturating_sub(1)
+    } else {
+        cur.line
+    };
+    *cur = clamp(
+        Pos {
+            line: within(place.cur, line),
+            col: cur.col,
+        },
+        scratch,
+    );
     if top.line >= n {
         *top = Row::sep(0);
     } else if let Some(col) = top.col {
@@ -154,7 +195,8 @@ pub(super) fn reload_view(
             scratch,
         ));
     }
-    if let Some(a) = anchor {
+    if let (Some(a), Some(part)) = (anchor, place.anchor) {
+        a.line = within(part, a.line);
         *a = clamp(*a, scratch);
     }
 }
