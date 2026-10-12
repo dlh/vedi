@@ -14,7 +14,8 @@ jobs:
     # notify links CoreServices on darwin, so those targets need the
     # macOS SDK.
     runs-on: macos-latest
-    environment: release
+    # The environment admits only v* tags; a snapshot needs none of its secrets.
+    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
