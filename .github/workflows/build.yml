@@ -1,0 +1,59 @@
+name: build
+
+# Builds and tests vedi for each target on a runner of its kind and uploads
+# the binary. ci runs it on every push and PR, release on a tag.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: VEDI_VERSION for the build; empty means git describe
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+  VEDI_VERSION: ${{ inputs.version }}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # A binary needs the glibc it was linked against or newer, so the
+          # linux builds run in a 22.04 container: glibc 2.34.
+          - os: ubuntu-24.04
+            container: ubuntu:22.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            container: ubuntu:22.04
+            target: aarch64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    steps:
+      - if: matrix.container
+        name: install rustup
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq build-essential ca-certificates curl git
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+            sh -s -- -y --no-modify-path --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: rustup toolchain install
+      - run: 'rustc -vV | grep -Fx "host: ${{ matrix.target }}"'
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: make fmt
+      - run: make test
+      - run: make tidy
+      - run: make build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vedi-${{ matrix.target }}
+          path: target/release/vedi

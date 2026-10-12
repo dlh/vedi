@@ -5,12 +5,14 @@ builds:
     binary: vedi
     # bin/release-notes wants only the changelog.
     skip: '{{ isEnvSet "VEDI_SKIP_BUILD" }}'
-    # Go's static binary ran on any linux; 2.17 is the oldest glibc zig
-    # targets.
     targets:
-      - x86_64-unknown-linux-gnu.2.17
-      - aarch64-unknown-linux-gnu.2.17
+      - x86_64-unknown-linux-gnu
+      - aarch64-unknown-linux-gnu
       - aarch64-apple-darwin
+    # The release workflow builds each target on its own runner and hands
+    # the binaries over in VEDI_PREBUILT; without it, the tool is cargo.
+    tool: bin/cargo-prebuilt
+    command: build
     env: ['VEDI_VERSION={{ .Tag }}']
     # The workspace also holds the bench crate.
     flags: [--release, -p=vedi]

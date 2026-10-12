@@ -82,12 +82,15 @@ patch. It fails when the commits since the last tag hold none of those.
     make release-tag
     git push origin v1.2.3
 
-CI builds linux amd64 and arm64 and darwin arm64 with goreleaser's Rust builder
-and cargo-zigbuild, on a macOS runner since the darwin targets link CoreServices
-and need the macOS SDK. It publishes a GitHub release with archives,
-`checksums.txt` and a changelog from the commit messages. Each archive holds the
-completion scripts of `vedi/completions/` in `completions/`. It then pushes a
-cask to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
+CI builds and tests linux amd64 and arm64 and darwin arm64, each on a runner of
+its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
+22.04 container, so those binaries need glibc 2.34 or newer. A tag runs the same
+builds, then goreleaser packages them: its Rust builder calls
+`bin/cargo-prebuilt`, which puts each binary where cargo would have. It
+publishes a GitHub release with archives, `checksums.txt` and a changelog from
+the commit messages. Each archive holds the completion scripts of
+`vedi/completions/` in `completions/`. It then pushes a cask to
+[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
 `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds
 from a checkout print `git describe`.
 
@@ -122,8 +125,9 @@ To load them from a 1Password item whose fields carry the same names:
 
 To try a release locally without tagging:
 
-    brew install goreleaser zig
-    cargo install --locked cargo-zigbuild
-    goreleaser release --snapshot --clean --skip=notarize
+    brew install goreleaser
+    goreleaser build --snapshot --clean --single-target
 
-Output lands in `dist/`, which is ignored.
+Output lands in `dist/`, which is ignored. Only this platform's binary builds
+here; the whole pipeline, short of notarizing and publishing, runs from the
+Actions tab: release, Run workflow.

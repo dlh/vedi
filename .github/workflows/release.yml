@@ -10,10 +10,14 @@ permissions:
   contents: write
 
 jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+
   goreleaser:
-    # notify links CoreServices on darwin, so those targets need the
-    # macOS SDK.
-    runs-on: macos-latest
+    needs: build
+    runs-on: ubuntu-24.04
     # The environment admits only v* tags; a snapshot needs none of its secrets.
     environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
     steps:
@@ -21,14 +25,10 @@ jobs:
         with:
           fetch-depth: 0
       - run: rustup toolchain install
-      - name: install zig
-        run: |
-          cd "$RUNNER_TEMP"
-          curl -sSfL -O https://ziglang.org/download/0.15.2/zig-aarch64-macos-0.15.2.tar.xz
-          echo "3cc2bab367e185cdfb27501c4b30b1b0653c28d9f73df8dc91488e66ece5fa6b  zig-aarch64-macos-0.15.2.tar.xz" | shasum -a 256 -c
-          tar xf zig-aarch64-macos-0.15.2.tar.xz
-          echo "$PWD/zig-aarch64-macos-0.15.2" >> "$GITHUB_PATH"
-      - run: cargo install --locked cargo-zigbuild@0.23.4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: vedi-*
+          path: ${{ runner.temp }}/prebuilt
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           args: >-
@@ -36,6 +36,7 @@ jobs:
             && 'release --snapshot --clean --skip=notarize,publish'
             || 'release --clean' }}
         env:
+          VEDI_PREBUILT: ${{ runner.temp }}/prebuilt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}

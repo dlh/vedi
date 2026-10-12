@@ -1,0 +1,27 @@
+#!/bin/sh
+# cargo for goreleaser's Rust builder. With VEDI_PREBUILT set, puts that
+# directory's vedi-TARGET/vedi, built on its own runner, where cargo would
+# have; without it, runs cargo.
+# Usage: bin/cargo-prebuilt COMMAND --target=TARGET FLAGS...
+set -eu
+
+main() {
+	if [ -z "${VEDI_PREBUILT:-}" ]; then
+		exec cargo "$@"
+	fi
+	target=
+	for arg in "$@"; do
+		case $arg in
+		--target=*) target=${arg#--target=} ;;
+		esac
+	done
+	if [ -z "$target" ]; then
+		echo 'cargo-prebuilt: no --target' >&2
+		exit 1
+	fi
+	mkdir -p "target/$target/release"
+	# upload-artifact drops the mode bits.
+	install -m 755 "$VEDI_PREBUILT/vedi-$target/vedi" "target/$target/release/vedi"
+}
+
+main "$@"
