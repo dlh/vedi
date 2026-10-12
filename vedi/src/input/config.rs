@@ -148,9 +148,9 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
     };
     // A verb with values is checked here, so its arm need not.
     if let Some(v) = setting::lookup(verb)
-        && !v.values.contains(&arg)
+        && !v.values().contains(&arg)
     {
-        return Err(format!("{verb} takes {}", setting::or_list(v.values)));
+        return Err(format!("{verb} takes {}", setting::or_list(v.values())));
     }
     let positive = || match arg.parse::<usize>() {
         Ok(n) if n > 0 => Ok(n),
@@ -305,7 +305,7 @@ mod tests {
             ]
         );
         assert_eq!(parse("empty", ""), Ok(Config::default()));
-        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line or view_style";
+        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style or open_cmd";
         let bad = [
             (
                 "map h left\nbind j down\n",
@@ -913,7 +913,7 @@ open_cmd less %s
         let secs = default_keymap(false).help();
         let top = &secs[0];
         assert_eq!(top.name, "");
-        assert_eq!(top.rows.len(), 4);
+        assert_eq!(top.rows.len(), 5);
         assert_eq!(top.rows[0].doc, "Show the key bindings");
         assert_eq!(top.rows[0].keys, ["h"]);
         let moving = &secs[1];

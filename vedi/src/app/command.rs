@@ -6,7 +6,7 @@ use crate::app::{App, Flow, Focus};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
 use crate::input::key::{Key, KeyCode};
-use crate::input::setting;
+use crate::input::setting::{self, Cycle};
 use crate::sys::clipboard::CommandCopier;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
@@ -225,14 +225,61 @@ impl<T: Terminal> App<T> {
     /// after the last, and reports the new value on the status line
     /// unless the line shows it anyway.
     pub(super) fn cycle(&mut self, name: &str) {
-        let Some(s) = setting::lookup(name) else {
+        let Some(s) = setting::verb(name) else {
             return;
         };
-        let line = format!("{name} {}", s.next(&self.settings.value(name)));
-        self.run_command(&line);
-        if !s.shown {
-            self.status = Some(line);
+        match s.cycle {
+            Cycle::No => {}
+            Cycle::Toggle => self.toggle(name),
+            Cycle::Values(_) => {
+                let line = format!("{name} {}", s.next(&self.settings.value(name)));
+                self.run_command(&line);
+                if !s.shown {
+                    self.status = Some(line);
+                }
+            }
         }
+    }
+
+    /// Switches a toggle verb off, then on again.
+    fn toggle(&mut self, name: &str) {
+        if name == "open_cmd" {
+            self.toggle_open_cmd();
+        }
+    }
+
+    /// Reads the files through open_cmd, or as they are. The selection
+    /// goes: the lines it covered are not the new text's. A reload
+    /// still being read is dropped: it may be waiting on a command
+    /// that never ends.
+    fn toggle_open_cmd(&mut self) {
+        if self.open.is_none() {
+            self.status = Some("not a file".into());
+            return;
+        }
+        self.through_open_cmd = !self.through_open_cmd;
+        self.anchor = None;
+        self.marking = false;
+        self.next = None;
+        self.dirty = false;
+        self.reload_then(true, true);
+    }
+
+    /// The command the cursor's input is read through, or '' for none,
+    /// as the status line reports it; the text may be set aside under
+    /// help.
+    pub(super) fn open_cmd_status(&self) -> String {
+        let (buf, cur) = match &self.text {
+            Some(t) => (&t.buf, t.cur),
+            None => (&self.buf, self.cur),
+        };
+        let (part, _) = buf.part(cur.line);
+        let argv = match &self.open_cmd {
+            Some(f) if self.through_open_cmd => self.names.get(part).and_then(|n| f(n)),
+            _ => None,
+        };
+        let cmd = argv.map_or_else(|| "''".to_string(), |a| a.join(" "));
+        format!("open_cmd {cmd}")
     }
 
     /// Decodes the text as the view style has it. To or from raw the
@@ -265,7 +312,7 @@ fn candidates(before: &[&str]) -> Vec<String> {
         [] => commands().map(String::from).collect(),
         ["cycle"] => setting::names().map(String::from).collect(),
         [s] => setting::lookup(s).map_or_else(Vec::new, |s| {
-            s.values.iter().map(|&v| v.to_string()).collect()
+            s.values().iter().map(|&v| v.to_string()).collect()
         }),
         ["map", _] => Command::names(),
         ["map", _, "cycle"] => setting::names().map(String::from).collect(),

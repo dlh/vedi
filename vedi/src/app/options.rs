@@ -18,10 +18,14 @@ pub trait Copier {
     fn copy(&mut self, text: &str) -> Result<(), String>;
 }
 
-/// Reads the input again for a reload: an empty buffer whose reader,
-/// started, sends `Event::Progress` for the generation given on the
-/// loop's sender, which the opener holds.
-pub type Opener = Box<dyn FnMut(Gen) -> io::Result<Buffer>>;
+/// Reads the input again for a reload, through open_cmd or not: an
+/// empty buffer whose reader, started, sends `Event::Progress` for the
+/// generation given on the loop's sender, which the opener holds.
+pub type Opener = Box<dyn FnMut(Gen, bool) -> io::Result<Buffer>>;
+
+/// Reads a file through a command: its argv by file name, %s the
+/// name; `None` to read it as it is.
+pub type OpenCmdFor = Box<dyn Fn(&str) -> Option<Vec<String>>>;
 
 pub struct Options {
     /// What the status line calls each input, by its part in the buffer.
@@ -39,6 +43,8 @@ pub struct Options {
     pub keys: Keymap,
     /// `None` when the input cannot be read again, as a pipe cannot.
     pub open: Option<Opener>,
+    /// The command each input was opened through, for the status line.
+    pub open_cmd: Option<OpenCmdFor>,
 }
 
 /// The view the terminal was showing, so the pager can open on the

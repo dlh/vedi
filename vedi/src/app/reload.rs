@@ -13,6 +13,9 @@ use crate::view::screen::Terminal;
 pub(super) struct Pending {
     pub(super) generation: Gen,
     pub(super) buf: Buffer,
+    /// Once the text lands, the status line names the command the
+    /// cursor's input is read through, unless a read error shows.
+    pub(super) names_open_cmd: bool,
 }
 
 impl<T: Terminal> App<T> {
@@ -20,6 +23,11 @@ impl<T: Terminal> App<T> {
     /// during one asks for another after it. Only the key reports that
     /// it cannot.
     pub(super) fn reload(&mut self, by_key: bool) {
+        self.reload_then(by_key, false);
+    }
+
+    /// `reload`; `names_open_cmd` is for `Pending`.
+    pub(super) fn reload_then(&mut self, by_key: bool, names_open_cmd: bool) {
         let Some(open) = self.open.as_mut() else {
             if by_key {
                 self.status = Some("not a file".into());
@@ -30,10 +38,15 @@ impl<T: Terminal> App<T> {
             self.dirty = true;
             return;
         }
-        let generation = self.generation.wrapping_add(1);
-        match open(generation) {
+        let generation = self.last_gen.wrapping_add(1);
+        self.last_gen = generation;
+        match open(generation, self.through_open_cmd) {
             Ok(buf) => {
-                self.next = Some(Pending { generation, buf });
+                self.next = Some(Pending {
+                    generation,
+                    buf,
+                    names_open_cmd,
+                });
                 self.swap_if_done();
             }
             Err(e) => {
@@ -52,6 +65,11 @@ impl<T: Terminal> App<T> {
         };
         self.generation = p.generation;
         self.put(p.buf);
+        let b = self.text_buf();
+        let failed = matches!(b.finished(), Some(Err(_))) || b.read_error().is_some();
+        if p.names_open_cmd && !failed {
+            self.status = Some(self.open_cmd_status());
+        }
         if self.dirty {
             self.dirty = false;
             self.reload(false);

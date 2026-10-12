@@ -1,0 +1,22 @@
+A file that changes after O is read again as it is, not through
+open_cmd.
+
+-- config --
+open_cmd sed s/l/L/g %s
+-- args --
+f.txt
+-- input --
+heLLo
+-- file --
+hello
+-- keys --
+O
+-- reload --
+hello again
+-- screen --
+hello again
+
+
+
+
+open_cmd ''                       h help

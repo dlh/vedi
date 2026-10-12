@@ -86,6 +86,9 @@ struct Scenario<'s, 'a> {
     seps: bool,
     /// What each file holds: the input, then each file or reload body.
     disks: Rc<RefCell<Vec<Disk>>>,
+    /// What open_cmd prints for each file: the input sections, as the
+    /// harness runs no command.
+    rendered: Rc<RefCell<Vec<Disk>>>,
     /// The file has an eof section, so input stays open.
     has_eof: bool,
     /// The input in -- args -- the input now comes from.
@@ -131,6 +134,7 @@ pub fn run(a: &Archive, step: Option<&mut Stepper>) -> Result<(), String> {
         rows_below: None,
         seps: true,
         disks: Rc::new(RefCell::new(Vec::new())),
+        rendered: Rc::new(RefCell::new(Vec::new())),
         has_eof: a.sections.iter().any(|sec| sec.name == "eof"),
         part: 0,
         finished: false,
@@ -226,12 +230,13 @@ impl Scenario<'_, '_> {
                 self.part += 1;
                 let offset = self.ix.offset();
                 self.feed(Progress::Part { offset });
-                let mut disks = self.disks.borrow_mut();
-                if disks.is_empty() {
-                    disks.push(Disk::default());
+                for d in [&self.disks, &self.rendered] {
+                    let mut d = d.borrow_mut();
+                    if d.is_empty() {
+                        d.push(Disk::default());
+                    }
+                    d.push(Disk::default());
                 }
-                disks.push(Disk::default());
-                drop(disks);
                 if self.started && self.part >= self.files.len() {
                     return Err(fail("no more files in -- args --".into()));
                 }
@@ -246,24 +251,28 @@ impl Scenario<'_, '_> {
                 self.deliver()?;
             }
             "file" | "reload" => {
-                self.ready().map_err(fail)?;
-                if !self.file {
+                // A file before the first key is what the file holds
+                // from the start, behind an open_cmd.
+                if verb == "reload" || self.started {
+                    self.ready().map_err(fail)?;
+                }
+                let files = match self.started {
+                    true => self.files.clone(),
+                    false => names(&cli::parse(&self.os_args(), &self.env).map_err(fail)?.1),
+                };
+                if files.is_empty() || files.iter().any(|f| f == "-") {
                     return Err(fail(format!("{} needs a file in -- args --", sec.name)));
                 }
                 // With several files the section names the one that changed.
                 let mut i = 0;
-                if self.files.len() > 1 || !sec.arg().is_empty() {
-                    i = self
-                        .files
-                        .iter()
-                        .position(|f| f == sec.arg())
-                        .ok_or_else(|| {
-                            fail(format!(
-                                "{} names one of the files in -- args --: {}",
-                                verb,
-                                self.files.join(" ")
-                            ))
-                        })?;
+                if files.len() > 1 || !sec.arg().is_empty() {
+                    i = files.iter().position(|f| f == sec.arg()).ok_or_else(|| {
+                        fail(format!(
+                            "{} names one of the files in -- args --: {}",
+                            verb,
+                            files.join(" ")
+                        ))
+                    })?;
                 }
                 let (text, nl) = lines(&sec.body);
                 let mut disks = self.disks.borrow_mut();
@@ -431,14 +440,15 @@ impl Scenario<'_, '_> {
             return;
         }
         self.nl = nl;
-        let mut disks = self.disks.borrow_mut();
-        if disks.is_empty() {
-            disks.push(Disk::default());
+        for disks in [&self.disks, &self.rendered] {
+            let mut disks = disks.borrow_mut();
+            if disks.is_empty() {
+                disks.push(Disk::default());
+            }
+            let d = disks.last_mut().expect("a disk");
+            d.text.push_str(&text);
+            d.nl = nl;
         }
-        let d = disks.last_mut().expect("a disk");
-        d.text.push_str(&text);
-        d.nl = nl;
-        drop(disks);
         let bytes = text.as_bytes();
         let indexed = self.ix.feed(bytes);
         self.feed(Progress::Data {
@@ -550,6 +560,8 @@ impl Scenario<'_, '_> {
     }
 
     /// a flag or the config, is run; without one the copy is recorded.
+    /// An open_cmd is not: read through it, a file is its input
+    /// sections again.
     fn options(&self) -> Result<Startup, String> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
@@ -564,9 +576,21 @@ impl Scenario<'_, '_> {
         opts.clock = Box::new(move || now.get());
         // The disk text, each file a part, finished: a reload lands at
         // once.
-        let disks = Rc::clone(&self.disks);
+        let (disks, rendered) = (Rc::clone(&self.disks), Rc::clone(&self.rendered));
+        let open_cmd = flags.open_cmd(cfg)?;
+        let has_cmd = open_cmd.is_some();
         let file = !files.is_empty() && !files.iter().any(|f| f == "-");
-        opts.open = file.then(|| Box::new(move |_| Ok(disk_buffer(&disks.borrow()))) as Opener);
+        opts.open = file.then(|| {
+            Box::new(move |_, through| {
+                let from = if through && has_cmd {
+                    &rendered
+                } else {
+                    &disks
+                };
+                Ok(disk_buffer(&from.borrow()))
+            }) as Opener
+        });
+        opts.open_cmd = open_cmd;
         let rows_below = flags
             .quit_if_one_page
             .then_some(opts.settings.one_page_rows_below);

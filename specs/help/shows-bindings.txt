@@ -10,7 +10,7 @@ search key returns to the text and does nothing else, so q returns
 rather than quits and the cursor is where it was.
 
 -- size --
-80x64
+80x65
 -- input --
 abc
 def
@@ -25,6 +25,7 @@ Down h
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
   R                                       Reload the file.
+  O                                       Toggle reading through open_cmd.
  ------------------------------------------------------------------------------
 
                                      MOVING
@@ -88,6 +89,7 @@ q
 -- screen --
 abc
 def
+
 
 
 

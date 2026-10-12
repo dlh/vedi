@@ -178,7 +178,7 @@ impl FromStr for Command {
         let f: Vec<&str> = text.split_whitespace().collect();
         if f.first() == Some(&"cycle") {
             return match f[..] {
-                [_, name] if setting::lookup(name).is_some() => Ok(Command {
+                [_, name] if setting::names().any(|n| n == name) => Ok(Command {
                     action: Action::Cycle,
                     extend: false,
                     arg: Some(name.to_string()),
@@ -318,6 +318,7 @@ mod tests {
             "auto_reload",
             "status_line",
             "view_style",
+            "open_cmd",
         ];
         assert_eq!(setting::names().collect::<Vec<_>>(), want);
         for name in want {
@@ -335,7 +336,7 @@ mod tests {
             let err = text.parse::<Command>().unwrap_err();
             assert_eq!(
                 err.to_string(),
-                "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line or view_style",
+                "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style or open_cmd",
                 "{text}"
             );
         }

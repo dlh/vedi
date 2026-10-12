@@ -93,6 +93,7 @@ const SECTIONS: &[HelpSection] = {
                     "Cycle the view style: color, plain, raw",
                 ),
                 bound(&[Act(Reload)], "Reload the file"),
+                bound(&[Cyc("open_cmd")], "Toggle reading through open_cmd"),
             ],
         },
         HelpSection {

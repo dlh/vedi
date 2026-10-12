@@ -1,0 +1,14 @@
+O with stdin says so: a pipe cannot be read again, through a command
+or not.
+
+-- input --
+text
+-- keys --
+O
+-- screen --
+text
+
+
+
+
+not a file                        h help

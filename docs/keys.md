@@ -9,6 +9,7 @@ do not fit, and the search keys search them. These are the defaults.
 | q | Quit |
 | w | Toggle wrap / nowrap |
 | R | Reload the file |
+| O | Toggle reading through open_cmd |
 | Up, Down, Left, Right, Home, End, j, k, Cmd+Left, Cmd+Right | Move the cursor |
 | PgDn, Space, f, Ctrl+f, Ctrl+v | Down a page |
 | PgUp, b, Ctrl+b, Alt+v | Up a page |

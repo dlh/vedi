@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 
 pub use event::{Event, Mouse, MouseKind};
 pub use onepage::{Verdict, one_page};
-pub use options::{Clock, Copier, Opener, Options, STDIN, StartScreen};
+pub use options::{Clock, Copier, OpenCmdFor, Opener, Options, STDIN, StartScreen};
 
 use crate::input::action::{Action, Command};
 use crate::input::keymap::Keymap;
@@ -68,6 +68,9 @@ pub struct App<T: Terminal> {
     buf: Buffer,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
+    /// The last generation handed out: a dropped reload's is never
+    /// reused, so its reader's data stays dropped.
+    last_gen: Gen,
     copier: Box<dyn Copier>,
     clock: Clock,
     names: Vec<String>,
@@ -100,6 +103,9 @@ pub struct App<T: Terminal> {
     mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
+    open_cmd: Option<OpenCmdFor>,
+    /// Off, a reload reads the files as they are, not through open_cmd.
+    through_open_cmd: bool,
     /// A reload being read.
     next: Option<reload::Pending>,
     /// A change came during the reload: one more after it.
@@ -124,6 +130,7 @@ impl<T: Terminal> App<T> {
             frame: Grid::new(0, 0),
             buf: buffer,
             generation,
+            last_gen: generation,
             copier: opts.copier,
             clock: opts.clock,
             names: opts.names,
@@ -145,6 +152,8 @@ impl<T: Terminal> App<T> {
             text: None,
             mouse: mouse::State::default(),
             open: opts.open,
+            open_cmd: opts.open_cmd,
+            through_open_cmd: true,
             next: None,
             dirty: false,
             laid: LaidCache::new(Layout::default()),

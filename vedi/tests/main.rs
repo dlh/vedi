@@ -215,21 +215,26 @@ fn no_input_from_dev_null_errors_with_usage() {
     );
 }
 
-// The keyboard query goes to the terminal, never to stdout.
-#[test]
-fn terminal_queries_skip_stdout() {
-    let d = TempDir::new();
-    let f = d.file("f", "hello\n");
+/// Runs `c` on a 40×5 pty of its own, answering the keyboard query.
+/// Each step waits for its bytes in what vedi has written since the
+/// last step, then types its keys.
+fn on_pty(mut c: Command, steps: &[(&[u8], &[u8])]) -> Out {
     let (mut parent, mut child) = (0, 0);
+    let mut size = libc::winsize {
+        ws_row: 5,
+        ws_col: 40,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
     // SAFETY: openpty writes two descriptors; the name and settings
-    // pointers may be null.
+    // pointers may be null, and size outlives the call.
     let ok = unsafe {
         libc::openpty(
             &mut parent,
             &mut child,
             std::ptr::null_mut(),
             std::ptr::null_mut(),
-            std::ptr::null_mut(),
+            &raw mut size,
         )
     };
     assert_eq!(ok, 0);
@@ -238,7 +243,6 @@ fn terminal_queries_skip_stdout() {
         use std::os::fd::FromRawFd;
         (fs::File::from_raw_fd(parent), fs::File::from_raw_fd(child))
     };
-    let mut c = vedi(&d.0, &[&f]);
     let tty = {
         use std::os::fd::AsRawFd;
         child.as_raw_fd()
@@ -251,26 +255,53 @@ fn terminal_queries_skip_stdout() {
             Ok(())
         });
     }
+    let steps: Vec<(Vec<u8>, Vec<u8>)> = steps
+        .iter()
+        .map(|(a, b)| (a.to_vec(), b.to_vec()))
+        .collect();
     let mut w = parent.try_clone().unwrap();
     let mut r = parent;
     thread::spawn(move || {
         let mut seen = Vec::new();
         let mut buf = [0; 4096];
-        let (mut answered, mut quit) = (false, false);
+        let mut answered = false;
+        let mut steps = steps.into_iter().peekable();
         while let Ok(n @ 1..) = r.read(&mut buf) {
             seen.extend_from_slice(&buf[..n]);
             if !answered && seen.windows(3).any(|b| b == b"\x1b[c") {
                 answered = true;
                 let _ = w.write_all(b"\x1b[?62c");
             }
-            if !quit && seen.windows(8).any(|b| b == b"\x1b[?1049h") {
-                quit = true;
-                let _ = w.write_all(b"q");
+            while let Some((want, keys)) =
+                steps.next_if(|(want, _)| seen.windows(want.len()).any(|b| b == want))
+            {
+                let at = seen.windows(want.len()).position(|b| b == want).unwrap();
+                seen.drain(..at + want.len());
+                let _ = w.write_all(&keys);
             }
         }
     });
     let out = wait(c.spawn().unwrap(), None);
     drop(child);
+    out
+}
+
+// The keyboard query goes to the terminal, never to stdout.
+#[test]
+fn terminal_queries_skip_stdout() {
+    let d = TempDir::new();
+    let f = d.file("f", "hello\n");
+    let out = on_pty(vedi(&d.0, &[&f]), &[(b"\x1b[?1049h", b"q")]);
+    assert_eq!((out.code, out.stdout.as_str()), (0, ""), "{}", out.stderr);
+}
+
+// O reads the file as it is, and again through the command.
+#[test]
+fn open_cmd_key_toggles() {
+    let d = TempDir::new();
+    let f = d.file("f", "abc\n");
+    let c = vedi(&d.0, &["--open-cmd", "sed y/abc/ABC/", &f]);
+    let out = on_pty(c, &[(b"ABC", b"O"), (b"abc", b"O"), (b"ABC", b"q")]);
     assert_eq!((out.code, out.stdout.as_str()), (0, ""), "{}", out.stderr);
 }
 

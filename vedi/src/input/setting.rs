@@ -58,13 +58,22 @@ fn yes_no(b: bool) -> String {
     if b { "yes" } else { "no" }.to_string()
 }
 
+/// How cycle steps a verb.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum Cycle {
+    /// Not at all: it takes a command, a number, or nothing.
+    No,
+    /// Through these, which are also all the verb takes.
+    Values(&'static [&'static str]),
+    /// Off and on: open_cmd, between its commands and none.
+    Toggle,
+}
+
 /// A config verb, and what the flags, the : prompt and cycle need to
 /// know of it.
 pub struct Verb {
     pub name: &'static str,
-    /// Its values, which cycle steps through and Tab fills in; empty
-    /// for a verb that takes anything else, or nothing.
-    pub values: &'static [&'static str],
+    pub cycle: Cycle,
     /// The status line shows it, so cycle needn't say it: wrap,
     /// wrap_style and view_style are on it; status_line is it.
     pub shown: bool,
@@ -79,110 +88,114 @@ pub struct Verb {
     pub flag: bool,
 }
 
-const YES_NO: &[&str] = &["yes", "no"];
+const YES_NO: Cycle = Cycle::Values(&["yes", "no"]);
 
 /// Every verb `config::parse_line` takes, in the order cycle and the
 /// error for a bad cycle list them.
 pub const VERBS: &[Verb] = &[
     Verb {
         name: "wrap",
-        values: YES_NO,
+        cycle: YES_NO,
         shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "wrap_style",
-        values: &["char", "word"],
+        cycle: Cycle::Values(&["char", "word"]),
         shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "tab_width",
-        values: &[],
+        cycle: Cycle::No,
         shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "edge_markers",
-        values: YES_NO,
+        cycle: YES_NO,
         shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "file_separators",
-        values: YES_NO,
+        cycle: YES_NO,
         shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "auto_reload",
-        values: YES_NO,
+        cycle: YES_NO,
         shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "status_line",
-        values: YES_NO,
+        cycle: YES_NO,
         shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "view_style",
-        values: &["color", "plain", "raw"],
+        cycle: Cycle::Values(&["color", "plain", "raw"]),
         shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "clipboard_cmd",
-        values: &[],
+        cycle: Cycle::No,
         shown: false,
         prompt: true,
         flag: false,
     },
     Verb {
         name: "map",
-        values: &[],
+        cycle: Cycle::No,
         shown: false,
         prompt: true,
         flag: false,
     },
     Verb {
         name: "clear_all_shortcuts",
-        values: &[],
+        cycle: Cycle::No,
         shown: false,
         prompt: false,
         flag: false,
     },
     Verb {
         name: "open_cmd",
-        values: &[],
+        cycle: Cycle::Toggle,
         shown: false,
         prompt: false,
         flag: false,
     },
     Verb {
         name: "one_page_rows_below",
-        values: &[],
+        cycle: Cycle::No,
         shown: false,
         prompt: false,
         flag: true,
     },
 ];
 
-/// What cycle takes, in order: the verbs with values.
+/// What cycle takes, in order.
 pub fn names() -> impl Iterator<Item = &'static str> {
     VERBS
         .iter()
-        .filter(|v| !v.values.is_empty())
+        .filter(|v| v.cycle != Cycle::No)
         .map(|v| v.name)
+}
+
+pub fn verb(name: &str) -> Option<&'static Verb> {
+    VERBS.iter().find(|v| v.name == name)
 }
 
 /// The verbs the : prompt takes, in order.
@@ -196,11 +209,9 @@ pub fn or_list(names: &[&str]) -> String {
     format!("{} or {last}", rest.join(", "))
 }
 
-/// A setting cycle takes.
+/// A verb with values.
 pub fn lookup(name: &str) -> Option<&'static Verb> {
-    VERBS
-        .iter()
-        .find(|v| v.name == name && !v.values.is_empty())
+    verb(name).filter(|v| !v.values().is_empty())
 }
 
 /// The verb behind flag `name`, `--X` or `--no-X` for verb x, and the
@@ -223,16 +234,25 @@ pub fn flag_verb(name: &str) -> Option<(&'static Verb, Option<&'static str>)> {
 }
 
 impl Verb {
+    /// What the verb takes, when cycle steps through them.
+    pub fn values(&self) -> &'static [&'static str] {
+        match self.cycle {
+            Cycle::Values(v) => v,
+            _ => &[],
+        }
+    }
+
     pub fn yes_no(&self) -> bool {
-        self.values == YES_NO
+        self.cycle == YES_NO
     }
 
     /// The value after `v`: the first after the last, or after a value
     /// not in the list.
     pub fn next(&self, v: &str) -> &'static str {
-        match self.values.iter().position(|&x| x == v) {
-            Some(i) => self.values[(i + 1) % self.values.len()],
-            None => self.values[0],
+        let values = self.values();
+        match values.iter().position(|&x| x == v) {
+            Some(i) => values[(i + 1) % values.len()],
+            None => values[0],
         }
     }
 }
@@ -246,7 +266,7 @@ mod tests {
     #[test]
     fn setting_next() {
         let s = lookup("wrap_style").unwrap();
-        assert_eq!(s.values, ["char", "word"]);
+        assert_eq!(s.values(), ["char", "word"]);
         for (cur, next) in [("char", "word"), ("word", "char"), ("", "char")] {
             assert_eq!(s.next(cur), next, "{cur:?}");
         }

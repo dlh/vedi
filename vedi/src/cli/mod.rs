@@ -81,9 +81,7 @@ pub enum CmdFlag {
     Cmd(String),
 }
 
-/// Reads a file through a command: its argv by file name, %s the
-/// name; `None` to read it as it is.
-pub type OpenCmdFor = Box<dyn Fn(&str) -> Option<Vec<String>>>;
+pub use crate::app::OpenCmdFor;
 
 impl Options {
     /// The app's options: each setting the flag's, else the config's,
@@ -117,6 +115,7 @@ impl Options {
             macos,
             keys: cfg.keymap(macos),
             open: None,
+            open_cmd: None,
         }
     }
 

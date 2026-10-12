@@ -77,7 +77,7 @@ Actions:
 | `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune. |
 | `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), each optionally with `Shift+`, `wheel up`, `wheel down`, `wheel left` or `wheel right`, optionally with `Shift+` on the direction and followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
-| `-- file --` | The file on disk now holds this text, ended the way `-- input --` is. Needs a file in `-- args --`; disk starts as the input, each file's from its `-- input --` sections. With several files the section names the one that changed: `-- file b.txt --`. |
+| `-- file --` | The file on disk now holds this text, ended the way `-- input --` is. Needs a file in `-- args --`; disk starts as the input, each file's from its `-- input --` sections. With several files the section names the one that changed: `-- file b.txt --`. Before the first key, it is what the file held from the start, behind an `open_cmd`. |
 | `-- reload --` | The same, and the app is told the file changed: unless `--no-auto-reload`, `auto_reload no` or `:auto_reload no` is in effect, the reload lands before the next section. |
 
 Assertions, checked at that point:
@@ -88,5 +88,9 @@ Assertions, checked at that point:
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |
+
+An `open_cmd` in `-- config --` runs no command: `-- input --` is what
+it printed, and a `-- file --` before the first key what the file
+holds. `O` reads the file; `O` again reads the input sections again.
 
 Colors are not covered; those tests stay in `vedi/src/app/tests.rs`.

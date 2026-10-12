@@ -19,9 +19,9 @@ PgDn
 -- screen --
   w                                       Toggle wrap / nowr
   R                                       Reload the file.
+  O                                       Toggle reading thr
  -----------------------------------------------------------
 
-                                     MOVING
 help  motion scrolls, / searches, any other key returns
 -- keys --
 G

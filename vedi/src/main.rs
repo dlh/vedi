@@ -7,6 +7,7 @@ use std::io::{self, Write};
 use std::panic;
 use std::path::Path;
 use std::process::ExitCode;
+use std::rc::Rc;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
@@ -77,14 +78,14 @@ fn run() -> Result<(), Fail> {
         }
         Err(e) => return Err(e.to_string().into()),
     };
-    let open_cmd = opts.open_cmd(&cfg)?;
+    let open_cmd = opts.open_cmd(&cfg)?.map(Rc::new);
     let settings = opts.settings(&cfg);
     let view = settings.view_style;
 
     let (tx, rx) = mpsc::channel();
     let killers = Killers::default();
     let _kill = KillOnExit(killers.clone());
-    let input = open_input(&files, open_cmd.as_ref()).map_err(|msg| Fail {
+    let input = open_input(&files, open_cmd.as_deref()).map_err(|msg| Fail {
         msg,
         usage: files.is_empty(),
     })?;
@@ -127,10 +128,15 @@ fn run() -> Result<(), Fail> {
         &env::var("TERM").unwrap_or_default(),
         term.raw_writer(),
     );
+    if let Some(f) = &open_cmd {
+        let f = f.clone();
+        app_opts.open_cmd = Some(Box::new(move |name| f(name)));
+    }
     if on_disk {
         let (files, killers, tx) = (files.clone(), killers.clone(), tx.clone());
-        app_opts.open = Some(Box::new(move |generation| {
-            let input = open_input(&files, open_cmd.as_ref()).map_err(io::Error::other)?;
+        app_opts.open = Some(Box::new(move |generation, through| {
+            let cmd = open_cmd.as_deref().filter(|_| through);
+            let input = open_input(&files, cmd).map_err(io::Error::other)?;
             Ok(killers.start(input, view, generation, &tx))
         }));
     }

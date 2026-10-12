@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x65
+80x66
 -- input --
 abc
 -- keys --
@@ -20,6 +20,7 @@ Alt+h
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
   R                                       Reload the file.
+  O                                       Toggle reading through open_cmd.
  ------------------------------------------------------------------------------
 
                                      MOVING

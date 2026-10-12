@@ -97,6 +97,10 @@ The last matching pattern line wins; a line without a pattern is for
 the rest. A command without `%s` gets the file name as its last
 argument. `--open-cmd` replaces every line for one run.
 
+`O`, `cycle open_cmd`, reads the files as they are, and again through
+their commands; the status line names the command for the file at
+the cursor, or `''`. The selection is cleared.
+
 ## Commands
 
 `:` opens a prompt on the status line. It takes any setting above
@@ -109,7 +113,7 @@ but `one_page_rows_below`, and `map`, for the rest of the run:
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a
 setting to its next value, the first after the last; it takes `wrap`,
 `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`,
-`status_line` and `view_style`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
+`status_line`, `view_style` and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q`
 do. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A
 bad line is an error on the status line.
 
@@ -274,6 +278,9 @@ map w cycle wrap
 
 # Reload the file
 map R reload
+
+# Toggle reading through open_cmd
+map O cycle open_cmd
 
 # Quit
 map q quit

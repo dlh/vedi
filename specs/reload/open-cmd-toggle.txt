@@ -1,0 +1,36 @@
+O reads the file as it is instead of through open_cmd, and again
+through it; the status line names the command, or ''. The cursor
+keeps its place, clamped; the selection goes.
+
+-- config --
+open_cmd sed s/l/L/g %s
+-- args --
+f.txt
+-- input --
+heLLo
+worLd
+-- file --
+hello
+world
+-- keys --
+Down Shift+Right O
+-- screen --
+hello
+world
+
+
+
+open_cmd ''                       h help
+-- cursor --
+1 1
+-- keys --
+O
+-- screen --
+heLLo
+worLd
+
+
+
+open_cmd sed s/l/L/g %s           h help
+-- cursor --
+1 1

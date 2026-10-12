@@ -42,6 +42,7 @@ fn options() -> Options {
         macos: false,
         keys: config::default_keymap(false),
         open: None,
+        open_cmd: None,
     }
 }
 
@@ -450,19 +451,20 @@ fn with_opener(open: Opener) -> Options {
 }
 
 /// A test opener: each call hands out an empty buffer and records the
-/// generation asked for, after failing `fail` times.
-type Gens = Rc<RefCell<Vec<Gen>>>;
+/// generation asked for, and whether through open_cmd, after failing
+/// `fail` times.
+type Gens = Rc<RefCell<Vec<(Gen, bool)>>>;
 
 fn opener(fail: usize) -> (Opener, Gens) {
     let gens: Gens = Rc::default();
     let left = Rc::new(Cell::new(fail));
     let (g, l) = (Rc::clone(&gens), left);
-    let open = Box::new(move |generation| {
+    let open = Box::new(move |generation, through| {
         if l.get() > 0 {
             l.set(l.get() - 1);
             return Err(io::Error::other("boom"));
         }
-        g.borrow_mut().push(generation);
+        g.borrow_mut().push((generation, through));
         Ok(Buffer::new(Storage::Memory(Vec::new()), false))
     });
     (open, gens)
@@ -470,7 +472,12 @@ fn opener(fail: usize) -> (Opener, Gens) {
 
 /// Ends reload `i` with `text`, as its reader would.
 fn finish_reload(a: &mut App<TestTerminal>, gens: &Gens, i: usize, text: &str) {
-    let g = gens.borrow()[i];
+    end_reload(a, gens, i, text, None);
+}
+
+/// `finish_reload`, with the error the read ended in.
+fn end_reload(a: &mut App<TestTerminal>, gens: &Gens, i: usize, text: &str, err: Option<&str>) {
+    let g = gens.borrow()[i].0;
     let mut ix = Indexer::new();
     let data = |chunk: Option<&str>, indexed| Progress::Data {
         chunk: chunk.map(|c| Arc::from(c.as_bytes())),
@@ -482,14 +489,116 @@ fn finish_reload(a: &mut App<TestTerminal>, gens: &Gens, i: usize, text: &str) {
         data(Some(text), ix.feed(text.as_bytes())),
     ));
     a.handle(Event::Progress(g, data(None, ix.finish())));
+    a.handle(Event::Progress(g, finished(err)));
+    a.draw();
+}
+
+fn open_cmd_options(open: Opener) -> Options {
+    Options {
+        names: vec!["a.md".into()],
+        open_cmd: Some(Box::new(|name: &str| {
+            let cmd = match name.rsplit('.').next() {
+                Some("md") => "mdcat",
+                Some("txt") => "cat",
+                _ => return None,
+            };
+            Some(vec![cmd.into(), name.into()])
+        })),
+        ..with_opener(open)
+    }
+}
+
+/// The message names the input the cursor is in when the text lands,
+/// not the one it was in when O was pressed.
+#[test]
+fn open_cmd_status_follows_cursor() {
+    let (open, gens) = opener(0);
+    let opts = Options {
+        names: vec!["a.md".into(), "b.txt".into()],
+        ..open_cmd_options(open)
+    };
+    let mut a = App::new(TestTerminal::new(40, 4), two_parts(), GEN, opts);
+    a.draw();
+    press(&mut a, "O");
+    press(&mut a, "O");
+    press(&mut a, "Down");
+    let g = gens.borrow()[1].0;
+    let mut ix = Indexer::new();
+    let chunk = |s: &str| Some(Arc::from(s.as_bytes()));
+    a.handle(Event::Progress(g, Progress::Part { offset: 0 }));
+    let indexed = ix.feed(b"x\n");
     a.handle(Event::Progress(
         g,
-        Progress::Done {
-            err: None,
-            trailing_newline: true,
+        Progress::Data {
+            chunk: chunk("x\n"),
+            indexed,
         },
     ));
+    let offset = ix.offset();
+    a.handle(Event::Progress(g, Progress::Part { offset }));
+    let indexed = ix.feed(b"y\n");
+    a.handle(Event::Progress(
+        g,
+        Progress::Data {
+            chunk: chunk("y\n"),
+            indexed,
+        },
+    ));
+    let indexed = ix.finish();
+    a.handle(Event::Progress(
+        g,
+        Progress::Data {
+            chunk: None,
+            indexed,
+        },
+    ));
+    a.handle(Event::Progress(g, finished(None)));
     a.draw();
+    assert!(
+        row(&a, 3).starts_with("open_cmd cat b.txt"),
+        "{:?}",
+        row(&a, 3)
+    );
+}
+
+/// O's message waits for the text it describes, and a read error
+/// takes its place.
+#[test]
+fn open_cmd_status_lands_with_text() {
+    let (open, gens) = opener(0);
+    let mut a = app(40, 4, "old\n", open_cmd_options(open));
+    press(&mut a, "O");
+    assert!(row(&a, 3).contains("reloading…"), "{:?}", row(&a, 3));
+    finish_reload(&mut a, &gens, 0, "raw\n");
+    assert!(row(&a, 3).starts_with("open_cmd ''"), "{:?}", row(&a, 3));
+    press(&mut a, "O");
+    end_reload(&mut a, &gens, 1, "", Some("exit 1"));
+    assert!(
+        row(&a, 3).starts_with("read error: exit 1"),
+        "{:?}",
+        row(&a, 3)
+    );
+}
+
+/// O during a reload drops it and starts its own: the old reader's
+/// data is not taken up.
+#[test]
+fn open_cmd_toggle_replaces_pending_reload() {
+    let (open, gens) = opener(0);
+    let mut a = app(40, 4, "old\n", open_cmd_options(open));
+    press(&mut a, "O");
+    press(&mut a, "O");
+    let through: Vec<bool> = gens.borrow().iter().map(|g| g.1).collect();
+    assert_eq!(through, [false, true]);
+    finish_reload(&mut a, &gens, 1, "new\n");
+    assert_eq!(row(&a, 0), "new");
+    assert!(
+        row(&a, 3).starts_with("open_cmd mdcat a.md"),
+        "{:?}",
+        row(&a, 3)
+    );
+    finish_reload(&mut a, &gens, 0, "stale\n");
+    assert_eq!(row(&a, 0), "new");
 }
 
 /// Progress before a draw shares one deadline; the draw clears it, and
@@ -698,6 +807,15 @@ fn reload_key_reports_failure() {
         "{:?}",
         row(&a, 3)
     );
+}
+
+/// A failed reload by O says so, not which command.
+#[test]
+fn open_cmd_key_reports_failure() {
+    let (open, _) = opener(usize::MAX);
+    let mut a = app(30, 4, "old\n", with_opener(open));
+    press(&mut a, "O");
+    assert_eq!(a.status.as_deref(), Some("reload failed: boom"));
 }
 
 /// A file that vanished when a change came is read again on the next
