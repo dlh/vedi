@@ -22,6 +22,10 @@ committing. Behaviors are specified and tested in `specs/`; see
 `specs/README.md`. `bin/spec-step FILE` steps through one, showing the screen
 after each section.
 
+Prose in `.md` files wraps at 80 columns; tables and code blocks do not.
+`.git-blame-ignore-revs` lists the commits that only rewrapped, for
+`git config blame.ignoreRevsFile .git-blame-ignore-revs`.
+
 `bench-pagers` runs each pager on a pty over a million generated lines and
 reports the median time to the first screen from a file and from stdin, to the
 end and back, and for a failed search on each, with peak RSS. To the end is the
