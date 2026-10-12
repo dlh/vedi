@@ -10,7 +10,6 @@ builds:
     targets:
       - x86_64-unknown-linux-gnu.2.17
       - aarch64-unknown-linux-gnu.2.17
-      - x86_64-apple-darwin
       - aarch64-apple-darwin
     env: ['VEDI_VERSION={{ .Tag }}']
     # The workspace also holds the bench crate.

@@ -82,12 +82,12 @@ patch. It fails when the commits since the last tag hold none of those.
     make release-tag
     git push origin v1.2.3
 
-CI builds linux and darwin, amd64 and arm64, with goreleaser's Rust builder and
-cargo-zigbuild, on a macOS runner since the darwin targets link CoreServices and
-need the macOS SDK. It publishes a GitHub release with archives, `checksums.txt`
-and a changelog from the commit messages. Each archive holds the completion
-scripts of `vedi/completions/` in `completions/`. It then pushes a cask to
-[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
+CI builds linux amd64 and arm64 and darwin arm64 with goreleaser's Rust builder
+and cargo-zigbuild, on a macOS runner since the darwin targets link CoreServices
+and need the macOS SDK. It publishes a GitHub release with archives,
+`checksums.txt` and a changelog from the commit messages. Each archive holds the
+completion scripts of `vedi/completions/` in `completions/`. It then pushes a
+cask to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
 `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds
 from a checkout print `git describe`.
 
