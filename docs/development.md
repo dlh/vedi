@@ -89,10 +89,10 @@ builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
 publishes a GitHub release with archives, `checksums.txt` and a changelog from
 the commit messages. Each archive holds the completion scripts of
-`vedi/completions/` in `completions/`. It then pushes a cask to
-[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
-`HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds
-from a checkout print `git describe`.
+`vedi/completions/` in `completions/` and the Markdown of `docs/` in `docs/`. It
+then pushes a cask to [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap),
+skipped without `HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as
+`VEDI_VERSION`; builds from a checkout print `git describe`.
 
 Darwin binaries are signed with a Developer ID Application certificate and
 notarized (bare binaries can't be stapled; Gatekeeper checks the ticket online).

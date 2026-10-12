@@ -25,6 +25,8 @@ archives:
       - README.md
       - src: vedi/completions/*
         dst: completions
+      - src: docs/*.md
+        dst: docs
 
 checksum:
   name_template: checksums.txt
