@@ -33,6 +33,11 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# The AUR package builds from this archive.
+source:
+  enabled: true
+  prefix_template: '{{ .ProjectName }}-{{ .Version }}/'
+
 # The changelog is feat, fix, perf and any breaking change; the rest
 # changes nothing a user sees. A type takes an optional scope and !, as
 # bin/next-version does.
@@ -88,3 +93,59 @@ homebrew_casks:
       fish: completions/vedi.fish
     manpages: [man/vedi.1]
     skip_upload: '{{ if not (isEnvSet "HOMEBREW_TAP_TOKEN") }}true{{ end }}'
+
+# Publish a source package to the AUR; skipped without the key.
+aur_sources:
+  - name: vedi
+    homepage: https://github.com/dlh/vedi
+    description: Pager for colored text; select with the keyboard and copy
+    license: GPL-3.0-only
+    maintainers: ['Daniel Lee Harple <git@dlh.dev>']
+    depends: [gcc-libs, glibc]
+    makedepends: [cargo]
+    git_url: ssh://aur@aur.archlinux.org/vedi.git
+    private_key: '{{ .Env.AUR_KEY }}'
+    commit_author:
+      name: Daniel Lee Harple
+      email: git@dlh.dev
+    # Per the Arch Rust package guidelines.
+    prepare: |-
+      cd "${pkgname}-${pkgver}"
+      export RUSTUP_TOOLCHAIN=stable
+      cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+    build: |-
+      cd "${pkgname}-${pkgver}"
+      export RUSTUP_TOOLCHAIN=stable
+      export VEDI_VERSION="v${pkgver}"
+      cargo build --frozen --release -p vedi
+    package: |-
+      cd "${pkgname}-${pkgver}"
+      install -Dm755 target/release/vedi "${pkgdir}/usr/bin/vedi"
+      install -Dm644 vedi/man/vedi.1 "${pkgdir}/usr/share/man/man1/vedi.1"
+      install -Dm644 vedi/completions/vedi.bash "${pkgdir}/usr/share/bash-completion/completions/vedi"
+      install -Dm644 vedi/completions/_vedi "${pkgdir}/usr/share/zsh/site-functions/_vedi"
+      install -Dm644 vedi/completions/vedi.fish "${pkgdir}/usr/share/fish/vendor_completions.d/vedi.fish"
+      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md docs/*.md
+    skip_upload: '{{ if not (isEnvSet "AUR_KEY") }}true{{ end }}'
+
+# Publish a binary package from the linux archives; skipped without the key.
+aurs:
+  - name: vedi-bin
+    homepage: https://github.com/dlh/vedi
+    description: Pager for colored text; select with the keyboard and copy
+    license: GPL-3.0-only
+    maintainers: ['Daniel Lee Harple <git@dlh.dev>']
+    depends: [gcc-libs, glibc]
+    git_url: ssh://aur@aur.archlinux.org/vedi-bin.git
+    private_key: '{{ .Env.AUR_KEY }}'
+    commit_author:
+      name: Daniel Lee Harple
+      email: git@dlh.dev
+    package: |-
+      install -Dm755 vedi "${pkgdir}/usr/bin/vedi"
+      install -Dm644 man/vedi.1 "${pkgdir}/usr/share/man/man1/vedi.1"
+      install -Dm644 completions/vedi.bash "${pkgdir}/usr/share/bash-completion/completions/vedi"
+      install -Dm644 completions/_vedi "${pkgdir}/usr/share/zsh/site-functions/_vedi"
+      install -Dm644 completions/vedi.fish "${pkgdir}/usr/share/fish/vendor_completions.d/vedi.fish"
+      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md docs/*.md
+    skip_upload: '{{ if not (isEnvSet "AUR_KEY") }}true{{ end }}'

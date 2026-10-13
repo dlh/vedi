@@ -11,13 +11,18 @@ With [Homebrew](https://brew.sh):
 
     brew install dlh/tap/vedi
 
+On Arch Linux, from the [AUR](https://aur.archlinux.org/packages/vedi), or as
+[vedi-bin](https://aur.archlinux.org/packages/vedi-bin) to skip the build:
+
+    git clone https://aur.archlinux.org/vedi.git && cd vedi && makepkg -si
+
 Or download a binary for linux or macOS from the
 [releases page](https://github.com/dlh/vedi/releases), or build from source:
 
     cargo install --git https://github.com/dlh/vedi vedi
 
-Homebrew installs the man page and tab completion for bash, zsh and fish; an
-archive holds them in `man/` and `completions/`. See
+Homebrew and the AUR packages install the man page and tab completion for bash,
+zsh and fish; an archive holds them in `man/` and `completions/`. See
 [Shell completion](docs/configuration.md#shell-completion).
 
 ## Usage

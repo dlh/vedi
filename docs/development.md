@@ -15,6 +15,7 @@ Requires Rust and make.
     make next-version   print the next tag, from the commits since the last
     make release-notes  print the changelog the next release would carry (needs goreleaser)
     make release-tag    tag HEAD with the next version
+    make aur            write the AUR packages to dist/aur/ (needs goreleaser and gh)
     make media          record the README gif; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR; run them before
@@ -97,13 +98,17 @@ its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
 22.04 container, so those binaries need glibc 2.34 or newer. A tag runs the same
 builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
-publishes a GitHub release with archives, `checksums.txt` and a changelog from
-the commit messages. Each archive holds the completion scripts of
-`vedi/completions/` in `completions/`, the man page `vedi/man/vedi.1` in `man/`
-and the Markdown of `docs/` in `docs/`. It then pushes a cask to
+publishes a GitHub release with archives, a source archive, `checksums.txt` and
+a changelog from the commit messages. Each archive holds the completion scripts
+of `vedi/completions/` in `completions/`, the man page `vedi/man/vedi.1` in
+`man/` and the Markdown of `docs/` in `docs/`. It then pushes a cask to
 [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
-`HOMEBREW_TAP_TOKEN`. `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds
-from a checkout print `git describe`.
+`HOMEBREW_TAP_TOKEN`, and two packages to the AUR, skipped without `AUR_KEY`:
+[vedi](https://aur.archlinux.org/packages/vedi) builds the source archive,
+[vedi-bin](https://aur.archlinux.org/packages/vedi-bin) installs the linux
+archives.
+`vedi -v` prints the tag, passed as `VEDI_VERSION`; builds from a checkout print
+`git describe`.
 
 Darwin binaries are signed with a Developer ID Application certificate and
 notarized (bare binaries can't be stapled; Gatekeeper checks the ticket online).
@@ -118,10 +123,12 @@ Team Keys, Developer role.
     APPLE_API_KEY_ID               API key ID
     APPLE_API_KEY_P8_BASE64        API key .p8, base64
     HOMEBREW_TAP_TOKEN             GitHub token that pushes to the tap
+    AUR_KEY                        SSH private key that pushes to the AUR
 
 The tap token is a fine-grained personal access token: Settings → Developer
 settings → Fine-grained tokens, repository `dlh/homebrew-tap` only, Contents
-read and write.
+read and write. The AUR key's public half goes on the AUR account: My Account →
+SSH Public Key. The first push creates the package.
 
 Export the certificate from Keychain Access (My Certificates → Developer ID
 Application → File → Export Items… → .p12). Encode both files without line
@@ -142,3 +149,9 @@ To try a release locally without tagging:
 Output lands in `dist/`, which is ignored. Only this platform's binary builds
 here; the whole pipeline, short of notarizing and publishing, runs from the
 Actions tab: release, Run workflow.
+
+`make aur` writes the AUR packages to `dist/aur/vedi/` and `dist/aur/vedi-bin/`:
+each `PKGBUILD`, its `.SRCINFO` and its sources, named as the `PKGBUILD` looks
+for them, so makepkg builds without a release. vedi-bin takes the last
+release's binaries, since only CI builds the linux ones. Copy a directory to an
+Arch machine and run `makepkg -si` in it.

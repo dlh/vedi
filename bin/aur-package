@@ -1,0 +1,59 @@
+#!/bin/sh
+# Writes the AUR packages a release at REF (default HEAD) would push to
+# dist/aur/vedi and dist/aur/vedi-bin: PKGBUILD, .SRCINFO and the sources,
+# named as the PKGBUILD looks for them, so makepkg builds without the
+# release. The version is the next tag, or the last one when nothing
+# calls for a release. vedi-bin takes the last release's binaries, since
+# only CI builds the linux ones. goreleaser takes the project name from
+# the remote, so a throwaway clone points at GitHub.
+# Usage: bin/aur-package [REF]
+set -eu
+
+# Puts the last release's vedi for each target where bin/cargo-prebuilt
+# looks, under $prebuilt.
+fetch_binaries() {
+	for pair in \
+		linux_amd64:x86_64-unknown-linux-gnu \
+		linux_arm64:aarch64-unknown-linux-gnu \
+		darwin_arm64:aarch64-apple-darwin; do
+		mkdir -p "$prebuilt/vedi-${pair#*:}"
+		gh release download "$last" -R dlh/vedi -O - \
+			-p "vedi_${last#v}_${pair%:*}.tar.gz" |
+			tar xzf - -C "$prebuilt/vedi-${pair#*:}" vedi
+	done
+}
+
+main() {
+	root=$(git rev-parse --show-toplevel)
+	ref=$(git rev-parse --verify "${1:-HEAD}^{commit}")
+	last=$(git describe --tags --abbrev=0 "$ref")
+	tag=$("$root/bin/next-version" "$ref" 2>/dev/null) || tag=$last
+	ver=${tag#v}
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+	prebuilt=$tmp/prebuilt
+	fetch_binaries
+	git clone -q "$root" "$tmp/src"
+	cd "$tmp/src"
+	git remote set-url origin https://github.com/dlh/vedi
+	git checkout -q --detach "$ref"
+	git tag -f "$tag" >/dev/null
+	if ! log=$(VEDI_PREBUILT=$prebuilt goreleaser release \
+		--skip=homebrew,notarize,publish,announce,validate 2>&1); then
+		echo "$log" >&2
+		exit 1
+	fi
+	out="$root/dist/aur"
+	rm -rf "$out"
+	mkdir -p "$out/vedi" "$out/vedi-bin"
+	cp dist/aur/vedi.pkgbuild "$out/vedi/PKGBUILD"
+	cp dist/aur/vedi.srcinfo "$out/vedi/.SRCINFO"
+	cp "dist/vedi-$ver.tar.gz" "$out/vedi/vedi_$ver.tar.gz"
+	cp dist/aur/vedi-bin.pkgbuild "$out/vedi-bin/PKGBUILD"
+	cp dist/aur/vedi-bin.srcinfo "$out/vedi-bin/.SRCINFO"
+	cp "dist/vedi_${ver}_linux_amd64.tar.gz" "$out/vedi-bin/vedi-bin_${ver}_x86_64.tar.gz"
+	cp "dist/vedi_${ver}_linux_arm64.tar.gz" "$out/vedi-bin/vedi-bin_${ver}_aarch64.tar.gz"
+	echo "$out"
+}
+
+main "$@"

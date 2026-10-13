@@ -11,6 +11,7 @@ readonly SECRETS=(
   APPLE_API_KEY_ID
   APPLE_API_KEY_P8_BASE64
   HOMEBREW_TAP_TOKEN
+  AUR_KEY
 )
 
 usage() {
@@ -24,6 +25,7 @@ Fields in the 1Password item must be named after the secrets:
   APPLE_API_KEY_ID               App Store Connect API key ID
   APPLE_API_KEY_P8_BASE64        the key's .p8, base64
   HOMEBREW_TAP_TOKEN             GitHub token that pushes to dlh/homebrew-tap
+  AUR_KEY                        SSH private key that pushes to the AUR
 USAGE
 }
 

@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version release-notes release-tag clean
+.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version release-notes release-tag aur clean
 
 build:
 	cargo build --release -p vedi
@@ -48,6 +48,11 @@ next-version:
 # Prints the changelog the next release would carry; needs goreleaser on PATH.
 release-notes:
 	@bin/release-notes
+
+# Writes the AUR packages to dist/aur/, for makepkg on Arch; needs goreleaser
+# and gh.
+aur:
+	@bin/aur-package
 
 # Tags HEAD with the next version; pushing the tag releases it.
 release-tag:
