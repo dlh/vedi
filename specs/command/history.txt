@@ -1,7 +1,9 @@
 At the : prompt, Up recalls earlier commands, newest first, and Down
 goes back toward what was being typed. The history is the prompt's
 own, apart from the searches'; a command equal to the newest entry is
-not added again, and one that failed is still remembered.
+not added again, and one that failed is still remembered. The space
+Tab put after the last word is not: recalled, the line completes its
+last word on.
 
 -- input --
 line 1
@@ -70,3 +72,12 @@ line 3
 
 
 :wrap_style word
+-- keys --
+Esc : "edge_markers" Tab Tab Enter : Up Tab
+-- screen --
+line 1
+line 2
+line 3
+
+
+:edge_markers no   [no]  yes

@@ -49,8 +49,9 @@ impl<T: Terminal> App<T> {
                     self.find(back, true);
                     return;
                 }
-                s.query.remember();
-                s.matcher = Matcher::new(&s.query.text());
+                let query = s.query.text();
+                s.query.remember(&query);
+                s.matcher = Matcher::new(&query);
                 self.find(back, false);
             }
         }

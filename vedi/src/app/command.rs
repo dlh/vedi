@@ -151,10 +151,13 @@ impl<T: Terminal> App<T> {
             }
             KeyCode::Enter => {
                 self.focus = Focus::Viewing;
-                if !c.line.is_empty() {
-                    c.line.remember();
-                }
                 let line = c.line.text();
+                // Tab's trailing space would have a recall complete a
+                // word that is not there.
+                let entry = line.trim_end_matches(' ');
+                if !entry.is_empty() {
+                    c.line.remember(entry);
+                }
                 return self.run_command(&line);
             }
             KeyCode::Tab => c.complete(&self.settings),

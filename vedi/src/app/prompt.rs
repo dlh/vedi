@@ -88,11 +88,10 @@ impl Prompt {
         PromptEdit::Editing
     }
 
-    /// Adds the text to the history unless it repeats the newest entry.
-    pub fn remember(&mut self) {
-        let text = self.text();
-        if self.history.last() != Some(&text) {
-            self.history.push(text);
+    /// Adds `entry` to the history unless it repeats the newest.
+    pub fn remember(&mut self, entry: &str) {
+        if self.history.last().map(String::as_str) != Some(entry) {
+            self.history.push(entry.to_string());
         }
     }
 }
