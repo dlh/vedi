@@ -52,7 +52,7 @@ home
 
 :edge_markers
 -- keys --
-Tab Tab Enter
+Tab Enter
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away  [\]
 home

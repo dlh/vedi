@@ -115,8 +115,10 @@ error on the status line.
 
 Tab completes the word being typed. One match fills it in; several fill in what
 they share, or the first of them, and list them under the prompt, and Tab again
-steps through them. Up and Down recall earlier commands; Esc, Ctrl+g and Ctrl+c
-cancel.
+steps through them. A setting's values start after its current one, so
+`:edge_markers` Tab Tab turns them on when they are off; after a whole value,
+Tab fills in the next. Up and Down recall earlier commands; Esc, Ctrl+g and
+Ctrl+c cancel.
 
 ## Keys
 

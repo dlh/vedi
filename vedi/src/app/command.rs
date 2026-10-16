@@ -6,7 +6,7 @@ use crate::app::{App, Flow, Focus};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
 use crate::input::key::{Key, KeyCode};
-use crate::input::setting::{self, Cycle};
+use crate::input::setting::{self, Cycle, Settings};
 use crate::sys::clipboard::CommandCopier;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
@@ -61,10 +61,11 @@ impl State {
     /// Fills in the word being typed at the end of the : prompt from the
     /// candidates for its place: with one, the word and a space; with
     /// several, what they share, or the first of them when that adds
-    /// nothing, listing them sorted; with none, nothing. Tab again, the
-    /// line as the last left it, fills in each match in turn and then
-    /// what was typed.
-    fn complete(&mut self) {
+    /// nothing, listing them; with none, nothing. A setting's whole
+    /// value becomes the one after it, marked in the list of them all.
+    /// Tab again, the line as the last left it, fills in each match in
+    /// turn and then what was typed.
+    fn complete(&mut self, settings: &Settings) {
         if let Some((ms, at)) = self.listing() {
             let pos = at.map_or(0, |p| p + 1);
             let (text, at) = match ms.get(pos) {
@@ -77,16 +78,27 @@ impl State {
         }
         self.stem = self.line.text();
         let (word, before) = last_word(&self.stem);
-        let mut found: Vec<String> = candidates(&before)
-            .into_iter()
+        let all = candidates(&before, settings);
+        let found: Vec<String> = all
+            .iter()
             .filter(|c| c.starts_with(word))
+            .cloned()
             .collect();
-        found.sort();
         let base = self.base();
         match &found[..] {
             [] => {}
             [one] => {
-                let text = format!("{base}{one} ");
+                let at = all.iter().position(|c| c == one);
+                let text = match at {
+                    Some(p) if one == word && is_values(&before) => {
+                        let p = (p + 1) % all.len();
+                        let text = format!("{base}{} ", all[p]);
+                        self.match_pos = Some(p);
+                        self.matches = Some(all);
+                        text
+                    }
+                    _ => format!("{base}{one} "),
+                };
                 self.fill(&text);
             }
             [first, rest @ ..] => {
@@ -145,7 +157,7 @@ impl<T: Terminal> App<T> {
                 let line = c.line.text();
                 return self.run_command(&line);
             }
-            KeyCode::Tab => c.complete(),
+            KeyCode::Tab => c.complete(&self.settings),
             _ => {
                 c.line.edit(key);
             }
@@ -311,18 +323,32 @@ fn last_word(text: &str) -> (&str, Vec<&str>) {
 }
 
 /// The words that may come after `before`, the words before the one
-/// being completed: a command first, then its argument.
-fn candidates(before: &[&str]) -> Vec<String> {
-    match before {
+/// being completed: a command first, then its argument. Names come
+/// sorted; a setting's values from the one after its current, so the
+/// first is a change.
+fn candidates(before: &[&str], settings: &Settings) -> Vec<String> {
+    let mut names: Vec<String> = match before {
         [] => commands().map(String::from).collect(),
-        ["cycle"] => setting::names().map(String::from).collect(),
-        [s] => setting::lookup(s).map_or_else(Vec::new, |s| {
-            s.values().iter().map(|&v| v.to_string()).collect()
-        }),
+        ["cycle"] | ["map", _, "cycle"] => setting::names().map(String::from).collect(),
+        [s] => {
+            return setting::lookup(s).map_or_else(Vec::new, |s| {
+                let values = s.values();
+                let next = s.next(&settings.value(s.name));
+                let at = values.iter().position(|&v| v == next).unwrap_or(0);
+                let (tail, head) = values.split_at(at);
+                head.iter().chain(tail).map(|&v| v.to_string()).collect()
+            });
+        }
         ["map", _] => Command::names(),
-        ["map", _, "cycle"] => setting::names().map(String::from).collect(),
         _ => Vec::new(),
-    }
+    };
+    names.sort();
+    names
+}
+
+/// Whether the word after `before` is a setting's value.
+fn is_values(before: &[&str]) -> bool {
+    matches!(before, [s] if setting::lookup(s).is_some())
 }
 
 fn common_prefix<'a>(a: &'a str, b: &str) -> &'a str {

@@ -1,7 +1,7 @@
 When several candidates match, Tab fills in what they share, or the
 first of them when they share nothing more, and lists them after the
-prompt, sorted, cut at the screen's edge. With nothing typed it lists
-every command. The list goes with the next key.
+prompt, names sorted, cut at the screen's edge. With nothing typed it
+lists every command. The list goes with the next key.
 
 -- size --
 60x4
@@ -27,7 +27,7 @@ Esc : "wrap_style " Tab
 line 1
 
 
-:wrap_style char   [char]  word
+:wrap_style word   [word]  char
 -- keys --
 Esc : Tab
 -- screen --
@@ -35,13 +35,6 @@ line 1
 
 
 :auto_reload   [auto_reload]  clipboard_cmd  cycle  edge_marke
--- keys --
-Esc : "wrap " Tab
--- screen --
-line 1
-
-
-:wrap no   [no]  yes
 -- keys --
 Esc : "map x select_h" Tab
 -- screen --
