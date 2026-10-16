@@ -7,7 +7,7 @@ use crate::app::{App, Focus, STDIN};
 use crate::input::action::{Action, Command};
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
-use crate::view::layout::{Mode as WrapMode, WrapStyle};
+use crate::view::layout::{Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Style;
 
@@ -68,7 +68,7 @@ impl<T: Terminal> App<T> {
         }
         let st = Style::default().reverse();
         g.fill_row(h - 1, st);
-        let text: Vec<char> = self.status_text().chars().collect();
+        let text: Vec<char> = self.status_text(w).chars().collect();
         let mut width = runes(g, 0, h - 1, &text, st);
         if self.focus == Focus::Commanding
             && let Some((ms, at)) = self.command.listing()
@@ -93,7 +93,7 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    fn status_text(&self) -> String {
+    fn status_text(&self, width: usize) -> String {
         match self.focus {
             Focus::Searching { back: true } => return format!("?{}", self.search.query.text()),
             Focus::Searching { back: false } => return format!("/{}", self.search.query.text()),
@@ -128,15 +128,20 @@ impl<T: Terminal> App<T> {
             reading.push_str("  reloading…");
         }
         let (k, lines) = self.buf.part(self.cur.line);
-        let mut name = self.input_name();
+        let mut rest = String::new();
         if self.names.len() > 1 {
-            name = format!("{name} {}/{}", k + 1, self.names.len());
+            rest = format!(" {}/{}", k + 1, self.names.len());
         }
-        format!(
-            "{name}  line {}/{}  {mode}{reading}",
+        rest.push_str(&format!(
+            "  line {}/{}  {mode}{reading}",
             self.cur.line - lines.start + 1,
             lines.len()
-        )
+        ));
+        let name = fit(
+            &self.input_name(),
+            width.saturating_sub(rest.chars().count()),
+        );
+        format!("{name}{rest}")
     }
 
     /// What the status line calls the input the cursor's line came
@@ -155,4 +160,26 @@ impl<T: Terminal> App<T> {
         }
         name.to_string()
     }
+}
+
+/// `name` within `width` cells: whole; else its first directory, "…"
+/// and as much of its end as fits, a gap in the middle rather than a
+/// head cut off, which reads as a parent; else the file name alone, to
+/// clip at the edge.
+fn fit(name: &str, width: usize) -> String {
+    let cells = |s: &str| {
+        let chars: Vec<char> = s.chars().collect();
+        Layout::default().cells(&chars)[chars.len()]
+    };
+    if cells(name) <= width {
+        return name.to_string();
+    }
+    let parts: Vec<&str> = name.split('/').collect();
+    for k in 2..parts.len() {
+        let s = format!("{}/…/{}", parts[0], parts[k..].join("/"));
+        if cells(&s) <= width {
+            return s;
+        }
+    }
+    parts[parts.len() - 1].to_string()
 }

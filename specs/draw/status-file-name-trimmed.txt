@@ -1,0 +1,63 @@
+A name too long for the status line keeps its first directory and its
+end, with … for the directories left out between them: vedi/…/status.rs.
+The input's number, the line counter and the mode are never cut. When
+even that is too long, the file name stands alone, and clips at the edge
+as it always has, as the separator row above the file does.
+
+-- size --
+40x5
+-- args --
+vedi/src/app/status.rs b.txt
+-- input --
+abc
+-- next-file --
+-- input --
+def
+-- screen --
+── vedi/src/app/status.rs ──────────────
+abc
+── b.txt ───────────────────────────────
+def
+vedi/…/app/status.rs 1/2  line 1/1  wrap
+-- keys --
+Down
+-- screen --
+── vedi/src/app/status.rs ──────────────
+abc
+── b.txt ───────────────────────────────
+def
+b.txt 2/2  line 1/1  wrap         h help
+-- keys --
+Up
+-- resize --
+48x5
+-- screen --
+── vedi/src/app/status.rs ──────────────────────
+abc
+── b.txt ───────────────────────────────────────
+def
+vedi/src/app/status.rs 1/2  line 1/1  wrap
+-- resize --
+36x5
+-- screen --
+── vedi/src/app/status.rs ──────────
+abc
+── b.txt ───────────────────────────
+def
+vedi/…/status.rs 1/2  line 1/1  wrap
+-- resize --
+32x5
+-- screen --
+── vedi/src/app/status.rs ──────
+abc
+── b.txt ───────────────────────
+def
+status.rs 1/2  line 1/1  wrap
+-- resize --
+20x5
+-- screen --
+── vedi/src/app/stat
+abc
+── b.txt ───────────
+def
+status.rs 1/2  line

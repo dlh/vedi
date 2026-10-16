@@ -44,8 +44,9 @@ The value is split into words as a shell would: quote with `'` or `"`, or put
 
 The status line starts with the input's name: the file, or `<stdin>`. With
 several files, the name is the file the cursor is in and its number among them,
-`b.txt 2/3`; lines are numbered within it, and `:N` goes to its line N. A row
-above each file names it; `file_separators no` in the config, or
+`b.txt 2/3`; lines are numbered within it, and `:N` goes to its line N. A name
+too long for the line keeps its first directory and its end, `vedi/…/status.rs`.
+A row above each file names it; `file_separators no` in the config, or
 `--no-file-separators`, leaves the rows out.
 
 A program can set the terminal's window title as it writes, with the escape
