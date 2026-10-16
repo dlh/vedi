@@ -60,9 +60,10 @@ impl State {
 
     /// Fills in the word being typed at the end of the : prompt from the
     /// candidates for its place: with one, the word and a space; with
-    /// several, what they share, listing them sorted; with none,
-    /// nothing. Tab again, the line as the last left it, fills in each
-    /// match in turn and then what was typed.
+    /// several, what they share, or the first of them when that adds
+    /// nothing, listing them sorted; with none, nothing. Tab again, the
+    /// line as the last left it, fills in each match in turn and then
+    /// what was typed.
     fn complete(&mut self) {
         if let Some((ms, at)) = self.listing() {
             let pos = at.map_or(0, |p| p + 1);
@@ -90,8 +91,12 @@ impl State {
             }
             [first, rest @ ..] => {
                 let shared = rest.iter().fold(first.as_str(), |s, c| common_prefix(s, c));
-                let text = format!("{base}{shared}");
-                self.match_pos = None;
+                let (text, at) = if shared.len() > word.len() {
+                    (format!("{base}{shared}"), None)
+                } else {
+                    (format!("{base}{first} "), Some(0))
+                };
+                self.match_pos = at;
                 self.matches = Some(found);
                 self.fill(&text);
             }

@@ -114,8 +114,9 @@ and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
 error on the status line.
 
 Tab completes the word being typed. One match fills it in; several fill in what
-they share and list the rest under the prompt, and Tab again steps through them.
-Up and Down recall earlier commands; Esc, Ctrl+g and Ctrl+c cancel.
+they share, or the first of them, and list them under the prompt, and Tab again
+steps through them. Up and Down recall earlier commands; Esc, Ctrl+g and Ctrl+c
+cancel.
 
 ## Keys
 
