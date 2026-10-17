@@ -300,11 +300,13 @@ impl<T: Terminal> App<T> {
                 }
             }
             Event::Resize(..) => {
+                // Sized as it was: a cursor off screen stays off.
+                let shown = self.cursor_on_screen();
                 self.screen.sync();
                 if self.text.is_some() {
                     self.scroll_help(0);
                     self.scroll_help_sideways(0);
-                } else {
+                } else if shown {
                     self.scroll_to_cursor();
                 }
             }
@@ -352,6 +354,10 @@ impl<T: Terminal> App<T> {
             self.scroll_to_cursor();
             return Flow::Continue;
         };
+        if let Some(n) = self.page_scroll(&c) {
+            self.scroll_view(n);
+            return Flow::Continue;
+        }
         if c.action.is_movement() {
             if c.extend {
                 self.extend();
@@ -419,6 +425,25 @@ impl<T: Terminal> App<T> {
         }
         self.scroll_to_cursor();
         Flow::Continue
+    }
+
+    /// The rows a page key scrolls the view, leaving the cursor and the
+    /// selection as they are; `None` for any other key, and for a page
+    /// that extends the selection, by Shift or the mark, which moves the
+    /// cursor instead.
+    fn page_scroll(&self, c: &Command) -> Option<isize> {
+        if c.extend || self.marking {
+            return None;
+        }
+        let page = self.page_rows() as isize;
+        let half = self.half_page_rows() as isize;
+        match c.action {
+            Action::PageUp => Some(-page),
+            Action::PageDown => Some(page),
+            Action::HalfPageUp => Some(-half),
+            Action::HalfPageDown => Some(half),
+            _ => None,
+        }
     }
 
     /// Whether wrap mode marks rows that continue, on a screen `w` wide:

@@ -42,6 +42,11 @@ Terminal.app also sends some Shift+ keys unshifted, macOS terminals compose
 Option+ keys unless told to send Alt, and kitty keeps Shift+click;
 [terminals.md](terminals.md) has the fixes.
 
+The page keys and the wheel scroll the view and leave the cursor where it is,
+hidden off screen, so Shift with a click or an arrow selects from it across
+screens. The next motion brings the view back to it. The status line names the
+cursor's line.
+
 The selection is drawn in reverse video and search matches in black on bright
 yellow, the match the cursor is in in bright white on magenta, whatever the
 text's own colors. A match off the screen scrolls to the top row, or as near as

@@ -117,16 +117,19 @@ impl<T: Terminal> App<T> {
 
 impl TextView {
     /// `reload_view` for the view help set aside; help's return scrolls
-    /// to the cursor.
+    /// to a cursor it moved.
     pub(super) fn reload(&mut self, place: Place, scratch: &mut Vec<char>) {
         let TextView {
             buf,
             cur,
             top,
             anchor,
+            moved,
             ..
         } = self;
+        let was = *cur;
         reload_view(buf, scratch, cur, top, anchor, place);
+        *moved |= *cur != was;
     }
 }
 

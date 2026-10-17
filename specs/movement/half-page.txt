@@ -1,5 +1,6 @@
-d and Ctrl+D move down half a screenful of text rows, u and Ctrl+U
-move up half; a screen with one text row moves one.
+d and Ctrl+D scroll the view down half a screenful of text rows, u and
+Ctrl+U up half; a screen with one text row moves one. The cursor stays
+where it was.
 
 -- input --
 line 1
@@ -13,33 +14,38 @@ line 8
 -- keys --
 d
 -- cursor --
-2 0
+hidden
 -- keys --
 Ctrl+D
 -- screen --
-line 1
-line 2
-line 3
-line 4
-line 5
-<stdin>  line 5/8  wrap           h help
--- cursor --
-4 0
--- keys --
-d
--- screen --
-line 3
-line 4
 line 5
 line 6
 line 7
-<stdin>  line 7/8  wrap           h help
+line 8
+
+<stdin>  line 1/8  wrap           h help
 -- cursor --
-4 0
+hidden
+-- keys --
+d
+-- screen --
+line 7
+line 8
+
+
+
+<stdin>  line 1/8  wrap           h help
+-- cursor --
+hidden
 -- keys --
 u
--- cursor --
-2 0
+-- screen --
+line 5
+line 6
+line 7
+line 8
+
+<stdin>  line 1/8  wrap           h help
 -- keys --
 Ctrl+U
 -- screen --
@@ -48,13 +54,13 @@ line 4
 line 5
 line 6
 line 7
-<stdin>  line 3/8  wrap           h help
+<stdin>  line 1/8  wrap           h help
 -- cursor --
-0 0
+hidden
 -- resize --
 40x2
 -- keys --
 d
 -- screen --
 line 4
-<stdin>  line 4/8  wrap           h help
+<stdin>  line 1/8  wrap           h help

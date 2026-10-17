@@ -28,6 +28,8 @@ pub(super) struct TextView {
     pub(super) cur: Pos,
     pub(super) top: Row,
     pub(super) anchor: Option<Pos>,
+    /// A reload moved the cursor.
+    pub(super) moved: bool,
     xoff: usize,
     wrap_mode: Mode,
     matcher: Matcher,
@@ -46,6 +48,7 @@ impl<T: Terminal> App<T> {
             cur: self.cur,
             top: self.top,
             anchor: self.anchor.take(),
+            moved: false,
             xoff: self.xoff,
             wrap_mode: self.settings.mode,
             matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
@@ -78,8 +81,9 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    /// Puts the text back as it was, scrolled to the cursor: a reload
-    /// meanwhile may have moved it.
+    /// Puts the text back as it was, scrolled to the cursor when a
+    /// reload meanwhile moved it or the screen was resized; one
+    /// scrolled off stays off.
     pub(super) fn hide_help(&mut self) {
         let Some(t) = self.text.take() else {
             return;
@@ -95,7 +99,9 @@ impl<T: Terminal> App<T> {
         self.search.highlight = t.highlight;
         self.focus = Focus::Viewing;
         self.laid.clear();
-        self.scroll_to_cursor();
+        if t.moved || self.cursor_on_screen() {
+            self.scroll_to_cursor();
+        }
     }
 
     /// Scrolls the bindings by a motion and searches them by the search

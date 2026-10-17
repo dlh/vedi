@@ -4,7 +4,7 @@
 use std::time::{Duration, Instant};
 
 use crate::app::event::{Mouse, MouseKind};
-use crate::app::motion::{Row, is_word};
+use crate::app::motion::is_word;
 use crate::app::{App, Focus};
 use crate::text::buffer::Pos;
 use crate::view::layout::Mode;
@@ -279,12 +279,11 @@ impl<T: Terminal> App<T> {
     }
 
     /// Moves the view `n` rows (negative is up), keeping the first line
-    /// to the last row at the top. A cursor that would leave the screen
-    /// is pulled to the edge row, keeping its column.
+    /// to the last row at the top. The cursor keeps its place, hidden
+    /// while off screen: the next motion brings the view back to it.
     pub(super) fn scroll_view(&mut self, mut n: isize) {
         self.act();
-        let rows = self.text_rows();
-        if rows == 0 || self.buf.is_empty() {
+        if self.text_rows() == 0 || self.buf.is_empty() {
             return;
         }
         self.top = self.snap(self.top);
@@ -295,29 +294,6 @@ impl<T: Terminal> App<T> {
         while n < 0 {
             self.top = self.prev_row(self.top);
             n += 1;
-        }
-        let mut bottom = self.top;
-        for _ in 0..rows - 1 {
-            bottom = self.next_row(bottom);
-        }
-        let crow = self.snap(Row::text(self.cur));
-        let ln = self.line_layout(self.cur.line);
-        let (_, x) = self.cursor_pos(&ln);
-        let edge = if crow < self.top {
-            self.top
-        } else if bottom < crow {
-            bottom
-        } else {
-            crow
-        };
-        if edge != crow {
-            let p = edge.pos();
-            let ln = self.line_layout(p.line);
-            let (row, _) = ln.pos(p.col);
-            self.cur = Pos {
-                line: p.line,
-                col: ln.col(row, x),
-            };
         }
     }
 

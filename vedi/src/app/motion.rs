@@ -432,6 +432,25 @@ impl<T: Terminal> App<T> {
         p
     }
 
+    /// Whether the cursor's row is among the text rows on screen; with
+    /// no rows or no text, nothing is scrolled away from.
+    pub(super) fn cursor_on_screen(&mut self) -> bool {
+        let rows = self.text_rows();
+        if rows == 0 || self.buf.is_empty() {
+            return true;
+        }
+        let top = self.snap(self.top);
+        let crow = self.snap(Row::text(self.cur));
+        if crow < top {
+            return false;
+        }
+        let mut bottom = top;
+        for _ in 0..rows - 1 {
+            bottom = self.next_row(bottom);
+        }
+        crow <= bottom
+    }
+
     /// Moves `top` and `xoff` the least that brings the cursor on
     /// screen.
     pub(super) fn scroll_to_cursor(&mut self) {
@@ -508,6 +527,7 @@ impl<T: Terminal> App<T> {
         let eof = self.buf.finished().is_some();
         let n = self.buf.len();
         let (cur, xoff) = (self.cur, self.xoff);
+        let shown = self.cursor_on_screen();
         if let Some(line) = self.start_line
             && (n > line || eof)
         {
@@ -530,7 +550,9 @@ impl<T: Terminal> App<T> {
             self.show_screen(s);
             self.start_screen = None;
         }
-        self.scroll_to_cursor();
+        if shown || self.cur != cur {
+            self.scroll_to_cursor();
+        }
         if self.cur == cur && self.settings.mode == Mode::NoWrap {
             self.xoff = xoff;
         }

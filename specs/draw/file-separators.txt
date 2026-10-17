@@ -63,9 +63,9 @@ a1
 a2
 ── <stdin> ─────────────────
 s1
-<stdin> 2/3  line 1/1  wrap
+b.txt 3/3  line 2/2  wrap
 -- cursor --
-3 0
+hidden
 -- mouse --
 wheel down 1
 -- screen --
@@ -73,6 +73,6 @@ s1
 ── b.txt ───────────────────
 b1
 b2
-<stdin> 2/3  line 1/1  wrap
+b.txt 3/3  line 2/2  wrap
 -- cursor --
-0 0
+3 0

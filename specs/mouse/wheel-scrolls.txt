@@ -1,6 +1,6 @@
 The wheel scrolls the view three rows a tick, and the cursor stays on
-its line while it is on screen. The view stops at the first line and
-cannot scroll the last row off the top. The selection is kept.
+its line, hidden while off screen. The view stops at the first line
+and cannot scroll the last row off the top. The selection is kept.
 
 -- size --
 40x6
@@ -34,9 +34,9 @@ line 8
 
 
 
-<stdin>  line 8/8  wrap           h help
+<stdin>  line 6/8  wrap           h help
 -- cursor --
-0 0
+hidden
 -- mouse --
 wheel up 2
 -- screen --
@@ -55,7 +55,7 @@ line 1
 line 2
 line 3
 line 4
-line 5
-<stdin>  line 5/8  wrap           h help
+[line 5 ]
+<stdin>  line 6/8  wrap           h help
 -- cursor --
-4 0
+hidden

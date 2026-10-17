@@ -1,6 +1,7 @@
-Up, Down and paging into a line as wide as the screen land on its text,
-never on its newline row: that row opens only once the cursor is on
-the newline, not while it is still on the line it came from.
+Up, Down and a page that moves the cursor, by Shift, into a line as
+wide as the screen land on its text, never on its newline row: that
+row opens only once the cursor is on the newline, not while it is
+still on the line it came from.
 
 -- size --
 6x4
@@ -10,16 +11,16 @@ abcdef
 ghij
 klmn
 -- keys --
-Right Right Right Right PgDn
+Right Right Right Right Shift+PgDn
 -- screen --
-日本語
-ghij
-klmn
+[日本語]
+[ghij ]
+[klmn]
 <stdin
 -- cursor --
 2 4
 -- keys --
-PgUp
+Shift+PgUp
 -- screen --
 abcdef
 日本語

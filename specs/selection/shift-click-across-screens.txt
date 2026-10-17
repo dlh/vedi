@@ -1,0 +1,71 @@
+A click places the cursor and scrolling leaves it there, so Shift+click
+after a page or a wheel tick selects from it to the cell, across
+screens.
+
+-- size --
+40x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- mouse --
+click 0 1
+-- keys --
+PgDn
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 1/8  wrap           h help
+-- cursor --
+hidden
+-- mouse --
+Shift+click 1 2
+-- screen --
+[line 4 ]
+[li]ne 5
+line 6
+<stdin>  line 5/8  wrap           h help
+-- cursor --
+1 2
+-- keys --
+y
+-- clipboard --
+ine 1
+line 2
+line 3
+line 4
+li
+-- keys --
+Esc
+-- mouse --
+wheel up
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 5/8  wrap           h help
+-- cursor --
+hidden
+-- mouse --
+Shift+click 0 0
+-- screen --
+[line 1 ]
+[line 2 ]
+[line 3 ]
+<stdin>  line 1/8  wrap           h help
+-- cursor --
+0 0
+-- keys --
+y
+-- clipboard --
+line 1
+line 2
+line 3
+line 4
+li
