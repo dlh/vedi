@@ -1,0 +1,70 @@
+Only a motion brings a view scrolled off the cursor back to it, Enter
+with no selection among them, even on the last line where it has
+nowhere to go. Esc, w, an unbound key and a setting leave the view
+where it is.
+
+-- size --
+40x4
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+PgDn Esc x
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  wrap           h help
+-- cursor --
+hidden
+-- keys --
+w
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  nowrap         h help
+-- cursor --
+hidden
+-- keys --
+: "wrap yes" Enter
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  wrap           h help
+-- cursor --
+hidden
+-- keys --
+Up
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/8  wrap           h help
+-- cursor --
+0 0
+-- keys --
+G PgUp
+-- screen --
+line 3
+line 4
+line 5
+<stdin>  line 3/8  wrap           h help
+-- cursor --
+hidden
+-- keys --
+Enter
+-- screen --
+line 6
+line 7
+line 8
+<stdin>  line 8/8  wrap           h help
+-- cursor --
+2 0

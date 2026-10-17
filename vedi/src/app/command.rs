@@ -224,6 +224,8 @@ impl<T: Terminal> App<T> {
             ..Config::default()
         };
         config::parse_line(line, &mut c)?;
+        // Laid out anew, a view scrolled off the cursor stays there.
+        let shown = self.cursor_on_screen();
         self.settings = c.settings;
         match verb {
             // The horizontal scroll starts over.
@@ -237,7 +239,9 @@ impl<T: Terminal> App<T> {
             "map" => self.keys = self.keys.apply(&c.keys),
             _ => {}
         }
-        self.scroll_to_cursor();
+        if shown {
+            self.scroll_to_cursor();
+        }
         Ok(())
     }
 

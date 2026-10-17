@@ -30,6 +30,8 @@ pub(super) struct TextView {
     pub(super) anchor: Option<Pos>,
     /// A reload moved the cursor.
     pub(super) moved: bool,
+    /// The last frame showed the cursor.
+    shown: bool,
     xoff: usize,
     wrap_mode: Mode,
     matcher: Matcher,
@@ -49,6 +51,7 @@ impl<T: Terminal> App<T> {
             top: self.top,
             anchor: self.anchor.take(),
             moved: false,
+            shown: self.cursor_shown,
             xoff: self.xoff,
             wrap_mode: self.settings.mode,
             matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
@@ -82,8 +85,8 @@ impl<T: Terminal> App<T> {
     }
 
     /// Puts the text back as it was, scrolled to the cursor when a
-    /// reload meanwhile moved it or the screen was resized; one
-    /// scrolled off stays off.
+    /// reload meanwhile moved it or it was on screen, as a resize
+    /// meanwhile may have pushed it off; one scrolled off stays off.
     pub(super) fn hide_help(&mut self) {
         let Some(t) = self.text.take() else {
             return;
@@ -99,7 +102,7 @@ impl<T: Terminal> App<T> {
         self.search.highlight = t.highlight;
         self.focus = Focus::Viewing;
         self.laid.clear();
-        if t.moved || self.cursor_on_screen() {
+        if t.moved || t.shown {
             self.scroll_to_cursor();
         }
     }

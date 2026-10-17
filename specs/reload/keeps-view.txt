@@ -1,0 +1,25 @@
+A reload leaves the view where it is: new text is not a motion. Even
+a line above the cursor growing over more rows pushes the cursor off
+screen rather than move the view.
+
+-- size --
+10x4
+-- args --
+f.txt
+-- input --
+one
+two
+three
+-- keys --
+Down
+-- reload --
+abcdefghijklmnopqrstuvwx
+two
+three
+-- screen --
+abcdefghij
+klmnopqrst
+uvwx
+f.txt  lin
+-- cursor --
+hidden

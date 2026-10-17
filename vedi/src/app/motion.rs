@@ -469,7 +469,35 @@ impl<T: Terminal> App<T> {
         for _ in 0..rows - 1 {
             bottom = self.next_row(bottom);
         }
-        crow <= bottom
+        if bottom < crow {
+            return false;
+        }
+        let l = self.layout();
+        if self.settings.mode != Mode::NoWrap || l.width == 0 {
+            return true;
+        }
+        // The markers take a cell only where there is text beyond them.
+        let (x, w, width) = self.cursor_span();
+        let mark = usize::from(self.settings.edge_markers);
+        let left = if self.xoff > 0 { mark } else { 0 };
+        let right = if width > self.xoff + l.width { mark } else { 0 };
+        x >= self.xoff + left && x + w <= self.xoff + l.width - right
+    }
+
+    /// The cursor's glyph as cells of its line: its x, its width and
+    /// the line's, for a nowrap view. The glyph is the whole of a
+    /// cluster, not its first cell.
+    fn cursor_span(&mut self) -> (usize, usize, usize) {
+        let ln = self.line_layout(self.cur.line);
+        let xs = ln.cells();
+        let (g, _) = ln.glyph(self.cur.col);
+        let (_, x) = ln.pos(g);
+        let w = if g + 1 < xs.len() {
+            (xs[g + 1] - xs[g]).max(1)
+        } else {
+            1
+        };
+        (x, w, xs[xs.len() - 1])
     }
 
     /// Moves `top` and `xoff` the least that brings the cursor on
@@ -512,18 +540,9 @@ impl<T: Terminal> App<T> {
             self.xoff = 0;
             return;
         }
-        // The cursor's whole glyph must fit, not just its first cell,
-        // and clear of the < and > that mark text off either side.
-        let ln = self.line_layout(self.cur.line);
-        let xs = ln.cells();
-        let (g, _) = ln.glyph(self.cur.col);
-        let (_, x) = ln.pos(g);
-        let w = if g + 1 < xs.len() {
-            (xs[g + 1] - xs[g]).max(1)
-        } else {
-            1
-        };
-        let width = xs[xs.len() - 1];
+        // The cursor's whole glyph must fit, clear of the < and > that
+        // mark text off either side.
+        let (x, w, width) = self.cursor_span();
         let mark = usize::from(self.settings.edge_markers);
         let right = |xoff: usize| if width > xoff + l.width { mark } else { 0 };
         if x < self.xoff + mark {

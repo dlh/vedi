@@ -1,0 +1,21 @@
+Turning wrap on lays the cursor's line over more rows; a cursor on
+screen is scrolled back into view when that pushes its row off.
+
+-- size --
+10x3
+-- args --
+-S
+-- input --
+abcdefghijklmnopqrstuvwx
+-- keys --
+End
+-- cursor --
+0 9
+-- keys --
+w
+-- screen --
+klmnopqrst
+uvwx
+<stdin>  l
+-- cursor --
+1 4

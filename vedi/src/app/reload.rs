@@ -99,9 +99,10 @@ impl<T: Terminal> App<T> {
     }
 
     /// Keeps the view's place after the lines changed under it, as
-    /// `reload_view` does, then drops the layouts and scrolls to the
-    /// cursor.
+    /// `reload_view` does, then drops the layouts. The view scrolls
+    /// only to a cursor the reload moved: new text is not a motion.
     fn text_changed(&mut self, place: Place) {
+        let was = self.cur;
         reload_view(
             &self.buf,
             &mut self.scratch,
@@ -111,7 +112,9 @@ impl<T: Terminal> App<T> {
             place,
         );
         self.laid.clear();
-        self.scroll_to_cursor();
+        if self.cur != was {
+            self.scroll_to_cursor();
+        }
     }
 }
 

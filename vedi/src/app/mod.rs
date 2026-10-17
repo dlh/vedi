@@ -65,6 +65,8 @@ pub struct App<T: Terminal> {
     screen: Screen<T>,
     /// The last frame drawn, whose cells the next one reuses.
     frame: Grid,
+    /// It showed the cursor.
+    cursor_shown: bool,
     buf: Buffer,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
@@ -128,6 +130,7 @@ impl<T: Terminal> App<T> {
         let mut a = App {
             screen: Screen::new(term),
             frame: Grid::new(0, 0),
+            cursor_shown: false,
             buf: buffer,
             generation,
             last_gen: generation,
@@ -300,8 +303,10 @@ impl<T: Terminal> App<T> {
                 }
             }
             Event::Resize(..) => {
-                // Sized as it was: a cursor off screen stays off.
-                let shown = self.cursor_on_screen();
+                // The terminal already has its new size, so the last
+                // frame says whether the cursor was on screen; one off
+                // stays off.
+                let shown = self.cursor_shown;
                 self.screen.sync();
                 if self.text.is_some() {
                     self.scroll_help(0);
@@ -351,13 +356,13 @@ impl<T: Terminal> App<T> {
 
     fn view_key(&mut self, cmd: Option<Command>) -> Flow {
         let Some(c) = cmd else {
-            self.scroll_to_cursor();
             return Flow::Continue;
         };
         if let Some(n) = self.page_scroll(&c) {
             self.scroll_view(n);
             return Flow::Continue;
         }
+        let was = self.cur;
         if c.action.is_movement() {
             if c.extend {
                 self.extend();
@@ -408,6 +413,8 @@ impl<T: Terminal> App<T> {
                 }
                 self.drop();
                 self.move_rows(1);
+                // A motion, even at the end.
+                self.scroll_to_cursor();
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
             Action::SearchNext => self.find(self.search.backward, true),
@@ -426,7 +433,10 @@ impl<T: Terminal> App<T> {
         } else if extending && left < 0 {
             self.cur = Pos::default();
         }
-        self.scroll_to_cursor();
+        // Only a motion brings a view scrolled off the cursor back.
+        if c.action.is_movement() || self.cur != was {
+            self.scroll_to_cursor();
+        }
         Flow::Continue
     }
 

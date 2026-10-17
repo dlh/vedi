@@ -34,8 +34,10 @@ impl<T: Terminal> App<T> {
         }
         let at = self.status_at();
         self.draw_status(&mut g, at);
-        self.screen.present(&g, cur.filter(|&(x, _)| x < w));
+        let cur = cur.filter(|&(x, _)| x < w);
+        self.screen.present(&g, cur);
         self.frame = g;
+        self.cursor_shown = cur.is_some();
         if self.pending {
             self.last_draw = Some((self.clock)());
         }

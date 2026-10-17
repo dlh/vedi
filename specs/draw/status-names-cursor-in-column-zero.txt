@@ -1,0 +1,22 @@
+With edge markers in nowrap mode, a cursor in column zero of an
+unscrolled view is on screen, where no marker is drawn: the status
+line names its line.
+
+-- size --
+40x4
+-- args --
+-S
+-- config --
+edge_markers yes
+-- input --
+line 1
+line 2
+-- keys --
+Down
+-- screen --
+line 1
+line 2
+
+<stdin>  line 2/2  nowrap         h help
+-- cursor --
+1 0

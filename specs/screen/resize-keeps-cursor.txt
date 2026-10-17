@@ -1,0 +1,49 @@
+A resize keeps a cursor the screen showed on it, scrolling the least:
+narrower, its line wraps over more rows; shorter, there are fewer.
+A view scrolled off the cursor keeps its top row, the cursor off.
+
+-- size --
+10x4
+-- input --
+abcdefghijklmnopqrstuvwx
+two
+three
+four
+-- keys --
+End
+-- cursor --
+2 4
+-- resize --
+5x4
+-- screen --
+klmno
+pqrst
+uvwx
+<stdi
+-- cursor --
+2 4
+-- resize --
+5x3
+-- screen --
+pqrst
+uvwx
+<stdi
+-- cursor --
+1 4
+-- keys --
+PgDn
+-- screen --
+two
+three
+<stdi
+-- cursor --
+hidden
+-- resize --
+5x4
+-- screen --
+two
+three
+four
+<stdi
+-- cursor --
+hidden

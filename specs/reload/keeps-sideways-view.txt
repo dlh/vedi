@@ -1,0 +1,30 @@
+A reload leaves a view scrolled sideways off the cursor where it is.
+
+-- size --
+10x3
+-- args --
+-S f.txt
+-- input --
+abcdefghijklmnopqrstuvwx
+xy
+-- keys --
+End
+-- cursor --
+0 9
+-- mouse --
+wheel left 4
+-- screen --
+abcdefghij
+xy
+f.txt  lin
+-- cursor --
+hidden
+-- reload --
+abcdefghijklmnopqrstuvwx
+xyz
+-- screen --
+abcdefghij
+xyz
+f.txt  lin
+-- cursor --
+hidden
