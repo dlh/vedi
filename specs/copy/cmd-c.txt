@@ -100,7 +100,7 @@ h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
-  ⌘Left  ⌘Right
+  0  $  ⌘Left  ⌘Right
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.

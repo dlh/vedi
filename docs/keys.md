@@ -10,7 +10,7 @@ and the search keys search them. These are the defaults.
 | w | Toggle wrap / nowrap |
 | R | Reload the file |
 | O | Toggle reading through open_cmd |
-| Up, Down, Left, Right, Home, End, j, k, Cmd+Left, Cmd+Right | Move the cursor |
+| Up, Down, Left, Right, Home, End, j, k, 0, $, Cmd+Left, Cmd+Right | Move the cursor |
 | PgDn, Space, f, Ctrl+f, Ctrl+v | Down a page |
 | PgUp, b, Ctrl+b, Alt+v | Up a page |
 | d, Ctrl+d | Down half a page |

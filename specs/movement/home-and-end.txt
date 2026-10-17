@@ -1,0 +1,29 @@
+Home and End go to the start and end of the line, as do 0 and $.
+
+-- size --
+40x5
+-- input --
+abc
+def
+-- keys --
+End
+-- cursor --
+0 3
+-- keys --
+Home
+-- cursor --
+0 0
+-- keys --
+Down $
+-- cursor --
+1 3
+-- keys --
+0
+-- screen --
+abc
+def
+
+
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 0

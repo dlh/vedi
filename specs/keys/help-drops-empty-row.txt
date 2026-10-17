@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x65
+80x66
 -- input --
 abc
 -- keys --
@@ -23,6 +23,7 @@ h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
+  0  $
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.

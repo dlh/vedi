@@ -26,7 +26,7 @@ Alt+h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
-  h
+  0  $  h
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.

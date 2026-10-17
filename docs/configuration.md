@@ -164,6 +164,8 @@ map Home home
 map End end
 map j down
 map k up
+map 0 home
+map $ end
 map Cmd+Left home
 map Cmd+Right end
 
@@ -299,9 +301,6 @@ map h help
 map h left
 map Alt+h help
 map l right
-# 0 and $ go to the line's ends
-map 0 home
-map $ end
 # w and b move by word; wrap moves to Alt+w, and Ctrl+b still pages up
 map w word_right
 map Alt+w cycle wrap

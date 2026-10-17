@@ -920,7 +920,9 @@ open_cmd less %s
         assert_eq!(moving.name, "Moving");
         let want = [
             (
-                &["Up", "Down", "Left", "Right", "Home", "End", "j", "k"][..],
+                &[
+                    "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$",
+                ][..],
                 "Move the cursor",
             ),
             (&["PgDn", "Space", "f", "Ctrl+f", "Ctrl+v"], "Down a page"),
@@ -967,6 +969,8 @@ open_cmd less %s
                 "End",
                 "j",
                 "k",
+                "0",
+                "$",
                 "Cmd+Left",
                 "Cmd+Right"
             ]
@@ -983,7 +987,9 @@ open_cmd less %s
         let secs = m.help();
         assert_eq!(
             secs[1].rows[0].keys,
-            ["Up", "Down", "Left", "Right", "Home", "End", "j", "k", "h"]
+            [
+                "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "h"
+            ]
         );
         assert!(
             rows(&secs).iter().all(|r| r.doc != "Toggle wrap / nowrap"),
