@@ -32,7 +32,8 @@ impl<T: Terminal> App<T> {
         if self.text.is_some() {
             cur = None;
         }
-        self.draw_status(&mut g);
+        let at = self.status_at();
+        self.draw_status(&mut g, at);
         self.screen.present(&g, cur.filter(|&(x, _)| x < w));
         self.frame = g;
         if self.pending {

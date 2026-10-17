@@ -23,7 +23,7 @@ PgDn
 line 4
 line 5
 line 6
-<stdin>  line 1/10  wrap          h help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden
 -- keys --
@@ -41,7 +41,7 @@ b
 line 5
 line 6
 line 7
-<stdin>  line 10/10  wrap         h help
+<stdin>  line 5/10  wrap          h help
 -- cursor --
 hidden
 -- keys --
@@ -59,7 +59,7 @@ Space
 line 4
 line 5
 line 6
-<stdin>  line 1/10  wrap          h help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden
 -- keys --
@@ -77,7 +77,7 @@ f
 line 4
 line 5
 line 6
-<stdin>  line 1/10  wrap          h help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden
 -- keys --
@@ -104,7 +104,7 @@ Ctrl+F
 line 4
 line 5
 line 6
-<stdin>  line 1/10  wrap          h help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden
 -- keys --
@@ -122,6 +122,6 @@ Ctrl+V
 line 4
 line 5
 line 6
-<stdin>  line 1/10  wrap          h help
+<stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden

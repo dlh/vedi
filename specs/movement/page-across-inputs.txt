@@ -28,7 +28,7 @@ PgDn
 c1
 ── d.txt ───────────────────
 d1
-a.txt 1/5  line 1/1  wrap
+c.txt 3/5  line 1/1  wrap
 -- cursor --
 hidden
 -- keys --
@@ -38,7 +38,7 @@ PgDn
 e1
 
 
-a.txt 1/5  line 1/1  wrap
+e.txt 5/5  line 1/1  wrap
 -- cursor --
 hidden
 -- keys --
@@ -48,6 +48,6 @@ PgUp
 c1
 ── d.txt ───────────────────
 d1
-a.txt 1/5  line 1/1  wrap
+c.txt 3/5  line 1/1  wrap
 -- cursor --
 hidden

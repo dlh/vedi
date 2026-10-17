@@ -63,7 +63,7 @@ a1
 a2
 ── <stdin> ─────────────────
 s1
-b.txt 3/3  line 2/2  wrap
+a.txt 1/3  line 1/2  wrap
 -- cursor --
 hidden
 -- mouse --

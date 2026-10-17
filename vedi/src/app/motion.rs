@@ -432,6 +432,27 @@ impl<T: Terminal> App<T> {
         p
     }
 
+    /// Puts the cursor at the start of the text row `n` rows below the
+    /// top of the screen. A row naming an input gives way to the text
+    /// row after it, or before it on the bottom row.
+    pub(super) fn screen_row(&mut self, n: usize) {
+        let rows = self.text_rows();
+        if rows == 0 || self.buf.is_empty() {
+            return;
+        }
+        let mut p = self.snap(self.top);
+        for _ in 0..n {
+            p = self.next_row(p);
+        }
+        if p.col.is_none() && n + 1 >= rows {
+            p = self.prev_row(p);
+        }
+        if p.col.is_none() {
+            p = self.next_row(p);
+        }
+        self.cur = p.pos();
+    }
+
     /// Whether the cursor's row is among the text rows on screen; with
     /// no rows or no text, nothing is scrolled away from.
     pub(super) fn cursor_on_screen(&mut self) -> bool {

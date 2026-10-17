@@ -34,7 +34,7 @@ line 8
 
 
 
-<stdin>  line 6/8  wrap           h help
+<stdin>  line 8/8  wrap           h help
 -- cursor --
 hidden
 -- mouse --
@@ -56,6 +56,6 @@ line 2
 line 3
 line 4
 [line 5 ]
-<stdin>  line 6/8  wrap           h help
+<stdin>  line 1/8  wrap           h help
 -- cursor --
 hidden

@@ -117,6 +117,10 @@ const SECTIONS: &[HelpSection] = {
                 bound(&[Act(WordLeft), Act(WordRight)], "Move by word"),
                 bound(&[Act(First), Act(Last)], "First line, last line"),
                 bound(
+                    &[Act(ScreenTop), Act(ScreenMiddle), Act(ScreenBottom)],
+                    "Top, middle, bottom row of the screen",
+                ),
+                bound(
                     &[Act(PrevFile), Act(NextFile)],
                     "Previous, next input or title",
                 ),
@@ -145,6 +149,10 @@ const SECTIONS: &[HelpSection] = {
                 bound(
                     &[Sel(HalfPageDown), Sel(HalfPageUp)],
                     "Extend by half a page",
+                ),
+                bound(
+                    &[Sel(ScreenTop), Sel(ScreenMiddle), Sel(ScreenBottom)],
+                    "Extend to the top, middle, bottom row",
                 ),
                 bound(&[Sel(WordLeft), Sel(WordRight)], "Extend by word"),
                 bound(

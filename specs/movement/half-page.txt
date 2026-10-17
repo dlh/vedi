@@ -23,7 +23,7 @@ line 6
 line 7
 line 8
 
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 5/8  wrap           h help
 -- cursor --
 hidden
 -- keys --
@@ -34,7 +34,7 @@ line 8
 
 
 
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 7/8  wrap           h help
 -- cursor --
 hidden
 -- keys --
@@ -45,7 +45,7 @@ line 6
 line 7
 line 8
 
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 5/8  wrap           h help
 -- keys --
 Ctrl+U
 -- screen --
@@ -54,7 +54,7 @@ line 4
 line 5
 line 6
 line 7
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 3/8  wrap           h help
 -- cursor --
 hidden
 -- resize --
@@ -63,4 +63,4 @@ hidden
 d
 -- screen --
 line 4
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 4/8  wrap           h help

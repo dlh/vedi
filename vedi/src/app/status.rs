@@ -61,14 +61,14 @@ impl<T: Terminal> App<T> {
     /// unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
     /// filled in out of reverse video.
-    pub(super) fn draw_status(&self, g: &mut Grid) {
+    pub(super) fn draw_status(&self, g: &mut Grid, at: usize) {
         let (w, h) = (g.width(), g.height());
         if h < 2 || !self.status_shown() {
             return;
         }
         let st = Style::default().reverse();
         g.fill_row(h - 1, st);
-        let text: Vec<char> = self.status_text(w).chars().collect();
+        let text: Vec<char> = self.status_text(w, at).chars().collect();
         let mut width = runes(g, 0, h - 1, &text, st);
         if self.focus == Focus::Commanding
             && let Some((ms, at)) = self.command.listing()
@@ -93,7 +93,18 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    fn status_text(&self, width: usize) -> String {
+    /// The line the status line names: the cursor's, or the top row's
+    /// while the cursor is scrolled off screen, so it says where the
+    /// view is.
+    pub(super) fn status_at(&mut self) -> usize {
+        if self.cursor_on_screen() {
+            self.cur.line
+        } else {
+            self.snap(self.top).line
+        }
+    }
+
+    fn status_text(&self, width: usize, at: usize) -> String {
         match self.focus {
             Focus::Searching { back: true } => return format!("?{}", self.search.query.text()),
             Focus::Searching { back: false } => return format!("/{}", self.search.query.text()),
@@ -127,33 +138,33 @@ impl<T: Terminal> App<T> {
         if self.next.is_some() {
             reading.push_str("  reloading…");
         }
-        let (k, lines) = self.buf.part(self.cur.line);
+        let (k, lines) = self.buf.part(at);
         let mut rest = String::new();
         if self.names.len() > 1 {
             rest = format!(" {}/{}", k + 1, self.names.len());
         }
         rest.push_str(&format!(
             "  line {}/{}  {mode}{reading}",
-            self.cur.line - lines.start + 1,
+            at - lines.start + 1,
             lines.len()
         ));
         let name = fit(
-            &self.input_name(),
+            &self.input_name(at),
             width.saturating_sub(rest.chars().count()),
         );
         format!("{name}{rest}")
     }
 
-    /// What the status line calls the input the cursor's line came
-    /// from: its name, or for stdin the window title in effect at that
+    /// What the status line calls the input line `at` came from: its
+    /// name, or for stdin the window title in effect at that
     /// line, as a shell prompt sets to the directory.
-    fn input_name(&self) -> String {
+    fn input_name(&self, at: usize) -> String {
         let name = self
             .names
-            .get(self.buf.part_at(self.cur.line))
+            .get(self.buf.part_at(at))
             .map_or(STDIN, String::as_str);
         if name == STDIN
-            && let Some(title) = self.buf.line(self.cur.line).title.clone()
+            && let Some(title) = self.buf.line(at).title.clone()
             && !title.is_empty()
         {
             return title.to_string();

@@ -1,0 +1,84 @@
+T, M and B put the cursor at the start of the top, middle and bottom
+row of the screen, and so bring back one scrolled off. A row naming
+an input is not a line: on one they take the text row after it, or
+before it on the bottom row.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+a4
+-- next-file --
+-- input --
+b1
+b2
+-- keys --
+B
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+a3
+a.txt 1/2  line 3/4  wrap
+-- cursor --
+3 0
+-- keys --
+T
+-- cursor --
+1 0
+-- keys --
+M
+-- cursor --
+2 0
+-- keys --
+Down Down Down
+-- screen --
+a3
+a4
+── b.txt ───────────────────
+b1
+b.txt 2/2  line 1/2  wrap
+-- cursor --
+3 0
+-- keys --
+M
+-- cursor --
+3 0
+-- keys --
+T
+-- screen --
+a3
+a4
+── b.txt ───────────────────
+b1
+a.txt 1/2  line 3/4  wrap
+-- cursor --
+0 0
+-- keys --
+Up B
+-- screen --
+a2
+a3
+a4
+── b.txt ───────────────────
+a.txt 1/2  line 4/4  wrap
+-- cursor --
+2 0
+-- keys --
+PgDn
+-- screen --
+b1
+b2
+
+
+b.txt 2/2  line 1/2  wrap
+-- cursor --
+hidden
+-- keys --
+T
+-- cursor --
+0 0

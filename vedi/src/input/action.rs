@@ -20,6 +20,9 @@ pub enum Action {
     WordRight,
     First,
     Last,
+    ScreenTop,
+    ScreenMiddle,
+    ScreenBottom,
     PrevFile,
     NextFile,
     SelectAll,
@@ -39,7 +42,7 @@ pub enum Action {
 }
 
 /// In declaration order: `name` indexes it.
-const NAMES: [(Action, &str); 30] = [
+const NAMES: [(Action, &str); 33] = [
     (Action::Up, "up"),
     (Action::Down, "down"),
     (Action::Left, "left"),
@@ -54,6 +57,9 @@ const NAMES: [(Action, &str); 30] = [
     (Action::WordRight, "word_right"),
     (Action::First, "first"),
     (Action::Last, "last"),
+    (Action::ScreenTop, "screen_top"),
+    (Action::ScreenMiddle, "screen_middle"),
+    (Action::ScreenBottom, "screen_bottom"),
     (Action::PrevFile, "prev_file"),
     (Action::NextFile, "next_file"),
     (Action::SelectAll, "select_all"),
@@ -76,10 +82,10 @@ const NAMES: [(Action, &str); 30] = [
 const NONE: &str = "none";
 
 impl Action {
-    pub const ALL: [Action; 30] = {
-        let mut all = [Action::Up; 30];
+    pub const ALL: [Action; NAMES.len()] = {
+        let mut all = [Action::Up; NAMES.len()];
         let mut i = 0;
-        while i < 30 {
+        while i < NAMES.len() {
             all[i] = NAMES[i].0;
             i += 1;
         }

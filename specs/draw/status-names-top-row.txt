@@ -1,0 +1,42 @@
+The status line names the cursor's line and its input; while the
+cursor is scrolled off screen, the top row's, so it says where the
+view is.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+-- screen --
+── a.txt ───────────────────
+a1
+a2
+a3
+a.txt 1/2  line 1/3  wrap
+-- keys --
+PgDn
+-- screen --
+── b.txt ───────────────────
+b1
+b2
+
+b.txt 2/2  line 1/2  wrap
+-- cursor --
+hidden
+-- mouse --
+wheel up
+-- screen --
+a1
+a2
+a3
+── b.txt ───────────────────
+a.txt 1/2  line 1/3  wrap
+-- cursor --
+0 0

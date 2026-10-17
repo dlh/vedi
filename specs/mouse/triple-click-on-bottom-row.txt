@@ -1,7 +1,8 @@
 A triple-click on the bottom text row selects the line there without
 moving the view: the cursor, after the line's newline, is off the
-screen, and a fourth click there selects the same line again. The
-next key scrolls the cursor into view.
+screen, so the status line names the top row, and a fourth click
+there selects the same line again. The next key scrolls the cursor
+into view.
 
 -- size --
 40x5
@@ -19,7 +20,7 @@ one
 two
 three
 [four ]
-<stdin>  line 5/6  wrap           h help
+<stdin>  line 1/6  wrap           h help
 -- cursor --
 hidden
 -- mouse --
@@ -29,7 +30,7 @@ one
 two
 three
 [four ]
-<stdin>  line 5/6  wrap           h help
+<stdin>  line 1/6  wrap           h help
 -- cursor --
 hidden
 -- keys --

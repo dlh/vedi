@@ -21,7 +21,7 @@ PgDn
 line 4
 line 5
 line 6
-<stdin>  line 1/8  wrap           h help
+<stdin>  line 4/8  wrap           h help
 -- cursor --
 hidden
 -- mouse --
@@ -49,7 +49,7 @@ wheel up
 line 1
 line 2
 line 3
-<stdin>  line 5/8  wrap           h help
+<stdin>  line 1/8  wrap           h help
 -- cursor --
 hidden
 -- mouse --

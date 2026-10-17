@@ -1,0 +1,43 @@
+select_screen_top, select_screen_middle and select_screen_bottom,
+unbound by default, extend the selection to that row of the screen:
+here from a cursor a page left behind to the bottom of the screen.
+
+-- size --
+40x4
+-- config --
+map Ctrl+t select_screen_top
+map Ctrl+b select_screen_bottom
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+-- keys --
+Right PgDn Ctrl+b
+-- screen --
+[line 4 ]
+[line 5 ]
+line 6
+<stdin>  line 6/8  wrap           h help
+-- cursor --
+2 0
+-- keys --
+Ctrl+t
+-- screen --
+line 4
+line 5
+line 6
+<stdin>  line 4/8  wrap           h help
+-- cursor --
+0 0
+-- keys --
+y
+-- clipboard --
+ine 1
+line 2
+line 3
+

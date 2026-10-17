@@ -17,6 +17,7 @@ and the search keys search them. These are the defaults.
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | g, G, <, >, Cmd+Up, Cmd+Down | First line, last line |
+| T, M, B | Top, middle, bottom row of the screen |
 | [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
@@ -44,8 +45,9 @@ Option+ keys unless told to send Alt, and kitty keeps Shift+click;
 
 The page keys and the wheel scroll the view and leave the cursor where it is,
 hidden off screen, so Shift with a click or an arrow selects from it across
-screens. The next motion brings the view back to it. The status line names the
-cursor's line.
+screens. The next motion brings the view back to it, and T, M or B puts it on
+the screen instead. The status line names the cursor's line, or the top row's
+while the cursor is off screen.
 
 The selection is drawn in reverse video and search matches in black on bright
 yellow, the match the cursor is in in bright white on magenta, whatever the

@@ -204,6 +204,11 @@ map > last
 map Cmd+Up first
 map Cmd+Down last
 
+# Top, middle, bottom row of the screen
+map T screen_top
+map M screen_middle
+map B screen_bottom
+
 # Previous, next input or title
 map [ prev_file
 map ] next_file
@@ -228,6 +233,9 @@ map Shift+PgDn select_page_down
 
 # Extend by half a page: select_half_page_up, select_half_page_down;
 # unbound by default
+
+# Extend to the top, middle, bottom row of the screen: select_screen_top,
+# select_screen_middle, select_screen_bottom; unbound by default
 
 # Start a selection that motions extend; again, end it: set_mark, as
 # v in vim or Ctrl+Space in emacs; unbound by default

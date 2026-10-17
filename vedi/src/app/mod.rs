@@ -387,6 +387,9 @@ impl<T: Terminal> App<T> {
                     col: 0,
                 }
             }
+            Action::ScreenTop => self.screen_row(0),
+            Action::ScreenMiddle => self.screen_row(self.text_rows() / 2),
+            Action::ScreenBottom => self.screen_row(self.text_rows().saturating_sub(1)),
             Action::PrevFile => self.prev_input(),
             Action::NextFile => self.next_input(),
             Action::SelectAll => self.select_all(),
