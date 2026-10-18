@@ -2,7 +2,7 @@ Tab completes the last word at the : prompt: the command, then yes or
 no, char or word, and an action name after map's key. One candidate
 completes the word and a space, so the next word types straight on;
 several, what they share, listed after the prompt as far as the screen
-goes; none, nothing.
+goes, starting late enough to show the one filled in; none, nothing.
 
 -- input --
 line 1
@@ -69,3 +69,21 @@ line 1
 
 
 :zzgoto 1
+-- keys --
+Esc : "map x " Tab Tab
+-- screen --
+line 1
+
+
+
+
+:map x command   [command]  copy  copy_and
+-- keys --
+Tab
+-- screen --
+line 1
+
+
+
+
+:map x copy   command  [copy]  copy_and_qu

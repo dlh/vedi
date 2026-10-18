@@ -60,7 +60,7 @@ impl<T: Terminal> App<T> {
     /// naming whatever key shows help, at the right edge unless help is
     /// unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
-    /// filled in out of reverse video.
+    /// filled in out of reverse video and on screen.
     pub(super) fn draw_status(&self, g: &mut Grid, at: usize) {
         let (w, h) = (g.width(), g.height());
         if h < 2 || !self.status_shown() {
@@ -73,11 +73,22 @@ impl<T: Terminal> App<T> {
         if self.focus == Focus::Commanding
             && let Some((ms, at)) = self.command.listing()
         {
-            for (i, m) in ms.iter().enumerate() {
+            let ms: Vec<Vec<char>> = ms.iter().map(|m| m.chars().collect()).collect();
+            let cells = |m: &[char]| 2 + Layout::default().cells(m)[m.len()];
+            // The list starts late enough for the filled match to end on
+            // screen.
+            let mut first = 0;
+            if let Some(at) = at {
+                let mut end = width + ms[..=at].iter().map(|m| cells(m)).sum::<usize>();
+                while first < at && end > w {
+                    end -= cells(&ms[first]);
+                    first += 1;
+                }
+            }
+            for (i, m) in ms.iter().enumerate().skip(first) {
                 width += 2;
                 let ms = if at == Some(i) { Style::default() } else { st };
-                let m: Vec<char> = m.chars().collect();
-                width += runes(g, width, h - 1, &m, ms);
+                width += runes(g, width, h - 1, m, ms);
             }
         }
         let help = Command {
