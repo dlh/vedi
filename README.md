@@ -76,6 +76,8 @@ however it is started.
 - [Comparison](docs/comparison.md): how vedi differs from less, moor, ov, tmux,
   vim and neovim, with benchmarks
 - [Development](docs/development.md): checks, commits and releases
+- [Decisions](docs/decisions.md): why vedi is the way it is, and what it chose
+  not to be
 
 ## License
 
