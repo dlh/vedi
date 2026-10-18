@@ -318,10 +318,13 @@ impl<T: Terminal> App<T> {
             Event::Key(k) => {
                 self.act();
                 return match self.focus {
-                    Focus::Viewing => {
-                        let cmd = self.keys.lookup(k);
-                        self.view_key(cmd)
-                    }
+                    Focus::Viewing => match self.keys.lookup(k) {
+                        Some(c) => self.view_key(c),
+                        None => {
+                            self.status = Some(format!("not bound: {k}"));
+                            Flow::Continue
+                        }
+                    },
                     Focus::Searching { back } => {
                         self.search_key(k, back);
                         Flow::Continue
@@ -354,10 +357,7 @@ impl<T: Terminal> App<T> {
         self.status = None;
     }
 
-    fn view_key(&mut self, cmd: Option<Command>) -> Flow {
-        let Some(c) = cmd else {
-            return Flow::Continue;
-        };
+    fn view_key(&mut self, c: Command) -> Flow {
         if let Some(n) = self.page_scroll(&c) {
             self.scroll_view(n);
             return Flow::Continue;

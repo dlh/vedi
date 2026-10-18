@@ -1,5 +1,5 @@
 clear_all_shortcuts with no map lines after it leaves no bindings at
-all, not the defaults: q and h do nothing.
+all, not the defaults: q and h only say so.
 
 -- config --
 clear_all_shortcuts
@@ -13,4 +13,4 @@ abc
 
 
 
-<stdin>  line 1/1  wrap
+not bound: h

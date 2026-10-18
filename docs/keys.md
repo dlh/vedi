@@ -57,7 +57,7 @@ marks text off the screen with a `<` or `>` in reverse video at that edge of the
 row, and wrap mode ends a row that continues below with a `\`.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file named by
-`--config`, and `clear_all_shortcuts` there starts the map from nothing. The
-`set_mark` action, unbound by default, starts a selection that every motion
-extends, as `v` does in vim. See [configuration.md](configuration.md), which
-ends with vim and emacs maps.
+`--config`, and `clear_all_shortcuts` there starts the map from nothing. A key
+with no binding says so on the status line. The `set_mark` action, unbound by
+default, starts a selection that every motion extends, as `v` does in vim. See
+[configuration.md](configuration.md), which ends with vim and emacs maps.

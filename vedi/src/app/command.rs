@@ -194,7 +194,7 @@ impl<T: Terminal> App<T> {
             }
             ["cycle" | "help" | "reload" | "quit", ..] => {
                 let c: Command = line.parse().map_err(|e| format!("{e}"))?;
-                return Ok(self.view_key(Some(c)));
+                return Ok(self.view_key(c));
             }
             [verb, ..] if is_command(verb) => self.set(verb, line)?,
             [verb, ..] => return Err(format!("unknown command {verb:?}")),

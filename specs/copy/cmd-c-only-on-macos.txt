@@ -1,5 +1,5 @@
-Off macOS there is no Cmd key, so Cmd+c is a plain c: unbound. Nothing is
-copied and the selection stays.
+Off macOS there is no Cmd key, so Cmd+c is unbound. Nothing is copied and
+the selection stays.
 
 -- os --
 linux
@@ -14,5 +14,5 @@ Shift+Right Cmd+c
 
 
 
-<stdin>  line 1/1  wrap           h help
+not bound: Cmd+c                  h help
 -- clipboard --

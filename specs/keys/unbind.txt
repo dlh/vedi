@@ -1,4 +1,4 @@
-The action none unbinds a key: q no longer quits.
+The action none unbinds a key: q no longer quits, and says so.
 
 -- config --
 map q none
@@ -12,4 +12,4 @@ abc
 
 
 
-<stdin>  line 1/1  wrap           h help
+not bound: q                      h help

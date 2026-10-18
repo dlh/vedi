@@ -1,0 +1,23 @@
+A key with no binding says so on the status line; the next key clears
+it.
+
+-- input --
+abc
+-- keys --
+z
+-- screen --
+abc
+
+
+
+
+not bound: z                      h help
+-- keys --
+Right
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap           h help

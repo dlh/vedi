@@ -15,7 +15,7 @@ abc
 
 
 
-<stdin>  line 1/1  wrap
+not bound: h
 -- keys --
 x
 -- quit --
