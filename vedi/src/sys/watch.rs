@@ -171,15 +171,22 @@ impl<F: FnMut()> Checker<F> {
     }
 
     /// Adds every file whose watch is gone, fresh: an inode renamed
-    /// away may still be watched under the name.
+    /// away may still be watched under the name. All in one batch, and
+    /// none when nothing is lost: FSEvents rebuilds its stream, slowly,
+    /// per call and per batch.
     fn rewatch(&mut self, fsw: &mut RecommendedWatcher) {
+        if !self.files.iter().any(|f| f.lost) {
+            return;
+        }
+        let mut paths = fsw.paths_mut();
         for f in self.files.iter_mut().filter(|f| f.lost) {
-            let _ = fsw.unwatch(&f.name);
-            if fsw.watch(&f.name, RecursiveMode::NonRecursive).is_ok() {
+            let _ = paths.remove(&f.name);
+            if paths.add(&f.name, RecursiveMode::NonRecursive).is_ok() {
                 f.lost = false;
                 f.real = fs::canonicalize(&f.name).ok();
             }
         }
+        let _ = paths.commit();
     }
 
     /// Checks on every tick and on every event for a file, until
@@ -290,8 +297,11 @@ mod tests {
         (w, rx)
     }
 
+    /// Long enough for the parallel tests: a process starts FSEvents
+    /// streams one at a time, a third of a second each, and every
+    /// watch test starts one.
     fn fired(rx: &Receiver<()>) -> bool {
-        rx.recv_timeout(Duration::from_secs(3)).is_ok()
+        rx.recv_timeout(Duration::from_secs(10)).is_ok()
     }
 
     /// Nothing fires for longer than the slowest check.
