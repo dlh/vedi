@@ -132,21 +132,31 @@ impl Matcher {
         }
         if literal {
             if !self.fold {
-                return contains(line, &p.raw);
+                // A C1 control (C2 80 to C2 9F) is dropped from literal
+                // text too; contains is memchr, so ASCII pays little.
+                return line.contains(&0xc2)
+                    && line
+                        .windows(2)
+                        .any(|w| w[0] == 0xc2 && (0x80..=0x9f).contains(&w[1]))
+                    || contains(line, &p.raw);
             }
             scratch.clear();
             scratch.extend_from_slice(line);
         } else {
             ansi::strip(line, scratch);
         }
+        let mut prev = 0;
         for c in scratch.iter_mut() {
             match *c {
                 0x80.. if p.loose => return true,
+                // C1: dropped in every view.
+                0x80..=0x9f if prev == 0xc2 => return true,
                 // Dropped from the text, so a match may span it.
                 0..0x20 | 0x7f if !literal && *c != b'\t' && *c != b'\r' => return true,
                 b'A'..=b'Z' if self.fold => c.make_ascii_lowercase(),
                 _ => {}
             }
+            prev = *c;
         }
         contains(scratch, &p.raw)
     }
@@ -483,6 +493,8 @@ mod tests {
             ("foo", "f\x01oo", true),
             ("foo", "f\x7foo", true),
             ("foo", "f\too", false),
+            ("foo", "f\u{9b}oo", true),
+            ("Foo", "F\u{9b}oo", true),
             // K and İ fold to k and i.
             ("kelvin", "\u{212A}elvin", true),
             ("istanbul", "\u{0130}stanbul", true),
@@ -501,6 +513,11 @@ mod tests {
                 want,
                 "{pat:?} on {line:?}"
             );
+        }
+        // Literal text drops C1 too, folding or not.
+        for pat in ["foo", "Foo"] {
+            let mut scratch = Vec::new();
+            assert!(Matcher::new(pat).may_match("F\u{9b}oo".as_bytes(), &mut scratch, true));
         }
     }
 

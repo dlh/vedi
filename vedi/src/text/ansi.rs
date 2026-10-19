@@ -127,7 +127,11 @@ impl Parser {
                 0..0x20 | 0x7f => i += 1,
                 _ => {
                     let (c, n) = decode(&line[i..]);
-                    text.push(c);
+                    // C0 is handled above; this drops C1, which some
+                    // terminals take for escapes.
+                    if !c.is_control() {
+                        text.push(c);
+                    }
                     i += n;
                 }
             }
@@ -177,7 +181,11 @@ pub fn literal(line: &[u8], dst: &mut Vec<char>) {
     let mut i = 0;
     while i < line.len() {
         let (c, n) = decode(&line[i..]);
-        dst.push(c);
+        // C0 is drawn as ^X; C1 has no spelling and some terminals take it
+        // for an escape.
+        if !('\u{80}'..='\u{9f}').contains(&c) {
+            dst.push(c);
+        }
         i += n;
     }
 }
@@ -240,8 +248,7 @@ impl Printer {
 
     /// Replaces `out` with the line, without its ending, filtered. A `\r`
     /// is spelled `^M`, as the pager draws it: raw, it would let later text
-    /// cover earlier. Unlike `Parser` it drops C1 controls, which some
-    /// terminals take for escapes.
+    /// cover earlier.
     pub fn line(&mut self, line: &[u8], out: &mut Vec<u8>) {
         out.clear();
         let mut i = 0;
@@ -252,7 +259,7 @@ impl Printer {
                         return;
                     };
                     match esc {
-                        Escape::Sgr(params) if is_sgr(params) => {
+                        Escape::Sgr(params) => {
                             if self.view == ViewStyle::Color {
                                 out.extend_from_slice(&line[i..i + n]);
                                 self.styled = !params.is_empty() && params != b"0";
@@ -311,7 +318,8 @@ impl Printer {
 }
 
 /// Whether a CSI ending in m is SGR: digits and their separators only. One
-/// with a private marker, ESC [ > 4 m, sets a terminal mode instead.
+/// with a private marker, ESC [ > 4 m, sets a terminal mode instead; one
+/// with other junk a terminal ignores whole.
 fn is_sgr(params: &[u8]) -> bool {
     params
         .iter()
@@ -332,7 +340,7 @@ fn escape(b: &[u8]) -> Option<(usize, Escape<'_>)> {
     match *b.get(1)? {
         b'[' => {
             let i = 2 + b[2..].iter().position(|c| (0x40..=0x7e).contains(c))?;
-            let kind = if b[i] == b'm' {
+            let kind = if b[i] == b'm' && is_sgr(&b[2..i]) {
                 Escape::Sgr(&b[2..i])
             } else {
                 Escape::Other
@@ -593,6 +601,11 @@ mod tests {
             ("esc single", b"a\x1b7b", "ab"),
             ("c0 dropped", b"a\x07b\x08c", "abc"),
             ("del dropped", b"a\x7fb", "ab"),
+            (
+                "c1 dropped",
+                "a\u{9b}2Jb x\u{9d}52;c;aGk=\u{9c}y".as_bytes(),
+                "a2Jb x52;c;aGk=y",
+            ),
             ("tab and cr kept", b"a\tb\rc", "a\tb\rc"),
             ("truncated csi", b"abc\x1b[3", "abc"),
             ("truncated esc", b"abc\x1b", "abc"),
@@ -631,6 +644,11 @@ mod tests {
                 "fg then reset",
                 b"\x1b[31mred\x1b[0m plain",
                 vec![run(0, 3, red), run(3, 9, d)],
+            ),
+            (
+                "modifier mode is not a reset",
+                b"\x1b[31mred\x1b[>4;2m x\x1b[?5m y",
+                vec![run(0, 7, red)],
             ),
             (
                 "bold underline",
@@ -1075,10 +1093,10 @@ mod tests {
     #[test]
     fn literal_keeps_escapes() {
         let mut dst = vec!['?'; 4];
-        literal(b"\x1b[1ma\x07\tb\xff\xc3\xa9", &mut dst);
+        literal(b"\x1b[1ma\x07\tb\xff\xc3\xa9\xc2\x9b2J", &mut dst);
         assert_eq!(
             dst.iter().collect::<String>(),
-            "\x1b[1ma\x07\tb\u{fffd}\u{e9}"
+            "\x1b[1ma\x07\tb\u{fffd}\u{e9}2J"
         );
     }
 

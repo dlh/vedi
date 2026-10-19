@@ -1,0 +1,25 @@
+A match spans a C1 control character, which is dropped from the
+text in every view style. The second line here holds U+009B inside
+the word foo.
+
+-- size --
+40x3
+-- input --
+start
+foo
+-- keys --
+/ "foo" Enter
+-- screen --
+start
+{{foo}}
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 0
+-- keys --
+: "view_style raw" Enter g / "foo" Enter
+-- screen --
+start
+{{foo}}
+<stdin>  line 2/2  wrap  raw      h help
+-- cursor --
+1 0
