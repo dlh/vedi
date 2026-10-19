@@ -3,13 +3,12 @@
 
 use std::mem;
 
-use crate::app::text_view::{Start, TextView};
-use crate::app::{App, Focus};
+use crate::app::App;
+use crate::app::text_view::{Geometry, Start, TextView};
 use crate::input::action::{Action, Command};
 use crate::input::help::Section;
 use crate::text::buffer::{Buffer, Progress, Storage};
 use crate::text::index::Indexer;
-use crate::text::search::Matcher;
 use crate::view::screen::Terminal;
 
 /// How wide the help is laid out, whatever the screen: less's help is
@@ -20,49 +19,28 @@ const HELP_COLS: usize = 80;
 /// How far Left and Right scroll the bindings sideways.
 const HELP_STEP: isize = 8;
 
-/// What help sets aside: the text and its view, and its search, which
-/// help's does not disturb.
-pub(super) struct Aside {
-    pub(super) view: TextView,
-    matcher: Matcher,
-    backward: bool,
-    highlight: bool,
-}
-
 impl<T: Terminal> App<T> {
-    /// Puts the bindings in the text's place, laid out as text in
-    /// `NoWrap` mode, so drawing and scrolling are the text's. The
-    /// search starts over: help's is its own.
+    /// Puts the bindings in the text's place, as a text view of their
+    /// own in `NoWrap` mode, so drawing, scrolling and searching are
+    /// the text's. The search starts over: help's is its own.
     pub(super) fn show_help(&mut self) {
-        self.focus = Focus::Helping;
         let help = TextView::new(
             help_buffer(&self.keys.help()),
             Start::default(),
-            self.geometry(),
+            Geometry::default(),
         );
-        self.text = Some(Aside {
-            view: mem::replace(&mut self.view, help),
-            matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
-            backward: self.search.backward,
-            highlight: self.search.highlight,
-        });
+        self.help = Some(mem::replace(&mut self.view, help));
         self.mouse.end_drag();
-        self.search.backward = false;
-        self.search.highlight = false;
+        self.sync_view();
     }
 
     /// Puts the text back as it was. Its view is laid out for the
     /// screen as it is now at the next draw: a cursor that was on screen
     /// stays on screen, one scrolled off stays off.
     pub(super) fn hide_help(&mut self) {
-        let Some(a) = self.text.take() else {
-            return;
-        };
-        self.view = a.view;
-        self.search.matcher = a.matcher;
-        self.search.backward = a.backward;
-        self.search.highlight = a.highlight;
-        self.focus = Focus::Viewing;
+        if let Some(text) = self.help.take() {
+            self.view = text;
+        }
     }
 
     /// Scrolls the bindings by a motion and searches them by the search
@@ -79,11 +57,13 @@ impl<T: Terminal> App<T> {
                 return;
             }
             Action::SearchNext => {
-                self.find(self.search.backward, true);
+                let found = self.view.find_next();
+                self.report(found);
                 return;
             }
             Action::SearchPrev => {
-                self.find(!self.search.backward, true);
+                let found = self.view.find_prev();
+                self.report(found);
                 return;
             }
             _ => {}

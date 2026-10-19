@@ -6,12 +6,15 @@
 
 mod motion;
 mod rows;
+mod search;
 
 use crate::app::StartScreen;
 use crate::text::buffer::{Buffer, Pos, Progress};
+use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
 use rows::LaidCache;
 pub use rows::Row;
+pub use search::Outcome;
 
 /// The screen the view is laid out for.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
@@ -78,6 +81,10 @@ pub struct TextView {
     xoff: usize,
     geom: Geometry,
     start: Start,
+    matcher: Matcher,
+    /// The last search was backward, and so n goes up and N down.
+    backward: bool,
+    highlight: bool,
     laid: LaidCache,
     /// A line's chars, decoded into it rather than allocated per call.
     scratch: Vec<char>,
@@ -97,6 +104,9 @@ impl TextView {
             xoff: 0,
             geom,
             start,
+            matcher: Matcher::new(""),
+            backward: false,
+            highlight: false,
             laid: LaidCache::new(geom.layout()),
             scratch: Vec::new(),
         }
@@ -348,7 +358,7 @@ impl TextView {
 
     /// Makes the cursor's row the top one if it is off the screen,
     /// stopping at the last screenful.
-    pub fn cursor_row_to_top(&mut self) {
+    fn cursor_row_to_top(&mut self) {
         let rows = self.geom.rows;
         if rows == 0 || self.buf.is_empty() {
             return;

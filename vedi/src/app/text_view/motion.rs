@@ -270,14 +270,14 @@ impl TextView {
         self.cur = self.end_pos();
     }
 
-    /// Clears the selection and the mark, and reports whether there
-    /// was a selection to clear.
-    pub fn clear_selection(&mut self) -> bool {
-        if self.anchor.is_none() {
-            return false;
+    /// Clears the selection and the mark; with no selection, the
+    /// search highlight.
+    pub fn clear_selection(&mut self) {
+        if self.anchor.is_some() {
+            self.deselect();
+        } else {
+            self.highlight = false;
         }
-        self.deselect();
-        true
     }
 
     /// Sets the mark, so motions extend the selection; again, ends it.

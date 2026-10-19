@@ -94,7 +94,7 @@ impl<T: Terminal> App<T> {
             self.mouse.dragging = false;
             return;
         }
-        let helping = self.text.is_some();
+        let helping = self.help.is_some();
         match m.kind {
             MouseKind::Wheel { rows, cols } => {
                 let (rows, cols) = wheel(rows, cols, m.shift);
@@ -134,7 +134,7 @@ impl<T: Terminal> App<T> {
         // line's row back to the text, and the click was on the message.
         let rows = self.view.rows();
         self.act();
-        if self.text.is_some() {
+        if self.help.is_some() {
             self.hide_help();
             return;
         }

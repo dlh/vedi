@@ -32,6 +32,7 @@ use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
 use crate::view::layout::Mode;
 use crate::view::screen::{Grid, Screen, Terminal};
+use prompt::Prompt;
 use text_view::{Geometry, Start, TextView};
 
 /// How often the reader's data is drawn, at most.
@@ -53,8 +54,6 @@ enum Focus {
     },
     /// The : prompt.
     Commanding,
-    /// The key bindings are shown instead of the text.
-    Helping,
 }
 
 pub struct App<T: Terminal> {
@@ -63,6 +62,8 @@ pub struct App<T: Terminal> {
     frame: Grid,
     /// The text and its view; the bindings' while help is up.
     view: TextView,
+    /// The text and its view, set aside while the bindings are shown.
+    help: Option<TextView>,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
     /// The last generation handed out: a dropped reload's is never
@@ -76,11 +77,10 @@ pub struct App<T: Terminal> {
     /// A one-shot message, cleared by the next key.
     status: Option<String>,
     focus: Focus,
-    search: search::State,
+    /// The / and ? prompts' line.
+    search: Prompt,
     /// The : prompt and its completion.
     command: command::State,
-    /// The text and its view, set aside while help is up.
-    text: Option<help::Aside>,
     mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
@@ -114,6 +114,7 @@ impl<T: Terminal> App<T> {
             screen: Screen::new(term),
             frame: Grid::new(0, 0),
             view: TextView::new(buffer, start, Geometry::default()),
+            help: None,
             generation,
             last_gen: generation,
             copier: opts.copier,
@@ -123,9 +124,8 @@ impl<T: Terminal> App<T> {
             settings: opts.settings,
             status: None,
             focus: Focus::Viewing,
-            search: search::State::new(),
+            search: Prompt::default(),
             command: command::State::default(),
-            text: None,
             mouse: mouse::State::default(),
             open: opts.open,
             open_cmd: opts.open_cmd,
@@ -271,17 +271,11 @@ impl<T: Terminal> App<T> {
 
     /// The text and its view: the one shown, or the one help set aside.
     pub(super) fn text_view(&self) -> &TextView {
-        match &self.text {
-            Some(a) => &a.view,
-            None => &self.view,
-        }
+        self.help.as_ref().unwrap_or(&self.view)
     }
 
     pub(super) fn text_view_mut(&mut self) -> &mut TextView {
-        match &mut self.text {
-            Some(a) => &mut a.view,
-            None => &mut self.view,
-        }
+        self.help.as_mut().unwrap_or(&mut self.view)
     }
 
     /// Gives the keys to `f`; the status line comes or goes with it.
@@ -303,7 +297,7 @@ impl<T: Terminal> App<T> {
             rows: self.text_rows(),
             height,
             cols,
-            mode: if self.focus == Focus::Helping {
+            mode: if self.help.is_some() {
                 Mode::NoWrap
             } else {
                 self.settings.mode
@@ -327,7 +321,7 @@ impl<T: Terminal> App<T> {
                 self.sync_view();
                 // The bindings keep the screen full and the scroll
                 // within them.
-                if self.text.is_some() {
+                if self.help.is_some() {
                     self.view.scroll_within(0);
                     self.view.scroll_sideways_within(0);
                 }
@@ -335,6 +329,11 @@ impl<T: Terminal> App<T> {
             Event::Key(k) => {
                 self.act();
                 return match self.focus {
+                    Focus::Viewing if self.help.is_some() => {
+                        let cmd = self.keys.lookup(k);
+                        self.help_key(cmd);
+                        Flow::Continue
+                    }
                     Focus::Viewing => match self.keys.lookup(k) {
                         Some(c) => self.view_key(c),
                         None => {
@@ -347,11 +346,6 @@ impl<T: Terminal> App<T> {
                         Flow::Continue
                     }
                     Focus::Commanding => self.command_key(k),
-                    Focus::Helping => {
-                        let cmd = self.keys.lookup(k);
-                        self.help_key(cmd);
-                        Flow::Continue
-                    }
                 };
             }
             Event::Mouse(m) => self.handle_mouse(m),
@@ -413,12 +407,7 @@ impl<T: Terminal> App<T> {
             Action::PrevFile => v.prev_input(),
             Action::NextFile => v.next_input(),
             Action::SelectAll => v.select_all(),
-            Action::ClearSelection => {
-                // With no selection, the search highlight goes.
-                if !v.clear_selection() {
-                    self.search.highlight = false;
-                }
-            }
+            Action::ClearSelection => v.clear_selection(),
             Action::SetMark => v.set_mark(),
             Action::Copy => {
                 self.copy();
@@ -437,8 +426,14 @@ impl<T: Terminal> App<T> {
                 v.scroll_to_cursor();
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
-            Action::SearchNext => self.find(self.search.backward, true),
-            Action::SearchPrev => self.find(!self.search.backward, true),
+            Action::SearchNext => {
+                let found = v.find_next();
+                self.report(found);
+            }
+            Action::SearchPrev => {
+                let found = v.find_prev();
+                self.report(found);
+            }
             Action::CommandPrompt => self.open_command(),
             Action::Cycle => self.cycle(c.arg.as_deref().unwrap_or_default()),
             Action::Help => self.show_help(),

@@ -16,6 +16,7 @@ impl<T: Terminal> App<T> {
     pub fn status_shown(&self) -> bool {
         self.settings.status_line
             || self.focus != Focus::Viewing
+            || self.help.is_some()
             || self.status.is_some()
             || self.read_error().is_some()
     }
@@ -72,7 +73,7 @@ impl<T: Terminal> App<T> {
         };
         if let Some(k) = self.keys.find(&help) {
             let hint: Vec<char> = format!("{k} help").chars().collect();
-            if self.focus == Focus::Viewing && width + 2 + hint.len() <= w {
+            if self.focus == Focus::Viewing && self.help.is_none() && width + 2 + hint.len() <= w {
                 runes(g, w - hint.len(), h - 1, &hint, st);
             }
         }
@@ -91,13 +92,13 @@ impl<T: Terminal> App<T> {
 
     fn status_text(&self, width: usize, at: usize) -> String {
         match self.focus {
-            Focus::Searching { back: true } => return format!("?{}", self.search.query.text()),
-            Focus::Searching { back: false } => return format!("/{}", self.search.query.text()),
+            Focus::Searching { back: true } => return format!("?{}", self.search.text()),
+            Focus::Searching { back: false } => return format!("/{}", self.search.text()),
             Focus::Commanding => return format!(":{}", self.command.line.text()),
-            Focus::Helping if self.status.is_none() => {
+            Focus::Viewing if self.help.is_some() && self.status.is_none() => {
                 return "help  motion scrolls, / searches, any other key returns".into();
             }
-            Focus::Viewing | Focus::Helping => {}
+            Focus::Viewing => {}
         }
         if let Some(s) = &self.status {
             return s.clone();

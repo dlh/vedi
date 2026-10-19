@@ -29,7 +29,7 @@ impl<T: Terminal> App<T> {
             cur = self.draw_text(&mut g);
         }
         // Help has no cursor to show.
-        if self.text.is_some() {
+        if self.help.is_some() {
             cur = None;
         }
         let at = self.status_at();
@@ -52,9 +52,9 @@ impl<T: Terminal> App<T> {
         let mut matches = Vec::new();
         let mut match_line = None;
         while y < rows && p.line < self.view.buf().len() {
-            if self.search.highlight && match_line != Some(p.line) {
+            if self.view.highlight() && match_line != Some(p.line) {
                 self.view.buf().text(p.line, &mut self.scratch);
-                matches = self.search.matcher.all(&self.scratch);
+                matches = self.view.matcher().all(&self.scratch);
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches) {
@@ -92,7 +92,7 @@ impl<T: Terminal> App<T> {
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
-        let m = self.search.matcher.len();
+        let m = self.view.matcher().len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
         let ci = (cursor.line == p.line).then(|| {
             let (ci, cj) = ln.glyph(cursor.col);

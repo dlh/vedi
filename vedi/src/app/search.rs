@@ -1,105 +1,48 @@
 //! The / and ? prompts, and n and N.
 
-use crate::app::prompt::{Prompt, PromptEdit};
+use crate::app::prompt::PromptEdit;
+use crate::app::text_view::Outcome;
 use crate::app::{App, Focus};
 use crate::input::key::Key;
-use crate::text::search::{self, Found, Matcher};
+use crate::text::search::Matcher;
 use crate::view::screen::Terminal;
-
-pub(super) struct State {
-    /// The / and ? prompts' line.
-    pub query: Prompt,
-    pub matcher: Matcher,
-    /// The last search was ?, and so n goes up and N down.
-    pub backward: bool,
-    pub highlight: bool,
-}
-
-impl State {
-    pub fn new() -> State {
-        State {
-            query: Prompt::default(),
-            matcher: Matcher::new(""),
-            backward: false,
-            highlight: false,
-        }
-    }
-}
 
 impl<T: Terminal> App<T> {
     /// Opens the / prompt, or the ? prompt if `back`.
     pub(super) fn open_search(&mut self, back: bool) {
         self.focus(Focus::Searching { back });
         self.mouse.end_drag();
-        self.search.query.open();
+        self.search.open();
     }
 
     /// Edits the / and ? prompts. Enter searches; with nothing typed it
     /// repeats the last pattern the prompt's way.
     pub(super) fn search_key(&mut self, key: Key, back: bool) {
-        match self.search.query.edit(key) {
+        match self.search.edit(key) {
             PromptEdit::Editing => {}
-            PromptEdit::Cancel => {
-                let shown = self.shown();
-                self.focus(shown);
-            }
+            PromptEdit::Cancel => self.focus(Focus::Viewing),
             PromptEdit::Submit => {
-                let shown = self.shown();
-                self.focus(shown);
-                let s = &mut self.search;
-                s.backward = back;
-                if s.query.is_empty() {
-                    self.find(back, true);
-                    return;
-                }
-                let query = s.query.text();
-                s.query.remember(&query);
-                s.matcher = Matcher::new(&query);
-                self.find(back, false);
+                self.focus(Focus::Viewing);
+                let pattern = if self.search.is_empty() {
+                    None
+                } else {
+                    let query = self.search.text();
+                    self.search.remember(&query);
+                    Some(Matcher::new(&query))
+                };
+                let found = self.view.search(pattern, back);
+                self.report(found);
             }
         }
     }
 
-    /// What the prompt was opened over: the text, or help.
-    fn shown(&self) -> Focus {
-        if self.text.is_some() {
-            Focus::Helping
-        } else {
-            Focus::Viewing
-        }
-    }
-
-    /// Goes to the next match before or after the cursor. A match at
-    /// the cursor counts going forward unless `skip`; backward always
-    /// skips.
-    pub(super) fn find(&mut self, backward: bool, skip: bool) {
-        if self.search.matcher.is_empty() {
-            self.status = Some("no search pattern".into());
-            return;
-        }
-        let m = &self.search.matcher;
-        let (buf, cur) = (self.view.buf(), self.view.cursor());
-        let found = if backward {
-            search::prev(buf, m, cur)
-        } else {
-            search::next(buf, m, cur, skip)
+    /// Puts what a search found on the status line.
+    pub(super) fn report(&mut self, found: Outcome) {
+        self.status = match found {
+            Outcome::NoPattern => Some("no search pattern".into()),
+            Outcome::NotFound => Some(format!("not found: {}", self.view.matcher().pattern())),
+            Outcome::Wrapped => Some("search wrapped".into()),
+            Outcome::Found => return,
         };
-        self.jump_to(found);
-    }
-
-    fn jump_to(&mut self, found: Option<Found>) {
-        let Some(f) = found else {
-            self.status = Some(format!("not found: {}", self.search.matcher.pattern()));
-            return;
-        };
-        self.view.set_cursor(f.pos);
-        self.view.drop();
-        self.search.highlight = true;
-        if f.wrapped {
-            self.status = Some("search wrapped".into());
-        }
-        // A match off the screen comes in on the top row.
-        self.view.cursor_row_to_top();
-        self.view.scroll_to_cursor();
     }
 }
