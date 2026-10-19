@@ -2,7 +2,6 @@
 //! the cursor's line, with the help hint at the right edge.
 
 use crate::app::draw::runes;
-use crate::app::motion::Row;
 use crate::app::{App, Focus, STDIN};
 use crate::input::action::{Action, Command};
 use crate::text::ansi::ViewStyle;
@@ -23,35 +22,10 @@ impl<T: Terminal> App<T> {
 
     /// The reader's error, else the first a line read hit.
     fn read_error(&self) -> Option<ReadError> {
-        match self.buf.finished() {
+        let buf = self.view.buf();
+        match buf.finished() {
             Some(Err(e)) => Some(e),
-            _ => self.buf.read_error(),
-        }
-    }
-
-    /// Scrolls a row when a hidden status line has come back over the
-    /// cursor's row: whatever brought it back placed the cursor while
-    /// the text still had that row.
-    pub(super) fn uncover(&mut self) {
-        if self.settings.status_line
-            || self.text.is_some()
-            || self.start_screen.is_some()
-            || !self.status_shown()
-            || self.buf.is_empty()
-        {
-            return;
-        }
-        let mut p = self.snap(self.top);
-        for _ in 0..self.text_rows() {
-            let q = self.next_row(p);
-            if q == p {
-                return;
-            }
-            p = q;
-        }
-        if p == self.snap(Row::text(self.cur)) {
-            let top = self.snap(self.top);
-            self.top = self.next_row(top);
+            _ => buf.read_error(),
         }
     }
 
@@ -108,10 +82,10 @@ impl<T: Terminal> App<T> {
     /// while the cursor is scrolled off screen, so it says where the
     /// view is.
     pub(super) fn status_at(&mut self) -> usize {
-        if self.cursor_on_screen() {
-            self.cur.line
+        if self.view.cursor_visible() {
+            self.view.cursor().line
         } else {
-            self.snap(self.top).line
+            self.view.top().line
         }
     }
 
@@ -140,7 +114,8 @@ impl<T: Terminal> App<T> {
         if self.settings.view_style != ViewStyle::Color {
             mode = format!("{mode}  {}", self.settings.view_style);
         }
-        let mut reading = if self.buf.finished().is_some() {
+        let buf = self.view.buf();
+        let mut reading = if buf.finished().is_some() {
             ""
         } else {
             "  reading…"
@@ -149,7 +124,7 @@ impl<T: Terminal> App<T> {
         if self.next.is_some() {
             reading.push_str("  reloading…");
         }
-        let (k, lines) = self.buf.part(at);
+        let (k, lines) = buf.part(at);
         let mut rest = String::new();
         if self.names.len() > 1 {
             rest = format!(" {}/{}", k + 1, self.names.len());
@@ -170,12 +145,13 @@ impl<T: Terminal> App<T> {
     /// name, or for stdin the window title in effect at that
     /// line, as a shell prompt sets to the directory.
     fn input_name(&self, at: usize) -> String {
+        let buf = self.view.buf();
         let name = self
             .names
-            .get(self.buf.part_at(at))
+            .get(buf.part_at(at))
             .map_or(STDIN, String::as_str);
         if name == STDIN
-            && let Some(title) = self.buf.line(at).title.clone()
+            && let Some(title) = buf.line(at).title.clone()
             && !title.is_empty()
         {
             return title.to_string();

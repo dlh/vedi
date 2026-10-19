@@ -7,7 +7,7 @@ impl<T: Terminal> App<T> {
     fn selected_text(&mut self, start: Pos, end: Pos) -> String {
         let mut s = String::new();
         for li in start.line..=end.line {
-            self.buf.text(li, &mut self.scratch);
+            self.view.buf().text(li, &mut self.scratch);
             let n = self.scratch.len();
             let from = if li == start.line {
                 start.col.min(n)
@@ -26,7 +26,7 @@ impl<T: Terminal> App<T> {
     /// Sends the selection to the clipboard and reports success. The
     /// selection stays either way.
     pub(super) fn copy(&mut self) -> bool {
-        let Some((start, end)) = self.selection() else {
+        let Some((start, end)) = self.view.selection() else {
             self.status = Some("nothing selected".into());
             return false;
         };

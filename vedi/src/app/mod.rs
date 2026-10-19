@@ -8,15 +8,14 @@ mod command;
 mod copy;
 mod draw;
 mod help;
-mod motion;
 mod mouse;
 mod prompt;
 mod reload;
 mod search;
-mod selection;
 mod status;
 #[cfg(test)]
 mod tests;
+mod text_view;
 
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
@@ -31,15 +30,12 @@ use crate::input::setting::Settings;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
-use crate::view::layout::{self, Layout};
+use crate::view::layout::Mode;
 use crate::view::screen::{Grid, Screen, Terminal};
-use motion::{LaidCache, Row};
+use text_view::{Geometry, Start, TextView};
 
 /// How often the reader's data is drawn, at most.
 const REDRAW_EVERY: Duration = Duration::from_millis(50);
-
-/// How many lines are kept laid out before starting over.
-const LAID_LINES: usize = 1024;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Flow {
@@ -65,9 +61,8 @@ pub struct App<T: Terminal> {
     screen: Screen<T>,
     /// The last frame drawn, whose cells the next one reuses.
     frame: Grid,
-    /// It showed the cursor.
-    cursor_shown: bool,
-    buf: Buffer,
+    /// The text and its view; the bindings' while help is up.
+    view: TextView,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
     /// The last generation handed out: a dropped reload's is never
@@ -78,22 +73,6 @@ pub struct App<T: Terminal> {
     names: Vec<String>,
     keys: Keymap,
     settings: Settings,
-
-    cur: Pos,
-    /// The selection anchor; `None` when there is no selection.
-    anchor: Option<Pos>,
-    /// The mark is set: motions extend the selection.
-    marking: bool,
-    /// The first visible row.
-    top: Row,
-    /// Horizontal scroll in `NoWrap` mode.
-    xoff: usize,
-
-    follow: bool,
-    /// The 0-based +N target, until applied.
-    start_line: Option<usize>,
-    /// Applied at EOF; no text is drawn until then.
-    start_screen: Option<StartScreen>,
     /// A one-shot message, cleared by the next key.
     status: Option<String>,
     focus: Focus,
@@ -101,7 +80,7 @@ pub struct App<T: Terminal> {
     /// The : prompt and its completion.
     command: command::State,
     /// The text and its view, set aside while help is up.
-    text: Option<help::TextView>,
+    text: Option<help::Aside>,
     mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
@@ -113,7 +92,6 @@ pub struct App<T: Terminal> {
     /// A change came during the reload: one more after it.
     dirty: bool,
 
-    laid: LaidCache,
     /// A line's chars, decoded into it rather than allocated per call.
     scratch: Vec<char>,
     /// When a draw last took up the reader's data, which the hold runs
@@ -127,11 +105,15 @@ impl<T: Terminal> App<T> {
     /// Takes `buffer` as read so far: `generation` is its reader's.
     pub fn new(term: T, mut buffer: Buffer, generation: Gen, opts: Options) -> App<T> {
         buffer.set_literal(opts.settings.view_style == ViewStyle::Raw);
+        let start = Start {
+            line: opts.start_line.filter(|&n| n > 0).map(|n| n - 1),
+            follow: opts.follow,
+            screen: opts.screen,
+        };
         let mut a = App {
             screen: Screen::new(term),
             frame: Grid::new(0, 0),
-            cursor_shown: false,
-            buf: buffer,
+            view: TextView::new(buffer, start, Geometry::default()),
             generation,
             last_gen: generation,
             copier: opts.copier,
@@ -139,15 +121,6 @@ impl<T: Terminal> App<T> {
             names: opts.names,
             keys: opts.keys,
             settings: opts.settings,
-            cur: Pos::default(),
-            anchor: None,
-            marking: false,
-            // The first row: line 0's separator, if it has one.
-            top: Row::sep(0),
-            xoff: 0,
-            follow: opts.follow,
-            start_line: opts.start_line.filter(|&n| n > 0).map(|n| n - 1),
-            start_screen: opts.screen,
             status: None,
             focus: Focus::Viewing,
             search: search::State::new(),
@@ -159,12 +132,12 @@ impl<T: Terminal> App<T> {
             through_open_cmd: true,
             next: None,
             dirty: false,
-            laid: LaidCache::new(Layout::default()),
             scratch: Vec::new(),
             last_draw: None,
             pending: false,
         };
-        a.on_data();
+        a.sync_view();
+        a.view.appended();
         a
     }
 
@@ -177,7 +150,7 @@ impl<T: Terminal> App<T> {
     }
 
     pub fn cursor(&self) -> Pos {
-        self.cur
+        self.view.cursor()
     }
 
     /// Draws and handles events until an action quits or `rx` closes.
@@ -216,7 +189,7 @@ impl<T: Terminal> App<T> {
             };
             if applied {
                 self.take_up();
-                self.uncover();
+                self.sync_view();
             }
             match ev {
                 Some(ev) => {
@@ -254,7 +227,7 @@ impl<T: Terminal> App<T> {
     fn reading_buf(&self) -> &Buffer {
         match &self.next {
             Some(p) => &p.buf,
-            None => self.text_buf(),
+            None => self.text_view().buf(),
         }
     }
 
@@ -269,7 +242,7 @@ impl<T: Terminal> App<T> {
     /// it was taken: a stale generation's is dropped.
     fn apply(&mut self, g: Gen, p: Progress) -> bool {
         if g == self.generation {
-            self.text_buf_mut().apply(p);
+            self.text_view_mut().apply(p);
         } else if let Some(n) = &mut self.next
             && n.generation == g
         {
@@ -285,14 +258,61 @@ impl<T: Terminal> App<T> {
     /// the view on the new text.
     fn take_up(&mut self) {
         self.swap_if_done();
-        self.on_data();
+        self.text_view_mut().appended();
     }
 
     /// Processes one event and reports whether to quit.
     pub fn handle(&mut self, ev: Event) -> Flow {
+        self.sync_view();
         let flow = self.dispatch(ev);
-        self.uncover();
+        self.sync_view();
         flow
+    }
+
+    /// The text and its view: the one shown, or the one help set aside.
+    pub(super) fn text_view(&self) -> &TextView {
+        match &self.text {
+            Some(a) => &a.view,
+            None => &self.view,
+        }
+    }
+
+    pub(super) fn text_view_mut(&mut self) -> &mut TextView {
+        match &mut self.text {
+            Some(a) => &mut a.view,
+            None => &mut self.view,
+        }
+    }
+
+    /// Gives the keys to `f`; the status line comes or goes with it.
+    fn focus(&mut self, f: Focus) {
+        self.focus = f;
+        self.sync_view();
+    }
+
+    /// Lays the view shown out for the screen as it is: the rows left
+    /// by the status line, the settings, and `NoWrap` for help.
+    fn sync_view(&mut self) {
+        let g = self.geometry();
+        self.view.resize(g);
+    }
+
+    fn geometry(&self) -> Geometry {
+        let (cols, height) = self.screen.size();
+        Geometry {
+            rows: self.text_rows(),
+            height,
+            cols,
+            mode: if self.focus == Focus::Helping {
+                Mode::NoWrap
+            } else {
+                self.settings.mode
+            },
+            tab: self.settings.tab_width,
+            wrap_style: self.settings.wrap_style,
+            separators: self.settings.file_separators && self.names.len() > 1,
+            edge_markers: self.settings.edge_markers,
+        }
     }
 
     fn dispatch(&mut self, ev: Event) -> Flow {
@@ -303,16 +323,13 @@ impl<T: Terminal> App<T> {
                 }
             }
             Event::Resize(..) => {
-                // The terminal already has its new size, so the last
-                // frame says whether the cursor was on screen; one off
-                // stays off.
-                let shown = self.cursor_shown;
                 self.screen.sync();
+                self.sync_view();
+                // The bindings keep the screen full and the scroll
+                // within them.
                 if self.text.is_some() {
-                    self.scroll_help(0);
-                    self.scroll_help_sideways(0);
-                } else if shown {
-                    self.scroll_to_cursor();
+                    self.view.scroll_within(0);
+                    self.view.scroll_sideways_within(0);
                 }
             }
             Event::Key(k) => {
@@ -351,70 +368,73 @@ impl<T: Terminal> App<T> {
     /// Records that the user did something: startup positioning stops
     /// and the one-shot status clears.
     fn act(&mut self) {
-        self.follow = false;
-        self.start_line = None;
-        self.start_screen = None;
+        self.view.end_startup();
         self.status = None;
+        self.sync_view();
     }
 
     fn view_key(&mut self, c: Command) -> Flow {
         if let Some(n) = self.page_scroll(&c) {
-            self.scroll_view(n);
+            self.view.scroll(n);
             return Flow::Continue;
         }
-        let was = self.cur;
+        let v = &mut self.view;
+        let was = v.cursor();
         if c.action.is_movement() {
             if c.extend {
-                self.extend();
+                v.extend();
             } else {
-                self.drop();
+                v.drop();
             }
         }
         // Rows a row motion had nowhere to take.
         let mut left = 0;
         match c.action {
-            Action::Up => left = self.move_rows(-1),
-            Action::Down => left = self.move_rows(1),
-            Action::Left => self.move_col(-1),
-            Action::Right => self.move_col(1),
-            Action::Home => self.cur.col = 0,
-            Action::End => self.cur.col = self.line_len(self.cur.line),
-            Action::PageUp => left = self.move_rows(-(self.page_rows() as isize)),
-            Action::PageDown => left = self.move_rows(self.page_rows() as isize),
-            Action::HalfPageUp => left = self.move_rows(-(self.half_page_rows() as isize)),
-            Action::HalfPageDown => left = self.move_rows(self.half_page_rows() as isize),
-            Action::WordLeft => self.word_left(),
-            Action::WordRight => self.word_right(),
-            Action::First => self.cur = Pos::default(),
-            Action::Last => {
-                self.cur = Pos {
-                    line: self.buf.len().saturating_sub(1),
-                    col: 0,
+            Action::Up => left = v.move_rows(-1),
+            Action::Down => left = v.move_rows(1),
+            Action::Left => v.move_col(-1),
+            Action::Right => v.move_col(1),
+            Action::Home => v.line_start(),
+            Action::End => v.line_end(),
+            Action::PageUp => left = v.move_rows(-(v.page_rows() as isize)),
+            Action::PageDown => left = v.move_rows(v.page_rows() as isize),
+            Action::HalfPageUp => left = v.move_rows(-(v.half_page_rows() as isize)),
+            Action::HalfPageDown => left = v.move_rows(v.half_page_rows() as isize),
+            Action::WordLeft => v.word_left(),
+            Action::WordRight => v.word_right(),
+            Action::First => v.set_cursor(Pos::default()),
+            Action::Last => v.set_cursor(Pos {
+                line: v.buf().len().saturating_sub(1),
+                col: 0,
+            }),
+            Action::ScreenTop => v.screen_row(0),
+            Action::ScreenMiddle => v.screen_row(v.rows() / 2),
+            Action::ScreenBottom => v.screen_row(v.rows().saturating_sub(1)),
+            Action::PrevFile => v.prev_input(),
+            Action::NextFile => v.next_input(),
+            Action::SelectAll => v.select_all(),
+            Action::ClearSelection => {
+                // With no selection, the search highlight goes.
+                if !v.clear_selection() {
+                    self.search.highlight = false;
                 }
             }
-            Action::ScreenTop => self.screen_row(0),
-            Action::ScreenMiddle => self.screen_row(self.text_rows() / 2),
-            Action::ScreenBottom => self.screen_row(self.text_rows().saturating_sub(1)),
-            Action::PrevFile => self.prev_input(),
-            Action::NextFile => self.next_input(),
-            Action::SelectAll => self.select_all(),
-            Action::ClearSelection => self.clear_selection(),
-            Action::SetMark => self.set_mark(),
+            Action::SetMark => v.set_mark(),
             Action::Copy => {
                 self.copy();
             }
             Action::CopyAndQuit => {
-                if self.selection().is_some() {
+                if v.selection().is_some() {
                     return if self.copy() {
                         Flow::Quit
                     } else {
                         Flow::Continue
                     };
                 }
-                self.drop();
-                self.move_rows(1);
+                v.drop();
+                v.move_rows(1);
                 // A motion, even at the end.
-                self.scroll_to_cursor();
+                v.scroll_to_cursor();
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
             Action::SearchNext => self.find(self.search.backward, true),
@@ -427,15 +447,17 @@ impl<T: Terminal> App<T> {
         }
         // Extending past the last row, by Shift or the mark, takes the
         // rest of the last line; past the first, the start of the first.
-        let extending = c.extend || self.marking;
+        let v = &mut self.view;
+        let extending = c.extend || v.marking();
         if extending && left > 0 {
-            self.cur = self.end_pos();
+            let end = v.end_pos();
+            v.set_cursor(end);
         } else if extending && left < 0 {
-            self.cur = Pos::default();
+            v.set_cursor(Pos::default());
         }
         // Only a motion brings a view scrolled off the cursor back.
-        if c.action.is_movement() || self.cur != was {
-            self.scroll_to_cursor();
+        if c.action.is_movement() || v.cursor() != was {
+            v.scroll_to_cursor();
         }
         Flow::Continue
     }
@@ -445,35 +467,17 @@ impl<T: Terminal> App<T> {
     /// that extends the selection, by Shift or the mark, which moves the
     /// cursor instead.
     fn page_scroll(&self, c: &Command) -> Option<isize> {
-        if c.extend || self.marking {
+        if c.extend || self.view.marking() {
             return None;
         }
-        let page = self.page_rows() as isize;
-        let half = self.half_page_rows() as isize;
+        let page = self.view.page_rows() as isize;
+        let half = self.view.half_page_rows() as isize;
         match c.action {
             Action::PageUp => Some(-page),
             Action::PageDown => Some(page),
             Action::HalfPageUp => Some(-half),
             Action::HalfPageDown => Some(half),
             _ => None,
-        }
-    }
-
-    /// Whether wrap mode marks rows that continue, on a screen `w` wide:
-    /// the last column is then the marker's, and text wraps a column
-    /// early. Under three columns there is no room.
-    fn wrap_marks(&self, w: usize) -> bool {
-        self.settings.edge_markers && self.settings.mode == layout::Mode::Wrap && w > 2
-    }
-
-    fn layout(&self) -> Layout {
-        let (w, _) = self.screen.size();
-        let width = if self.wrap_marks(w) { w - 1 } else { w };
-        Layout {
-            width,
-            mode: self.settings.mode,
-            tab: self.settings.tab_width,
-            wrap_style: self.settings.wrap_style,
         }
     }
 

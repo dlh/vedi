@@ -124,7 +124,7 @@ impl State {
 
 impl<T: Terminal> App<T> {
     pub(super) fn open_command(&mut self) {
-        self.focus = Focus::Commanding;
+        self.focus(Focus::Commanding);
         self.mouse.end_drag();
         self.command.line.open();
     }
@@ -144,13 +144,12 @@ impl<T: Terminal> App<T> {
         }
         let command = c.filled.trim_end_matches(' ');
         match key.code {
-            _ if cancels(key) => self.focus = Focus::Viewing,
+            _ if cancels(key) => self.focus(Focus::Viewing),
             KeyCode::Enter if listing_commands && is_command(command) => {
                 let text = format!("{command} ");
                 c.fill(&text);
             }
             KeyCode::Enter => {
-                self.focus = Focus::Viewing;
                 let line = c.line.text();
                 // Tab's trailing space would have a recall complete a
                 // word that is not there.
@@ -158,6 +157,7 @@ impl<T: Terminal> App<T> {
                 if !entry.is_empty() {
                     c.line.remember(entry);
                 }
+                self.focus(Focus::Viewing);
                 return self.run_command(&line);
             }
             KeyCode::Tab => c.complete(&self.settings),
@@ -205,16 +205,17 @@ impl<T: Terminal> App<T> {
     fn goto(&mut self, n: &str) {
         // Past usize is past the end all the same.
         let n = n.parse::<usize>().unwrap_or(usize::MAX);
-        let (_, lines) = self.buf.part(self.cur.line);
+        let v = &mut self.view;
+        let (_, lines) = v.buf().part(v.cursor().line);
         let line = lines
             .start
             .saturating_add(n)
             .saturating_sub(1)
             .min(lines.end.saturating_sub(1))
             .max(lines.start);
-        self.cur = Pos { line, col: 0 };
-        self.drop();
-        self.scroll_to_cursor();
+        v.set_cursor(Pos { line, col: 0 });
+        v.drop();
+        v.scroll_to_cursor();
     }
 
     /// Sets what a config line would.
@@ -224,12 +225,9 @@ impl<T: Terminal> App<T> {
             ..Config::default()
         };
         config::parse_line(line, &mut c)?;
-        // Laid out anew, a view scrolled off the cursor stays there.
-        let shown = self.cursor_on_screen();
         self.settings = c.settings;
+        self.sync_view();
         match verb {
-            // The horizontal scroll starts over.
-            "wrap" => self.xoff = 0,
             // A change during a reload asked for another.
             "auto_reload" if !self.settings.auto_reload => self.dirty = false,
             "view_style" => self.set_literal(),
@@ -238,9 +236,6 @@ impl<T: Terminal> App<T> {
             }
             "map" => self.keys = self.keys.apply(&c.keys),
             _ => {}
-        }
-        if shown {
-            self.scroll_to_cursor();
         }
         Ok(())
     }
@@ -282,8 +277,7 @@ impl<T: Terminal> App<T> {
             return;
         }
         self.through_open_cmd = !self.through_open_cmd;
-        self.anchor = None;
-        self.marking = false;
+        self.view.deselect();
         self.next = None;
         self.dirty = false;
         self.reload_then(true, true);
@@ -293,11 +287,8 @@ impl<T: Terminal> App<T> {
     /// as the status line reports it; the text may be set aside under
     /// help.
     pub(super) fn open_cmd_status(&self) -> String {
-        let (buf, cur) = match &self.text {
-            Some(t) => (&t.buf, t.cur),
-            None => (&self.buf, self.cur),
-        };
-        let (part, _) = buf.part(cur.line);
+        let v = self.text_view();
+        let (part, _) = v.buf().part(v.cursor().line);
         let argv = match &self.open_cmd {
             Some(f) if self.through_open_cmd => self.names.get(part).and_then(|n| f(n)),
             _ => None,
@@ -306,15 +297,10 @@ impl<T: Terminal> App<T> {
         format!("open_cmd {cmd}")
     }
 
-    /// Decodes the text as the view style has it. To or from raw the
-    /// lines' text changes under the view, which keeps its place as
-    /// over a reload.
+    /// Decodes the text as the view style has it.
     fn set_literal(&mut self) {
         let raw = self.settings.view_style == ViewStyle::Raw;
-        if self.text_buf().literal() == raw {
-            return;
-        }
-        self.change_text(|b| b.set_literal(raw));
+        self.text_view_mut().set_literal(raw);
     }
 }
 

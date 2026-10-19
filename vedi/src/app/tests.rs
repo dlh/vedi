@@ -9,8 +9,7 @@ use std::time::{Duration, Instant};
 
 use super::*;
 use crate::app::event::{Mouse, MouseKind};
-use crate::app::motion::Row;
-use crate::app::reload::{Place, reload_view};
+use crate::app::text_view::{Geometry, Row, Start, TextView};
 use crate::input::config;
 use crate::input::key::Key;
 use crate::text::buffer::tests::{Fill, temp};
@@ -301,7 +300,7 @@ fn truncated_file_draws() {
     let mut a = App::new(TestTerminal::new(30, 4), f.buf, GEN, options());
     press(&mut a, "Right Right");
     // Evict the decoded block, not the layouts.
-    a.buf.line(100);
+    a.view.buf().line(100);
     File::options()
         .write(true)
         .open(&path)
@@ -355,7 +354,7 @@ fn queued_progress_decodes_once() {
         }
         drop(tx);
         a.run(rx);
-        let _ = done_tx.send((a.buf.decodes(), a.cursor().line));
+        let _ = done_tx.send((a.view.buf().decodes(), a.cursor().line));
     });
     let (decodes, line) = done_rx
         .recv_timeout(Duration::from_secs(5))
@@ -683,23 +682,27 @@ fn two_parts() -> Buffer {
     f.buf
 }
 
+/// A two-row view of `buf` with separators, the second input's
+/// separator row at the top.
+fn on_second_input(buf: Buffer) -> TextView {
+    let geom = Geometry {
+        rows: 2,
+        height: 3,
+        cols: 20,
+        separators: true,
+        ..Geometry::default()
+    };
+    let mut v = TextView::new(buf, Start::default(), geom);
+    v.next_input();
+    assert_eq!(v.top(), Row::sep(1));
+    v
+}
+
 #[test]
 fn reload_keeps_separator_top() {
-    let mut scratch = Vec::new();
-    let (mut cur, mut top, mut anchor) = (Pos { line: 1, col: 0 }, Row::sep(1), None);
-    reload_view(
-        &two_parts(),
-        &mut scratch,
-        &mut cur,
-        &mut top,
-        &mut anchor,
-        Place {
-            at_end: false,
-            cur: 1,
-            anchor: None,
-        },
-    );
-    assert_eq!(top, Row::sep(1));
+    let mut v = on_second_input(two_parts());
+    v.change_text(|b| *b = two_parts());
+    assert_eq!(v.top(), Row::sep(1));
 }
 
 /// A separator top past the new end starts over from the first row,
@@ -710,22 +713,10 @@ fn reload_separator_top_past_end() {
     f.part();
     f.write(b"a\n");
     f.finish(None);
-    let mut scratch = Vec::new();
-    let (mut cur, mut top, mut anchor) = (Pos { line: 3, col: 0 }, Row::sep(3), None);
-    reload_view(
-        &f.buf,
-        &mut scratch,
-        &mut cur,
-        &mut top,
-        &mut anchor,
-        Place {
-            at_end: false,
-            cur: 0,
-            anchor: None,
-        },
-    );
-    assert_eq!(top, Row::sep(0));
-    assert_eq!(cur, Pos::default());
+    let mut v = on_second_input(two_parts());
+    v.change_text(|b| *b = f.buf);
+    assert_eq!(v.top(), Row::sep(0));
+    assert_eq!(v.cursor(), Pos::default());
 }
 
 #[test]

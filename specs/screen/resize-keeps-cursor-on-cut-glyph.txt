@@ -1,0 +1,24 @@
+A glyph cut off at the right edge shows the cursor on its first cell, and
+a resize keeps that cursor on screen as it keeps any other.
+
+-- size --
+4x4
+-- args --
+-S
+-- input --
+one
+two
+	end
+four
+-- keys --
+Down Down
+-- cursor --
+2 0
+-- resize --
+4x3
+-- screen --
+two
+
+<std
+-- cursor --
+1 0

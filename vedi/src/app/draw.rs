@@ -1,7 +1,7 @@
 //! One frame: the text rows from the top, with the selection, control
 //! characters, separators and markers, and the cursor.
 
-use crate::app::motion::Row;
+use crate::app::text_view::Row;
 use crate::app::{App, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::text::buffer::Pos;
@@ -16,6 +16,7 @@ impl<T: Terminal> App<T> {
     /// known until then. While help is up the bindings are the text, and
     /// no cursor is shown; nor is one scrolled off the side.
     pub fn draw(&mut self) {
+        self.sync_view();
         let (w, h) = self.screen.size();
         let mut g = std::mem::replace(&mut self.frame, Grid::new(0, 0));
         if (g.width(), g.height()) == (w, h) {
@@ -23,9 +24,8 @@ impl<T: Terminal> App<T> {
         } else {
             g = Grid::new(w, h);
         }
-        self.top = self.snap(self.top);
         let mut cur = None;
-        if self.start_screen.is_none() {
+        if !self.view.start_pending() {
             cur = self.draw_text(&mut g);
         }
         // Help has no cursor to show.
@@ -37,7 +37,6 @@ impl<T: Terminal> App<T> {
         let cur = cur.filter(|&(x, _)| x < w);
         self.screen.present(&g, cur);
         self.frame = g;
-        self.cursor_shown = cur.is_some();
         if self.pending {
             self.last_draw = Some((self.clock)());
         }
@@ -46,22 +45,22 @@ impl<T: Terminal> App<T> {
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
-        let rows = self.text_rows();
-        let mut p = self.top;
+        let rows = self.view.rows();
+        let mut p = self.view.top();
         let mut cur = None;
         let mut y = 0;
         let mut matches = Vec::new();
         let mut match_line = None;
-        while y < rows && p.line < self.buf.len() {
+        while y < rows && p.line < self.view.buf().len() {
             if self.search.highlight && match_line != Some(p.line) {
-                self.buf.text(p.line, &mut self.scratch);
+                self.view.buf().text(p.line, &mut self.scratch);
                 matches = self.search.matcher.all(&self.scratch);
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches) {
                 cur = Some((x, y));
             }
-            let next = self.next_row(p);
+            let next = self.view.next_row(p);
             if next == p {
                 break;
             }
@@ -80,21 +79,23 @@ impl<T: Terminal> App<T> {
             return None;
         };
         let w = g.width();
-        let ln = self.line_layout(p.line);
-        let line = self.buf.line(p.line);
+        let geom = self.view.geometry();
+        let (cursor, xoff) = (self.view.cursor(), self.view.xoff());
+        let ln = self.view.line_layout(p.line);
+        let line = self.view.buf().line(p.line);
         let xs = ln.cells();
         let segi = ln.segment_at(col);
         let seg = ln.segments()[segi];
-        let x0 = (xs[seg.start] + self.xoff) as isize;
-        let sel = self.selection();
+        let x0 = (xs[seg.start] + xoff) as isize;
+        let sel = self.view.selection();
         let n = line.text.len();
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
         let m = self.search.matcher.len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
-        let ci = (self.cur.line == p.line).then(|| {
-            let (ci, cj) = ln.glyph(self.cur.col);
+        let ci = (cursor.line == p.line).then(|| {
+            let (ci, cj) = ln.glyph(cursor.col);
             // Searched, not scanned: a long line is drawn a row at a
             // time, each with all its matches.
             let from = (ci + 1).saturating_sub(m);
@@ -181,12 +182,12 @@ impl<T: Terminal> App<T> {
         // screen.
         let width = xs[n];
         let mut shown = cur_x.is_some();
-        if self.settings.edge_markers && self.settings.mode == Mode::NoWrap {
-            if self.xoff > 0 && width > 0 {
+        if geom.edge_markers && geom.mode == Mode::NoWrap {
+            if xoff > 0 && width > 0 {
                 put(g, 0, y, "<", EDGE, None);
                 shown = shown && cur_x != Some(0);
             }
-            if width > self.xoff + w && w > 0 {
+            if width > xoff + w && w > 0 {
                 if w >= 2 {
                     let c = g.get(w - 2, y);
                     if c.width == 2 {
@@ -200,7 +201,7 @@ impl<T: Terminal> App<T> {
         }
         // In wrap mode a row whose line goes on below ends in a marker,
         // in the column the layout leaves free.
-        if self.wrap_marks(w) && seg.end < n {
+        if geom.wrap_marks() && seg.end < n {
             put(g, w as isize - 1, y, "\\", EDGE, None);
         }
         cur_x
@@ -213,7 +214,7 @@ impl<T: Terminal> App<T> {
     fn draw_separator(&self, g: &mut Grid, y: usize, i: usize) {
         let name: Vec<char> = self
             .names
-            .get(self.buf.part_at(i))
+            .get(self.view.buf().part_at(i))
             .map_or(STDIN, String::as_str)
             .chars()
             .collect();

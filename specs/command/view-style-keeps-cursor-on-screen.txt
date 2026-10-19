@@ -1,0 +1,25 @@
+Changing view_style lays the lines out anew: a cursor on screen stays
+on screen. The first line here holds ESC [ 31 m and ESC [ 0 m, which
+raw shows, and then the line wraps.
+
+-- size --
+40x3
+-- input --
+[31maaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa[0m
+xyz
+-- keys --
+Down
+-- screen --
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+xyz
+<stdin>  line 2/2  wrap           h help
+-- cursor --
+1 0
+-- keys --
+: "view_style raw" Enter
+-- screen --
+aa[^[][0m
+xyz
+<stdin>  line 2/2  wrap  raw      h help
+-- cursor --
+1 0

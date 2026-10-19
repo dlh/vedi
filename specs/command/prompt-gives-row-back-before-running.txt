@@ -1,0 +1,22 @@
+With the status line hidden, the : prompt takes the bottom row and
+Enter gives it back before the command runs: goto lays the view out
+with that row.
+
+-- size --
+20x3
+-- config --
+status_line no
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+-- keys --
+: "5" Enter
+-- screen --
+line 3
+line 4
+line 5
+-- cursor --
+2 0

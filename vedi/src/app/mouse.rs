@@ -4,10 +4,8 @@
 use std::time::{Duration, Instant};
 
 use crate::app::event::{Mouse, MouseKind};
-use crate::app::motion::is_word;
 use crate::app::{App, Focus};
 use crate::text::buffer::Pos;
-use crate::view::layout::Mode;
 use crate::view::screen::Terminal;
 
 /// How soon a press on the same cell as the last one counts as the
@@ -98,13 +96,19 @@ impl<T: Terminal> App<T> {
         }
         let helping = self.text.is_some();
         match m.kind {
-            MouseKind::Wheel { rows, cols } => match wheel(rows, cols, m.shift) {
-                (rows, _) if rows != 0 && helping => self.scroll_help(rows),
-                (_, cols) if cols != 0 && helping => self.scroll_help_sideways(cols),
-                (rows, _) if rows != 0 => self.scroll_view(rows),
-                (_, cols) if cols != 0 => self.scroll_view_sideways(cols),
-                _ => {}
-            },
+            MouseKind::Wheel { rows, cols } => {
+                let (rows, cols) = wheel(rows, cols, m.shift);
+                if rows == 0 && cols == 0 {
+                    return;
+                }
+                self.act();
+                match (rows, cols) {
+                    (rows, _) if rows != 0 && helping => self.view.scroll_within(rows),
+                    (_, cols) if helping => self.view.scroll_sideways_within(cols),
+                    (rows, _) if rows != 0 => self.view.scroll(rows),
+                    (_, cols) => self.view.scroll_sideways(cols),
+                }
+            }
             MouseKind::Release => self.mouse.release(),
             // Motion with the button down looks like a press; only a
             // press on the text drags.
@@ -128,7 +132,7 @@ impl<T: Terminal> App<T> {
     fn press(&mut self, x: usize, y: usize, shift: bool) {
         // Measured before act: clearing a message gives a hidden status
         // line's row back to the text, and the click was on the message.
-        let rows = self.text_rows();
+        let rows = self.view.rows();
         self.act();
         if self.text.is_some() {
             self.hide_help();
@@ -141,41 +145,43 @@ impl<T: Terminal> App<T> {
         let n = self.mouse.click_count(x, y, now);
         self.mouse.dragging = true;
         self.mouse.ticking = None;
+        let v = &mut self.view;
         if shift {
-            self.anchor.get_or_insert(self.cur);
-            self.cur = self.cell_pos(x, y);
+            v.extend();
+            let pos = v.cell_pos(x, y);
+            v.set_cursor(pos);
             self.mouse.last_press = Some(Click {
                 at: now,
                 x,
                 y,
-                pos: self.cur,
+                pos,
                 n: 0,
             });
-            self.scroll_to_cursor();
+            v.scroll_to_cursor();
             return;
         }
-        self.cur = self.cell_pos(x, y);
+        let pos = v.cell_pos(x, y);
+        v.set_cursor(pos);
         self.mouse.last_press = Some(Click {
             at: now,
             x,
             y,
-            pos: self.cur,
+            pos,
             n,
         });
-        self.anchor = None;
-        self.marking = false;
+        v.deselect();
         match n {
-            2 => self.select_word(),
+            2 => v.select_word(),
             // The cursor lands after the line's newline, maybe below the
             // screen; scrolling it in would move the line under the
             // pointer.
             n if n >= 3 => {
-                self.select_line();
+                v.select_line();
                 return;
             }
             _ => {}
         }
-        self.scroll_to_cursor();
+        v.scroll_to_cursor();
     }
 
     /// Selects from the pressed text to the cell under the mouse,
@@ -184,12 +190,17 @@ impl<T: Terminal> App<T> {
     /// the status row the view scrolls a row per tick while the button
     /// stays held.
     fn drag(&mut self, x: usize, y: usize) {
-        if self.anchor.is_none() {
-            self.anchor = self.mouse.last_press.map(|l| l.pos);
+        let v = &mut self.view;
+        if v.selection().is_none()
+            && let Some(l) = self.mouse.last_press
+        {
+            v.set_cursor(l.pos);
+            v.extend();
         }
         (self.mouse.drag_x, self.mouse.drag_y) = (x, y);
-        self.cur = self.cell_pos(x, y.min(self.text_rows().saturating_sub(1)));
-        self.scroll_to_cursor();
+        let pos = v.cell_pos(x, y.min(v.rows().saturating_sub(1)));
+        v.set_cursor(pos);
+        v.scroll_to_cursor();
         if self.edge() != 0 && self.mouse.ticking.is_none() {
             self.mouse.ticking = Some((self.clock)() + AUTO_SCROLL_TICK);
         }
@@ -214,112 +225,10 @@ impl<T: Terminal> App<T> {
         self.mouse.ticking = None;
         let d = self.edge();
         if d != 0 {
-            self.scroll_view(d);
+            self.act();
+            self.view.scroll(d);
             self.drag(self.mouse.drag_x, self.mouse.drag_y);
         }
-    }
-
-    /// Selects the word around the cursor, if it is on one.
-    fn select_word(&mut self) {
-        self.buf.text(self.cur.line, &mut self.scratch);
-        let text = &self.scratch;
-        if self.cur.col >= text.len() || !is_word(text[self.cur.col]) {
-            return;
-        }
-        let (mut i, mut j) = (self.cur.col, self.cur.col + 1);
-        while i > 0 && is_word(text[i - 1]) {
-            i -= 1;
-        }
-        while j < text.len() && is_word(text[j]) {
-            j += 1;
-        }
-        self.anchor = Some(Pos {
-            line: self.cur.line,
-            col: i,
-        });
-        self.cur.col = j;
-    }
-
-    /// Selects the cursor's line with its newline, as Shift+Down from
-    /// its start would; the last line to its end.
-    fn select_line(&mut self) {
-        self.anchor = Some(Pos {
-            line: self.cur.line,
-            col: 0,
-        });
-        self.cur = if self.cur.line + 1 < self.buf.len() {
-            Pos {
-                line: self.cur.line + 1,
-                col: 0,
-            }
-        } else {
-            self.end_pos()
-        };
-    }
-
-    /// The position drawn at a screen cell: `y` rows down from `top`,
-    /// stopping at the buffer's last row; the char whose cells hold `x`,
-    /// or the newline past the row's end. A separator row is the line
-    /// below, at the same column.
-    fn cell_pos(&mut self, x: usize, y: usize) -> Pos {
-        if self.buf.is_empty() {
-            return Pos::default();
-        }
-        let mut p = self.snap(self.top);
-        for _ in 0..y {
-            p = self.next_row(p);
-        }
-        let p = p.pos();
-        let ln = self.line_layout(p.line);
-        let (row, _) = ln.pos(p.col);
-        Pos {
-            line: p.line,
-            col: ln.col(row, x + self.xoff),
-        }
-    }
-
-    /// Moves the view `n` rows (negative is up), keeping the first line
-    /// to the last row at the top. The cursor keeps its place, hidden
-    /// while off screen: the next motion brings the view back to it.
-    pub(super) fn scroll_view(&mut self, mut n: isize) {
-        self.act();
-        if self.text_rows() == 0 || self.buf.is_empty() {
-            return;
-        }
-        self.top = self.snap(self.top);
-        while n > 0 {
-            self.top = self.next_row(self.top);
-            n -= 1;
-        }
-        while n < 0 {
-            self.top = self.prev_row(self.top);
-            n += 1;
-        }
-    }
-
-    /// Moves the view `n` columns (negative is left), no further right
-    /// than brings the widest row on screen and its newline to the right
-    /// edge; already past that, after scrolling down to narrower rows, a
-    /// right tick stays put rather than turn back. Wrapped, nothing is
-    /// off screen to the side. The cursor keeps its place, hidden while
-    /// off screen: the next motion brings the view back to it.
-    pub(super) fn scroll_view_sideways(&mut self, n: isize) {
-        self.act();
-        let l = self.layout();
-        let rows = self.text_rows();
-        if self.settings.mode != Mode::NoWrap || l.width == 0 || rows == 0 || self.buf.is_empty() {
-            return;
-        }
-        self.top = self.snap(self.top);
-        // A row a line.
-        let last = (self.top.line + rows).min(self.buf.len());
-        let widest = (self.top.line..last)
-            .map(|i| self.line_layout(i).cells().last().copied().unwrap_or(0) + 1)
-            .max()
-            .unwrap_or(0) as isize;
-        let xoff = self.xoff as isize;
-        let hi = (widest - l.width as isize).max(xoff).max(0);
-        self.xoff = (xoff + n).clamp(0, hi) as usize;
     }
 }
 

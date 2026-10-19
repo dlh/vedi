@@ -1,6 +1,5 @@
 //! The / and ? prompts, and n and N.
 
-use crate::app::motion::Row;
 use crate::app::prompt::{Prompt, PromptEdit};
 use crate::app::{App, Focus};
 use crate::input::key::Key;
@@ -30,7 +29,7 @@ impl State {
 impl<T: Terminal> App<T> {
     /// Opens the / prompt, or the ? prompt if `back`.
     pub(super) fn open_search(&mut self, back: bool) {
-        self.focus = Focus::Searching { back };
+        self.focus(Focus::Searching { back });
         self.mouse.end_drag();
         self.search.query.open();
     }
@@ -40,9 +39,13 @@ impl<T: Terminal> App<T> {
     pub(super) fn search_key(&mut self, key: Key, back: bool) {
         match self.search.query.edit(key) {
             PromptEdit::Editing => {}
-            PromptEdit::Cancel => self.focus = self.shown(),
+            PromptEdit::Cancel => {
+                let shown = self.shown();
+                self.focus(shown);
+            }
             PromptEdit::Submit => {
-                self.focus = self.shown();
+                let shown = self.shown();
+                self.focus(shown);
                 let s = &mut self.search;
                 s.backward = back;
                 if s.query.is_empty() {
@@ -75,10 +78,11 @@ impl<T: Terminal> App<T> {
             return;
         }
         let m = &self.search.matcher;
+        let (buf, cur) = (self.view.buf(), self.view.cursor());
         let found = if backward {
-            search::prev(&self.buf, m, self.cur)
+            search::prev(buf, m, cur)
         } else {
-            search::next(&self.buf, m, self.cur, skip)
+            search::next(buf, m, cur, skip)
         };
         self.jump_to(found);
     }
@@ -88,34 +92,14 @@ impl<T: Terminal> App<T> {
             self.status = Some(format!("not found: {}", self.search.matcher.pattern()));
             return;
         };
-        self.cur = f.pos;
-        self.drop();
+        self.view.set_cursor(f.pos);
+        self.view.drop();
         self.search.highlight = true;
         if f.wrapped {
             self.status = Some("search wrapped".into());
         }
-        self.scroll_match_to_top();
-        self.scroll_to_cursor();
-    }
-
-    /// Makes the cursor's row the top one if it is off the screen,
-    /// stopping at the last screenful.
-    fn scroll_match_to_top(&mut self) {
-        let rows = self.text_rows();
-        if rows == 0 || self.buf.is_empty() {
-            return;
-        }
-        let crow = self.snap(Row::text(self.cur));
-        let top = self.snap(self.top);
-        if crow >= top {
-            let mut bottom = top;
-            for _ in 0..rows - 1 {
-                bottom = self.next_row(bottom);
-            }
-            if bottom >= crow {
-                return;
-            }
-        }
-        self.place_top(crow);
+        // A match off the screen comes in on the top row.
+        self.view.cursor_row_to_top();
+        self.view.scroll_to_cursor();
     }
 }

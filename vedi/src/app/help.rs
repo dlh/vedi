@@ -3,14 +3,13 @@
 
 use std::mem;
 
-use crate::app::motion::Row;
+use crate::app::text_view::{Start, TextView};
 use crate::app::{App, Focus};
 use crate::input::action::{Action, Command};
 use crate::input::help::Section;
-use crate::text::buffer::{Buffer, Pos, Progress, Storage};
+use crate::text::buffer::{Buffer, Progress, Storage};
 use crate::text::index::Indexer;
 use crate::text::search::Matcher;
-use crate::view::layout::Mode;
 use crate::view::screen::Terminal;
 
 /// How wide the help is laid out, whatever the screen: less's help is
@@ -21,19 +20,10 @@ const HELP_COLS: usize = 80;
 /// How far Left and Right scroll the bindings sideways.
 const HELP_STEP: isize = 8;
 
-/// What help sets aside: the text, how it was shown, and its search,
-/// which help's does not disturb.
-pub(super) struct TextView {
-    pub(super) buf: Buffer,
-    pub(super) cur: Pos,
-    pub(super) top: Row,
-    pub(super) anchor: Option<Pos>,
-    /// A reload moved the cursor.
-    pub(super) moved: bool,
-    /// The last frame showed the cursor.
-    shown: bool,
-    xoff: usize,
-    wrap_mode: Mode,
+/// What help sets aside: the text and its view, and its search, which
+/// help's does not disturb.
+pub(super) struct Aside {
+    pub(super) view: TextView,
     matcher: Matcher,
     backward: bool,
     highlight: bool,
@@ -44,67 +34,35 @@ impl<T: Terminal> App<T> {
     /// `NoWrap` mode, so drawing and scrolling are the text's. The
     /// search starts over: help's is its own.
     pub(super) fn show_help(&mut self) {
-        let help = help_buffer(&self.keys.help());
-        self.text = Some(TextView {
-            buf: mem::replace(&mut self.buf, help),
-            cur: self.cur,
-            top: self.top,
-            anchor: self.anchor.take(),
-            moved: false,
-            shown: self.cursor_shown,
-            xoff: self.xoff,
-            wrap_mode: self.settings.mode,
+        self.focus = Focus::Helping;
+        let help = TextView::new(
+            help_buffer(&self.keys.help()),
+            Start::default(),
+            self.geometry(),
+        );
+        self.text = Some(Aside {
+            view: mem::replace(&mut self.view, help),
             matcher: mem::replace(&mut self.search.matcher, Matcher::new("")),
             backward: self.search.backward,
             highlight: self.search.highlight,
         });
-        self.focus = Focus::Helping;
         self.mouse.end_drag();
-        self.cur = Pos::default();
-        self.top = Row::text(Pos::default());
-        self.xoff = 0;
-        self.settings.mode = Mode::NoWrap;
         self.search.backward = false;
         self.search.highlight = false;
-        self.laid.clear();
     }
 
-    /// The text's buffer: the one shown, or the one help set aside.
-    pub(super) fn text_buf(&self) -> &Buffer {
-        match &self.text {
-            Some(t) => &t.buf,
-            None => &self.buf,
-        }
-    }
-
-    pub(super) fn text_buf_mut(&mut self) -> &mut Buffer {
-        match &mut self.text {
-            Some(t) => &mut t.buf,
-            None => &mut self.buf,
-        }
-    }
-
-    /// Puts the text back as it was, scrolled to the cursor when a
-    /// reload meanwhile moved it or it was on screen, as a resize
-    /// meanwhile may have pushed it off; one scrolled off stays off.
+    /// Puts the text back as it was. Its view is laid out for the
+    /// screen as it is now at the next draw: a cursor that was on screen
+    /// stays on screen, one scrolled off stays off.
     pub(super) fn hide_help(&mut self) {
-        let Some(t) = self.text.take() else {
+        let Some(a) = self.text.take() else {
             return;
         };
-        self.buf = t.buf;
-        self.cur = t.cur;
-        self.top = t.top;
-        self.anchor = t.anchor;
-        self.xoff = t.xoff;
-        self.settings.mode = t.wrap_mode;
-        self.search.matcher = t.matcher;
-        self.search.backward = t.backward;
-        self.search.highlight = t.highlight;
+        self.view = a.view;
+        self.search.matcher = a.matcher;
+        self.search.backward = a.backward;
+        self.search.highlight = a.highlight;
         self.focus = Focus::Viewing;
-        self.laid.clear();
-        if t.moved || t.shown {
-            self.scroll_to_cursor();
-        }
     }
 
     /// Scrolls the bindings by a motion and searches them by the search
@@ -134,64 +92,30 @@ impl<T: Terminal> App<T> {
             self.hide_help();
             return;
         }
-        let n = self.buf.len() as isize;
+        // The cursor, hidden but where a search starts, comes along.
+        let v = &mut self.view;
+        let n = v.buf().len() as isize;
         match c.action {
-            Action::Up => self.scroll_help(-1),
-            Action::Down => self.scroll_help(1),
-            Action::PageUp => self.scroll_help(-(self.page_rows() as isize)),
-            Action::PageDown => self.scroll_help(self.page_rows() as isize),
-            Action::HalfPageUp => self.scroll_help(-(self.half_page_rows() as isize)),
-            Action::HalfPageDown => self.scroll_help(self.half_page_rows() as isize),
-            Action::First => self.scroll_help(-n),
-            Action::Last => self.scroll_help(n),
-            Action::Left | Action::WordLeft => self.scroll_help_sideways(-HELP_STEP),
-            Action::Right | Action::WordRight => self.scroll_help_sideways(HELP_STEP),
+            Action::Up => v.scroll_within(-1),
+            Action::Down => v.scroll_within(1),
+            Action::PageUp => v.scroll_within(-(v.page_rows() as isize)),
+            Action::PageDown => v.scroll_within(v.page_rows() as isize),
+            Action::HalfPageUp => v.scroll_within(-(v.half_page_rows() as isize)),
+            Action::HalfPageDown => v.scroll_within(v.half_page_rows() as isize),
+            Action::First => v.scroll_within(-n),
+            Action::Last => v.scroll_within(n),
+            Action::Left | Action::WordLeft => v.scroll_sideways_within(-HELP_STEP),
+            Action::Right | Action::WordRight => v.scroll_sideways_within(HELP_STEP),
             Action::Home => {
-                let w = self.help_width() as isize;
-                self.scroll_help_sideways(-w);
+                let w = v.width() as isize;
+                v.scroll_sideways_within(-w);
             }
             Action::End => {
-                let w = self.help_width() as isize;
-                self.scroll_help_sideways(w);
+                let w = v.width() as isize;
+                v.scroll_sideways_within(w);
             }
             _ => {}
         }
-    }
-
-    /// Moves the bindings by `n` rows, no further than the last page;
-    /// each line is a row, the mode being `NoWrap`. The cursor, hidden
-    /// but where a search starts, is kept on screen: scrolled off, it
-    /// moves to the edge row.
-    pub(super) fn scroll_help(&mut self, n: isize) {
-        let rows = self.text_rows();
-        let last = self.buf.len().saturating_sub(rows) as isize;
-        let line = (self.top.line as isize + n).clamp(0, last) as usize;
-        self.top = Row::text(Pos { line, col: 0 });
-        if self.cur.line < line {
-            self.cur = Pos { line, col: 0 };
-        } else if self.cur.line >= line + rows {
-            self.cur = Pos {
-                line: (line + rows).saturating_sub(1),
-                col: 0,
-            };
-        }
-    }
-
-    /// Moves the bindings by `n` columns, no further than brings the
-    /// widest line's end to the right edge.
-    pub(super) fn scroll_help_sideways(&mut self, n: isize) {
-        let (w, _) = self.screen.size();
-        let last = self.help_width().saturating_sub(w) as isize;
-        self.xoff = (self.xoff as isize + n).clamp(0, last) as usize;
-    }
-
-    /// The widest line of the bindings, in cells; `&mut` for the layout
-    /// cache.
-    fn help_width(&mut self) -> usize {
-        (0..self.buf.len())
-            .map(|i| *self.line_layout(i).cells().last().unwrap_or(&0))
-            .max()
-            .unwrap_or(0)
     }
 }
 
