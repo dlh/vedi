@@ -26,6 +26,10 @@ unicode-width = "0.2.2"
 criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
 
 [[bench]]
+name = "app"
+harness = false
+
+[[bench]]
 name = "text"
 harness = false
 
