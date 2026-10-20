@@ -2,6 +2,7 @@
 //! what a key does, with Tab completion.
 
 use crate::app::prompt::{Prompt, cancels};
+use crate::app::text_view::Motion;
 use crate::app::{App, Flow, Focus};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
@@ -213,9 +214,7 @@ impl<T: Terminal> App<T> {
             .saturating_sub(1)
             .min(lines.end.saturating_sub(1))
             .max(lines.start);
-        v.set_cursor(Pos { line, col: 0 });
-        v.drop();
-        v.scroll_to_cursor();
+        v.go(Motion::To(Pos { line, col: 0 }), false);
     }
 
     /// Sets what a config line would.

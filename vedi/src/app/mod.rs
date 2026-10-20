@@ -33,7 +33,7 @@ use crate::text::reader::Gen;
 use crate::view::layout::Mode;
 use crate::view::screen::{Grid, Screen, Terminal};
 use prompt::Prompt;
-use text_view::{Geometry, Start, TextView};
+use text_view::{Geometry, Motion, Start, TextView};
 
 /// How often the reader's data is drawn, at most.
 const REDRAW_EVERY: Duration = Duration::from_millis(50);
@@ -368,44 +368,27 @@ impl<T: Terminal> App<T> {
     }
 
     fn view_key(&mut self, c: Command) -> Flow {
-        if let Some(n) = self.page_scroll(&c) {
-            self.view.scroll(n);
-            return Flow::Continue;
-        }
-        let v = &mut self.view;
-        let was = v.cursor();
-        if c.action.is_movement() {
-            if c.extend {
-                v.extend();
-            } else {
-                v.drop();
-            }
-        }
-        // Rows a row motion had nowhere to take.
-        let mut left = 0;
+        let (v, e) = (&mut self.view, c.extend);
         match c.action {
-            Action::Up => left = v.move_rows(-1),
-            Action::Down => left = v.move_rows(1),
-            Action::Left => v.move_col(-1),
-            Action::Right => v.move_col(1),
-            Action::Home => v.line_start(),
-            Action::End => v.line_end(),
-            Action::PageUp => left = v.move_rows(-(v.page_rows() as isize)),
-            Action::PageDown => left = v.move_rows(v.page_rows() as isize),
-            Action::HalfPageUp => left = v.move_rows(-(v.half_page_rows() as isize)),
-            Action::HalfPageDown => left = v.move_rows(v.half_page_rows() as isize),
-            Action::WordLeft => v.word_left(),
-            Action::WordRight => v.word_right(),
-            Action::First => v.set_cursor(Pos::default()),
-            Action::Last => v.set_cursor(Pos {
-                line: v.buf().len().saturating_sub(1),
-                col: 0,
-            }),
-            Action::ScreenTop => v.screen_row(0),
-            Action::ScreenMiddle => v.screen_row(v.rows() / 2),
-            Action::ScreenBottom => v.screen_row(v.rows().saturating_sub(1)),
-            Action::PrevFile => v.prev_input(),
-            Action::NextFile => v.next_input(),
+            Action::Up => v.go(Motion::Up, e),
+            Action::Down => v.go(Motion::Down, e),
+            Action::Left => v.go(Motion::Left, e),
+            Action::Right => v.go(Motion::Right, e),
+            Action::Home => v.go(Motion::LineStart, e),
+            Action::End => v.go(Motion::LineEnd, e),
+            Action::PageUp => v.go(Motion::PageUp, e),
+            Action::PageDown => v.go(Motion::PageDown, e),
+            Action::HalfPageUp => v.go(Motion::HalfPageUp, e),
+            Action::HalfPageDown => v.go(Motion::HalfPageDown, e),
+            Action::WordLeft => v.go(Motion::WordLeft, e),
+            Action::WordRight => v.go(Motion::WordRight, e),
+            Action::First => v.go(Motion::First, e),
+            Action::Last => v.go(Motion::Last, e),
+            Action::ScreenTop => v.go(Motion::ScreenTop, e),
+            Action::ScreenMiddle => v.go(Motion::ScreenMiddle, e),
+            Action::ScreenBottom => v.go(Motion::ScreenBottom, e),
+            Action::PrevFile => v.go(Motion::PrevInput, e),
+            Action::NextFile => v.go(Motion::NextInput, e),
             Action::SelectAll => v.select_all(),
             Action::ClearSelection => v.clear_selection(),
             Action::SetMark => v.set_mark(),
@@ -420,10 +403,7 @@ impl<T: Terminal> App<T> {
                         Flow::Continue
                     };
                 }
-                v.drop();
-                v.move_rows(1);
-                // A motion, even at the end.
-                v.scroll_to_cursor();
+                v.go(Motion::Down, false);
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
             Action::SearchNext => {
@@ -440,40 +420,7 @@ impl<T: Terminal> App<T> {
             Action::Reload => self.reload(true),
             Action::Quit => return Flow::Quit,
         }
-        // Extending past the last row, by Shift or the mark, takes the
-        // rest of the last line; past the first, the start of the first.
-        let v = &mut self.view;
-        let extending = c.extend || v.marking();
-        if extending && left > 0 {
-            let end = v.end_pos();
-            v.set_cursor(end);
-        } else if extending && left < 0 {
-            v.set_cursor(Pos::default());
-        }
-        // Only a motion brings a view scrolled off the cursor back.
-        if c.action.is_movement() || v.cursor() != was {
-            v.scroll_to_cursor();
-        }
         Flow::Continue
-    }
-
-    /// The rows a page key scrolls the view, leaving the cursor and the
-    /// selection as they are; `None` for any other key, and for a page
-    /// that extends the selection, by Shift or the mark, which moves the
-    /// cursor instead.
-    fn page_scroll(&self, c: &Command) -> Option<isize> {
-        if c.extend || self.view.marking() {
-            return None;
-        }
-        let page = self.view.page_rows() as isize;
-        let half = self.view.half_page_rows() as isize;
-        match c.action {
-            Action::PageUp => Some(-page),
-            Action::PageDown => Some(page),
-            Action::HalfPageUp => Some(-half),
-            Action::HalfPageDown => Some(half),
-            _ => None,
-        }
     }
 
     /// The rows left for text: all but the status line, which needs two

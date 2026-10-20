@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use super::*;
 use crate::app::event::{Mouse, MouseKind};
-use crate::app::text_view::{Geometry, Row, Start, TextView};
+use crate::app::text_view::{Geometry, Motion, Row, Start, TextView};
 use crate::input::config;
 use crate::input::key::Key;
 use crate::text::buffer::tests::{Fill, temp};
@@ -693,7 +693,7 @@ fn on_second_input(buf: Buffer) -> TextView {
         ..Geometry::default()
     };
     let mut v = TextView::new(buf, Start::default(), geom);
-    v.next_input();
+    v.go(Motion::NextInput, false);
     assert_eq!(v.top(), Row::sep(1));
     v
 }

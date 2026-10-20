@@ -4,6 +4,7 @@
 use std::time::{Duration, Instant};
 
 use crate::app::event::{Mouse, MouseKind};
+use crate::app::text_view::Motion;
 use crate::app::{App, Focus};
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
@@ -147,9 +148,7 @@ impl<T: Terminal> App<T> {
         self.mouse.ticking = None;
         let v = &mut self.view;
         if shift {
-            v.extend();
             let pos = v.cell_pos(x, y);
-            v.set_cursor(pos);
             self.mouse.last_press = Some(Click {
                 at: now,
                 x,
@@ -157,7 +156,7 @@ impl<T: Terminal> App<T> {
                 pos,
                 n: 0,
             });
-            v.scroll_to_cursor();
+            v.go(Motion::To(pos), true);
             return;
         }
         let pos = v.cell_pos(x, y);
@@ -199,8 +198,7 @@ impl<T: Terminal> App<T> {
         }
         (self.mouse.drag_x, self.mouse.drag_y) = (x, y);
         let pos = v.cell_pos(x, y.min(v.rows().saturating_sub(1)));
-        v.set_cursor(pos);
-        v.scroll_to_cursor();
+        v.go(Motion::To(pos), true);
         if self.edge() != 0 && self.mouse.ticking.is_none() {
             self.mouse.ticking = Some((self.clock)() + AUTO_SCROLL_TICK);
         }

@@ -27,7 +27,93 @@ fn is_mark(c: char) -> bool {
         )
 }
 
+/// Where a key, a click or a line number takes the cursor.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Motion {
+    Up,
+    Down,
+    Left,
+    Right,
+    LineStart,
+    LineEnd,
+    PageUp,
+    PageDown,
+    HalfPageUp,
+    HalfPageDown,
+    WordLeft,
+    WordRight,
+    First,
+    Last,
+    ScreenTop,
+    ScreenMiddle,
+    ScreenBottom,
+    PrevInput,
+    NextInput,
+    To(Pos),
+}
+
 impl TextView {
+    /// Moves the cursor by `m` and brings it on screen, extending the
+    /// selection if `extend` or the mark is set, else dropping it. A
+    /// page that does not extend scrolls the view instead and leaves the
+    /// cursor and the selection as they are.
+    pub fn go(&mut self, m: Motion, extend: bool) {
+        let extending = extend || self.marking;
+        let page = self.page_rows() as isize;
+        let half = self.half_page_rows() as isize;
+        if !extending {
+            match m {
+                Motion::PageUp => return self.scroll(-page),
+                Motion::PageDown => return self.scroll(page),
+                Motion::HalfPageUp => return self.scroll(-half),
+                Motion::HalfPageDown => return self.scroll(half),
+                _ => {}
+            }
+        }
+        if extend {
+            self.extend();
+        } else {
+            self.drop();
+        }
+        // Rows a row motion had nowhere to take.
+        let mut left = 0;
+        match m {
+            Motion::Up => left = self.move_rows(-1),
+            Motion::Down => left = self.move_rows(1),
+            Motion::Left => self.move_col(-1),
+            Motion::Right => self.move_col(1),
+            Motion::LineStart => self.cur.col = 0,
+            Motion::LineEnd => self.cur.col = self.line_len(self.cur.line),
+            Motion::PageUp => left = self.move_rows(-page),
+            Motion::PageDown => left = self.move_rows(page),
+            Motion::HalfPageUp => left = self.move_rows(-half),
+            Motion::HalfPageDown => left = self.move_rows(half),
+            Motion::WordLeft => self.word_left(),
+            Motion::WordRight => self.word_right(),
+            Motion::First => self.cur = Pos::default(),
+            Motion::Last => {
+                self.cur = Pos {
+                    line: self.buf.len().saturating_sub(1),
+                    col: 0,
+                }
+            }
+            Motion::ScreenTop => self.screen_row(0),
+            Motion::ScreenMiddle => self.screen_row(self.geom.rows / 2),
+            Motion::ScreenBottom => self.screen_row(self.geom.rows.saturating_sub(1)),
+            Motion::PrevInput => self.prev_input(),
+            Motion::NextInput => self.next_input(),
+            Motion::To(p) => self.cur = p,
+        }
+        // Extending past the last row, by Shift or the mark, takes the
+        // rest of the last line; past the first, the start of the first.
+        if extending && left > 0 {
+            self.cur = self.end_pos();
+        } else if extending && left < 0 {
+            self.cur = Pos::default();
+        }
+        self.scroll_to_cursor();
+    }
+
     /// Moves the cursor `n` visual rows (negative is up), keeping its
     /// cell column where possible, and returns the rows left when the
     /// text ran out. Crossing a line resets the column first:
@@ -35,7 +121,7 @@ impl TextView {
     /// old column must not open one on the new line. A row naming an
     /// input counts as a row crossed, though the cursor cannot stop on
     /// it: one row's move steps over it.
-    pub fn move_rows(&mut self, mut n: isize) -> isize {
+    fn move_rows(&mut self, mut n: isize) -> isize {
         let mut ln = self.line_layout(self.cur.line);
         let (mut row, x) = self.cursor_pos(&ln);
         while n > 0 {
@@ -82,7 +168,7 @@ impl TextView {
     /// over the rest of a cluster so the cursor rests on a char with a
     /// cell. A line that shrank leaves the cursor past its end; it
     /// comes back first.
-    pub fn move_col(&mut self, d: isize) {
+    fn move_col(&mut self, d: isize) {
         let n = self.line_len(self.cur.line);
         self.cur.col = self.cur.col.min(n);
         let ln = self.line_layout(self.cur.line);
@@ -108,16 +194,8 @@ impl TextView {
         }
     }
 
-    pub fn line_start(&mut self) {
-        self.cur.col = 0;
-    }
-
-    pub fn line_end(&mut self) {
-        self.cur.col = self.line_len(self.cur.line);
-    }
-
     /// To the end of the current or next word.
-    pub fn word_right(&mut self) {
+    fn word_right(&mut self) {
         self.buf.text(self.cur.line, &mut self.scratch);
         let text = &self.scratch;
         if self.cur.col >= text.len() {
@@ -135,7 +213,7 @@ impl TextView {
     }
 
     /// To the start of the current or previous word.
-    pub fn word_left(&mut self) {
+    fn word_left(&mut self) {
         if self.cur.col == 0 {
             self.move_col(-1);
             return;
@@ -154,7 +232,7 @@ impl TextView {
 
     /// To the next stop after the cursor's line; past the last,
     /// nowhere. An input with no lines is passed over.
-    pub fn next_input(&mut self) {
+    fn next_input(&mut self) {
         let n = self.buf.len();
         let cur = self.cur.line;
         if let Some(start) = self.stops().into_iter().find(|&s| s > cur && s < n) {
@@ -164,7 +242,7 @@ impl TextView {
 
     /// To the stop the cursor's line is under, or from there to the
     /// one before it; on the first line, nowhere.
-    pub fn prev_input(&mut self) {
+    fn prev_input(&mut self) {
         let cur = self.cur.line;
         let target = self.stops().into_iter().rfind(|&s| s < cur).unwrap_or(0);
         if target < cur {
@@ -192,7 +270,7 @@ impl TextView {
     /// Puts the cursor at the start of the text row `n` rows below the
     /// top of the screen. A row naming an input gives way to the text
     /// row after it, or before it on the bottom row.
-    pub fn screen_row(&mut self, n: usize) {
+    fn screen_row(&mut self, n: usize) {
         let rows = self.geom.rows;
         if rows == 0 || self.buf.is_empty() {
             return;
@@ -241,11 +319,6 @@ impl TextView {
         Some((a.min(self.cur), a.max(self.cur)))
     }
 
-    /// The mark is set: motions extend the selection.
-    pub fn marking(&self) -> bool {
-        self.marking
-    }
-
     /// Anchors the selection at the cursor if there is none, so a
     /// motion extends it.
     pub fn extend(&mut self) {
@@ -253,7 +326,7 @@ impl TextView {
     }
 
     /// Clears the selection, unless the mark is set.
-    pub fn drop(&mut self) {
+    pub(super) fn drop(&mut self) {
         if !self.marking {
             self.anchor = None;
         }
@@ -268,6 +341,7 @@ impl TextView {
     pub fn select_all(&mut self) {
         self.anchor = Some(Pos::default());
         self.cur = self.end_pos();
+        self.scroll_to_cursor();
     }
 
     /// Clears the selection and the mark; with no selection, the
