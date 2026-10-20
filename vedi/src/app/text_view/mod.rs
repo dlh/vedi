@@ -277,6 +277,9 @@ impl TextView {
         }
         let mut bottom = top;
         for _ in 0..rows - 1 {
+            if bottom >= crow {
+                break;
+            }
             bottom = self.next_row(bottom);
         }
         if bottom < crow {
@@ -368,6 +371,9 @@ impl TextView {
         if crow >= top {
             let mut bottom = top;
             for _ in 0..rows - 1 {
+                if bottom >= crow {
+                    break;
+                }
                 bottom = self.next_row(bottom);
             }
             if bottom >= crow {
