@@ -1,8 +1,10 @@
 use std::io;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
+use crate::sys::opencmd::{Killer, Killers};
 use crate::text::buffer::Buffer;
 use crate::text::reader::Gen;
 
@@ -13,10 +15,22 @@ pub const STDIN: &str = "<stdin>";
 /// The clock double-clicks and the redraw hold are timed by.
 pub type Clock = Box<dyn FnMut() -> Instant>;
 
-/// Sends text to the clipboard; the error is what the status line shows.
+/// A copy's outcome; the error is what the status line shows.
+pub type CopyResult = Result<(), String>;
+
+/// Takes a copy's result, on whatever thread it comes in.
+pub type Done = Box<dyn FnOnce(CopyResult) + Send>;
+
+/// Sends text to the clipboard and hands `done` the result: at once,
+/// or from a thread when the sending takes time, and then the
+/// command's killer, so a copy superseded can be ended.
 pub trait Copier {
-    fn copy(&mut self, text: &str) -> Result<(), String>;
+    fn copy(&mut self, text: &str, done: Done) -> Option<Killer>;
 }
+
+/// Wakes the loop once a copy's result is in: `Event::Copied` on its
+/// sender.
+pub type Wake = Arc<dyn Fn() + Send + Sync>;
 
 /// Reads the input again for a reload, through open_cmd or not: an
 /// empty buffer whose reader, started, sends `Event::Progress` for the
@@ -37,6 +51,10 @@ pub struct Options {
     pub follow: bool,
     pub screen: Option<StartScreen>,
     pub copier: Box<dyn Copier>,
+    pub wake: Wake,
+    /// Commands to kill when vedi exits; a clipboard command set at
+    /// the prompt joins them.
+    pub killers: Killers,
     pub clock: Clock,
     /// There is a ⌘ key.
     pub macos: bool,

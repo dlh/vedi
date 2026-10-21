@@ -91,4 +91,7 @@ An `open_cmd` in `-- config --` runs no command: `-- input --` is what it
 printed, and a `-- file --` before the first key what the file holds. `O` reads
 the file; `O` again reads the input sections again.
 
+A clipboard command runs while the keys after it are handled; its result lands
+before the next assertion.
+
 Colors are not covered; those tests stay in `vedi/src/app/tests.rs`.

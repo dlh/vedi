@@ -16,6 +16,8 @@ pub enum Event {
     Changed,
     /// A deadline passed: the redraw hold, or the auto-scroll tick.
     Tick,
+    /// A copy's result is in.
+    Copied,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]

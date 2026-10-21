@@ -7,6 +7,9 @@ use vedi::text::source::Chunk;
 
 use std::time::Duration;
 
+use vedi::app::Copier;
+use vedi::sys::clipboard::CommandCopier;
+
 use super::*;
 
 struct TempDir(PathBuf);
@@ -136,7 +139,7 @@ fn one_page_input() -> (Buffer, io::PipeWriter, Receiver<Event>) {
         on_disk: false,
         killers: Vec::new(),
     };
-    let buf = Killers::default().start(input, ViewStyle::Color, 0, &tx);
+    let buf = Readers::default().start(input, ViewStyle::Color, 0, &tx);
     (buf, w, rx)
 }
 
@@ -205,18 +208,39 @@ fn is_done(p: &Progress) -> bool {
 fn reload_prunes_reaped_commands() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let killers = Killers::default();
-    let _kill = KillOnExit(killers.clone());
+    let readers = Readers::default();
+    let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
     let cat = always(&["cat", "%s"]);
     for g in 0..3 {
         let input = open_input(std::slice::from_ref(&f), Some(&cat)).unwrap();
-        let _buf = killers.start(input, ViewStyle::Color, g, &tx);
+        let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
     let input = open_input(std::slice::from_ref(&f), Some(&cat)).unwrap();
-    let _buf = killers.start(input, ViewStyle::Color, 3, &tx);
-    assert_eq!(killers.lock().len(), 1);
+    let _buf = readers.start(input, ViewStyle::Color, 3, &tx);
+    assert_eq!(readers.0.lock().len(), 1);
+}
+
+// A reload kills the commands reading the old input, not a clipboard
+// command still running.
+#[test]
+fn reload_spares_a_clipboard_command() {
+    let d = TempDir::new();
+    let f = d.file("f", "hello\n");
+    let readers = Readers::default();
+    let copies = Killers::default();
+    let _kill = KillOnExit(vec![readers.0.clone(), copies.clone()]);
+    let (ctx, crx) = mpsc::channel();
+    CommandCopier::new("sleep 1", copies).copy("x", Box::new(move |r| ctx.send(r).unwrap()));
+    let (tx, rx) = mpsc::channel();
+    let cat = always(&["cat", "%s"]);
+    for g in 0..2 {
+        let input = open_input(std::slice::from_ref(&f), Some(&cat)).unwrap();
+        let _buf = readers.start(input, ViewStyle::Color, g, &tx);
+        assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
+    }
+    assert_eq!(crx.recv_timeout(Duration::from_secs(3)).unwrap(), Ok(()));
 }
 
 // The old input's command reads on until the reload's text ends, when
@@ -225,12 +249,12 @@ fn reload_prunes_reaped_commands() {
 fn reload_kills_old_commands_at_its_end() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let killers = Killers::default();
-    let _kill = KillOnExit(killers.clone());
+    let readers = Readers::default();
+    let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
     let slow = always(&["sh", "-c", "cat \"$0\"; exec sleep 30", "%s"]);
     let input = open_input(&[f], Some(&slow)).unwrap();
-    let _old = killers.start(input, ViewStyle::Color, 0, &tx);
+    let _old = readers.start(input, ViewStyle::Color, 0, &tx);
     while !matches!(
         next_from(&rx, 0),
         Some(Progress::Data { chunk: Some(_), .. })
@@ -243,7 +267,7 @@ fn reload_kills_old_commands_at_its_end() {
         on_disk: false,
         killers: Vec::new(),
     };
-    let _new = killers.start(input, ViewStyle::Color, 1, &tx);
+    let _new = readers.start(input, ViewStyle::Color, 1, &tx);
     w.write_all(b"new\n").unwrap();
     let deadline = std::time::Instant::now() + Duration::from_millis(300);
     while let Ok(ev) =

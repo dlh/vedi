@@ -1,6 +1,6 @@
 When the clipboard command fails, the status line says so, the
-selection stays, and Enter does not quit. `false` is a command that
-always fails.
+selection stays, and Enter, which waits for the command, does not
+quit. `false` is a command that always fails.
 
 -- size --
 40x5

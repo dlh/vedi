@@ -8,14 +8,14 @@ use std::panic;
 use std::path::Path;
 use std::process::ExitCode;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 
 use vedi::app::{App, Event, Verdict, one_page};
 use vedi::cli::{self, OpenCmdFor, USAGE};
 use vedi::input::config::{self, Config, LoadError};
-use vedi::sys::opencmd::{self, Killer};
+use vedi::sys::opencmd::{self, Killer, Killers};
 use vedi::sys::term::{self, Crossterm};
 use vedi::sys::watch::Watch;
 use vedi::sys::{clipboard, tty};
@@ -97,14 +97,15 @@ fn run() -> Result<(), Fail> {
     let view = settings.view_style;
 
     let (tx, rx) = mpsc::channel();
-    let killers = Killers::default();
-    let _kill = KillOnExit(killers.clone());
+    let readers = Readers::default();
+    let copies = Killers::default();
+    let _kill = KillOnExit(vec![readers.0.clone(), copies.clone()]);
     let input = open_input(&files, open_cmd.as_deref()).map_err(|msg| Fail {
         msg,
         usage: files.is_empty(),
     })?;
     let on_disk = input.on_disk;
-    let mut buf = killers.start(input, view, 0, &tx);
+    let mut buf = readers.start(input, view, 0, &tx);
     if opts.quit_if_one_page {
         // With no terminal to size, -F still prints what fits the
         // environment's size or 80×25; only paging needs one.
@@ -122,7 +123,7 @@ fn run() -> Result<(), Fail> {
     drop(stdout);
 
     let default_hook = panic::take_hook();
-    let hook_killers = killers.clone();
+    let hook_killers = [readers.0.clone(), copies.clone()];
     panic::set_hook(Box::new(move |info| {
         term::restore_after_panic();
         default_hook(info);
@@ -130,7 +131,7 @@ fn run() -> Result<(), Fail> {
         // terminal, so it ends the process. exit runs no Drop, so
         // `KillOnExit` cannot.
         if thread::current().name() != Some("main") {
-            hook_killers.kill_all();
+            hook_killers.iter().for_each(Killers::kill_all);
             std::process::exit(2);
         }
     }));
@@ -141,17 +142,23 @@ fn run() -> Result<(), Fail> {
         &env::var("TERM_PROGRAM").unwrap_or_default(),
         &env::var("TERM").unwrap_or_default(),
         term.raw_writer(),
+        copies.clone(),
     );
+    app_opts.killers = copies;
+    let wake_tx = tx.clone();
+    app_opts.wake = Arc::new(move || {
+        let _ = wake_tx.send(Event::Copied);
+    });
     if let Some(f) = &open_cmd {
         let f = f.clone();
         app_opts.open_cmd = Some(Box::new(move |name| f(name)));
     }
     if on_disk {
-        let (files, killers, tx) = (files.clone(), killers.clone(), tx.clone());
+        let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
         app_opts.open = Some(Box::new(move |generation, through| {
             let cmd = open_cmd.as_deref().filter(|_| through);
             let input = open_input(&files, cmd).map_err(io::Error::other)?;
-            Ok(killers.start(input, view, generation, &tx))
+            Ok(readers.start(input, view, generation, &tx))
         }));
     }
     let mut app = App::new(term, buf, 0, app_opts);
@@ -251,12 +258,12 @@ fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input
 
 /// The commands reading the inputs, killed when vedi exits and when a
 /// reload replaces them: a reader blocked on one would otherwise keep
-/// it running. A `Mutex`, as the panic hook kills them from whichever
-/// thread panicked.
+/// it running. A list of their own: a reload must not kill a copy
+/// under way.
 #[derive(Clone, Default)]
-struct Killers(Arc<Mutex<Vec<Killer>>>);
+struct Readers(Killers);
 
-impl Killers {
+impl Readers {
     /// An empty buffer for `input`, its reader started on `generation`
     /// and sending to `tx`. The commands already running are killed
     /// once it ends, as the app then swaps it in: until then the old
@@ -265,7 +272,7 @@ impl Killers {
         // Kept until reaped, so exit reaches a set whose reload never
         // ended.
         let mut old = {
-            let mut all = self.lock();
+            let mut all = self.0.lock();
             all.retain(|k| !k.reaped());
             let old = all.clone();
             all.extend(input.killers);
@@ -287,23 +294,14 @@ impl Killers {
         });
         buf
     }
-
-    fn kill_all(&self) {
-        self.lock().iter().for_each(Killer::kill);
-    }
-
-    fn lock(&self) -> MutexGuard<'_, Vec<Killer>> {
-        // A panic while held left the list whole.
-        self.0.lock().unwrap_or_else(PoisonError::into_inner)
-    }
 }
 
 /// Kills the commands when vedi exits, however it does.
-struct KillOnExit(Killers);
+struct KillOnExit(Vec<Killers>);
 
 impl Drop for KillOnExit {
     fn drop(&mut self) {
-        self.0.kill_all();
+        self.0.iter().for_each(Killers::kill_all);
     }
 }
 

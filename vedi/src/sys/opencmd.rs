@@ -6,9 +6,9 @@ use std::fs::File;
 use std::io::{self, Read};
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::os::unix::process::CommandExt;
-use std::process::{Child, ChildStdout, Command, Stdio};
-use std::sync::Arc;
+use std::process::{Child, ChildStdout, Command, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -40,6 +40,23 @@ pub struct Killer {
 }
 
 impl Killer {
+    /// For `child`, started in its own process group.
+    pub fn new(child: &Child) -> io::Result<Killer> {
+        Ok(Killer {
+            pid: libc::pid_t::try_from(child.id()).map_err(io::Error::other)?,
+            reaped: Arc::new(AtomicBool::new(false)),
+        })
+    }
+
+    /// Waits for the command; reaped, it is not killed. A wait that
+    /// fails has no child either: SIGCHLD ignored at startup reaps it
+    /// before wait can.
+    pub fn wait(&self, child: &mut Child) -> io::Result<ExitStatus> {
+        let res = child.wait();
+        self.reaped.store(true, Ordering::SeqCst);
+        res
+    }
+
     /// Kills the command and what it started. Once it is reaped its id
     /// may be reused, so nothing is killed.
     pub fn kill(&self) {
@@ -54,6 +71,29 @@ impl Killer {
 
     pub fn reaped(&self) -> bool {
         self.reaped.load(Ordering::SeqCst)
+    }
+}
+
+/// Commands to kill when vedi exits. A `Mutex`, as the panic hook
+/// kills them from whichever thread panicked.
+#[derive(Clone, Default)]
+pub struct Killers(Arc<Mutex<Vec<Killer>>>);
+
+impl Killers {
+    /// Adds a command, letting those reaped go.
+    pub fn add(&self, k: Killer) {
+        let mut all = self.lock();
+        all.retain(|k| !k.reaped());
+        all.push(k);
+    }
+
+    pub fn kill_all(&self) {
+        self.lock().iter().for_each(Killer::kill);
+    }
+
+    pub fn lock(&self) -> MutexGuard<'_, Vec<Killer>> {
+        // A panic while held left the list whole.
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
@@ -108,16 +148,13 @@ pub fn open(argv: &[String], name: &OsStr) -> io::Result<Cmd> {
     };
     let mut child = cmd.spawn()?;
     let out = child.stdout.take().expect("stdout piped");
-    let pid = libc::pid_t::try_from(child.id()).map_err(io::Error::other)?;
+    let killer = Killer::new(&child)?;
     Ok(Cmd {
         child,
         out,
         stderr,
         state: State::Running,
-        killer: Killer {
-            pid,
-            reaped: Arc::new(AtomicBool::new(false)),
-        },
+        killer,
     })
 }
 
@@ -131,8 +168,7 @@ impl Source for Cmd {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.out.read(buf)?;
         if n == 0 && !buf.is_empty() && matches!(self.state, State::Running) {
-            let status = self.child.wait()?;
-            self.killer.reaped.store(true, Ordering::SeqCst);
+            let status = self.killer.wait(&mut self.child)?;
             let err = (!status.success())
                 .then(|| ReadError::Command(failure(status, self.stderr.as_mut())));
             self.state = State::Reaped(err);
@@ -165,7 +201,13 @@ impl Drop for Cmd {
                     return;
                 }
                 Ok(None) if Instant::now() < until => thread::sleep(Duration::from_millis(5)),
-                _ => return,
+                Ok(None) => return,
+                // No child to wait for: reaped already, as under an
+                // ignored SIGCHLD.
+                Err(_) => {
+                    self.killer.reaped.store(true, Ordering::SeqCst);
+                    return;
+                }
             }
         }
     }
@@ -358,6 +400,36 @@ mod tests {
         assert!(!killer.reaped.load(Ordering::SeqCst));
         drop(c);
         assert!(killer.reaped.load(Ordering::SeqCst));
+    }
+
+    /// Reaps `pid` behind std's back, as an ignored SIGCHLD does: the
+    /// next wait on it fails.
+    fn reap(pid: libc::pid_t) {
+        let mut status = 0;
+        // SAFETY: waitpid writes the status to the int given.
+        assert_eq!(unsafe { libc::waitpid(pid, &mut status, 0) }, pid);
+    }
+
+    // A wait that fails has no child either, so it is not killed later:
+    // its id may be reused.
+    #[test]
+    fn failed_wait_marks_reaped() {
+        let mut child = Command::new("true").spawn().unwrap();
+        let killer = Killer::new(&child).unwrap();
+        reap(killer.pid);
+        assert!(killer.wait(&mut child).is_err());
+        assert!(killer.reaped());
+    }
+
+    // So does Drop's poll failing.
+    #[test]
+    fn drop_marks_reaped_when_the_poll_fails() {
+        let c = open(&args(&["sh", "-c", "exec sleep 3"]), OsStr::new("f")).unwrap();
+        let killer = c.killer();
+        killer.kill();
+        reap(killer.pid);
+        drop(c);
+        assert!(killer.reaped());
     }
 
     // Dropping after the output ended is fine.

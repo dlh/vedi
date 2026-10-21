@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::mpsc::channel;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::{Sender, channel};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -12,6 +13,7 @@ use crate::app::event::{Mouse, MouseKind};
 use crate::app::text_view::{Geometry, Motion, Row, Start, TextView};
 use crate::input::config;
 use crate::input::key::Key;
+use crate::sys::opencmd::{Killer, Killers};
 use crate::text::buffer::tests::{Fill, temp};
 use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::Indexer;
@@ -23,9 +25,20 @@ const GEN: Gen = 1;
 struct Clip(Rc<RefCell<Option<String>>>);
 
 impl Copier for Clip {
-    fn copy(&mut self, text: &str) -> Result<(), String> {
+    fn copy(&mut self, text: &str, done: Done) -> Option<Killer> {
         *self.0.borrow_mut() = Some(text.to_string());
-        Ok(())
+        done(Ok(()));
+        None
+    }
+}
+
+/// A copier that holds each result for the test to give.
+struct Slow(Rc<RefCell<Vec<Done>>>);
+
+impl Copier for Slow {
+    fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
+        self.0.borrow_mut().push(done);
+        None
     }
 }
 
@@ -37,6 +50,8 @@ fn options() -> Options {
         follow: false,
         screen: None,
         copier: Box::new(Clip(Rc::default())),
+        wake: Arc::new(|| {}),
+        killers: Killers::default(),
         clock: Box::new(Instant::now),
         macos: false,
         keys: config::default_keymap(false),
@@ -821,4 +836,74 @@ fn reload_after_vanished_file_still_reloads() {
     assert_eq!(gens.borrow().len(), 1);
     finish_reload(&mut a, &gens, 0, "new\n");
     assert_eq!(row(&a, 0), "new");
+}
+
+// A copier that takes time reports on `Event::Copied`, which its done
+// wakes the loop for; keys meanwhile are handled.
+#[test]
+fn copy_reports_when_the_copier_is_done() {
+    let done = Rc::new(RefCell::new(Vec::new()));
+    let woke = Arc::new(AtomicUsize::new(0));
+    let mut opts = options();
+    opts.copier = Box::new(Slow(Rc::clone(&done)));
+    let w = Arc::clone(&woke);
+    opts.wake = Arc::new(move || {
+        w.fetch_add(1, Ordering::SeqCst);
+    });
+    let mut a = app(20, 3, "ab\ncd\n", opts);
+    press(&mut a, "Shift+Right y");
+    assert_eq!(a.status.as_deref(), Some("copying"));
+    assert!(a.copying());
+    press(&mut a, "Down");
+    assert_eq!(a.status, None, "a key clears the status");
+    a.handle(Event::Copied);
+    assert!(a.copying(), "no result yet");
+    done.borrow_mut().remove(0)(Ok(()));
+    assert_eq!(woke.load(Ordering::SeqCst), 1);
+    a.handle(Event::Copied);
+    assert_eq!(a.status.as_deref(), Some("copied 1 line"));
+    assert!(!a.copying());
+}
+
+// A copy started before the last is done supersedes it: the first's
+// result, whenever it comes, is not the one reported.
+#[test]
+fn copy_supersedes_one_under_way() {
+    let done = Rc::new(RefCell::new(Vec::new()));
+    let mut opts = options();
+    opts.copier = Box::new(Slow(Rc::clone(&done)));
+    let mut a = app(20, 3, "ab\ncd\n", opts);
+    press(&mut a, "Shift+Right y Shift+Down y");
+    assert_eq!(done.borrow().len(), 2);
+    done.borrow_mut().remove(0)(Ok(()));
+    a.handle(Event::Copied);
+    assert!(a.copying(), "the first copy's result is dropped");
+    assert_eq!(a.status.as_deref(), Some("copying"));
+    done.borrow_mut().remove(0)(Err("late".into()));
+    a.handle(Event::Copied);
+    assert_eq!(a.status.as_deref(), Some("copy failed: late"));
+}
+
+// Enter quits on success, so it waits for the result.
+#[test]
+fn copy_and_quit_waits_for_the_copier() {
+    let (tx, rx) = channel::<Done>();
+    struct Handoff(Sender<Done>);
+    impl Copier for Handoff {
+        fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
+            self.0.send(done).unwrap();
+            None
+        }
+    }
+    let answer = thread::spawn(move || {
+        let done = rx.recv().unwrap();
+        thread::sleep(Duration::from_millis(50));
+        done(Err("late".into()));
+    });
+    let mut opts = options();
+    opts.copier = Box::new(Handoff(tx));
+    let mut a = app(20, 3, "ab\n", opts);
+    assert_eq!(press(&mut a, "Shift+Right Enter"), Flow::Continue);
+    assert_eq!(a.status.as_deref(), Some("copy failed: late"));
+    answer.join().unwrap();
 }

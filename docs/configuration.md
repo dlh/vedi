@@ -79,7 +79,9 @@ column. `-F` prints the escapes spelled out. The status line shows `raw`.
 `open_cmd bat --color=always --paging=never %s` work; a pipeline needs a script.
 `open_cmd` leaves stdin as it is. A command that fails ends the text with a read
 error naming its exit status and stderr; `R` and auto-reload run it again. See
-[Pager](pager.md#the-inputs-name).
+[Pager](pager.md#the-inputs-name). `clipboard_cmd` runs in the background: the
+status line says `copying` until it is done, and Enter waits for it. A copy
+started before then ends it; so does quitting.
 
 **open_cmd by file type.** A glob before the command, one with `*`, `?` or `[`,
 limits it to files whose name matches, case ignored; `[!a-c]` excludes, `[*]` is

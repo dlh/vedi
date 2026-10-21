@@ -1,0 +1,21 @@
+A clipboard command runs in the background: the keys after y are
+handled while it runs, and its result shows when it comes, after the
+key that would have cleared it.
+
+-- size --
+40x5
+-- args --
+--clipboard-cmd true
+-- input --
+hello
+world
+-- keys --
+Shift+Right y Down
+-- screen --
+hello
+world
+
+
+copied 1 line                     h help
+-- cursor --
+1 1

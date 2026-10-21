@@ -22,11 +22,14 @@ use std::time::{Duration, Instant};
 
 pub use event::{Event, Mouse, MouseKind};
 pub use onepage::{Verdict, one_page};
-pub use options::{Clock, Copier, OpenCmdFor, Opener, Options, STDIN, StartScreen};
+pub use options::{
+    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, STDIN, StartScreen, Wake,
+};
 
 use crate::input::action::{Action, Command};
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
+use crate::sys::opencmd::Killers;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
@@ -70,6 +73,10 @@ pub struct App<T: Terminal> {
     /// reused, so its reader's data stays dropped.
     last_gen: Gen,
     copier: Box<dyn Copier>,
+    /// A copy whose result is still to come.
+    copying: Option<copy::Copying>,
+    wake: Wake,
+    killers: Killers,
     clock: Clock,
     names: Vec<String>,
     keys: Keymap,
@@ -118,6 +125,9 @@ impl<T: Terminal> App<T> {
             generation,
             last_gen: generation,
             copier: opts.copier,
+            copying: None,
+            wake: opts.wake,
+            killers: opts.killers,
             clock: opts.clock,
             names: opts.names,
             keys: opts.keys,
@@ -350,6 +360,7 @@ impl<T: Terminal> App<T> {
             }
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
+            Event::Copied => self.copy_done(),
             Event::Changed => {
                 if self.settings.auto_reload {
                     self.reload(false);
@@ -397,7 +408,7 @@ impl<T: Terminal> App<T> {
             }
             Action::CopyAndQuit => {
                 if v.selection().is_some() {
-                    return if self.copy() {
+                    return if self.copy_and_wait() {
                         Flow::Quit
                     } else {
                         Flow::Continue

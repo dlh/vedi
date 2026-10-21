@@ -231,7 +231,10 @@ impl<T: Terminal> App<T> {
             "auto_reload" if !self.settings.auto_reload => self.dirty = false,
             "view_style" => self.set_literal(),
             "clipboard_cmd" => {
-                self.copier = Box::new(CommandCopier::new(c.clipboard_cmd.unwrap_or_default()))
+                self.copier = Box::new(CommandCopier::new(
+                    c.clipboard_cmd.unwrap_or_default(),
+                    self.killers.clone(),
+                ))
             }
             "map" => self.keys = self.keys.apply(&c.keys),
             _ => {}

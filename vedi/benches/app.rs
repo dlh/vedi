@@ -5,10 +5,11 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use vedi::app::{App, Copier, Event, Mouse, MouseKind, Options, STDIN};
+use vedi::app::{App, Copier, Done, Event, Mouse, MouseKind, Options, STDIN};
 use vedi::input::config;
 use vedi::input::key::Key;
 use vedi::input::setting::Settings;
+use vedi::sys::opencmd::{Killer, Killers};
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;
 use vedi::text::reader::Gen;
@@ -24,8 +25,9 @@ const GEN: Gen = 1;
 struct NoClip;
 
 impl Copier for NoClip {
-    fn copy(&mut self, _: &str) -> Result<(), String> {
-        Ok(())
+    fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
+        done(Ok(()));
+        None
     }
 }
 
@@ -51,6 +53,8 @@ fn options() -> Options {
         follow: false,
         screen: None,
         copier: Box::new(NoClip),
+        wake: Arc::new(|| {}),
+        killers: Killers::default(),
         clock: Box::new(Instant::now),
         macos: false,
         keys: config::default_keymap(false),

@@ -5,14 +5,18 @@ use std::cell::{Cell, RefCell};
 use std::ffi::OsString;
 use std::rc::Rc;
 use std::sync::Arc;
+use std::sync::mpsc::{self, Receiver};
 use std::time::Duration;
 use std::time::Instant;
 
-use vedi::app::{App, Copier, Event, Flow, Mouse, MouseKind, Opener, Options, Verdict, one_page};
+use vedi::app::{
+    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Verdict, Wake, one_page,
+};
 use vedi::cli;
 use vedi::input::config::{self, Config};
 use vedi::input::keymap::Keymap;
 use vedi::sys::clipboard::CommandCopier;
+use vedi::sys::opencmd::Killer;
 use vedi::text::ansi::ViewStyle;
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;
@@ -104,6 +108,9 @@ struct Scenario<'s, 'a> {
     pending_opts: Option<Options>,
     /// What the recording copier was last given.
     clip: Rc<RefCell<Option<String>>>,
+    /// Wakes the app for a copy's result, and where the wake lands.
+    wake: Wake,
+    copied: Receiver<()>,
     /// The app's clock.
     now: Rc<Cell<Instant>>,
     quit: bool,
@@ -120,6 +127,7 @@ pub fn run(a: &Archive, step: Option<&mut Stepper>) -> Result<(), String> {
     let mut buf = Buffer::new(Storage::Memory(Vec::new()), false);
     // The first part, as the reader announces it.
     buf.apply(Progress::Part { offset: 0 });
+    let (wake_tx, wake_rx) = mpsc::channel();
     let mut s = Scenario {
         w: 40,
         h: 6,
@@ -143,6 +151,10 @@ pub fn run(a: &Archive, step: Option<&mut Stepper>) -> Result<(), String> {
         keys: Keymap::default(),
         app: None,
         clip: Rc::new(RefCell::new(None)),
+        wake: Arc::new(move || {
+            let _ = wake_tx.send(());
+        }),
+        copied: wake_rx,
         now: Rc::new(Cell::new(Instant::now())),
         pending_opts: None,
         quit: false,
@@ -312,6 +324,7 @@ impl Scenario<'_, '_> {
             }
             "screen" => {
                 self.ready().map_err(fail)?;
+                self.settle();
                 let app = self.app.as_ref().expect("started");
                 let got = render(app.terminal(), app.status_shown());
                 if got != sec.body {
@@ -323,6 +336,7 @@ impl Scenario<'_, '_> {
             }
             "cursor" => {
                 self.ready().map_err(fail)?;
+                self.settle();
                 let want = sec.body.trim();
                 let got = match self.app.as_ref().expect("started").terminal().cursor() {
                     Some((x, y)) => format!("{y} {x}"),
@@ -334,6 +348,7 @@ impl Scenario<'_, '_> {
             }
             "clipboard" => {
                 self.ready().map_err(fail)?;
+                self.settle();
                 let want = sec.body.strip_suffix('\n').unwrap_or(&sec.body);
                 let got = self.clip.borrow().clone().unwrap_or_default();
                 if got != want {
@@ -496,6 +511,17 @@ impl Scenario<'_, '_> {
 
     /// Starts the scenario and reports why there is no pager to act on
     /// or assert about.
+    /// Hands the app the result of a copy under way: a clipboard
+    /// command's, which runs while the keys after it are handled.
+    fn settle(&mut self) {
+        let app = self.app.as_mut().expect("started");
+        while !self.quit && app.copying() {
+            self.copied.recv().expect("copier");
+            self.quit = app.handle(Event::Copied) == Flow::Quit;
+            app.draw();
+        }
+    }
+
     fn ready(&mut self) -> Result<(), String> {
         self.start()?;
         match (&self.app, self.quit) {
@@ -569,9 +595,10 @@ impl Scenario<'_, '_> {
         let mut opts = flags.app(&files, cfg, self.macos);
         let files = names(&files);
         opts.copier = match flags.clipboard_cmd(cfg) {
-            Some(cmd) => Box::new(CommandCopier::new(cmd)),
+            Some(cmd) => Box::new(CommandCopier::new(cmd, opts.killers.clone())),
             None => Box::new(Recorder(Rc::clone(&self.clip))),
         };
+        opts.wake = Arc::clone(&self.wake);
         let now = Rc::clone(&self.now);
         opts.clock = Box::new(move || now.get());
         // The disk text, each file a part, finished: a reload lands at
@@ -660,9 +687,10 @@ fn lines(body: &str) -> (String, bool) {
 struct Recorder(Rc<RefCell<Option<String>>>);
 
 impl Copier for Recorder {
-    fn copy(&mut self, text: &str) -> Result<(), String> {
+    fn copy(&mut self, text: &str, done: Done) -> Option<Killer> {
         *self.0.borrow_mut() = Some(text.to_string());
-        Ok(())
+        done(Ok(()));
+        None
     }
 }
 

@@ -5,11 +5,13 @@ mod parse;
 
 use std::ffi::OsString;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Instant;
 
-use crate::app::{self, Copier, STDIN, StartScreen};
+use crate::app::{self, Copier, Done, STDIN, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
+use crate::sys::opencmd::{Killer, Killers};
 use crate::sys::words;
 
 pub use completion::completion;
@@ -111,6 +113,8 @@ impl Options {
             follow: self.follow,
             screen: self.screen,
             copier: Box::new(NoCopier),
+            wake: Arc::new(|| {}),
+            killers: Killers::default(),
             clock: Box::new(Instant::now),
             macos,
             keys: cfg.keymap(macos),
@@ -171,8 +175,9 @@ impl Options {
 struct NoCopier;
 
 impl Copier for NoCopier {
-    fn copy(&mut self, _: &str) -> Result<(), String> {
-        Ok(())
+    fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
+        done(Ok(()));
+        None
     }
 }
 
