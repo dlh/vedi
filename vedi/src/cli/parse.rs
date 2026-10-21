@@ -561,6 +561,7 @@ mod tests {
             ("missing tab width", &["--tab-width"]),
             ("bad tab width", &["--tab-width", "0"]),
             ("bad tab width text", &["--tab-width", "four"]),
+            ("tab width past a row", &["--tab-width", "65536"]),
             ("missing open cmd", &["--open-cmd"]),
             ("bad completion", &["--completion", "tcsh"]),
             ("missing completion", &["--completion"]),
@@ -586,12 +587,12 @@ mod tests {
             (
                 "bad tab width",
                 &["--tab-width", "0"],
-                "--tab-width takes a positive number, not \"0\"",
+                "--tab-width takes a number from 1 to 65535, not \"0\"",
             ),
             (
                 "empty tab width",
                 &["--tab-width="],
-                "--tab-width takes a positive number, not \"\"",
+                "--tab-width takes a number from 1 to 65535, not \"\"",
             ),
             (
                 "bad wrap style",
@@ -606,12 +607,12 @@ mod tests {
             (
                 "bad rows below",
                 &["--one-page-rows-below", "0"],
-                "--one-page-rows-below takes a positive number, not \"0\"",
+                "--one-page-rows-below takes a number from 1 to 65535, not \"0\"",
             ),
             (
                 "value with a space",
                 &["--tab-width", "4 5"],
-                "--tab-width takes a positive number, not \"4 5\"",
+                "--tab-width takes a number from 1 to 65535, not \"4 5\"",
             ),
             ("wrap with value", &["--wrap=yes"], "--wrap takes no value"),
             (
@@ -789,7 +790,7 @@ mod tests {
             (
                 "bad value",
                 "--tab-width 0",
-                "VEDI: --tab-width takes a positive number, not \"0\"",
+                "VEDI: --tab-width takes a number from 1 to 65535, not \"0\"",
             ),
             (
                 "yes no with value",

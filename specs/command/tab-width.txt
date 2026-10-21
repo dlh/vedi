@@ -1,6 +1,7 @@
 tab_width N at the : prompt sets the cells per tab stop for the rest
-of the run. The cursor keeps its place in the text. This file holds a
-raw tab.
+of the run. The cursor keeps its place in the text. N is 1 to 65535,
+a row's most cells; wider would overflow the layout. This file holds
+a raw tab.
 
 -- size --
 40x5
@@ -23,4 +24,12 @@ Right : "tab_width 4" Enter
 
 
 
-tab_width takes a positive number
+tab_width takes a number from 1 to 65535
+-- keys --
+: "tab_width 65536" Enter
+-- screen --
+    x
+
+
+
+tab_width takes a number from 1 to 65535

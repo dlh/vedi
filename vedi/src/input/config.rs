@@ -152,9 +152,11 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
     {
         return Err(format!("{verb} takes {}", setting::or_list(v.values())));
     }
-    let positive = || match arg.parse::<usize>() {
-        Ok(n) if n > 0 => Ok(n),
-        _ => Err(format!("{verb} takes a positive number")),
+    // A terminal has at most u16::MAX cells a row; a wider tab
+    // overflows the layout's sums.
+    let positive = || match arg.parse::<u16>() {
+        Ok(n) if n > 0 => Ok(usize::from(n)),
+        _ => Err(format!("{verb} takes a number from 1 to 65535")),
     };
     let s = &mut c.settings;
     match verb {
@@ -816,11 +818,11 @@ open_cmd less %s
                 "{src:?}"
             );
         }
-        for arg in ["", " two", " 0", " -1", " 1 2"] {
+        for arg in ["", " two", " 0", " -1", " 1 2", " 65536"] {
             let src = format!("one_page_rows_below{arg}\n");
             assert_eq!(
                 parse_err(&src),
-                "vedi.conf:1: one_page_rows_below takes a positive number",
+                "vedi.conf:1: one_page_rows_below takes a number from 1 to 65535",
                 "{src:?}"
             );
         }
@@ -842,11 +844,11 @@ open_cmd less %s
                 "{src:?}"
             );
         }
-        for arg in ["", " four", " 0", " -4", " 4 8"] {
+        for arg in ["", " four", " 0", " -4", " 4 8", " 65536"] {
             let src = format!("tab_width{arg}\n");
             assert_eq!(
                 parse_err(&src),
-                "vedi.conf:1: tab_width takes a positive number",
+                "vedi.conf:1: tab_width takes a number from 1 to 65535",
                 "{src:?}"
             );
         }
