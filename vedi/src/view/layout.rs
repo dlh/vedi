@@ -79,13 +79,15 @@ pub struct Laid {
     segs: Vec<Segment>,
 }
 
+/// C0, DEL and C1, as `draw::glyph` spells them.
 fn is_control(c: char) -> bool {
-    c < '\u{20}' || c == '\u{7f}'
+    c.is_control()
 }
 
 impl Layout {
     /// The cells `c` takes on its own starting at cell `x`: a tab to the
-    /// next stop, a control two (drawn as `^X`), a combining mark none.
+    /// next stop, a C0 control two (drawn as `^X`), a C1 control one
+    /// (drawn as U+FFFD), a combining mark none.
     /// `cells` measures chars in their clusters; this is for a char known
     /// to stand alone.
     pub fn char_width(&self, c: char, x: usize) -> usize {
@@ -94,7 +96,7 @@ impl Layout {
             return tab - x % tab;
         }
         if is_control(c) {
-            return 2;
+            return if c.is_ascii() { 2 } else { 1 };
         }
         if c.is_ascii() {
             return 1;

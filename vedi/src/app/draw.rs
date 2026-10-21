@@ -250,8 +250,9 @@ fn put(g: &mut Grid, x: isize, y: usize, s: &str, st: Style, link: Option<Link>)
     }
 }
 
-/// Draws the cluster `text` at (`x`, `y`): a tab as `width` spaces, a
-/// control as ^X (DEL as ^?), anything else as itself with its marks.
+/// Draws the cluster `text` at (`x`, `y`): a tab as `width` spaces, a C0
+/// control as ^X (DEL as ^?), a C1 control as U+FFFD, anything else as
+/// itself with its marks.
 fn glyph(
     g: &mut Grid,
     x: isize,
@@ -277,6 +278,9 @@ fn glyph(
             let caret = char::from(c as u8 + 0x40);
             put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
         }
+        // A name or title may carry C1, which some terminals take for
+        // escapes; content drops it on the way in.
+        c if c.is_control() => put(g, x, y, "\u{fffd}", st, link),
         _ => put(g, x, y, text, st, link),
     }
 }

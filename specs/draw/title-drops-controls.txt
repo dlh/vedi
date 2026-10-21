@@ -1,0 +1,12 @@
+A control character in an OSC 2 title is dropped, as from the text:
+a C1 could act on the terminal from the status line. The title here
+is ~/src with U+009B between its s and r, and DEL before its c.
+
+-- size --
+30x3
+-- input --
+]2;~/srctext
+-- screen --
+text
+
+~/src  line 1/1  wrap   h help

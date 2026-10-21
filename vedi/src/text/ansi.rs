@@ -91,7 +91,11 @@ impl Parser {
                 }
                 match window_title(osc) {
                     Some(title) => {
-                        self.title = lossy(title);
+                        // Dropped as from content: a C1, as an ESC, would
+                        // act on the terminal from the status line.
+                        let title: String =
+                            lossy(title).chars().filter(|c| !c.is_control()).collect();
+                        self.title = title.into();
                         true
                     }
                     None => false,
@@ -910,6 +914,7 @@ mod tests {
             ("empty clears", b"\x1b]2;\x07", ""),
             ("last wins", b"\x1b]2;one\x07\x1b[31m\x1b]0;two\x07", "two"),
             ("semicolons kept", b"\x1b]2;a;b\x07", "a;b"),
+            ("controls dropped", b"\x1b]2;a\xc2\x9bb\x7fc\x07", "abc"),
             ("no osc keeps it", b"plain \x1b[1mtext", "was"),
             ("link is not a title", b"\x1b]8;;http://x\x07", "was"),
             ("cut off", b"\x1b]2;ved", "was"),

@@ -1,0 +1,19 @@
+A control character in a file name is drawn as a C0 is in the text,
+^X, and a C1 as U+FFFD, on the separator and the status line. The
+first name here holds U+0001 and U+009B.
+
+-- size --
+30x5
+-- args --
+abc.txt d.txt
+-- input --
+a1
+-- next-file --
+-- input --
+d1
+-- screen --
+── a^Ab�c.txt ────────────────
+a1
+── d.txt ─────────────────────
+d1
+a^Ab�c.txt 1/2  line 1/1  wrap
