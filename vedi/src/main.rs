@@ -42,13 +42,27 @@ fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(f) => {
-            eprintln!("vedi: {}", f.msg);
+            eprintln!("vedi: {}", spelled(&f.msg));
             if f.usage {
                 eprint!("{USAGE}");
             }
             ExitCode::FAILURE
         }
     }
+}
+
+/// `s` with each control spelled `\xNN`: a message echoes a file name
+/// or flag from anywhere, and stderr may be the terminal.
+fn spelled(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        if c.is_control() {
+            out.push_str(&format!("\\x{:02x}", c as u32));
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 fn run() -> Result<(), Fail> {

@@ -172,6 +172,20 @@ fn missing_file_errors() {
     );
 }
 
+// A name from anywhere is echoed; no escape in it reaches the terminal.
+#[test]
+fn missing_file_name_controls_spelled_out() {
+    let d = TempDir::new();
+    let p = d.path("x\x1b[2J\x1b]0;pwn\x07z");
+    let out = run(vedi(&d.0, &[&p]), None);
+    assert_eq!(out.code, 1);
+    let shown = d.path("x\\x1b[2J\\x1b]0;pwn\\x07z");
+    assert_eq!(
+        out.stderr,
+        format!("vedi: open {shown}: No such file or directory (os error 2)\n")
+    );
+}
+
 #[test]
 fn no_input_on_a_terminal_errors_with_usage() {
     let d = TempDir::new();
