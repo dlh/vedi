@@ -29,7 +29,6 @@ pub use options::{
 use crate::input::action::{Action, Command};
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
-use crate::sys::opencmd::Killers;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
@@ -76,7 +75,6 @@ pub struct App<T: Terminal> {
     /// A copy whose result is still to come.
     copying: Option<copy::Copying>,
     wake: Wake,
-    killers: Killers,
     clock: Clock,
     names: Vec<String>,
     keys: Keymap,
@@ -127,7 +125,6 @@ impl<T: Terminal> App<T> {
             copier: opts.copier,
             copying: None,
             wake: opts.wake,
-            killers: opts.killers,
             clock: opts.clock,
             names: opts.names,
             keys: opts.keys,
@@ -358,6 +355,11 @@ impl<T: Terminal> App<T> {
                     Focus::Commanding => self.command_key(k),
                 };
             }
+            Event::Paste(text) => match self.focus {
+                Focus::Searching { .. } => self.search.paste(&text),
+                Focus::Commanding => self.command.paste(&text),
+                Focus::Viewing => {}
+            },
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
             Event::Copied => self.copy_done(),

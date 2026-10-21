@@ -34,7 +34,7 @@ Esc : Tab
 line 1
 
 
-:auto_reload   [auto_reload]  clipboard_cmd  cycle  edge_marke
+:auto_reload   [auto_reload]  cycle  edge_markers  file_separa
 -- keys --
 Esc : "map x select_h" Tab
 -- screen --

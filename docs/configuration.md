@@ -103,7 +103,8 @@ The selection is cleared.
 ## Commands
 
 `:` opens a prompt on the status line. It takes any setting above but
-`one_page_rows_below`, and `map`, for the rest of the run:
+`clipboard_cmd`, `open_cmd` and `one_page_rows_below`, and `map`, for the rest
+of the run:
 
     :wrap_style word
     :tab_width 4
@@ -114,7 +115,8 @@ its next value, the first after the last; it takes `wrap`, `wrap_style`,
 `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`
 and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
 `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
-error on the status line.
+error on the status line. A paste goes in as one line, its newlines dropped, at
+this prompt and the search prompt.
 
 Tab completes the word being typed. One match fills it in; several fill in what
 they share, or the first of them, and list them under the prompt, and Tab again

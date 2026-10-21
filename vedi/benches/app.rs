@@ -9,7 +9,7 @@ use vedi::app::{App, Copier, Done, Event, Mouse, MouseKind, Options, STDIN};
 use vedi::input::config;
 use vedi::input::key::Key;
 use vedi::input::setting::Settings;
-use vedi::sys::opencmd::{Killer, Killers};
+use vedi::sys::opencmd::Killer;
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;
 use vedi::text::reader::Gen;
@@ -54,7 +54,6 @@ fn options() -> Options {
         screen: None,
         copier: Box::new(NoClip),
         wake: Arc::new(|| {}),
-        killers: Killers::default(),
         clock: Box::new(Instant::now),
         macos: false,
         keys: config::default_keymap(false),

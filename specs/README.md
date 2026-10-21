@@ -73,6 +73,7 @@ Actions:
 | Section | Content |
 |---|---|
 | `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune. |
+| `-- paste --` | Text pasted, ended the way `-- input --` is: one event, not keys. |
 | `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `move R C` (motion with the button held), each optionally with `Shift+`, `wheel up`, `wheel down`, `wheel left` or `wheel right`, optionally with `Shift+` on the direction and followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |
 | `-- file --` | The file on disk now holds this text, ended the way `-- input --` is. Needs a file in `-- args --`; disk starts as the input, each file's from its `-- input --` sections. With several files the section names the one that changed: `-- file b.txt --`. Before the first key, it is what the file held from the start, behind an `open_cmd`. |

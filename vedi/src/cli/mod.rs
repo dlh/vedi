@@ -11,7 +11,7 @@ use std::time::Instant;
 use crate::app::{self, Copier, Done, STDIN, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
-use crate::sys::opencmd::{Killer, Killers};
+use crate::sys::opencmd::Killer;
 use crate::sys::words;
 
 pub use completion::completion;
@@ -114,7 +114,6 @@ impl Options {
             screen: self.screen,
             copier: Box::new(NoCopier),
             wake: Arc::new(|| {}),
-            killers: Killers::default(),
             clock: Box::new(Instant::now),
             macos,
             keys: cfg.keymap(macos),

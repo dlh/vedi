@@ -88,6 +88,12 @@ impl Prompt {
         PromptEdit::Editing
     }
 
+    /// Types `text` as one line: a control, a newline above all, is
+    /// dropped rather than pressed, so a paste cannot submit.
+    pub fn paste(&mut self, text: &str) {
+        self.text.extend(text.chars().filter(|c| !c.is_control()));
+    }
+
     /// Adds `entry` to the history unless it repeats the newest.
     pub fn remember(&mut self, entry: &str) {
         if self.history.last().map(String::as_str) != Some(entry) {

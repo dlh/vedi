@@ -1,24 +1,25 @@
-clipboard_cmd at the : prompt is the config's: copies pipe to the
-command, the rest of the line, for the rest of the run. `sh -c false`
-always fails, so the status line shows the failure.
+clipboard_cmd is not a : command: a line could set it to any command,
+which the next copy would run. The config and --clipboard-cmd set it.
 
 -- size --
 40x5
 -- input --
 hello
 -- keys --
-: "clipboard_cmd sh -c false" Enter Shift+Right y
+: "clipboard_cmd sh -c false" Enter
 -- screen --
-[h]ello
+hello
 
 
 
-copy failed: exit status: 1       h help
+unknown command "clipboard_cmd"   h help
 -- keys --
-: "clipboard_cmd" Enter
+Shift+Right y
 -- screen --
 [h]ello
 
 
 
-clipboard_cmd takes a command     h help
+copied 1 line                     h help
+-- clipboard --
+h

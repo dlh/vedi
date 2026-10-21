@@ -77,8 +77,9 @@ pub struct Verb {
     /// The status line shows it, so cycle needn't say it: wrap,
     /// wrap_style and view_style are on it; status_line is it.
     pub shown: bool,
-    /// The : prompt takes it: not clear_all_shortcuts, which would
-    /// unbind : and q; open_cmd, the input being open; nor
+    /// The : prompt takes it: not clipboard_cmd, which a paste could
+    /// set to any command for y to run; clear_all_shortcuts, which
+    /// would unbind : and q; open_cmd, the input being open; nor
     /// one_page_rows_below, which only -F reads.
     pub prompt: bool,
     /// A flag spells it, --name with - for _, and --no-name for a
@@ -153,7 +154,7 @@ pub const VERBS: &[Verb] = &[
         name: "clipboard_cmd",
         cycle: Cycle::No,
         shown: false,
-        prompt: true,
+        prompt: false,
         flag: false,
     },
     Verb {
@@ -280,7 +281,12 @@ mod tests {
         let out: Vec<&str> = VERBS.iter().filter(|v| !v.prompt).map(|v| v.name).collect();
         assert_eq!(
             out,
-            ["clear_all_shortcuts", "open_cmd", "one_page_rows_below"]
+            [
+                "clipboard_cmd",
+                "clear_all_shortcuts",
+                "open_cmd",
+                "one_page_rows_below"
+            ]
         );
         assert_eq!(at_prompt().count() + out.len(), VERBS.len());
     }

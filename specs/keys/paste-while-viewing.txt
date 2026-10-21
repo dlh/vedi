@@ -1,0 +1,18 @@
+A paste while viewing is not keys: nothing happens, so a line in it
+cannot open the : prompt and run.
+
+-- input --
+line 1
+line 2
+-- paste --
+:quit
+Down
+-- screen --
+line 1
+line 2
+
+
+
+<stdin>  line 1/2  wrap           h help
+-- cursor --
+0 0

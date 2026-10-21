@@ -1,0 +1,29 @@
+A paste at the : prompt goes in as one line, its newlines and other
+controls dropped: a line after the first cannot run.
+
+-- input --
+line 1
+line 2
+-- keys --
+:
+-- paste --
+goto 2
+quit
+-- screen --
+line 1
+line 2
+
+
+
+:goto 2quit
+-- keys --
+Enter
+-- screen --
+line 1
+line 2
+
+
+
+goto takes a line number          h help
+-- cursor --
+0 0

@@ -144,7 +144,6 @@ fn run() -> Result<(), Fail> {
         term.raw_writer(),
         copies.clone(),
     );
-    app_opts.killers = copies;
     let wake_tx = tx.clone();
     app_opts.wake = Arc::new(move || {
         let _ = wake_tx.send(Event::Copied);

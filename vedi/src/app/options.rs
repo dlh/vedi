@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
-use crate::sys::opencmd::{Killer, Killers};
+use crate::sys::opencmd::Killer;
 use crate::text::buffer::Buffer;
 use crate::text::reader::Gen;
 
@@ -52,9 +52,6 @@ pub struct Options {
     pub screen: Option<StartScreen>,
     pub copier: Box<dyn Copier>,
     pub wake: Wake,
-    /// Commands to kill when vedi exits; a clipboard command set at
-    /// the prompt joins them.
-    pub killers: Killers,
     pub clock: Clock,
     /// There is a ⌘ key.
     pub macos: bool,

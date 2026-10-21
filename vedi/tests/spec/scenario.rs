@@ -16,7 +16,7 @@ use vedi::cli;
 use vedi::input::config::{self, Config};
 use vedi::input::keymap::Keymap;
 use vedi::sys::clipboard::CommandCopier;
-use vedi::sys::opencmd::Killer;
+use vedi::sys::opencmd::{Killer, Killers};
 use vedi::text::ansi::ViewStyle;
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;
@@ -37,13 +37,14 @@ pub const ACTIONS: &[&str] = &[
     "file",
     "reload",
     "keys",
+    "paste",
     "mouse",
     "resize",
 ];
 
 /// The actions that need the pager open first; the others, input and
 /// eof, may be what opens it.
-pub const DRIVES: &[&str] = &["keys", "mouse", "resize", "file", "reload"];
+pub const DRIVES: &[&str] = &["keys", "paste", "mouse", "resize", "file", "reload"];
 
 /// The startup reader's generation.
 const GEN: Gen = 1;
@@ -307,6 +308,13 @@ impl Scenario<'_, '_> {
                     self.quit = app.handle(Event::Key(k.key)) == Flow::Quit;
                     app.draw();
                 }
+            }
+            "paste" => {
+                self.ready().map_err(fail)?;
+                let text = sec.body.strip_suffix('\n').unwrap_or(&sec.body);
+                let app = self.app.as_mut().expect("started");
+                self.quit = app.handle(Event::Paste(text.to_string())) == Flow::Quit;
+                app.draw();
             }
             "mouse" => {
                 self.ready().map_err(fail)?;
@@ -595,7 +603,7 @@ impl Scenario<'_, '_> {
         let mut opts = flags.app(&files, cfg, self.macos);
         let files = names(&files);
         opts.copier = match flags.clipboard_cmd(cfg) {
-            Some(cmd) => Box::new(CommandCopier::new(cmd, opts.killers.clone())),
+            Some(cmd) => Box::new(CommandCopier::new(cmd, Killers::default())),
             None => Box::new(Recorder(Rc::clone(&self.clip))),
         };
         opts.wake = Arc::clone(&self.wake);

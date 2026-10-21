@@ -13,7 +13,7 @@ use crate::app::event::{Mouse, MouseKind};
 use crate::app::text_view::{Geometry, Motion, Row, Start, TextView};
 use crate::input::config;
 use crate::input::key::Key;
-use crate::sys::opencmd::{Killer, Killers};
+use crate::sys::opencmd::Killer;
 use crate::text::buffer::tests::{Fill, temp};
 use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::Indexer;
@@ -51,7 +51,6 @@ fn options() -> Options {
         screen: None,
         copier: Box::new(Clip(Rc::default())),
         wake: Arc::new(|| {}),
-        killers: Killers::default(),
         clock: Box::new(Instant::now),
         macos: false,
         keys: config::default_keymap(false),

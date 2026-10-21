@@ -9,8 +9,9 @@ use std::thread::{self, JoinHandle};
 
 use crossterm::cursor::{Hide, MoveTo, Show};
 use crossterm::event::{
-    self as ct, KeyEventKind, KeyModifiers, KeyboardEnhancementFlags, MouseButton, MouseEventKind,
-    PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    self as ct, DisableBracketedPaste, EnableBracketedPaste, KeyEventKind, KeyModifiers,
+    KeyboardEnhancementFlags, MouseButton, MouseEventKind, PopKeyboardEnhancementFlags,
+    PushKeyboardEnhancementFlags,
 };
 use crossterm::queue;
 use crossterm::terminal::{
@@ -81,6 +82,9 @@ impl Crossterm {
             tty::with_stdout_on(&t.tty, ctt::supports_keyboard_enhancement).unwrap_or(false);
         queue!(t.out, EnterAlternateScreen)?;
         t.out.extend_from_slice(MOUSE_ON);
+        // A paste read as keys would run any : line its author put
+        // in it.
+        queue!(t.out, EnableBracketedPaste)?;
         if kitty {
             queue!(
                 t.out,
@@ -172,6 +176,7 @@ fn restore(tty: &mut File, mut out: Vec<u8>) {
     if PUSHED.swap(false, Ordering::SeqCst) {
         let _ = queue!(out, PopKeyboardEnhancementFlags);
     }
+    let _ = queue!(out, DisableBracketedPaste);
     out.extend_from_slice(MOUSE_OFF);
     let _ = queue!(out, Clear(ClearType::All), Show, LeaveAlternateScreen);
     let _ = tty.write_all(&out);
@@ -194,8 +199,8 @@ impl Write for RawWriter {
     }
 }
 
-/// Reads the terminal's input on a thread, sending keys, the mouse and
-/// resizes until `tx` closes or the terminal fails.
+/// Reads the terminal's input on a thread, sending keys, pastes, the
+/// mouse and resizes until `tx` closes or the terminal fails.
 pub fn spawn_events(tx: Sender<Event>) -> JoinHandle<()> {
     thread::Builder::new()
         .name("vedi-events".into())
@@ -204,6 +209,7 @@ pub fn spawn_events(tx: Sender<Event>) -> JoinHandle<()> {
                 let ev = match ev {
                     ct::Event::Key(k) => key(k).map(Event::Key),
                     ct::Event::Mouse(m) => Some(Event::Mouse(mouse(m))),
+                    ct::Event::Paste(s) => Some(Event::Paste(s)),
                     ct::Event::Resize(w, h) => {
                         let (w, h) = (w.into(), h.into());
                         set_size((w, h));

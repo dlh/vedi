@@ -8,6 +8,8 @@ use crate::text::reader::Gen;
 pub enum Event {
     Key(Key),
     Mouse(Mouse),
+    /// Text pasted, bracketed by the terminal so it is not keys.
+    Paste(String),
     /// Columns and rows; the terminal already has them.
     Resize(usize, usize),
     /// From the reader of generation `Gen`; a stale one is dropped.

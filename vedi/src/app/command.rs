@@ -8,7 +8,6 @@ use crate::input::action::Command;
 use crate::input::config::{self, Config};
 use crate::input::key::{Key, KeyCode};
 use crate::input::setting::{self, Cycle, Settings};
-use crate::sys::clipboard::CommandCopier;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
@@ -51,6 +50,12 @@ impl State {
     /// Whether the listing is of commands.
     fn listing_commands(&self) -> bool {
         self.listing().is_some() && last_word(&self.stem).1.is_empty()
+    }
+
+    /// Types `text`; the listing goes, as with any key but Tab.
+    pub fn paste(&mut self, text: &str) {
+        self.matches = None;
+        self.line.paste(text);
     }
 
     /// The stem up to the word being completed.
@@ -230,12 +235,6 @@ impl<T: Terminal> App<T> {
             // A change during a reload asked for another.
             "auto_reload" if !self.settings.auto_reload => self.dirty = false,
             "view_style" => self.set_literal(),
-            "clipboard_cmd" => {
-                self.copier = Box::new(CommandCopier::new(
-                    c.clipboard_cmd.unwrap_or_default(),
-                    self.killers.clone(),
-                ))
-            }
             "map" => self.keys = self.keys.apply(&c.keys),
             _ => {}
         }

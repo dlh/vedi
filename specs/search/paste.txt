@@ -1,0 +1,29 @@
+A paste at the / prompt goes in as one line, its newlines dropped; Enter
+searches for it.
+
+-- input --
+foo bar
+bar
+-- keys --
+/
+-- paste --
+bar
+
+-- screen --
+foo bar
+bar
+
+
+
+/bar
+-- keys --
+Enter
+-- screen --
+foo {{bar}}
+{bar}
+
+
+
+<stdin>  line 1/2  wrap           h help
+-- cursor --
+0 4
