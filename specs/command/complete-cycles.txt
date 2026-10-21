@@ -15,21 +15,28 @@ the quick brown fox jumps over the lazy dog and runs away home
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:wrap   [wrap]  wrap_style
+:wrap   [wrap]  wrap_style  write
 -- keys --
 Tab
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:wrap_style   wrap  [wrap_style]
+:wrap_style   wrap  [wrap_style]  write
 -- keys --
 Tab
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:w  wrap  wrap_style
+:write   wrap  wrap_style  [write]
+-- keys --
+Tab
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:w  wrap  wrap_style  write
 -- keys --
 Tab Tab Enter
 -- screen --
@@ -59,7 +66,7 @@ home
 
 <stdin>  line 1/1  word wrap                          h help
 -- keys --
-: "w" Tab Enter "no" Enter
+: "wra" Tab Enter "no" Enter
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away h[>]
 

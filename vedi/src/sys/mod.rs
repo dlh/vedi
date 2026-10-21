@@ -1,5 +1,6 @@
 pub mod clipboard;
 pub mod opencmd;
+pub mod save;
 pub mod term;
 pub mod tty;
 pub mod watch;

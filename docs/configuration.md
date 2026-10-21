@@ -114,6 +114,11 @@ of the run:
 its next value, the first after the last; it takes `wrap`, `wrap_style`,
 `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`
 and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
+`:write FILE` saves the text to FILE as the view shows it: with its colors and
+links, under `view_style plain` the text and its links, under `raw` the input as
+it came. With a selection, it saves that alone. The name is the rest of the
+line. A file that exists is refused: `:write! FILE` replaces it, the input
+included, once the write is done.
 `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
 error on the status line. A paste goes in as one line, its newlines dropped, at
 this prompt and the search prompt.

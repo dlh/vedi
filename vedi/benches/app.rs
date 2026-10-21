@@ -59,6 +59,7 @@ fn options() -> Options {
         keys: config::default_keymap(false),
         open: None,
         open_cmd: None,
+        write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
     }
 }
 

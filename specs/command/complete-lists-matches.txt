@@ -13,14 +13,14 @@ line 1
 line 1
 
 
-:wrap  wrap  wrap_style
+:wr  wrap  wrap_style  write
 -- keys --
 "_"
 -- screen --
 line 1
 
 
-:wrap_
+:wr_
 -- keys --
 Esc : "wrap_style " Tab
 -- screen --

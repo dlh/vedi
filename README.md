@@ -52,7 +52,8 @@ SGR colors and attributes, including 24-bit color, and OSC 8 hyperlinks are
 drawn as the terminal would. Copy sends plain text.
 
 `:` opens a command prompt, where any setting from the config file can be
-changed for the rest of the run.
+changed for the rest of the run, and `:write FILE` saves the text, or the
+selection, to a file as shown.
 
 A file that changes on disk is read again, so a log that grows is followed.
 

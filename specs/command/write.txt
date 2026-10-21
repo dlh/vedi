@@ -1,0 +1,112 @@
+write and a file name saves the text to that file as the view shows
+it, and says how many lines went: with view_style color, each run's
+style as SGR and its link as OSC 8, a color carried in from an
+earlier line included; with plain, the text and its links; with raw,
+the input as it came. With a selection, write saves that alone. A
+file that exists is refused: write! overwrites it. The name is the
+rest of the line, spaces included. The input here holds the raw SGR
+sequences ESC [ 31 m and ESC [ 0 m.
+
+-- args --
+f.txt
+-- input --
+[31mred
+two[0m
+
+-- keys --
+: "write out.txt" Enter
+-- screen --
+red
+two
+
+
+
+wrote 2 lines to out.txt          h help
+-- written out.txt --
+[0;31mred
+two[0m
+
+-- keys --
+: "write out.txt" Enter
+-- screen --
+red
+two
+
+
+
+out.txt exists; write! overwrites
+-- keys --
+: "write f.txt" Enter
+-- screen --
+red
+two
+
+
+
+f.txt exists; write! overwrites   h help
+-- keys --
+: "write! out.txt" Enter
+-- screen --
+red
+two
+
+
+
+wrote 2 lines to out.txt          h help
+-- keys --
+: "write" Enter
+-- screen --
+red
+two
+
+
+
+write takes a file name           h help
+-- keys --
+Down Shift+Right Shift+Right : "write my sel.txt" Enter
+-- screen --
+red
+[tw]o
+
+
+
+wrote 1 line to my sel.txt        h help
+-- written my sel.txt --
+[0;31mtw[0m
+-- keys --
+Esc : "view_style plain" Enter : "write p.txt" Enter
+-- screen --
+red
+two
+
+
+
+wrote 2 lines to p.txt            h help
+-- written p.txt --
+red
+two
+
+-- keys --
+: "view_style raw" Enter : "write r.txt" Enter
+-- screen --
+[^[][31mred
+two[^[][0m
+
+
+
+wrote 2 lines to r.txt            h help
+-- written r.txt --
+[31mred
+two[0m
+
+-- keys --
+Up Home Shift+End : "write rs.txt" Enter
+-- screen --
+[^[[31mred]
+two[^[][0m
+
+
+
+wrote 1 line to rs.txt            h help
+-- written rs.txt --
+[31mred

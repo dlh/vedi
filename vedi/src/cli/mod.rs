@@ -8,11 +8,11 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use crate::app::{self, Copier, Done, STDIN, StartScreen};
+use crate::app::{self, Copier, Done, STDIN, Sink, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
 use crate::sys::opencmd::Killer;
-use crate::sys::words;
+use crate::sys::{save, words};
 
 pub use completion::completion;
 pub use parse::parse;
@@ -119,6 +119,9 @@ impl Options {
             keys: cfg.keymap(macos),
             open: None,
             open_cmd: None,
+            write: Box::new(|name, overwrite| {
+                save::open(name, overwrite).map(|s| Box::new(s) as Box<dyn Sink>)
+            }),
         }
     }
 

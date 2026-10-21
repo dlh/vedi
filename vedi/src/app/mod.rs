@@ -16,6 +16,7 @@ mod status;
 #[cfg(test)]
 mod tests;
 mod text_view;
+mod write;
 
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
@@ -23,7 +24,8 @@ use std::time::{Duration, Instant};
 pub use event::{Event, Mouse, MouseKind};
 pub use onepage::{Verdict, one_page};
 pub use options::{
-    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, STDIN, StartScreen, Wake,
+    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, STDIN, Sink, StartScreen, Wake,
+    Writer,
 };
 
 use crate::input::action::{Action, Command};
@@ -90,6 +92,8 @@ pub struct App<T: Terminal> {
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
     open_cmd: Option<OpenCmdFor>,
+    /// Opens the file :write saves to.
+    write: Writer,
     /// Off, a reload reads the files as they are, not through open_cmd.
     through_open_cmd: bool,
     /// A reload being read.
@@ -136,6 +140,7 @@ impl<T: Terminal> App<T> {
             mouse: mouse::State::default(),
             open: opts.open,
             open_cmd: opts.open_cmd,
+            write: opts.write,
             through_open_cmd: true,
             next: None,
             dirty: false,

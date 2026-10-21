@@ -13,7 +13,7 @@ use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
 
 /// What the : prompt runs itself; the config verbs follow.
-const BUILTINS: &[&str] = &["goto", "cycle", "help", "reload", "quit"];
+const BUILTINS: &[&str] = &["goto", "cycle", "help", "reload", "quit", "write"];
 
 /// What the : prompt takes.
 fn commands() -> impl Iterator<Item = &'static str> {
@@ -187,8 +187,9 @@ impl<T: Terminal> App<T> {
 
     /// A number alone, or goto and a number, goes to that 1-based line,
     /// clamped to the input; cycle steps a setting; help, reload and
-    /// quit do what their keys do; a config verb sets what it would in
-    /// a file, for the rest of the run. Nothing typed does nothing.
+    /// quit do what their keys do; write saves the input to the file
+    /// named by the rest of the line; a config verb sets what it would
+    /// in a file, for the rest of the run. Nothing typed does nothing.
     fn command(&mut self, line: &str) -> Result<Flow, String> {
         let f: Vec<&str> = line.split_whitespace().collect();
         match f[..] {
@@ -201,6 +202,11 @@ impl<T: Terminal> App<T> {
             ["cycle" | "help" | "reload" | "quit", ..] => {
                 let c: Command = line.parse().map_err(|e| format!("{e}"))?;
                 return Ok(self.view_key(c));
+            }
+            ["write" | "write!"] => return Err("write takes a file name".into()),
+            [verb @ ("write" | "write!"), ..] => {
+                let name = line.trim_start()[verb.len()..].trim();
+                self.write(name, verb == "write!")?;
             }
             [verb, ..] if is_command(verb) => self.set(verb, line)?,
             [verb, ..] => return Err(format!("unknown command {verb:?}")),

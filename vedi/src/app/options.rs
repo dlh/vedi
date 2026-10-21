@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Write};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -41,6 +41,17 @@ pub type Opener = Box<dyn FnMut(Gen, bool) -> io::Result<Buffer>>;
 /// name; `None` to read it as it is.
 pub type OpenCmdFor = Box<dyn Fn(&str) -> Option<Vec<String>>>;
 
+/// Where :write goes: written, then `done`, which puts the file in
+/// place. One dropped before then leaves no file.
+pub trait Sink: Write {
+    fn done(self: Box<Self>) -> io::Result<()>;
+}
+
+/// Opens the file :write saves to, by name: made new, or replaced once
+/// done when `overwrite`; `AlreadyExists` otherwise for one that
+/// exists.
+pub type Writer = Box<dyn FnMut(&str, bool) -> io::Result<Box<dyn Sink>>>;
+
 pub struct Options {
     /// What the status line calls each input, by its part in the buffer.
     pub names: Vec<String>,
@@ -60,6 +71,7 @@ pub struct Options {
     pub open: Option<Opener>,
     /// The command each input was opened through, for the status line.
     pub open_cmd: Option<OpenCmdFor>,
+    pub write: Writer,
 }
 
 /// The view the terminal was showing, so the pager can open on the

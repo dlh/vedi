@@ -56,6 +56,7 @@ fn options() -> Options {
         keys: config::default_keymap(false),
         open: None,
         open_cmd: None,
+        write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
     }
 }
 
@@ -327,6 +328,56 @@ fn truncated_file_draws() {
     // From past the line's new end.
     press(&mut a, "Left");
     assert_eq!(a.cursor(), Pos::default());
+}
+
+/// A sink that records whether it was finished.
+struct Sunk(Rc<Cell<bool>>);
+
+impl io::Write for Sunk {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Sink for Sunk {
+    fn done(self: Box<Self>) -> io::Result<()> {
+        self.0.set(true);
+        Ok(())
+    }
+}
+
+/// A line that cannot be read is empty on screen; :write fails on it
+/// instead, and the sink is never finished, so no file is left short.
+#[test]
+fn write_fails_on_read_error() {
+    let text: String = (0..2000).map(|i| format!("line {i}\n")).collect();
+    let path = temp(text.as_bytes());
+    let mut f = Fill::paged(vec![File::open(&path).unwrap()]);
+    f.part();
+    f.write(text.as_bytes());
+    f.finish(None);
+    let done = Rc::new(Cell::new(false));
+    let d = Rc::clone(&done);
+    let opts = Options {
+        write: Box::new(move |_, _| Ok(Box::new(Sunk(Rc::clone(&d))) as Box<dyn Sink>)),
+        ..options()
+    };
+    let mut a = App::new(TestTerminal::new(30, 4), f.buf, GEN, opts);
+    a.draw();
+    File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_len(0)
+        .unwrap();
+    a.run_command("write out.txt");
+    a.draw();
+    assert_eq!(row(&a, 3), "write failed: input truncated");
+    assert!(!done.get(), "the sink was finished");
 }
 
 /// `run` returns once the events' sender is gone, as the terminal's is

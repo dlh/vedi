@@ -2,7 +2,9 @@
 //! against it.
 
 use std::cell::{Cell, RefCell};
+use std::collections::BTreeMap;
 use std::ffi::OsString;
+use std::io::{self, ErrorKind, Write};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver};
@@ -10,7 +12,8 @@ use std::time::Duration;
 use std::time::Instant;
 
 use vedi::app::{
-    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Verdict, Wake, one_page,
+    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Sink, Verdict, Wake,
+    one_page,
 };
 use vedi::cli;
 use vedi::input::config::{self, Config};
@@ -109,6 +112,8 @@ struct Scenario<'s, 'a> {
     pending_opts: Option<Options>,
     /// What the recording copier was last given.
     clip: Rc<RefCell<Option<String>>>,
+    /// What :write wrote, by file name.
+    written: Rc<RefCell<BTreeMap<String, Vec<u8>>>>,
     /// Wakes the app for a copy's result, and where the wake lands.
     wake: Wake,
     copied: Receiver<()>,
@@ -152,6 +157,7 @@ pub fn run(a: &Archive, step: Option<&mut Stepper>) -> Result<(), String> {
         keys: Keymap::default(),
         app: None,
         clip: Rc::new(RefCell::new(None)),
+        written: Rc::new(RefCell::new(BTreeMap::new())),
         wake: Arc::new(move || {
             let _ = wake_tx.send(());
         }),
@@ -361,6 +367,19 @@ impl Scenario<'_, '_> {
                 let got = self.clip.borrow().clone().unwrap_or_default();
                 if got != want {
                     return Err(fail(format!("clipboard = {got:?}, want {want:?}")));
+                }
+            }
+            "written" => {
+                self.ready().map_err(fail)?;
+                let name = sec.arg();
+                let want = sec.body.strip_suffix('\n').unwrap_or(&sec.body);
+                let written = self.written.borrow();
+                let Some(got) = written.get(name) else {
+                    return Err(fail(format!("{name:?} was not written")));
+                };
+                let got = String::from_utf8_lossy(got);
+                if got != want {
+                    return Err(fail(format!("{name} = {got:?}, want {want:?}")));
                 }
             }
             "quit" => {
@@ -595,7 +614,8 @@ impl Scenario<'_, '_> {
 
     /// a flag or the config, is run; without one the copy is recorded.
     /// An open_cmd is not: read through it, a file is its input
-    /// sections again.
+    /// sections again. A :write is recorded; the files in the args and
+    /// the names written before exist.
     fn options(&self) -> Result<Startup, String> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
@@ -626,6 +646,18 @@ impl Scenario<'_, '_> {
             }) as Opener
         });
         opts.open_cmd = open_cmd;
+        let (written, existing) = (Rc::clone(&self.written), files.clone());
+        opts.write = Box::new(move |name, overwrite| {
+            let exists = existing.iter().any(|f| f == name) || written.borrow().contains_key(name);
+            if exists && !overwrite {
+                return Err(io::Error::from(ErrorKind::AlreadyExists));
+            }
+            written.borrow_mut().insert(name.to_string(), Vec::new());
+            Ok(Box::new(Written {
+                name: name.to_string(),
+                files: Rc::clone(&written),
+            }))
+        });
         let rows_below = flags
             .quit_if_one_page
             .then_some(opts.settings.one_page_rows_below);
@@ -689,6 +721,30 @@ fn lines(body: &str) -> (String, bool) {
     let text = body.strip_suffix('\n').unwrap_or(body);
     let nl = text.ends_with('\n');
     (format!("{}\n", text.strip_suffix('\n').unwrap_or(text)), nl)
+}
+
+/// A file :write made, as the files map holds it.
+struct Written {
+    name: String,
+    files: Rc<RefCell<BTreeMap<String, Vec<u8>>>>,
+}
+
+impl Write for Written {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        let mut files = self.files.borrow_mut();
+        files.entry(self.name.clone()).or_default().extend(data);
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl Sink for Written {
+    fn done(self: Box<Self>) -> io::Result<()> {
+        Ok(())
+    }
 }
 
 /// The clipboard, as OSC 52 would set it.

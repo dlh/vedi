@@ -41,22 +41,8 @@ impl Renderer {
             sgr(out, cell.style);
             self.style = Some(cell.style);
         }
-        // A link with no URL is none, as the parser treats one. A control
-        // character would end the OSC 8 early and run what follows it.
-        let link = cell.link.as_ref().filter(|l| {
-            !l.url.is_empty() && !l.url.chars().chain(l.id.chars()).any(char::is_control)
-        });
-        if self.link.as_ref() != link {
-            match link {
-                Some(l) if l.id.is_empty() => {
-                    let _ = write!(out, "\x1b]8;;{}\x1b\\", l.url);
-                }
-                Some(l) => {
-                    let _ = write!(out, "\x1b]8;id={};{}\x1b\\", l.id, l.url);
-                }
-                None => out.extend_from_slice(b"\x1b]8;;\x1b\\"),
-            }
-            self.link = link.cloned();
+        if let Some(l) = osc8(out, self.link.as_ref(), cell.link.as_ref()) {
+            self.link = l;
         }
         out.extend_from_slice(cell.text.as_bytes());
         self.pen = Some((x + usize::from(cell.width), y));
@@ -81,9 +67,31 @@ impl Renderer {
     }
 }
 
+/// Writes the OSC 8 that takes the terminal from link `from` to `to`,
+/// and returns the link it is then on; `None` when it is there already.
+/// A link with no URL is none, as the parser treats one. A control
+/// character would end the OSC 8 early and run what follows it.
+pub fn osc8(out: &mut Vec<u8>, from: Option<&Link>, to: Option<&Link>) -> Option<Option<Link>> {
+    let link = to
+        .filter(|l| !l.url.is_empty() && !l.url.chars().chain(l.id.chars()).any(char::is_control));
+    if from == link {
+        return None;
+    }
+    match link {
+        Some(l) if l.id.is_empty() => {
+            let _ = write!(out, "\x1b]8;;{}\x1b\\", l.url);
+        }
+        Some(l) => {
+            let _ = write!(out, "\x1b]8;id={};{}\x1b\\", l.id, l.url);
+        }
+        None => out.extend_from_slice(b"\x1b]8;;\x1b\\"),
+    }
+    Some(link.cloned())
+}
+
 /// Sets `style` whole, from a reset: simpler than a delta, and as short
 /// for the few attributes a pager's text carries.
-fn sgr(out: &mut Vec<u8>, style: Style) {
+pub fn sgr(out: &mut Vec<u8>, style: Style) {
     out.extend_from_slice(b"\x1b[0");
     for (attr, code) in [
         (Attrs::BOLD, 1),
