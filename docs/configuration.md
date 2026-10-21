@@ -90,8 +90,9 @@ a literal star:
     open_cmd bat --color=always --paging=never %s
 
 The last matching pattern line wins; a line without a pattern is for the rest. A
-command without `%s` gets the file name as its last argument. `--open-cmd`
-replaces every line for one run.
+command without `%s` gets the file name as its last argument. A name starting
+with `-` is passed as `./-name`, so the command does not take it for an option.
+`--open-cmd` replaces every line for one run.
 
 `O`, `cycle open_cmd`, reads the files as they are, and again through their
 commands; the status line names the command for the file at the cursor, or `''`.

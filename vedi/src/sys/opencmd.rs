@@ -80,6 +80,14 @@ fn subst(arg: &str, name: &OsStr) -> OsString {
 /// when there is none. The command reads nothing. The error is one of
 /// starting it; a failure after that is the read error.
 pub fn open(argv: &[String], name: &OsStr) -> io::Result<Cmd> {
+    // A name starting with - would be an option to the command.
+    let dotted;
+    let name = if name.as_bytes().starts_with(b"-") {
+        dotted = subst("./%s", name);
+        dotted.as_os_str()
+    } else {
+        name
+    };
     let mut args: Vec<OsString> = argv.iter().map(|a| subst(a, name)).collect();
     if !argv.iter().any(|a| a.contains("%s")) {
         args.push(name.to_os_string());
@@ -226,6 +234,16 @@ mod tests {
             out.extend_from_slice(&buf[..n]);
         }
         assert_eq!(out, [b'f', 0xff, b'\n']);
+    }
+
+    // A name that starts with - reaches the command as a path, not an
+    // option, whether substituted or appended.
+    #[test]
+    fn open_dash_name() {
+        let mut c = open(&args(&["echo", "%s"]), OsStr::new("-n")).unwrap();
+        assert_eq!(read_all(&mut c), ("./-n\n".into(), None));
+        let mut c = open(&args(&["echo"]), OsStr::new("--version")).unwrap();
+        assert_eq!(read_all(&mut c), ("./--version\n".into(), None));
     }
 
     #[test]
