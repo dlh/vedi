@@ -5,6 +5,7 @@ pub mod onepage;
 pub mod options;
 
 mod command;
+mod complete;
 mod copy;
 mod draw;
 mod help;
@@ -53,12 +54,16 @@ pub enum Flow {
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum Focus {
     Viewing,
+    Prompting(Kind),
+}
+
+/// Which prompt is open.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+enum Kind {
     /// The / prompt, or ? when `back`.
-    Searching {
-        back: bool,
-    },
+    Search { back: bool },
     /// The : prompt.
-    Commanding,
+    Command,
 }
 
 pub struct App<T: Terminal> {
@@ -87,8 +92,8 @@ pub struct App<T: Terminal> {
     focus: Focus,
     /// The / and ? prompts' line.
     search: Prompt,
-    /// The : prompt and its completion.
-    command: command::State,
+    /// The : prompt's line.
+    command: Prompt,
     mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
@@ -138,7 +143,7 @@ impl<T: Terminal> App<T> {
             status: None,
             focus: Focus::Viewing,
             search: Prompt::default(),
-            command: command::State::default(),
+            command: Prompt::default(),
             mouse: mouse::State::default(),
             open: opts.open,
             open_cmd: opts.open_cmd,
@@ -356,18 +361,14 @@ impl<T: Terminal> App<T> {
                             Flow::Continue
                         }
                     },
-                    Focus::Searching { back } => {
-                        self.search_key(k, back);
-                        Flow::Continue
-                    }
-                    Focus::Commanding => self.command_key(k),
+                    Focus::Prompting(kind) => self.prompt_key(kind, k),
                 };
             }
-            Event::Paste(text) => match self.focus {
-                Focus::Searching { .. } => self.search.paste(&text),
-                Focus::Commanding => self.command.paste(&text),
-                Focus::Viewing => {}
-            },
+            Event::Paste(text) => {
+                if let Some(p) = self.prompt_mut() {
+                    p.paste(&text);
+                }
+            }
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
             Event::Copied => self.copy_done(),

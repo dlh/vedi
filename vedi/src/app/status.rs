@@ -2,6 +2,7 @@
 //! the cursor's line, with the help hint at the right edge.
 
 use crate::app::draw::runes;
+use crate::app::prompt::Prompt;
 use crate::app::{App, Focus, STDIN};
 use crate::input::action::{Action, Command};
 use crate::text::ansi::ViewStyle;
@@ -45,11 +46,7 @@ impl<T: Terminal> App<T> {
         if h < 2 || !self.status_shown() {
             return None;
         }
-        let prompt = match self.focus {
-            Focus::Viewing => None,
-            Focus::Searching { .. } => Some(&self.search),
-            Focus::Commanding => Some(&self.command.line),
-        };
+        let prompt = self.prompt();
         let (st, mark) = if prompt.is_some() {
             (Style::default(), Style::default().reverse())
         } else {
@@ -58,8 +55,7 @@ impl<T: Terminal> App<T> {
         g.fill_row(h - 1, st);
         let text: Vec<char> = self.status_text(w, at).chars().collect();
         let xs = Layout::default().cells(&text);
-        // The prompt's prefix is one character.
-        let cur = prompt.map(|p| xs[1 + p.cursor()]);
+        let cur = prompt.map(|p| xs[p.cursor()]);
         // At no width the cursor is off screen anyway; the offset must
         // still land on the line.
         let off = cur.map_or(0, |c| (c + 1).saturating_sub(w.max(1)));
@@ -70,9 +66,7 @@ impl<T: Terminal> App<T> {
             .unwrap_or(text.len());
         let mut width = xs[first] - off + runes(g, xs[first] - off, h - 1, &text[first..], st);
         let cur = cur.map(|c| (c - off, h - 1));
-        if self.focus == Focus::Commanding
-            && let Some((ms, at)) = self.command.listing()
-        {
+        if let Some((ms, at)) = prompt.and_then(Prompt::listing) {
             let ms: Vec<Vec<char>> = ms.iter().map(|m| m.chars().collect()).collect();
             let cells = |m: &[char]| 2 + Layout::default().cells(m)[m.len()];
             // The list starts late enough for the filled match to end on
@@ -117,14 +111,11 @@ impl<T: Terminal> App<T> {
     }
 
     fn status_text(&self, width: usize, at: usize) -> String {
-        match self.focus {
-            Focus::Searching { back: true } => return format!("?{}", self.search.text()),
-            Focus::Searching { back: false } => return format!("/{}", self.search.text()),
-            Focus::Commanding => return format!(":{}", self.command.line.text()),
-            Focus::Viewing if self.help.is_some() && self.status.is_none() => {
-                return "help  motion scrolls, / searches, any other key returns".into();
-            }
-            Focus::Viewing => {}
+        if let Some(p) = self.prompt() {
+            return p.line();
+        }
+        if self.help.is_some() && self.status.is_none() {
+            return "help  motion scrolls, / searches, any other key returns".into();
         }
         if let Some(s) = &self.status {
             return s.clone();

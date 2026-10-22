@@ -90,7 +90,7 @@ impl<T: Terminal> App<T> {
     /// A press returns from help like any key. The mouse is ignored at
     /// the / and : prompts, and a press from before one is forgotten.
     pub(super) fn handle_mouse(&mut self, m: Mouse) {
-        if matches!(self.focus, Focus::Searching { .. } | Focus::Commanding) {
+        if self.focus != Focus::Viewing {
             self.mouse.held = false;
             self.mouse.dragging = false;
             return;

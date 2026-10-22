@@ -1,12 +1,18 @@
-//! A line being typed on the status row, and the history of the lines
-//! entered at it before.
+//! A line being typed on the status row, with the history of the lines
+//! entered at it before, and what its keys do.
 
+use crate::app::complete::Completion;
 use crate::app::text_view::is_word;
+use crate::app::{App, Flow, Focus, Kind};
 use crate::input::key::{Key, KeyCode, Mods};
+use crate::input::setting::Settings;
 use crate::view::layout::Layout;
+use crate::view::screen::Terminal;
 
 #[derive(Default)]
 pub(super) struct Prompt {
+    /// The character before the line: /, ? or :.
+    prefix: char,
     text: Vec<char>,
     /// Where the next character goes: an index into `text`, at the
     /// start of a glyph.
@@ -17,19 +23,22 @@ pub(super) struct Prompt {
     pos: usize,
     /// What was typed before Up recalled an entry.
     draft: Vec<char>,
+    /// Tab completion, at a prompt opened with it.
+    completion: Option<Completion>,
 }
 
 /// What a key did at a prompt.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(super) enum PromptEdit {
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub(super) enum Edit {
     Editing,
-    Submit,
+    /// Enter: the line, which the prompt remembered.
+    Submit(String),
     Cancel,
 }
 
 /// Whether a key closes a prompt without running it: Esc, Ctrl+g and
 /// Ctrl+c.
-pub(super) fn cancels(key: Key) -> bool {
+fn cancels(key: Key) -> bool {
     match key.code {
         KeyCode::Esc => true,
         KeyCode::Char('g' | 'c') => key.mods == Mods::CTRL,
@@ -38,29 +47,93 @@ pub(super) fn cancels(key: Key) -> bool {
 }
 
 impl Prompt {
-    /// Empties the prompt.
-    pub fn open(&mut self) {
+    /// Empties the prompt, `prefix` before it.
+    pub fn open(&mut self, prefix: char) {
+        self.completion = None;
+        self.start(prefix);
+    }
+
+    /// `open`, with Tab completing against `settings`.
+    pub fn open_completing(&mut self, prefix: char, settings: &Settings) {
+        self.completion = Some(Completion::new(settings));
+        self.start(prefix);
+    }
+
+    fn start(&mut self, prefix: char) {
+        self.prefix = prefix;
         self.set("");
         self.pos = self.history.len();
     }
 
-    pub fn text(&self) -> String {
+    /// The row: the prefix and the line.
+    pub fn line(&self) -> String {
+        std::iter::once(self.prefix)
+            .chain(self.text.iter().copied())
+            .collect()
+    }
+
+    /// The cursor's place in `line`, in characters.
+    pub fn cursor(&self) -> usize {
+        self.cursor + 1
+    }
+
+    /// The matches the last Tab found, while the line is as it left it,
+    /// and which of them it filled in.
+    pub fn listing(&self) -> Option<(&[String], Option<usize>)> {
+        self.completion
+            .as_ref()
+            .and_then(|c| c.listing(&self.text()))
+    }
+
+    fn text(&self) -> String {
         self.text.iter().collect()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.text.is_empty()
-    }
-
-    /// The cursor's place, in characters from the start of the line.
-    pub fn cursor(&self) -> usize {
-        self.cursor
-    }
-
     /// Replaces the line, the cursor at its end.
-    pub fn set(&mut self, text: &str) {
+    fn set(&mut self, text: &str) {
         self.text = text.chars().collect();
         self.cursor = self.text.len();
+    }
+
+    /// Handles a key. Enter submits the line, remembered unless empty;
+    /// Esc, Ctrl+g and Ctrl+c cancel. At a prompt that completes, Tab
+    /// completes, and Enter on a listed command fills in the space
+    /// after it instead. Any other key edits.
+    pub fn key(&mut self, key: Key) -> Edit {
+        let key = key.normalized();
+        let text = self.text();
+        if let Some(c) = &mut self.completion {
+            let fill = match key.code {
+                KeyCode::Tab => c.tab(&text),
+                KeyCode::Enter => c.enter(&text),
+                _ => {
+                    c.clear();
+                    None
+                }
+            };
+            if let Some(t) = &fill {
+                self.set(t);
+            }
+            // Tab with nothing to fill in leaves the line as it is.
+            if fill.is_some() || key.code == KeyCode::Tab {
+                return Edit::Editing;
+            }
+        }
+        if cancels(key) {
+            return Edit::Cancel;
+        }
+        if key.code == KeyCode::Enter {
+            let line = match &self.completion {
+                Some(c) => c.submitted(&text),
+                None => text,
+            };
+            if !line.is_empty() {
+                self.remember(&line);
+            }
+            return Edit::Submit(line);
+        }
+        self.edit(key);
+        Edit::Editing
     }
 
     /// Handles the keys every prompt shares: Up and Down walk the
@@ -69,19 +142,13 @@ impl Prompt {
     /// cursor, by the glyph, a character and the marks on it; Backspace
     /// deletes the glyph before it, with Ctrl or Alt a word, as Ctrl+w
     /// does, and with Cmd the line before it, as Ctrl+u does; a
-    /// character types. Enter submits and `cancels` cancels; any other
-    /// key does nothing.
-    pub fn edit(&mut self, key: Key) -> PromptEdit {
-        let key = key.normalized();
-        if cancels(key) {
-            return PromptEdit::Cancel;
-        }
+    /// character types. Any other key does nothing.
+    fn edit(&mut self, key: Key) {
         let mods = key.mods;
         match key.code {
-            KeyCode::Enter => return PromptEdit::Submit,
             KeyCode::Up => {
                 if self.pos == 0 {
-                    return PromptEdit::Editing;
+                    return;
                 }
                 if self.pos == self.history.len() {
                     self.draft.clone_from(&self.text);
@@ -91,7 +158,7 @@ impl Prompt {
             }
             KeyCode::Down => {
                 if self.pos == self.history.len() {
-                    return PromptEdit::Editing;
+                    return;
                 }
                 self.pos += 1;
                 if self.pos == self.history.len() {
@@ -127,7 +194,6 @@ impl Prompt {
             }
             _ => {}
         }
-        PromptEdit::Editing
     }
 
     /// Where each glyph starts, as the row draws them: a character
@@ -210,8 +276,11 @@ impl Prompt {
 
     /// Types `text` as one line at the cursor: a control, a newline
     /// above all, is dropped rather than pressed, so a paste cannot
-    /// submit.
+    /// submit. The listing goes, as with any key but Tab.
     pub fn paste(&mut self, text: &str) {
+        if let Some(c) = &mut self.completion {
+            c.clear();
+        }
         let typed: Vec<char> = text.chars().filter(|c| !c.is_control()).collect();
         self.text
             .splice(self.cursor..self.cursor, typed.iter().copied());
@@ -219,9 +288,55 @@ impl Prompt {
     }
 
     /// Adds `entry` to the history unless it repeats the newest.
-    pub fn remember(&mut self, entry: &str) {
+    fn remember(&mut self, entry: &str) {
         if self.history.last().map(String::as_str) != Some(entry) {
             self.history.push(entry.to_string());
+        }
+    }
+}
+
+impl<T: Terminal> App<T> {
+    /// The prompt open, if one is.
+    pub(super) fn prompt(&self) -> Option<&Prompt> {
+        match self.focus {
+            Focus::Viewing => None,
+            Focus::Prompting(Kind::Search { .. }) => Some(&self.search),
+            Focus::Prompting(Kind::Command) => Some(&self.command),
+        }
+    }
+
+    pub(super) fn prompt_mut(&mut self) -> Option<&mut Prompt> {
+        match self.focus {
+            Focus::Viewing => None,
+            Focus::Prompting(Kind::Search { .. }) => Some(&mut self.search),
+            Focus::Prompting(Kind::Command) => Some(&mut self.command),
+        }
+    }
+
+    /// Gives a key to the open prompt. A line submitted runs once the
+    /// prompt has closed, so the status line's row is the text's again
+    /// by then.
+    pub(super) fn prompt_key(&mut self, kind: Kind, key: Key) -> Flow {
+        let edit = match kind {
+            Kind::Search { .. } => self.search.key(key),
+            Kind::Command => self.command.key(key),
+        };
+        match edit {
+            Edit::Editing => Flow::Continue,
+            Edit::Cancel => {
+                self.focus(Focus::Viewing);
+                Flow::Continue
+            }
+            Edit::Submit(line) => {
+                self.focus(Focus::Viewing);
+                match kind {
+                    Kind::Search { back } => {
+                        self.search_submit(&line, back);
+                        Flow::Continue
+                    }
+                    Kind::Command => self.run_command(&line),
+                }
+            }
         }
     }
 }

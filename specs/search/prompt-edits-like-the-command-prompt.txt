@@ -1,0 +1,67 @@
+The / and ? prompts are edited as the : prompt is: the cursor moves by
+character and by word, and Backspace, the word and the line deletions
+act at it. The search runs on the line as edited, and the two prompts
+share one history.
+
+-- input --
+foo bar
+baz
+-- keys --
+/ "foo bar" Alt+Left
+-- cursor --
+5 5
+-- keys --
+Alt+Backspace
+-- screen --
+foo bar
+baz
+
+
+
+/bar
+-- cursor --
+5 1
+-- keys --
+End Left Left "z"
+-- screen --
+foo bar
+baz
+
+
+
+/bzar
+-- cursor --
+5 3
+-- keys --
+Ctrl+u
+-- screen --
+foo bar
+baz
+
+
+
+/ar
+-- cursor --
+5 1
+-- keys --
+"b" Enter
+-- screen --
+foo {{bar}}
+baz
+
+
+
+<stdin>  line 1/2  wrap           h help
+-- cursor --
+0 4
+-- keys --
+? Up
+-- screen --
+foo {{bar}}
+baz
+
+
+
+?bar
+-- cursor --
+5 4
