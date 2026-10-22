@@ -1,6 +1,7 @@
 //! :write, which saves the text to a file as the view shows it.
 
 use std::io::ErrorKind;
+use std::path::PathBuf;
 
 use crate::app::App;
 use crate::text::ansi::{Link, ViewStyle};
@@ -12,11 +13,20 @@ use crate::view::style::Style;
 impl<T: Terminal> App<T> {
     /// Writes the selection, or with none the whole text, to the file
     /// `name`, made new, or emptied first when `overwrite`; a file that
-    /// exists is otherwise refused. The text goes as the view shows it:
-    /// with its colors and links, with links alone, or as it came. The
-    /// status line says how many lines went.
+    /// exists is otherwise refused. A leading ~ is the home directory.
+    /// The text goes as the view shows it: with its colors and links,
+    /// with links alone, or as it came. The status line says how many
+    /// lines went.
     pub(super) fn write(&mut self, name: &str, overwrite: bool) -> Result<(), String> {
-        let mut w = match (self.write)(name, overwrite) {
+        let path = match (&self.home, name.strip_prefix('~')) {
+            (Some(home), Some(rest)) if rest.is_empty() || rest.starts_with('/') => {
+                let mut p = home.clone().into_os_string();
+                p.push(rest);
+                PathBuf::from(p)
+            }
+            _ => PathBuf::from(name),
+        };
+        let mut w = match (self.write)(&path, overwrite) {
             Ok(w) => w,
             Err(e) if e.kind() == ErrorKind::AlreadyExists => {
                 return Err(format!("{name} exists; write! overwrites"));

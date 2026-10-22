@@ -4,8 +4,9 @@ style as SGR and its link as OSC 8, a color carried in from an
 earlier line included; with plain, the text and its links; with raw,
 the input as it came. With a selection, write saves that alone. A
 file that exists is refused: write! overwrites it. The name is the
-rest of the line, spaces included. The input here holds the raw SGR
-sequences ESC [ 31 m and ESC [ 0 m.
+rest of the line, spaces included; a leading ~ is the home directory,
+the status line keeping the name as typed. The input here holds the
+raw SGR sequences ESC [ 31 m and ESC [ 0 m.
 
 -- args --
 f.txt
@@ -53,6 +54,19 @@ two
 
 
 wrote 2 lines to out.txt          h help
+-- keys --
+: "write ~/out.txt" Enter
+-- screen --
+red
+two
+
+
+
+wrote 2 lines to ~/out.txt        h help
+-- written /home/u/out.txt --
+[0;31mred
+two[0m
+
 -- keys --
 : "write" Enter
 -- screen --

@@ -122,6 +122,9 @@ impl Options {
             write: Box::new(|name, overwrite| {
                 save::open(name, overwrite).map(|s| Box::new(s) as Box<dyn Sink>)
             }),
+            home: std::env::var_os("HOME")
+                .filter(|h| !h.is_empty())
+                .map(PathBuf::from),
         }
     }
 

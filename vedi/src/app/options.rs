@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -50,7 +51,7 @@ pub trait Sink: Write {
 /// Opens the file :write saves to, by name: made new, or replaced once
 /// done when `overwrite`; `AlreadyExists` otherwise for one that
 /// exists.
-pub type Writer = Box<dyn FnMut(&str, bool) -> io::Result<Box<dyn Sink>>>;
+pub type Writer = Box<dyn FnMut(&Path, bool) -> io::Result<Box<dyn Sink>>>;
 
 pub struct Options {
     /// What the status line calls each input, by its part in the buffer.
@@ -72,6 +73,8 @@ pub struct Options {
     /// The command each input was opened through, for the status line.
     pub open_cmd: Option<OpenCmdFor>,
     pub write: Writer,
+    /// What a leading ~ in a :write name stands for; `None` when unknown.
+    pub home: Option<PathBuf>,
 }
 
 /// The view the terminal was showing, so the pager can open on the

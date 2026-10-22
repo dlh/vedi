@@ -18,6 +18,7 @@ mod tests;
 mod text_view;
 mod write;
 
+use std::path::PathBuf;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
@@ -94,6 +95,7 @@ pub struct App<T: Terminal> {
     open_cmd: Option<OpenCmdFor>,
     /// Opens the file :write saves to.
     write: Writer,
+    home: Option<PathBuf>,
     /// Off, a reload reads the files as they are, not through open_cmd.
     through_open_cmd: bool,
     /// A reload being read.
@@ -141,6 +143,7 @@ impl<T: Terminal> App<T> {
             open: opts.open,
             open_cmd: opts.open_cmd,
             write: opts.write,
+            home: opts.home,
             through_open_cmd: true,
             next: None,
             dirty: false,

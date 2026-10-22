@@ -19,8 +19,8 @@ pub struct Saving {
 
 /// Opens `name` for writing: made new, or when `overwrite` replaced
 /// once done; `AlreadyExists` otherwise for one that exists.
-pub fn open(name: &str, overwrite: bool) -> io::Result<Saving> {
-    let dest = PathBuf::from(name);
+pub fn open(dest: &Path, overwrite: bool) -> io::Result<Saving> {
+    let dest = dest.to_path_buf();
     if !overwrite || !dest.exists() {
         return Ok(Saving {
             file: File::create_new(&dest)?,
@@ -96,8 +96,8 @@ mod tests {
             Dir(dir)
         }
 
-        fn path(&self, name: &str) -> String {
-            self.0.join(name).to_str().unwrap().to_string()
+        fn path(&self, name: &str) -> PathBuf {
+            self.0.join(name)
         }
 
         fn names(&self) -> Vec<String> {
@@ -116,7 +116,7 @@ mod tests {
         }
     }
 
-    fn save(name: &str, overwrite: bool, data: &[u8]) -> io::Result<()> {
+    fn save(name: &Path, overwrite: bool, data: &[u8]) -> io::Result<()> {
         let mut s = Box::new(open(name, overwrite)?);
         s.write_all(data)?;
         s.done()

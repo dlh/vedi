@@ -614,8 +614,8 @@ impl Scenario<'_, '_> {
 
     /// a flag or the config, is run; without one the copy is recorded.
     /// An open_cmd is not: read through it, a file is its input
-    /// sections again. A :write is recorded; the files in the args and
-    /// the names written before exist.
+    /// sections again. A :write is recorded, ~ being /home/u; the files
+    /// in the args and the names written before exist.
     fn options(&self) -> Result<Startup, String> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
@@ -648,6 +648,8 @@ impl Scenario<'_, '_> {
         opts.open_cmd = open_cmd;
         let (written, existing) = (Rc::clone(&self.written), files.clone());
         opts.write = Box::new(move |name, overwrite| {
+            let name = name.to_string_lossy();
+            let name = name.as_ref();
             let exists = existing.iter().any(|f| f == name) || written.borrow().contains_key(name);
             if exists && !overwrite {
                 return Err(io::Error::from(ErrorKind::AlreadyExists));
@@ -658,6 +660,7 @@ impl Scenario<'_, '_> {
                 files: Rc::clone(&written),
             }))
         });
+        opts.home = Some("/home/u".into());
         let rows_below = flags
             .quit_if_one_page
             .then_some(opts.settings.one_page_rows_below);
