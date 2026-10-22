@@ -19,7 +19,7 @@ b2
 -- keys --
 B
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
 a2
 a3
@@ -39,7 +39,7 @@ Down Down Down
 -- screen --
 a3
 a4
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 b.txt 2/2  line 1/2  wrap
 -- cursor --
@@ -53,7 +53,7 @@ T
 -- screen --
 a3
 a4
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 a.txt 1/2  line 3/4  wrap
 -- cursor --
@@ -64,7 +64,7 @@ Up B
 a2
 a3
 a4
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 a.txt 1/2  line 4/4  wrap
 -- cursor --
 2 0

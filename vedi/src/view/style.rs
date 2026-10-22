@@ -97,8 +97,9 @@ pub const CUR_MATCH: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(5));
 /// are, so they read as the pager's and not the text's.
 pub const EDGE: Style = PLAIN.reverse();
 pub const SEP_NAME: Style = PLAIN.bold();
-/// Dim, so the separator's rule recedes from the text.
-pub const SEP_RULE: Style = PLAIN.dim();
+/// Cyan, which reads on light and dark palettes alike, so the row
+/// stands out from the text while the name stays as legible as it.
+pub const SEP_RULE: Style = PLAIN.fg(Color::Palette(6));
 
 #[cfg(test)]
 mod tests {
@@ -143,6 +144,6 @@ mod tests {
         assert_eq!(MATCH, d.fg(Color::Palette(0)).bg(Color::Palette(11)));
         assert_eq!(CUR_MATCH, d.fg(Color::Palette(15)).bg(Color::Palette(5)));
         assert_eq!(SEP_NAME, d.bold());
-        assert_eq!(SEP_RULE, d.dim());
+        assert_eq!(SEP_RULE, d.fg(Color::Palette(6)));
     }
 }

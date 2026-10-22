@@ -23,10 +23,10 @@ c1
 -- keys --
 ]
 -- screen --
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 b2
-── c.txt ───────────────────
+━━ c.txt ━━━━━━━━━━━━━━━━━━━
 b.txt 2/3  line 1/2  wrap
 -- cursor --
 1 0
@@ -35,7 +35,7 @@ b.txt 2/3  line 1/2  wrap
 -- screen --
 b1
 b2
-── c.txt ───────────────────
+━━ c.txt ━━━━━━━━━━━━━━━━━━━
 c1
 c.txt 3/3  line 1/1  wrap
 -- cursor --
@@ -45,7 +45,7 @@ c.txt 3/3  line 1/1  wrap
 -- screen --
 b1
 b2
-── c.txt ───────────────────
+━━ c.txt ━━━━━━━━━━━━━━━━━━━
 c1
 c.txt 3/3  line 1/1  wrap
 -- cursor --
@@ -53,7 +53,7 @@ c.txt 3/3  line 1/1  wrap
 -- keys --
 g
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
 a2
 a3

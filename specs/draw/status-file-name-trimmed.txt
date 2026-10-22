@@ -14,17 +14,17 @@ abc
 -- input --
 def
 -- screen --
-── vedi/src/app/status.rs ──────────────
+━━ vedi/src/app/status.rs ━━━━━━━━━━━━━━
 abc
-── b.txt ───────────────────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 def
 vedi/…/app/status.rs 1/2  line 1/1  wrap
 -- keys --
 Down
 -- screen --
-── vedi/src/app/status.rs ──────────────
+━━ vedi/src/app/status.rs ━━━━━━━━━━━━━━
 abc
-── b.txt ───────────────────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 def
 b.txt 2/2  line 1/1  wrap         h help
 -- keys --
@@ -32,32 +32,32 @@ Up
 -- resize --
 48x5
 -- screen --
-── vedi/src/app/status.rs ──────────────────────
+━━ vedi/src/app/status.rs ━━━━━━━━━━━━━━━━━━━━━━
 abc
-── b.txt ───────────────────────────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 def
 vedi/src/app/status.rs 1/2  line 1/1  wrap
 -- resize --
 36x5
 -- screen --
-── vedi/src/app/status.rs ──────────
+━━ vedi/src/app/status.rs ━━━━━━━━━━
 abc
-── b.txt ───────────────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 def
 vedi/…/status.rs 1/2  line 1/1  wrap
 -- resize --
 32x5
 -- screen --
-── vedi/src/app/status.rs ──────
+━━ vedi/src/app/status.rs ━━━━━━
 abc
-── b.txt ───────────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━
 def
 status.rs 1/2  line 1/1  wrap
 -- resize --
 20x5
 -- screen --
-── vedi/src/app/stat
+━━ vedi/src/app/stat
 abc
-── b.txt ───────────
+━━ b.txt ━━━━━━━━━━━
 def
 status.rs 1/2  line

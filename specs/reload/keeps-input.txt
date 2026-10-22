@@ -17,7 +17,7 @@ b2
 -- keys --
 Down Down
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
 a2
 a3
@@ -27,9 +27,9 @@ a.txt 1/2  line 3/3  wrap
 -- reload a.txt --
 a1
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 a.txt 1/2  line 1/1  wrap
 -- cursor --

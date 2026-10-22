@@ -218,12 +218,12 @@ impl<T: Terminal> App<T> {
             .map_or(STDIN, String::as_str)
             .chars()
             .collect();
-        let mut x = runes(g, 0, y, &['─', '─', ' '], SEP_RULE);
+        let mut x = runes(g, 0, y, &['━', '━', ' '], SEP_RULE);
         x += runes(g, x, y, &name, SEP_NAME);
         g.put(x, y, " ", SEP_RULE, None);
         x += 1;
         while x < g.width() {
-            g.put(x, y, "─", SEP_RULE, None);
+            g.put(x, y, "━", SEP_RULE, None);
             x += 1;
         }
     }

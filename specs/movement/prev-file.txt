@@ -32,7 +32,7 @@ b.txt 2/2  line 6/6  wrap
 -- keys --
 [
 -- screen --
-── b.txt ───────────────────
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 b2
 b3
@@ -42,7 +42,7 @@ b.txt 2/2  line 1/6  wrap
 -- keys --
 [
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
 a2
 a3
@@ -56,7 +56,7 @@ a.txt 1/2  line 1/3  wrap
 -- keys --
 Down Down [
 -- screen --
-── a.txt ───────────────────
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
 a1
 a2
 a3

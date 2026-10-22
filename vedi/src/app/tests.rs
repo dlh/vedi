@@ -247,7 +247,8 @@ fn draw_blanks_what_it_leaves() {
     }
 }
 
-/// The row naming an input draws the name bold and the dashes dim.
+/// The row naming an input draws the name bold and the dashes, with
+/// the space on each side of the name, cyan.
 #[test]
 fn separator_style() {
     let mut f = Fill::memory(false);
@@ -262,7 +263,7 @@ fn separator_style() {
     };
     let mut a = App::new(TestTerminal::new(20, 4), f.buf, GEN, opts);
     a.draw();
-    assert_eq!(row(&a, 0), "── a.txt ───────────");
+    assert_eq!(row(&a, 0), "━━ a.txt ━━━━━━━━━━━");
     for (x, want) in [
         (0, SEP_RULE),
         (2, SEP_RULE),
