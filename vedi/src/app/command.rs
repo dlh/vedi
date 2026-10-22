@@ -123,7 +123,7 @@ impl State {
 
     /// What a Tab leaves on the prompt.
     fn fill(&mut self, text: &str) {
-        self.line.text = text.chars().collect();
+        self.line.set(text);
         self.filled = text.to_string();
     }
 }

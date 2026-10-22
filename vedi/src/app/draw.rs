@@ -2,7 +2,7 @@
 //! characters, separators and markers, and the cursor.
 
 use crate::app::text_view::Row;
-use crate::app::{App, STDIN};
+use crate::app::{App, Focus, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::text::buffer::Pos;
 use crate::view::layout::{Layout, Mode};
@@ -14,7 +14,8 @@ impl<T: Terminal> App<T> {
     /// matches in `MATCH`, and the status line. While a `StartScreen`
     /// waits for EOF only the status line is drawn: the view is not
     /// known until then. While help is up the bindings are the text, and
-    /// no cursor is shown; nor is one scrolled off the side.
+    /// no cursor is shown; nor is one scrolled off the side. An open
+    /// prompt has the cursor.
     pub fn draw(&mut self) {
         self.sync_view();
         let (w, h) = self.screen.size();
@@ -29,11 +30,11 @@ impl<T: Terminal> App<T> {
             cur = self.draw_text(&mut g);
         }
         // Help has no cursor to show.
-        if self.help.is_some() {
+        if self.help.is_some() || self.focus != Focus::Viewing {
             cur = None;
         }
         let at = self.status_at();
-        self.draw_status(&mut g, at);
+        let cur = self.draw_status(&mut g, at).or(cur);
         let cur = cur.filter(|&(x, _)| x < w);
         self.screen.present(&g, cur);
         self.frame = g;

@@ -1,0 +1,40 @@
+A prompt wider than the screen scrolls to keep the cursor on it: the
+cursor sits at the right edge until the line fits again, and the
+prefix goes off the left with the rest.
+
+-- size --
+10x3
+-- input --
+line 1
+-- keys --
+/ "abcdefghijk"
+-- screen --
+line 1
+
+cdefghijk
+-- cursor --
+2 9
+-- keys --
+Home
+-- screen --
+line 1
+
+/abcdefghi
+-- cursor --
+2 1
+-- keys --
+End Left Left
+-- screen --
+line 1
+
+abcdefghij
+-- cursor --
+2 9
+-- keys --
+Backspace
+-- screen --
+line 1
+
+/abcdefghj
+-- cursor --
+2 9

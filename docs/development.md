@@ -71,6 +71,9 @@ prompts would lose dead-key and IME input.
 [crossterm#965](https://github.com/crossterm-rs/crossterm/issues/965) tracks it.
 `kitty +kitten show_key -m kitty` shows what kitty sends with every flag on.
 
+A legacy terminal sends Ctrl+Backspace as Ctrl+h, which vedi takes for
+Backspace; only under the protocol does it delete a word at a prompt.
+
 ## Releases
 
 `make next-version` prints the next tag: a breaking change (`type!:` or a

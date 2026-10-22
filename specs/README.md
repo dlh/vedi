@@ -83,7 +83,7 @@ Assertions, checked at that point:
 
 | Section | Content |
 |---|---|
-| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`, those the cursor is in in `{{` `}}`; the status row, when shown, plain, with its runs out of reverse video in `[` `]`; trailing spaces trimmed. |
+| `-- screen --` | Every row. Reverse-video runs — selection, control characters — in `[` `]`; search matches in `{` `}`, those the cursor is in in `{{` `}}`; the status row, when shown in reverse video, plain, with its runs out of reverse video in `[` `]`, and a prompt's row, drawn plain, as the text rows; trailing spaces trimmed. |
 | `-- cursor --` | `row col`, 0-based, or `hidden`. |
 | `-- clipboard --` | The copied text; a copy ending in a newline ends the section with a blank line. |
 | `-- written NAME --` | What `:write` put in the file NAME, ended as `-- clipboard --` is. Nothing is written to disk: the files in `-- args --` and the names written before are the ones that exist. The home directory is `/home/u`. |

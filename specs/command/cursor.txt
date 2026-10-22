@@ -1,0 +1,113 @@
+The prompt has a cursor, the terminal's, on the prompt's row. Left,
+Right, Home and End move it; Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right,
+Alt+b and Alt+f move it by word, and Cmd+Left and Cmd+Right to the ends
+of the line, as in the text. Typing, Backspace and a paste act at it; a
+recalled entry, like a completion, puts it at the end. The search prompt
+is edited the same way.
+
+-- os --
+macos
+-- input --
+line 1
+line 2
+-- keys --
+:
+-- cursor --
+5 1
+-- keys --
+"wrap_style wrd" Left Left "o"
+-- screen --
+line 1
+line 2
+
+
+
+:wrap_style word
+-- cursor --
+5 14
+-- keys --
+Alt+Left "no"
+-- screen --
+line 1
+line 2
+
+
+
+:wrap_style noword
+-- cursor --
+5 14
+-- keys --
+Backspace Backspace Ctrl+Right
+-- screen --
+line 1
+line 2
+
+
+
+:wrap_style word
+-- cursor --
+5 16
+-- keys --
+Home
+-- cursor --
+5 1
+-- keys --
+Alt+f
+-- cursor --
+5 11
+-- keys --
+Alt+b
+-- cursor --
+5 1
+-- keys --
+Cmd+Right Ctrl+Left
+-- cursor --
+5 12
+-- keys --
+Cmd+Left Right End Left Left Left Left
+-- cursor --
+5 12
+-- paste --
+no
+-- screen --
+line 1
+line 2
+
+
+
+:wrap_style noword
+-- cursor --
+5 14
+-- keys --
+Backspace Backspace Enter
+-- screen --
+line 1
+line 2
+
+
+
+<stdin>  line 1/2  word wrap      h help
+-- cursor --
+0 0
+-- keys --
+: Up
+-- screen --
+line 1
+line 2
+
+
+
+:wrap_style word
+-- cursor --
+5 16
+-- keys --
+Esc / "ine" Home "l" Enter
+-- screen --
+{{line}} 1
+{line} 2
+
+
+
+<stdin>  line 1/2  word wrap      h help
+-- cursor --
+0 0

@@ -1,11 +1,16 @@
 //! A line being typed on the status row, and the history of the lines
 //! entered at it before.
 
+use crate::app::text_view::is_word;
 use crate::input::key::{Key, KeyCode, Mods};
+use crate::view::layout::Layout;
 
 #[derive(Default)]
 pub(super) struct Prompt {
-    pub text: Vec<char>,
+    text: Vec<char>,
+    /// Where the next character goes: an index into `text`, at the
+    /// start of a glyph.
+    cursor: usize,
     /// Lines entered, oldest first.
     history: Vec<String>,
     /// The entry `text` shows; `history.len()` is the draft.
@@ -35,7 +40,7 @@ pub(super) fn cancels(key: Key) -> bool {
 impl Prompt {
     /// Empties the prompt.
     pub fn open(&mut self) {
-        self.text.clear();
+        self.set("");
         self.pos = self.history.len();
     }
 
@@ -47,15 +52,31 @@ impl Prompt {
         self.text.is_empty()
     }
 
+    /// The cursor's place, in characters from the start of the line.
+    pub fn cursor(&self) -> usize {
+        self.cursor
+    }
+
+    /// Replaces the line, the cursor at its end.
+    pub fn set(&mut self, text: &str) {
+        self.text = text.chars().collect();
+        self.cursor = self.text.len();
+    }
+
     /// Handles the keys every prompt shares: Up and Down walk the
     /// history, Down past the newest entry restoring what was typed
-    /// before Up; Backspace deletes; a character types. Enter submits
-    /// and `cancels` cancels; any other key does nothing.
+    /// before Up; Left, Right, Home, End and the word keys move the
+    /// cursor, by the glyph, a character and the marks on it; Backspace
+    /// deletes the glyph before it, with Ctrl or Alt a word, as Ctrl+w
+    /// does, and with Cmd the line before it, as Ctrl+u does; a
+    /// character types. Enter submits and `cancels` cancels; any other
+    /// key does nothing.
     pub fn edit(&mut self, key: Key) -> PromptEdit {
         let key = key.normalized();
         if cancels(key) {
             return PromptEdit::Cancel;
         }
+        let mods = key.mods;
         match key.code {
             KeyCode::Enter => return PromptEdit::Submit,
             KeyCode::Up => {
@@ -66,7 +87,7 @@ impl Prompt {
                     self.draft.clone_from(&self.text);
                 }
                 self.pos -= 1;
-                self.text = self.history[self.pos].chars().collect();
+                self.set(&self.history[self.pos].clone());
             }
             KeyCode::Down => {
                 if self.pos == self.history.len() {
@@ -74,24 +95,127 @@ impl Prompt {
                 }
                 self.pos += 1;
                 if self.pos == self.history.len() {
-                    self.text.clone_from(&self.draft);
+                    self.set(&self.draft.iter().collect::<String>());
                 } else {
-                    self.text = self.history[self.pos].chars().collect();
+                    self.set(&self.history[self.pos].clone());
                 }
             }
-            KeyCode::Backspace => {
-                self.text.pop();
+            KeyCode::Left if mods == Mods::NONE => self.cursor = self.glyph_before(self.cursor),
+            KeyCode::Right if mods == Mods::NONE => {
+                self.cursor = self.glyph_after(self.cursor);
             }
-            KeyCode::Char(c) if !key.mods.contains(Mods::CTRL) => self.text.push(c),
+            KeyCode::Left if mods == Mods::CMD => self.cursor = 0,
+            KeyCode::Right if mods == Mods::CMD => self.cursor = self.text.len(),
+            KeyCode::Home => self.cursor = 0,
+            KeyCode::End => self.cursor = self.text.len(),
+            KeyCode::Left if mods == Mods::CTRL || mods == Mods::ALT => self.word_left(),
+            KeyCode::Right if mods == Mods::CTRL || mods == Mods::ALT => self.word_right(),
+            KeyCode::Char('b') if mods == Mods::ALT => self.word_left(),
+            KeyCode::Char('f') if mods == Mods::ALT => self.word_right(),
+            KeyCode::Backspace if mods == Mods::NONE => {
+                let start = self.glyph_before(self.cursor);
+                self.text.drain(start..self.cursor);
+                self.cursor = start;
+            }
+            KeyCode::Backspace if mods == Mods::CTRL || mods == Mods::ALT => self.delete_word(),
+            KeyCode::Char('w') if mods == Mods::CTRL => self.delete_word(),
+            KeyCode::Backspace if mods == Mods::CMD => self.delete_to_start(),
+            KeyCode::Char('u') if mods == Mods::CTRL => self.delete_to_start(),
+            KeyCode::Char(c) if !mods.contains(Mods::CTRL) => {
+                self.text.insert(self.cursor, c);
+                self.cursor += 1;
+            }
             _ => {}
         }
         PromptEdit::Editing
     }
 
-    /// Types `text` as one line: a control, a newline above all, is
-    /// dropped rather than pressed, so a paste cannot submit.
+    /// Where each glyph starts, as the row draws them: a character
+    /// that takes a cell, with the zero-width marks after it.
+    fn glyph_starts(&self) -> Vec<bool> {
+        let xs = Layout::default().cells(&self.text);
+        (0..=self.text.len())
+            .map(|i| i == self.text.len() || xs[i + 1] != xs[i])
+            .collect()
+    }
+
+    /// The start of the glyph before `i`, or `i` at the start.
+    fn glyph_before(&self, i: usize) -> usize {
+        let starts = self.glyph_starts();
+        let mut k = i.saturating_sub(1);
+        while k > 0 && !starts[k] {
+            k -= 1;
+        }
+        k
+    }
+
+    /// The start of the glyph after the one at `i`, or the end.
+    fn glyph_after(&self, i: usize) -> usize {
+        let starts = self.glyph_starts();
+        let mut k = (i + 1).min(self.text.len());
+        while k < self.text.len() && !starts[k] {
+            k += 1;
+        }
+        k
+    }
+
+    /// The start of the word the cursor is in or after, backed up to
+    /// the start of its glyph: a mark counts as a word character, and
+    /// one on a space would be left alone.
+    fn word_start(&self) -> usize {
+        let mut i = self.cursor;
+        while i > 0 && !is_word(self.text[i - 1]) {
+            i -= 1;
+        }
+        while i > 0 && is_word(self.text[i - 1]) {
+            i -= 1;
+        }
+        let starts = self.glyph_starts();
+        while i > 0 && !starts[i] {
+            i -= 1;
+        }
+        i
+    }
+
+    fn word_left(&mut self) {
+        self.cursor = self.word_start();
+    }
+
+    /// To the end of the word the cursor is in or before.
+    fn word_right(&mut self) {
+        let mut i = self.cursor;
+        while i < self.text.len() && !is_word(self.text[i]) {
+            i += 1;
+        }
+        while i < self.text.len() && is_word(self.text[i]) {
+            i += 1;
+        }
+        let starts = self.glyph_starts();
+        while i < self.text.len() && !starts[i] {
+            i += 1;
+        }
+        self.cursor = i;
+    }
+
+    fn delete_word(&mut self) {
+        let start = self.word_start();
+        self.text.drain(start..self.cursor);
+        self.cursor = start;
+    }
+
+    fn delete_to_start(&mut self) {
+        self.text.drain(..self.cursor);
+        self.cursor = 0;
+    }
+
+    /// Types `text` as one line at the cursor: a control, a newline
+    /// above all, is dropped rather than pressed, so a paste cannot
+    /// submit.
     pub fn paste(&mut self, text: &str) {
-        self.text.extend(text.chars().filter(|c| !c.is_control()));
+        let typed: Vec<char> = text.chars().filter(|c| !c.is_control()).collect();
+        self.text
+            .splice(self.cursor..self.cursor, typed.iter().copied());
+        self.cursor += typed.len();
     }
 
     /// Adds `entry` to the history unless it repeats the newest.

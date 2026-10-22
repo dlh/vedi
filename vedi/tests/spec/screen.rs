@@ -3,15 +3,20 @@ use vedi::view::style::{Attrs, CUR_MATCH, MATCH};
 
 /// Renders the screen as a "-- screen --" section expects it:
 /// reverse-video runs in brackets, search matches in braces, doubled
-/// for the matches the cursor is in, the status row, when it is shown,
-/// plain with its runs out of reverse video in brackets, trailing
-/// spaces trimmed, one line per row.
+/// for the matches the cursor is in, the status row, when it is shown
+/// in reverse video, plain with its runs out of reverse video in
+/// brackets, a prompt's row as the text rows, trailing spaces trimmed,
+/// one line per row.
 pub fn render(term: &TestTerminal, status_shown: bool) -> String {
     let (w, h) = term.size();
     let mut out = String::new();
     for y in 0..h {
         let mut row = String::new();
-        let status = status_shown && h >= 2 && y == h - 1;
+        let status = status_shown
+            && h >= 2
+            && w > 0
+            && y == h - 1
+            && term.cell(0, y).style.attrs.contains(Attrs::REVERSE);
         let (mut rev, mut matched) = (false, "");
         let mut x = 0;
         while x < w {

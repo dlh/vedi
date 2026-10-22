@@ -13,6 +13,7 @@ use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
 pub use motion::Motion;
+pub(crate) use motion::is_word;
 use rows::LaidCache;
 pub use rows::Row;
 pub use search::Outcome;

@@ -34,6 +34,10 @@ and the search keys search them. These are the defaults.
 | ? | Search backward |
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
 | Up, Down | Recall earlier searches, or commands |
+| Left, Right, Home, End, Cmd+Left, Cmd+Right | Move in the line |
+| Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
+| Alt+Backspace, Ctrl+Backspace, Ctrl+w | Delete the word before the cursor |
+| Cmd+Backspace, Ctrl+u | Delete to the start of the line |
 | Tab | Complete; again, the next match |
 | Esc, Ctrl+g, Ctrl+c | Cancel |
 

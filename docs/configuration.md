@@ -128,7 +128,10 @@ they share, or the first of them, and list them under the prompt, and Tab again
 steps through them. A setting's values start after its current one, so
 `:edge_markers` Tab Tab turns them on when they are off; after a whole value,
 Tab fills in the next. Up and Down recall earlier commands; Esc, Ctrl+g and
-Ctrl+c cancel.
+Ctrl+c cancel. The cursor moves in the line as it does in the text, and a
+line wider than the screen scrolls to keep it in view; Alt+Backspace or Ctrl+w
+deletes the word before it, Cmd+Backspace or Ctrl+u the line before it.
+[keys.md](keys.md) lists the prompt keys.
 
 ## Keys
 

@@ -11,7 +11,7 @@ use crate::view::layout::Mode;
 /// and M, which std does not expose. `is_alphanumeric` is Alphabetic
 /// plus Nd, Nl and No: over L and Nd it adds No (superscripts,
 /// fractions, circled numbers) and Nl, the smaller deviation.
-fn is_word(c: char) -> bool {
+pub(crate) fn is_word(c: char) -> bool {
     c.is_alphanumeric() || c == '_' || is_mark(c)
 }
 

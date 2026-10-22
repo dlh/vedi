@@ -1,0 +1,52 @@
+Cmd+Backspace and Ctrl+u delete from the start of the line to the
+cursor, and leave what follows it. With the cursor at the start,
+nothing goes. The search prompt deletes the same way.
+
+-- os --
+macos
+-- input --
+line 1
+-- keys --
+: "cycle wrap_style" Left Left Left Left Left Cmd+Backspace
+-- screen --
+line 1
+
+
+
+
+:style
+-- cursor --
+5 1
+-- keys --
+Cmd+Backspace
+-- screen --
+line 1
+
+
+
+
+:style
+-- cursor --
+5 1
+-- keys --
+End Ctrl+u
+-- screen --
+line 1
+
+
+
+
+:
+-- cursor --
+5 1
+-- keys --
+Esc / "line 1" Ctrl+u
+-- screen --
+line 1
+
+
+
+
+/
+-- cursor --
+5 1

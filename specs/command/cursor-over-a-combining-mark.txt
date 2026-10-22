@@ -1,0 +1,36 @@
+The prompt's cursor moves by the glyph: Left and Right step over a
+character and the marks on it together, and Backspace deletes them
+together, so a mark never lands on a character typed before it.
+
+-- size --
+20x3
+-- input --
+café
+-- keys --
+/ "café"
+-- cursor --
+2 5
+-- keys --
+Left
+-- cursor --
+2 4
+-- keys --
+"x"
+-- screen --
+café
+
+/cafxé
+-- cursor --
+2 5
+-- keys --
+Right
+-- cursor --
+2 6
+-- keys --
+Backspace
+-- screen --
+café
+
+/cafx
+-- cursor --
+2 5

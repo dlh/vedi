@@ -19,7 +19,7 @@ three four
 five six
 :
 -- cursor --
-0 0
+3 1
 -- keys --
 "2" Enter
 -- cursor --
@@ -36,9 +36,11 @@ three four
 five six
 /
 -- cursor --
-0 0
+3 1
 -- keys --
 Esc
+-- cursor --
+0 0
 -- mouse --
 click 2 3
 -- screen --

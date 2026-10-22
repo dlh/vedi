@@ -30,21 +30,46 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    /// Draws `status_text` in reverse video on the bottom row, which
-    /// needs two rows to exist, unless the line is hidden, with "h help",
-    /// naming whatever key shows help, at the right edge unless help is
-    /// unbound or up, a prompt is open, or it would come within two
+    /// Draws `status_text` on the bottom row, which needs two rows to
+    /// exist, unless the line is hidden: in reverse video, or plain
+    /// while a prompt is open, so the terminal's cursor shows on it,
+    /// where on a reverse row it is the row's own color. "h help",
+    /// naming whatever key shows help, is at the right edge unless help
+    /// is unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
-    /// filled in out of reverse video and on screen.
-    pub(super) fn draw_status(&self, g: &mut Grid, at: usize) {
+    /// filled in in the other video and on screen. A prompt wider than
+    /// the screen scrolls to keep the cursor on it, at the right edge.
+    /// Returns the cell of an open prompt's cursor.
+    pub(super) fn draw_status(&self, g: &mut Grid, at: usize) -> Option<(usize, usize)> {
         let (w, h) = (g.width(), g.height());
         if h < 2 || !self.status_shown() {
-            return;
+            return None;
         }
-        let st = Style::default().reverse();
+        let prompt = match self.focus {
+            Focus::Viewing => None,
+            Focus::Searching { .. } => Some(&self.search),
+            Focus::Commanding => Some(&self.command.line),
+        };
+        let (st, mark) = if prompt.is_some() {
+            (Style::default(), Style::default().reverse())
+        } else {
+            (Style::default().reverse(), Style::default())
+        };
         g.fill_row(h - 1, st);
         let text: Vec<char> = self.status_text(w, at).chars().collect();
-        let mut width = runes(g, 0, h - 1, &text, st);
+        let xs = Layout::default().cells(&text);
+        // The prompt's prefix is one character.
+        let cur = prompt.map(|p| xs[1 + p.cursor()]);
+        // At no width the cursor is off screen anyway; the offset must
+        // still land on the line.
+        let off = cur.map_or(0, |c| (c + 1).saturating_sub(w.max(1)));
+        // The first glyph starting on screen: a wide one cut by the
+        // edge leaves its cell blank.
+        let first = (0..=text.len())
+            .find(|&i| xs[i] >= off && (i == text.len() || xs[i + 1] != xs[i]))
+            .unwrap_or(text.len());
+        let mut width = xs[first] - off + runes(g, xs[first] - off, h - 1, &text[first..], st);
+        let cur = cur.map(|c| (c - off, h - 1));
         if self.focus == Focus::Commanding
             && let Some((ms, at)) = self.command.listing()
         {
@@ -62,7 +87,7 @@ impl<T: Terminal> App<T> {
             }
             for (i, m) in ms.iter().enumerate().skip(first) {
                 width += 2;
-                let ms = if at == Some(i) { Style::default() } else { st };
+                let ms = if at == Some(i) { mark } else { st };
                 width += runes(g, width, h - 1, m, ms);
             }
         }
@@ -77,6 +102,7 @@ impl<T: Terminal> App<T> {
                 runes(g, w - hint.len(), h - 1, &hint, st);
             }
         }
+        cur
     }
 
     /// The line the status line names: the cursor's, or the top row's

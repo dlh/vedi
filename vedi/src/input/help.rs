@@ -1,4 +1,5 @@
 use crate::input::action::{Action, Command};
+use crate::input::key::Mods;
 use crate::input::keymap::Keymap;
 
 /// One line of the help screen: the keys bound to its actions, in map
@@ -205,6 +206,29 @@ const SECTIONS: &[HelpSection] = {
             name: "Prompts",
             rows: &[
                 fixed(&["Up", "Down"], "Recall earlier searches, or commands"),
+                fixed(
+                    &["Left", "Right", "Home", "End", "Cmd+Left", "Cmd+Right"],
+                    "Move in the line",
+                ),
+                fixed(
+                    &[
+                        "Ctrl+Left",
+                        "Ctrl+Right",
+                        "Alt+Left",
+                        "Alt+Right",
+                        "Alt+b",
+                        "Alt+f",
+                    ],
+                    "Move by word",
+                ),
+                fixed(
+                    &["Alt+Backspace", "Ctrl+Backspace", "Ctrl+w"],
+                    "Delete the word before the cursor",
+                ),
+                fixed(
+                    &["Cmd+Backspace", "Ctrl+u"],
+                    "Delete to the start of the line",
+                ),
                 fixed(&["Tab"], "Complete; again, the next match"),
                 fixed(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"),
             ],
@@ -214,14 +238,23 @@ const SECTIONS: &[HelpSection] = {
 
 impl Keymap {
     /// The help screen for the map: a row none of whose actions has a
-    /// key is left out, and a section with no rows left.
+    /// key is left out, and a section with no rows left. A fixed Cmd+
+    /// key is listed where the map binds any, that is on macOS.
     pub fn help(&self) -> Vec<Section> {
+        let cmd = self
+            .bindings()
+            .iter()
+            .any(|b| b.key.mods.contains(Mods::CMD));
         let mut secs = Vec::new();
         for s in SECTIONS {
             let mut rows = Vec::new();
             for row in s.rows {
                 let keys: Vec<String> = match row.keys {
-                    Keys::Fixed(keys) => keys.iter().map(|k| k.to_string()).collect(),
+                    Keys::Fixed(keys) => keys
+                        .iter()
+                        .filter(|k| cmd || !k.starts_with("Cmd+"))
+                        .map(|k| k.to_string())
+                        .collect(),
                     Keys::Bound(cmds) => self
                         .bindings()
                         .iter()
@@ -299,7 +332,8 @@ mod tests {
     }
 
     /// Keys come in map order; a row with no key bound is left out, and
-    /// a section with no rows; fixed rows stay.
+    /// a section with no rows; fixed rows stay, less their Cmd+ keys
+    /// where no binding has Cmd.
     #[test]
     fn help_lists_bound_keys() {
         let bind = |k: &str, c: &str| Binding {
@@ -324,6 +358,14 @@ mod tests {
             [row(&["q"], "Quit"), row(&["w"], "Toggle wrap / nowrap")]
         );
         assert_eq!(secs[1].rows, [row(&["Right", "Up"], "Move the cursor")]);
-        assert_eq!(secs[3].rows[2], row(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"));
+        assert_eq!(
+            secs[3].rows[1],
+            row(&["Left", "Right", "Home", "End"], "Move in the line")
+        );
+        assert_eq!(
+            secs[3].rows[4],
+            row(&["Ctrl+u"], "Delete to the start of the line")
+        );
+        assert_eq!(secs[3].rows[6], row(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"));
     }
 }

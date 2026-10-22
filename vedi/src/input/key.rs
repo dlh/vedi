@@ -118,7 +118,9 @@ impl Key {
     /// The key comparable to a parsed name. A control character is its
     /// letter with Ctrl, and Ctrl+h, Ctrl+i and Ctrl+m are Backspace,
     /// Tab and Enter, the keys a legacy terminal cannot tell them from.
-    /// Those and Esc name themselves, so Ctrl is dropped from them.
+    /// Those and Esc name themselves, so Ctrl is dropped from them;
+    /// Ctrl+Backspace, which only a terminal that reports Backspace
+    /// apart from Ctrl+h sends, keeps it.
     /// NUL is Ctrl+Space. Shift on a character that has a shifted form
     /// is that form, as a legacy terminal sends it: , with Shift is <.
     /// Otherwise Shift is dropped from a character, Shift+g is G,
@@ -151,15 +153,14 @@ impl Key {
                 'm' => KeyCode::Enter,
                 c => return Key::new(KeyCode::Char(c), mods),
             };
+            mods.remove(Mods::CTRL);
         }
         let shift_form = match code {
             KeyCode::Char(c) if mods.contains(Mods::SHIFT) => shifted(c),
             _ => None,
         };
         match code {
-            KeyCode::Enter | KeyCode::Esc | KeyCode::Tab | KeyCode::Backspace => {
-                mods.remove(Mods::CTRL);
-            }
+            KeyCode::Enter | KeyCode::Esc | KeyCode::Tab => mods.remove(Mods::CTRL),
             KeyCode::Char(' ') if mods.contains(Mods::CTRL) => {}
             KeyCode::Char(_) if let Some(s) = shift_form => {
                 code = KeyCode::Char(s);
@@ -296,6 +297,11 @@ mod tests {
             ("ctrl f as a control char", ch('\x06', NONE), ch('f', CTRL)),
             ("ctrl h is backspace", ch('h', CTRL), key(Backspace, NONE)),
             ("bs is backspace", ch('\x08', NONE), key(Backspace, NONE)),
+            (
+                "ctrl backspace keeps ctrl",
+                key(Backspace, CTRL),
+                key(Backspace, CTRL),
+            ),
             ("ctrl i is tab", ch('i', CTRL), key(Tab, NONE)),
             ("ctrl m is enter", ch('m', CTRL), key(Enter, NONE)),
             ("cr is enter", ch('\r', NONE), key(Enter, NONE)),

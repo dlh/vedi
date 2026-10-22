@@ -26,8 +26,8 @@ help  motion scrolls, / searches, any other key returns
 -- keys --
 G
 -- screen --
-
-  Up  Down                                Recall earlier sea
+  ⌥Backspace  ⌃Backspace  ⌃W              Delete the word be
+  ⌃U                                      Delete to the star
   Tab                                     Complete; again, t
   Esc  ⌃G  ⌃C                             Cancel.
  -----------------------------------------------------------
@@ -35,8 +35,8 @@ help  motion scrolls, / searches, any other key returns
 -- keys --
 Down
 -- screen --
-
-  Up  Down                                Recall earlier sea
+  ⌥Backspace  ⌃Backspace  ⌃W              Delete the word be
+  ⌃U                                      Delete to the star
   Tab                                     Complete; again, t
   Esc  ⌃G  ⌃C                             Cancel.
  -----------------------------------------------------------
@@ -44,10 +44,10 @@ help  motion scrolls, / searches, any other key returns
 -- keys --
 u
 -- screen --
-
-                                    PROMPTS
-
-  Up  Down                                Recall earlier sea
+  Left  Right  Home  End                  Move in the line.
+  ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
+  ⌥Backspace  ⌃Backspace  ⌃W              Delete the word be
+  ⌃U                                      Delete to the star
   Tab                                     Complete; again, t
 help  motion scrolls, / searches, any other key returns
 -- keys --

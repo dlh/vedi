@@ -1,0 +1,77 @@
+Alt+Backspace, Ctrl+Backspace and Ctrl+w delete the word before the
+cursor: what is not a word before it, then the word, as far as Alt+Left
+would move. With nothing before the cursor, nothing goes. The search
+prompt deletes the same way.
+
+-- input --
+line 1
+-- keys --
+: "cycle wrap_style  " Alt+Backspace
+-- screen --
+line 1
+
+
+
+
+:cycle
+-- cursor --
+5 7
+-- keys --
+"a-b" Ctrl+w
+-- screen --
+line 1
+
+
+
+
+:cycle a-
+-- cursor --
+5 9
+-- keys --
+Ctrl+Backspace
+-- screen --
+line 1
+
+
+
+
+:cycle
+-- cursor --
+5 7
+-- keys --
+Ctrl+Backspace
+-- screen --
+line 1
+
+
+
+
+:
+-- cursor --
+5 1
+-- keys --
+Alt+Backspace
+-- cursor --
+5 1
+-- keys --
+"wrap_style word" Left Left Left Left Left Alt+Backspace
+-- screen --
+line 1
+
+
+
+
+: word
+-- cursor --
+5 1
+-- keys --
+Esc / "line 1" Ctrl+w
+-- screen --
+line 1
+
+
+
+
+/line
+-- cursor --
+5 6
