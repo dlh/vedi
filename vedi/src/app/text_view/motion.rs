@@ -91,12 +91,7 @@ impl TextView {
             Motion::WordLeft => self.word_left(),
             Motion::WordRight => self.word_right(),
             Motion::First => self.cur = Pos::default(),
-            Motion::Last => {
-                self.cur = Pos {
-                    line: self.buf.len().saturating_sub(1),
-                    col: 0,
-                }
-            }
+            Motion::Last => self.go_last(),
             Motion::ScreenTop => self.screen_row(0),
             Motion::ScreenMiddle => self.screen_row(self.geom.rows / 2),
             Motion::ScreenBottom => self.screen_row(self.geom.rows.saturating_sub(1)),

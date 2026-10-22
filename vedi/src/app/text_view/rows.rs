@@ -117,6 +117,16 @@ impl TextView {
         self.laid.newline_row(i, ln, l)
     }
 
+    /// Puts the cursor at the start of the last line's last row, so a
+    /// line that wraps shows its end. Moved to the line's start first:
+    /// a cursor already at its end would open a newline row.
+    pub fn go_last(&mut self) {
+        let line = self.buf.len().saturating_sub(1);
+        self.cur = Pos { line, col: 0 };
+        let ln = self.line_layout(line);
+        self.cur.col = ln.segments().last().map_or(0, |s| s.start);
+    }
+
     pub fn end_pos(&mut self) -> Pos {
         let n = self.buf.len();
         if n == 0 {

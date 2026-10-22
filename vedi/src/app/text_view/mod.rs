@@ -196,10 +196,7 @@ impl TextView {
             self.start.line = None;
         }
         if self.start.follow {
-            self.cur = Pos {
-                line: n.saturating_sub(1),
-                col: 0,
-            };
+            self.go_last();
         }
         if let Some(s) = self.start.screen
             && eof

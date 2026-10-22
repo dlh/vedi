@@ -1,0 +1,54 @@
+G goes to the last row of a wrapped last line, so the end of the text
+is on screen; +G follows to that row as input arrives. From the
+newline row a full last row opens, G goes back to the row itself.
+
+-- size --
+10x5
+-- args --
++G
+-- input --
+line 1
+line 2
+-- cursor --
+1 0
+-- input --
+abcdefghijklmnopqrstuvwxyz0123
+-- screen --
+line 2
+abcdefghij
+klmnopqrst
+uvwxyz0123
+<stdin>  l
+-- cursor --
+3 0
+-- eof --
+-- keys --
+g G
+-- screen --
+line 2
+abcdefghij
+klmnopqrst
+uvwxyz0123
+<stdin>  l
+-- cursor --
+3 0
+-- keys --
+End
+-- screen --
+abcdefghij
+klmnopqrst
+uvwxyz0123
+
+<stdin>  l
+-- cursor --
+3 0
+-- keys --
+G
+-- screen --
+abcdefghij
+klmnopqrst
+uvwxyz0123
+
+<stdin>  l
+-- cursor --
+2 0
