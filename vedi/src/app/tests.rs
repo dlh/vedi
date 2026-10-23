@@ -14,6 +14,7 @@ use crate::app::text_view::{Geometry, Motion, Row, Start, TextView};
 use crate::input::config;
 use crate::input::key::Key;
 use crate::sys::opencmd::Killer;
+use crate::text::ansi::ViewStyle;
 use crate::text::buffer::tests::{Fill, temp};
 use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::Indexer;

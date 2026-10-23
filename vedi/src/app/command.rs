@@ -1,11 +1,13 @@
 //! The : prompt's commands: a line number, a setting for the rest of
 //! the run, or what a key does.
 
+use std::mem;
+
 use crate::app::text_view::Motion;
 use crate::app::{App, Flow, Focus, Kind, status};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
-use crate::input::setting::{self, Cycle};
+use crate::input::setting::{self, Cycle, Settings};
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
@@ -57,7 +59,7 @@ impl<T: Terminal> App<T> {
                 let name = line.trim_start()[verb.len()..].trim();
                 return self.write(name, verb == "write!");
             }
-            [verb, ..] if is_command(verb) => self.set(verb, line)?,
+            [verb, ..] if is_command(verb) => self.set(line)?,
             [verb, ..] => return Err(format!("unknown command {verb:?}")),
         }
         Ok(Flow::Continue)
@@ -78,22 +80,32 @@ impl<T: Terminal> App<T> {
     }
 
     /// Sets what a config line would.
-    fn set(&mut self, verb: &str, line: &str) -> Result<(), String> {
+    fn set(&mut self, line: &str) -> Result<(), String> {
         let mut c = Config {
             settings: self.settings.clone(),
             ..Config::default()
         };
         config::parse_line(line, &mut c)?;
-        self.settings = c.settings;
-        self.sync_view();
-        match verb {
-            // A change during a reload asked for another.
-            "auto_reload" if !self.settings.auto_reload => self.dirty = false,
-            "view_style" => self.set_literal(),
-            "map" => self.keys = self.keys.apply(&c.keys),
-            _ => {}
+        if !c.keys.is_empty() {
+            self.keys = self.keys.apply(&c.keys);
         }
+        self.apply_settings(c.settings);
         Ok(())
+    }
+
+    /// Puts `new` in force: the view is laid out for it, the text is
+    /// decoded as its view style has it, and auto_reload turning off
+    /// drops the reload a change asked for during the current one.
+    fn apply_settings(&mut self, new: Settings) {
+        let old = mem::replace(&mut self.settings, new);
+        self.sync_view();
+        if self.settings.view_style != old.view_style {
+            let raw = self.settings.view_style == ViewStyle::Raw;
+            self.text_view_mut().set_literal(raw);
+        }
+        if old.auto_reload && !self.settings.auto_reload {
+            self.dirty = false;
+        }
     }
 
     /// Sets a setting to the value after its current one, the first
@@ -151,12 +163,6 @@ impl<T: Terminal> App<T> {
         };
         let cmd = argv.map_or_else(|| "''".to_string(), |a| a.join(" "));
         format!("open_cmd {cmd}")
-    }
-
-    /// Decodes the text as the view style has it.
-    fn set_literal(&mut self) {
-        let raw = self.settings.view_style == ViewStyle::Raw;
-        self.text_view_mut().set_literal(raw);
     }
 }
 
