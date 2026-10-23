@@ -376,7 +376,8 @@ fn write_fails_on_read_error() {
         .unwrap()
         .set_len(0)
         .unwrap();
-    a.run_command("write out.txt");
+    let flow = a.run_command("write out.txt");
+    a.say(flow);
     a.draw();
     assert_eq!(row(&a, 3), "write failed: input truncated");
     assert!(!done.get(), "the sink was finished");

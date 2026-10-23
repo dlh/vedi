@@ -330,10 +330,7 @@ impl<T: Terminal> App<T> {
             Edit::Submit(line) => {
                 self.focus(Focus::Viewing);
                 match kind {
-                    Kind::Search { back } => {
-                        self.search_submit(&line, back);
-                        Flow::Continue
-                    }
+                    Kind::Search { back } => self.search_submit(&line, back),
                     Kind::Command => self.run_command(&line),
                 }
             }

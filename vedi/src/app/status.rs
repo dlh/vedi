@@ -3,7 +3,7 @@
 
 use crate::app::draw::runes;
 use crate::app::prompt::Prompt;
-use crate::app::{App, Focus, STDIN};
+use crate::app::{App, Flow, Focus, STDIN};
 use crate::input::action::{Action, Command};
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
@@ -11,15 +11,61 @@ use crate::view::layout::{Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Style;
 
+/// What the status line shows, the first of these that applies.
+enum Row<'a> {
+    Prompt(&'a Prompt),
+    /// How help is left, unless something was said under it.
+    HelpHint,
+    Message(&'a str),
+    ReadError(ReadError),
+    /// The input's name and the cursor's line.
+    Summary,
+    /// Nothing, and no row: `status_line no` with nothing to say.
+    Hidden,
+}
+
+/// Whether the summary row shows `verb`'s value, so cycle needn't say
+/// it: wrap, wrap_style and view_style are on it; status_line is it.
+pub(super) fn summarizes(verb: &str) -> bool {
+    matches!(verb, "wrap" | "wrap_style" | "view_style" | "status_line")
+}
+
 impl<T: Terminal> App<T> {
-    /// Whether the status line has a row: always, unless hidden, and
-    /// then for a prompt, a message, help or a read error.
+    fn row(&self) -> Row<'_> {
+        if let Some(p) = self.prompt() {
+            return Row::Prompt(p);
+        }
+        if self.help.is_some() && self.status.is_none() {
+            return Row::HelpHint;
+        }
+        if let Some(s) = &self.status {
+            return Row::Message(s);
+        }
+        if let Some(e) = self.read_error() {
+            return Row::ReadError(e);
+        }
+        if self.settings.status_line {
+            Row::Summary
+        } else {
+            Row::Hidden
+        }
+    }
+
+    /// Whether the status line has a row.
     pub fn status_shown(&self) -> bool {
-        self.settings.status_line
-            || self.focus != Focus::Viewing
-            || self.help.is_some()
-            || self.status.is_some()
-            || self.read_error().is_some()
+        !matches!(self.row(), Row::Hidden)
+    }
+
+    /// Puts what a handler said on the status line, where it stays
+    /// until the next key, and passes the rest of `flow` on.
+    pub(super) fn say(&mut self, flow: Flow) -> Flow {
+        match flow {
+            Flow::Say(m) => {
+                self.status = Some(m);
+                Flow::Continue
+            }
+            flow => flow,
+        }
     }
 
     /// The reader's error, else the first a line read hit.
@@ -31,8 +77,8 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    /// Draws `status_text` on the bottom row, which needs two rows to
-    /// exist, unless the line is hidden: in reverse video, or plain
+    /// Draws the row on the bottom row, which needs two rows to exist,
+    /// unless the line is hidden: in reverse video, or plain
     /// while a prompt is open, so the terminal's cursor shows on it,
     /// where on a reverse row it is the row's own color. "h help",
     /// naming whatever key shows help, is at the right edge unless help
@@ -43,17 +89,21 @@ impl<T: Terminal> App<T> {
     /// Returns the cell of an open prompt's cursor.
     pub(super) fn draw_status(&self, g: &mut Grid, at: usize) -> Option<(usize, usize)> {
         let (w, h) = (g.width(), g.height());
-        if h < 2 || !self.status_shown() {
+        let row = self.row();
+        if h < 2 || matches!(row, Row::Hidden) {
             return None;
         }
-        let prompt = self.prompt();
+        let prompt = match row {
+            Row::Prompt(p) => Some(p),
+            _ => None,
+        };
         let (st, mark) = if prompt.is_some() {
             (Style::default(), Style::default().reverse())
         } else {
             (Style::default().reverse(), Style::default())
         };
         g.fill_row(h - 1, st);
-        let text: Vec<char> = self.status_text(w, at).chars().collect();
+        let text: Vec<char> = self.status_text(&row, w, at).chars().collect();
         let xs = Layout::default().cells(&text);
         let cur = prompt.map(|p| xs[p.cursor()]);
         // At no width the cursor is off screen anyway; the offset must
@@ -110,19 +160,21 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    fn status_text(&self, width: usize, at: usize) -> String {
-        if let Some(p) = self.prompt() {
-            return p.line();
+    fn status_text(&self, row: &Row, width: usize, at: usize) -> String {
+        match row {
+            Row::Prompt(p) => p.line(),
+            Row::HelpHint => "help  motion scrolls, / searches, any other key returns".into(),
+            Row::Message(s) => s.to_string(),
+            Row::ReadError(e) => format!("read error: {e}"),
+            Row::Summary => self.summary(width, at),
+            Row::Hidden => String::new(),
         }
-        if self.help.is_some() && self.status.is_none() {
-            return "help  motion scrolls, / searches, any other key returns".into();
-        }
-        if let Some(s) = &self.status {
-            return s.clone();
-        }
-        if let Some(e) = self.read_error() {
-            return format!("read error: {e}");
-        }
+    }
+
+    /// The input's name, which input of several, the line the cursor
+    /// is on, the wrap mode and view style, and what is still being
+    /// read.
+    fn summary(&self, width: usize, at: usize) -> String {
         let mut mode = match (self.settings.mode, self.settings.wrap_style) {
             (WrapMode::NoWrap, _) => "nowrap",
             (_, WrapStyle::Word) => "word wrap",

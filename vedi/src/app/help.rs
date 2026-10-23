@@ -3,8 +3,8 @@
 
 use std::mem;
 
-use crate::app::App;
 use crate::app::text_view::{Geometry, Start, TextView};
+use crate::app::{App, Flow};
 use crate::input::action::{Action, Command};
 use crate::input::help::Section;
 use crate::text::buffer::{Buffer, Progress, Storage};
@@ -46,31 +46,29 @@ impl<T: Terminal> App<T> {
     /// Scrolls the bindings by a motion and searches them by the search
     /// keys; any other key returns. The search is the text's: its
     /// pattern, direction and highlight carry over, as less's do.
-    pub(super) fn help_key(&mut self, cmd: Option<Command>) {
+    pub(super) fn help_key(&mut self, cmd: Option<Command>) -> Flow {
         let Some(c) = cmd else {
             self.hide_help();
-            return;
+            return Flow::Continue;
         };
         match c.action {
             Action::Search | Action::SearchBack => {
                 self.open_search(c.action == Action::SearchBack);
-                return;
+                return Flow::Continue;
             }
             Action::SearchNext => {
                 let found = self.view.find_next();
-                self.report(found);
-                return;
+                return self.report(found);
             }
             Action::SearchPrev => {
                 let found = self.view.find_prev();
-                self.report(found);
-                return;
+                return self.report(found);
             }
             _ => {}
         }
         if c.extend || !c.action.is_movement() {
             self.hide_help();
-            return;
+            return Flow::Continue;
         }
         // The cursor, hidden but where a search starts, comes along.
         let v = &mut self.view;
@@ -96,6 +94,7 @@ impl<T: Terminal> App<T> {
             }
             _ => {}
         }
+        Flow::Continue
     }
 }
 

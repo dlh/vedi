@@ -3,7 +3,7 @@
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use crate::app::App;
+use crate::app::{App, Flow};
 use crate::text::ansi::{Link, ViewStyle};
 use crate::text::buffer::{Buffer, Pos};
 use crate::view::render::{osc8, sgr};
@@ -15,9 +15,8 @@ impl<T: Terminal> App<T> {
     /// `name`, made new, or emptied first when `overwrite`; a file that
     /// exists is otherwise refused. A leading ~ is the home directory.
     /// The text goes as the view shows it: with its colors and links,
-    /// with links alone, or as it came. The status line says how many
-    /// lines went.
-    pub(super) fn write(&mut self, name: &str, overwrite: bool) -> Result<(), String> {
+    /// with links alone, or as it came. Says how many lines went.
+    pub(super) fn write(&mut self, name: &str, overwrite: bool) -> Result<Flow, String> {
         let path = match (&self.home, name.strip_prefix('~')) {
             (Some(home), Some(rest)) if rest.is_empty() || rest.starts_with('/') => {
                 let mut p = home.clone().into_os_string();
@@ -70,11 +69,10 @@ impl<T: Terminal> App<T> {
             }
         };
         w.done().map_err(failed)?;
-        self.status = Some(match lines {
+        Ok(Flow::Say(match lines {
             1 => format!("wrote 1 line to {name}"),
             _ => format!("wrote {lines} lines to {name}"),
-        });
-        Ok(())
+        }))
     }
 }
 

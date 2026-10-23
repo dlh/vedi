@@ -2,7 +2,7 @@
 //! the run, or what a key does.
 
 use crate::app::text_view::Motion;
-use crate::app::{App, Flow, Focus, Kind};
+use crate::app::{App, Flow, Focus, Kind, status};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
 use crate::input::setting::{self, Cycle};
@@ -29,15 +29,9 @@ impl<T: Terminal> App<T> {
         self.command.open_completing(':', &self.settings);
     }
 
-    /// Runs a : line, reporting an error on the status line.
+    /// Runs a : line; an error is what it says.
     pub(super) fn run_command(&mut self, line: &str) -> Flow {
-        match self.command(line) {
-            Ok(flow) => flow,
-            Err(e) => {
-                self.status = Some(e);
-                Flow::Continue
-            }
-        }
+        self.command(line).unwrap_or_else(Flow::Say)
     }
 
     /// A number alone, or goto and a number, goes to that 1-based line,
@@ -61,7 +55,7 @@ impl<T: Terminal> App<T> {
             ["write" | "write!"] => return Err("write takes a file name".into()),
             [verb @ ("write" | "write!"), ..] => {
                 let name = line.trim_start()[verb.len()..].trim();
-                self.write(name, verb == "write!")?;
+                return self.write(name, verb == "write!");
             }
             [verb, ..] if is_command(verb) => self.set(verb, line)?,
             [verb, ..] => return Err(format!("unknown command {verb:?}")),
@@ -103,46 +97,46 @@ impl<T: Terminal> App<T> {
     }
 
     /// Sets a setting to the value after its current one, the first
-    /// after the last, and reports the new value on the status line
-    /// unless the line shows it anyway.
-    pub(super) fn cycle(&mut self, name: &str) {
+    /// after the last, and says the new value unless the status line
+    /// shows it anyway.
+    pub(super) fn cycle(&mut self, name: &str) -> Flow {
         let Some(s) = setting::verb(name) else {
-            return;
+            return Flow::Continue;
         };
         match s.cycle {
-            Cycle::No => {}
+            Cycle::No => Flow::Continue,
             Cycle::Toggle => self.toggle(name),
             Cycle::Values(_) => {
                 let line = format!("{name} {}", s.next(&self.settings.value(name)));
-                self.run_command(&line);
-                if !s.shown {
-                    self.status = Some(line);
+                match self.run_command(&line) {
+                    Flow::Continue if !status::summarizes(name) => Flow::Say(line),
+                    flow => flow,
                 }
             }
         }
     }
 
     /// Switches a toggle verb off, then on again.
-    fn toggle(&mut self, name: &str) {
+    fn toggle(&mut self, name: &str) -> Flow {
         if name == "open_cmd" {
-            self.toggle_open_cmd();
+            return self.toggle_open_cmd();
         }
+        Flow::Continue
     }
 
     /// Reads the files through open_cmd, or as they are. The selection
     /// goes: the lines it covered are not the new text's. A reload
     /// still being read is dropped: it may be waiting on a command
     /// that never ends.
-    fn toggle_open_cmd(&mut self) {
+    fn toggle_open_cmd(&mut self) -> Flow {
         if self.open.is_none() {
-            self.status = Some("not a file".into());
-            return;
+            return Flow::Say("not a file".into());
         }
         self.through_open_cmd = !self.through_open_cmd;
         self.view.deselect();
         self.next = None;
         self.dirty = false;
-        self.reload_then(true, true);
+        self.reload_then(true, true)
     }
 
     /// The command the cursor's input is read through, or '' for none,

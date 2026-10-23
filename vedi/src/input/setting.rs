@@ -74,9 +74,6 @@ pub enum Cycle {
 pub struct Verb {
     pub name: &'static str,
     pub cycle: Cycle,
-    /// The status line shows it, so cycle needn't say it: wrap,
-    /// wrap_style and view_style are on it; status_line is it.
-    pub shown: bool,
     /// The : prompt takes it: not clipboard_cmd, which a paste could
     /// set to any command for y to run; clear_all_shortcuts, which
     /// would unbind : and q; open_cmd, the input being open; nor
@@ -97,91 +94,78 @@ pub const VERBS: &[Verb] = &[
     Verb {
         name: "wrap",
         cycle: YES_NO,
-        shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "wrap_style",
         cycle: Cycle::Values(&["char", "word"]),
-        shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "tab_width",
         cycle: Cycle::No,
-        shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "edge_markers",
         cycle: YES_NO,
-        shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "file_separators",
         cycle: YES_NO,
-        shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "auto_reload",
         cycle: YES_NO,
-        shown: false,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "status_line",
         cycle: YES_NO,
-        shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "view_style",
         cycle: Cycle::Values(&["color", "plain", "raw"]),
-        shown: true,
         prompt: true,
         flag: true,
     },
     Verb {
         name: "clipboard_cmd",
         cycle: Cycle::No,
-        shown: false,
         prompt: false,
         flag: false,
     },
     Verb {
         name: "map",
         cycle: Cycle::No,
-        shown: false,
         prompt: true,
         flag: false,
     },
     Verb {
         name: "clear_all_shortcuts",
         cycle: Cycle::No,
-        shown: false,
         prompt: false,
         flag: false,
     },
     Verb {
         name: "open_cmd",
         cycle: Cycle::Toggle,
-        shown: false,
         prompt: false,
         flag: false,
     },
     Verb {
         name: "one_page_rows_below",
         cycle: Cycle::No,
-        shown: false,
         prompt: false,
         flag: true,
     },

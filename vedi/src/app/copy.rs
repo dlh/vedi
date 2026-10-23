@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
-use crate::app::{App, CopyResult};
+use crate::app::{App, CopyResult, Flow};
 use crate::sys::opencmd::Killer;
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
@@ -35,12 +35,11 @@ impl<T: Terminal> App<T> {
         s
     }
 
-    /// Starts sending the selection to the clipboard; `None` with
-    /// nothing selected. The selection stays either way.
-    fn start_copy(&mut self) -> Option<Copying> {
+    /// Starts sending the selection to the clipboard; with nothing
+    /// selected, what to say. The selection stays either way.
+    fn start_copy(&mut self) -> Result<Copying, Flow> {
         let Some((start, end)) = self.view.selection() else {
-            self.status = Some("nothing selected".into());
-            return None;
+            return Err(Flow::Say("nothing selected".into()));
         };
         let text = self.selected_text(start, end);
         let mut lines = end.line - start.line + 1;
@@ -60,65 +59,66 @@ impl<T: Terminal> App<T> {
                 wake();
             }),
         );
-        Some(Copying { rx, lines, killer })
+        Ok(Copying { rx, lines, killer })
     }
 
-    /// Puts a copy's result in the status line and reports success.
-    fn copied(&mut self, lines: usize, res: CopyResult) -> bool {
-        let (msg, ok) = match res {
-            Ok(()) if lines == 1 => ("copied 1 line".into(), true),
-            Ok(()) => (format!("copied {lines} lines"), true),
-            Err(e) => (format!("copy failed: {e}"), false),
-        };
-        self.status = Some(msg);
-        ok
-    }
-
-    /// Sends the selection to the clipboard. A copier that takes time
-    /// reports on `Event::Copied`; a copy started before then is
-    /// ended.
-    pub(super) fn copy(&mut self) {
-        let Some(c) = self.start_copy() else {
-            return;
+    /// Sends the selection to the clipboard and says how it went. A
+    /// copier that takes time reports on `Event::Copied`; a copy
+    /// started before then is ended.
+    pub(super) fn copy(&mut self) -> Flow {
+        let c = match self.start_copy() {
+            Ok(c) => c,
+            Err(flow) => return flow,
         };
         match c.rx.try_recv() {
-            Ok(res) => {
-                self.copied(c.lines, res);
-            }
+            Ok(res) => Flow::Say(copied(c.lines, res).0),
             Err(_) => {
-                self.status = Some("copying".into());
                 self.copying = Some(c);
+                Flow::Say("copying".into())
             }
         }
     }
 
-    /// Sends the selection to the clipboard and waits for the result,
-    /// which says whether to quit on it.
-    pub(super) fn copy_and_wait(&mut self) -> bool {
-        let Some(c) = self.start_copy() else {
-            return false;
+    /// Sends the selection to the clipboard and waits for the result:
+    /// quits on success, else says what went wrong.
+    pub(super) fn copy_and_wait(&mut self) -> Flow {
+        let c = match self.start_copy() {
+            Ok(c) => c,
+            Err(flow) => return flow,
         };
         let res = c.rx.recv().unwrap_or_else(|_| Err("no result".into()));
-        self.copied(c.lines, res)
+        match copied(c.lines, res) {
+            (_, true) => Flow::Quit,
+            (msg, false) => Flow::Say(msg),
+        }
     }
 
-    /// Takes up the copy's result once it is in.
-    pub(super) fn copy_done(&mut self) {
+    /// Takes up the copy's result once it is in, and says how it went.
+    pub(super) fn copy_done(&mut self) -> Flow {
         let Some(c) = &self.copying else {
-            return;
+            return Flow::Continue;
         };
         let res = match c.rx.try_recv() {
             Ok(res) => res,
-            Err(TryRecvError::Empty) => return,
+            Err(TryRecvError::Empty) => return Flow::Continue,
             Err(TryRecvError::Disconnected) => Err("no result".into()),
         };
         let lines = c.lines;
         self.copying = None;
-        self.copied(lines, res);
+        Flow::Say(copied(lines, res).0)
     }
 
     /// A copy's result is still to come.
     pub fn copying(&self) -> bool {
         self.copying.is_some()
+    }
+}
+
+/// What the status line says of a copy's result, and whether it went.
+fn copied(lines: usize, res: CopyResult) -> (String, bool) {
+    match res {
+        Ok(()) if lines == 1 => ("copied 1 line".into(), true),
+        Ok(()) => (format!("copied {lines} lines"), true),
+        Err(e) => (format!("copy failed: {e}"), false),
     }
 }

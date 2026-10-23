@@ -1,7 +1,7 @@
 //! The / and ? prompts, and n and N.
 
 use crate::app::text_view::Outcome;
-use crate::app::{App, Focus, Kind};
+use crate::app::{App, Flow, Focus, Kind};
 use crate::text::search::Matcher;
 use crate::view::screen::Terminal;
 
@@ -15,19 +15,19 @@ impl<T: Terminal> App<T> {
 
     /// Searches for `line`; empty, it repeats the last pattern the
     /// prompt's way.
-    pub(super) fn search_submit(&mut self, line: &str, back: bool) {
+    pub(super) fn search_submit(&mut self, line: &str, back: bool) -> Flow {
         let pattern = (!line.is_empty()).then(|| Matcher::new(line));
         let found = self.view.search(pattern, back);
-        self.report(found);
+        self.report(found)
     }
 
-    /// Puts what a search found on the status line.
-    pub(super) fn report(&mut self, found: Outcome) {
-        self.status = match found {
-            Outcome::NoPattern => Some("no search pattern".into()),
-            Outcome::NotFound => Some(format!("not found: {}", self.view.matcher().pattern())),
-            Outcome::Wrapped => Some("search wrapped".into()),
-            Outcome::Found => return,
-        };
+    /// What to say of what a search found.
+    pub(super) fn report(&self, found: Outcome) -> Flow {
+        match found {
+            Outcome::NoPattern => Flow::Say("no search pattern".into()),
+            Outcome::NotFound => Flow::Say(format!("not found: {}", self.view.matcher().pattern())),
+            Outcome::Wrapped => Flow::Say("search wrapped".into()),
+            Outcome::Found => Flow::Continue,
+        }
     }
 }

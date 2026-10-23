@@ -44,9 +44,12 @@ use text_view::{Geometry, Motion, Start, TextView};
 /// How often the reader's data is drawn, at most.
 const REDRAW_EVERY: Duration = Duration::from_millis(50);
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+/// What a handler says of the loop: go on, go on and show this on
+/// the status line until the next key, or quit.
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Flow {
     Continue,
+    Say(String),
     Quit,
 }
 
@@ -87,7 +90,7 @@ pub struct App<T: Terminal> {
     names: Vec<String>,
     keys: Keymap,
     settings: Settings,
-    /// A one-shot message, cleared by the next key.
+    /// What a handler last said, until the next key.
     status: Option<String>,
     focus: Focus,
     /// The / and ? prompts' line.
@@ -208,7 +211,8 @@ impl<T: Terminal> App<T> {
                 }
             };
             if applied {
-                self.take_up();
+                let flow = self.take_up();
+                self.say(flow);
                 self.sync_view();
             }
             match ev {
@@ -276,15 +280,17 @@ impl<T: Terminal> App<T> {
 
     /// Takes applied progress up: swaps in a finished reload and places
     /// the view on the new text.
-    fn take_up(&mut self) {
-        self.swap_if_done();
+    fn take_up(&mut self) -> Flow {
+        let flow = self.swap_if_done();
         self.text_view_mut().appended();
+        flow
     }
 
     /// Processes one event and reports whether to quit.
     pub fn handle(&mut self, ev: Event) -> Flow {
         self.sync_view();
         let flow = self.dispatch(ev);
+        let flow = self.say(flow);
         self.sync_view();
         flow
     }
@@ -333,7 +339,7 @@ impl<T: Terminal> App<T> {
         match ev {
             Event::Progress(g, p) => {
                 if self.apply(g, p) {
-                    self.take_up();
+                    return self.take_up();
                 }
             }
             Event::Resize(..) => {
@@ -351,15 +357,11 @@ impl<T: Terminal> App<T> {
                 return match self.focus {
                     Focus::Viewing if self.help.is_some() => {
                         let cmd = self.keys.lookup(k);
-                        self.help_key(cmd);
-                        Flow::Continue
+                        self.help_key(cmd)
                     }
                     Focus::Viewing => match self.keys.lookup(k) {
                         Some(c) => self.view_key(c),
-                        None => {
-                            self.status = Some(format!("not bound: {k}"));
-                            Flow::Continue
-                        }
+                        None => Flow::Say(format!("not bound: {k}")),
                     },
                     Focus::Prompting(kind) => self.prompt_key(kind, k),
                 };
@@ -371,10 +373,10 @@ impl<T: Terminal> App<T> {
             }
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
-            Event::Copied => self.copy_done(),
+            Event::Copied => return self.copy_done(),
             Event::Changed => {
                 if self.settings.auto_reload {
-                    self.reload(false);
+                    return self.reload(false);
                 }
             }
         }
@@ -414,32 +416,26 @@ impl<T: Terminal> App<T> {
             Action::SelectAll => v.select_all(),
             Action::ClearSelection => v.clear_selection(),
             Action::SetMark => v.set_mark(),
-            Action::Copy => {
-                self.copy();
-            }
+            Action::Copy => return self.copy(),
             Action::CopyAndQuit => {
                 if v.selection().is_some() {
-                    return if self.copy_and_wait() {
-                        Flow::Quit
-                    } else {
-                        Flow::Continue
-                    };
+                    return self.copy_and_wait();
                 }
                 v.go(Motion::Down, false);
             }
             Action::Search | Action::SearchBack => self.open_search(c.action == Action::SearchBack),
             Action::SearchNext => {
                 let found = v.find_next();
-                self.report(found);
+                return self.report(found);
             }
             Action::SearchPrev => {
                 let found = v.find_prev();
-                self.report(found);
+                return self.report(found);
             }
             Action::CommandPrompt => self.open_command(),
-            Action::Cycle => self.cycle(c.arg.as_deref().unwrap_or_default()),
+            Action::Cycle => return self.cycle(c.arg.as_deref().unwrap_or_default()),
             Action::Help => self.show_help(),
-            Action::Reload => self.reload(true),
+            Action::Reload => return self.reload(true),
             Action::Quit => return Flow::Quit,
         }
         Flow::Continue
