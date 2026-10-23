@@ -29,8 +29,8 @@ impl<T: Terminal> App<T> {
         if !self.view.start_pending() {
             cur = self.draw_text(&mut g);
         }
-        // Help has no cursor to show.
-        if self.help.is_some() || self.focus != Focus::Viewing {
+        // A prompt has the cursor.
+        if !self.view.cursor_shown() || self.focus != Focus::Viewing {
             cur = None;
         }
         let at = self.status_at();

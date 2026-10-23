@@ -36,7 +36,6 @@ use crate::input::setting::Settings;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
-use crate::view::layout::Mode;
 use crate::view::screen::{Grid, Screen, Terminal};
 use prompt::Prompt;
 use text_view::{Geometry, Motion, Start, TextView};
@@ -311,7 +310,7 @@ impl<T: Terminal> App<T> {
     }
 
     /// Lays the view shown out for the screen as it is: the rows left
-    /// by the status line, the settings, and `NoWrap` for help.
+    /// by the status line and the settings.
     fn sync_view(&mut self) {
         let g = self.geometry();
         self.view.resize(g);
@@ -323,11 +322,7 @@ impl<T: Terminal> App<T> {
             rows: self.text_rows(),
             height,
             cols,
-            mode: if self.help.is_some() {
-                Mode::NoWrap
-            } else {
-                self.settings.mode
-            },
+            mode: self.settings.mode,
             tab: self.settings.tab_width,
             wrap_style: self.settings.wrap_style,
             separators: self.settings.file_separators && self.names.len() > 1,
@@ -345,12 +340,6 @@ impl<T: Terminal> App<T> {
             Event::Resize(..) => {
                 self.screen.sync();
                 self.sync_view();
-                // The bindings keep the screen full and the scroll
-                // within them.
-                if self.help.is_some() {
-                    self.view.scroll_within(0);
-                    self.view.scroll_sideways_within(0);
-                }
             }
             Event::Key(k) => {
                 self.act();

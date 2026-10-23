@@ -3,9 +3,12 @@
 
 use unicode_width::UnicodeWidthChar;
 
-use crate::app::text_view::{Row, TextView};
+use crate::app::text_view::{Lead, Row, TextView};
 use crate::text::buffer::Pos;
 use crate::view::layout::Mode;
+
+/// How far Left and Right scroll a view-led view sideways.
+const SIDE_STEP: isize = 8;
 
 /// A word is letters, digits, marks and underscores: Unicode's L, Nd
 /// and M, which std does not expose. `is_alphanumeric` is Alphabetic
@@ -56,8 +59,12 @@ impl TextView {
     /// Moves the cursor by `m` and brings it on screen, extending the
     /// selection if `extend` or the mark is set, else dropping it. A
     /// page that does not extend scrolls the view instead and leaves the
-    /// cursor and the selection as they are.
+    /// cursor and the selection as they are. A view-led view scrolls
+    /// by `m` instead.
     pub fn go(&mut self, m: Motion, extend: bool) {
+        if self.lead == Lead::View {
+            return self.scroll_by(m);
+        }
         let extending = extend || self.marking;
         let page = self.page_rows() as isize;
         let half = self.half_page_rows() as isize;
@@ -397,10 +404,50 @@ impl TextView {
         };
     }
 
+    /// Scrolls a view-led view by `m`, no further than its ends: a row,
+    /// a page, to the ends; Left and Right a step, the line keys to the
+    /// sides. A motion to a screen row, an input or a position moves
+    /// nothing.
+    fn scroll_by(&mut self, m: Motion) {
+        let n = self.buf.len() as isize;
+        let page = self.page_rows() as isize;
+        let half = self.half_page_rows() as isize;
+        match m {
+            Motion::Up => self.scroll_within(-1),
+            Motion::Down => self.scroll_within(1),
+            Motion::PageUp => self.scroll_within(-page),
+            Motion::PageDown => self.scroll_within(page),
+            Motion::HalfPageUp => self.scroll_within(-half),
+            Motion::HalfPageDown => self.scroll_within(half),
+            Motion::First => self.scroll_within(-n),
+            Motion::Last => self.scroll_within(n),
+            Motion::Left | Motion::WordLeft => self.scroll_sideways_within(-SIDE_STEP),
+            Motion::Right | Motion::WordRight => self.scroll_sideways_within(SIDE_STEP),
+            Motion::LineStart => {
+                let w = self.width() as isize;
+                self.scroll_sideways_within(-w);
+            }
+            Motion::LineEnd => {
+                let w = self.width() as isize;
+                self.scroll_sideways_within(w);
+            }
+            Motion::ScreenTop
+            | Motion::ScreenMiddle
+            | Motion::ScreenBottom
+            | Motion::PrevInput
+            | Motion::NextInput
+            | Motion::To(_) => {}
+        }
+    }
+
     /// Moves the view `n` rows (negative is up), keeping the first line
     /// to the last row at the top. The cursor keeps its place, hidden
     /// while off screen: the next motion brings the view back to it.
+    /// A view-led view scrolls within its text.
     pub fn scroll(&mut self, mut n: isize) {
+        if self.lead == Lead::View {
+            return self.scroll_within(n);
+        }
         if self.geom.rows == 0 || self.buf.is_empty() {
             return;
         }
@@ -420,8 +467,12 @@ impl TextView {
     /// edge; already past that, after scrolling down to narrower rows, a
     /// right tick stays put rather than turn back. Wrapped, nothing is
     /// off screen to the side. The cursor keeps its place, hidden while
-    /// off screen: the next motion brings the view back to it.
+    /// off screen: the next motion brings the view back to it. A
+    /// view-led view scrolls within its text.
     pub fn scroll_sideways(&mut self, n: isize) {
+        if self.lead == Lead::View {
+            return self.scroll_sideways_within(n);
+        }
         let l = self.geom.layout();
         let rows = self.geom.rows;
         if l.mode != Mode::NoWrap || l.width == 0 || rows == 0 || self.buf.is_empty() {
@@ -442,7 +493,7 @@ impl TextView {
     /// Moves the view `n` rows, no further than the last page; each
     /// line is a row, the mode being `NoWrap`. The cursor is kept on
     /// screen: scrolled off, it moves to the edge row.
-    pub fn scroll_within(&mut self, n: isize) {
+    pub(super) fn scroll_within(&mut self, n: isize) {
         let rows = self.geom.rows;
         let last = self.buf.len().saturating_sub(rows) as isize;
         let line = (self.top.line as isize + n).clamp(0, last) as usize;
@@ -459,13 +510,13 @@ impl TextView {
 
     /// Moves the view `n` columns, no further than brings the widest
     /// line's end to the right edge.
-    pub fn scroll_sideways_within(&mut self, n: isize) {
+    pub(super) fn scroll_sideways_within(&mut self, n: isize) {
         let last = self.width().saturating_sub(self.geom.cols) as isize;
         self.xoff = (self.xoff as isize + n).clamp(0, last) as usize;
     }
 
     /// The widest line, in cells.
-    pub fn width(&mut self) -> usize {
+    fn width(&mut self) -> usize {
         (0..self.buf.len())
             .map(|i| *self.line_layout(i).cells().last().unwrap_or(&0))
             .max()

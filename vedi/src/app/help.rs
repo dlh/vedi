@@ -3,7 +3,7 @@
 
 use std::mem;
 
-use crate::app::text_view::{Geometry, Start, TextView};
+use crate::app::text_view::TextView;
 use crate::app::{App, Flow};
 use crate::input::action::{Action, Command};
 use crate::input::help::Section;
@@ -16,19 +16,12 @@ use crate::view::screen::Terminal;
 /// sideways.
 const HELP_COLS: usize = 80;
 
-/// How far Left and Right scroll the bindings sideways.
-const HELP_STEP: isize = 8;
-
 impl<T: Terminal> App<T> {
-    /// Puts the bindings in the text's place, as a text view of their
-    /// own in `NoWrap` mode, so drawing, scrolling and searching are
-    /// the text's. The search starts over: help's is its own.
+    /// Puts the bindings in the text's place, as a view-led text view
+    /// of their own, so drawing, scrolling and searching are the text's.
+    /// The search starts over: help's is its own.
     pub(super) fn show_help(&mut self) {
-        let help = TextView::new(
-            help_buffer(&self.keys.help()),
-            Start::default(),
-            Geometry::default(),
-        );
+        let help = TextView::view_led(help_buffer(&self.keys.help()));
         self.help = Some(mem::replace(&mut self.view, help));
         self.mouse.end_drag();
         self.sync_view();
@@ -44,57 +37,23 @@ impl<T: Terminal> App<T> {
     }
 
     /// Scrolls the bindings by a motion and searches them by the search
-    /// keys; any other key returns. The search is the text's: its
-    /// pattern, direction and highlight carry over, as less's do.
+    /// keys, as the text's keys do on a view-led view; any other key
+    /// returns. The search is the text's: its pattern, direction and
+    /// highlight carry over, as less's do.
     pub(super) fn help_key(&mut self, cmd: Option<Command>) -> Flow {
-        let Some(c) = cmd else {
-            self.hide_help();
-            return Flow::Continue;
+        let stays = |c: &Command| {
+            matches!(
+                c.action,
+                Action::Search | Action::SearchBack | Action::SearchNext | Action::SearchPrev
+            ) || (c.action.is_movement() && !c.extend)
         };
-        match c.action {
-            Action::Search | Action::SearchBack => {
-                self.open_search(c.action == Action::SearchBack);
-                return Flow::Continue;
+        match cmd {
+            Some(c) if stays(&c) => self.view_key(c),
+            _ => {
+                self.hide_help();
+                Flow::Continue
             }
-            Action::SearchNext => {
-                let found = self.view.find_next();
-                return self.report(found);
-            }
-            Action::SearchPrev => {
-                let found = self.view.find_prev();
-                return self.report(found);
-            }
-            _ => {}
         }
-        if c.extend || !c.action.is_movement() {
-            self.hide_help();
-            return Flow::Continue;
-        }
-        // The cursor, hidden but where a search starts, comes along.
-        let v = &mut self.view;
-        let n = v.buf().len() as isize;
-        match c.action {
-            Action::Up => v.scroll_within(-1),
-            Action::Down => v.scroll_within(1),
-            Action::PageUp => v.scroll_within(-(v.page_rows() as isize)),
-            Action::PageDown => v.scroll_within(v.page_rows() as isize),
-            Action::HalfPageUp => v.scroll_within(-(v.half_page_rows() as isize)),
-            Action::HalfPageDown => v.scroll_within(v.half_page_rows() as isize),
-            Action::First => v.scroll_within(-n),
-            Action::Last => v.scroll_within(n),
-            Action::Left | Action::WordLeft => v.scroll_sideways_within(-HELP_STEP),
-            Action::Right | Action::WordRight => v.scroll_sideways_within(HELP_STEP),
-            Action::Home => {
-                let w = v.width() as isize;
-                v.scroll_sideways_within(-w);
-            }
-            Action::End => {
-                let w = v.width() as isize;
-                v.scroll_sideways_within(w);
-            }
-            _ => {}
-        }
-        Flow::Continue
     }
 }
 

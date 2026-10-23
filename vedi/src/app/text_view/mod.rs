@@ -70,8 +70,17 @@ pub struct Start {
     pub screen: Option<StartScreen>,
 }
 
+/// Which leads: the cursor, the view brought to it; or the view, the
+/// cursor dragged along within it, as help's is.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum Lead {
+    Cursor,
+    View,
+}
+
 pub struct TextView {
     buf: Buffer,
+    lead: Lead,
     cur: Pos,
     /// The selection anchor; `None` when there is no selection.
     anchor: Option<Pos>,
@@ -98,6 +107,7 @@ impl TextView {
     pub fn new(buf: Buffer, start: Start, geom: Geometry) -> TextView {
         TextView {
             buf,
+            lead: Lead::Cursor,
             cur: Pos::default(),
             anchor: None,
             marking: false,
@@ -114,8 +124,22 @@ impl TextView {
         }
     }
 
+    /// A view `buf` leads: the keys and the wheel scroll it, no further
+    /// than its ends, and it never wraps. The cursor is not drawn, and
+    /// is dragged along as where a search starts.
+    pub fn view_led(buf: Buffer) -> TextView {
+        let mut v = TextView::new(buf, Start::default(), Geometry::default());
+        v.lead = Lead::View;
+        v
+    }
+
     pub fn buf(&self) -> &Buffer {
         &self.buf
+    }
+
+    /// Whether the cursor is drawn: a view-led view's is not.
+    pub fn cursor_shown(&self) -> bool {
+        self.lead == Lead::Cursor
     }
 
     pub fn cursor(&self) -> Pos {
@@ -139,11 +163,11 @@ impl TextView {
         self.geom.rows
     }
 
-    pub fn page_rows(&self) -> usize {
+    fn page_rows(&self) -> usize {
         self.geom.rows.max(1)
     }
 
-    pub fn half_page_rows(&self) -> usize {
+    fn half_page_rows(&self) -> usize {
         (self.geom.rows / 2).max(1)
     }
 
@@ -156,8 +180,12 @@ impl TextView {
 
     /// Lays the view out for `geom`. The horizontal scroll starts over
     /// with the mode; a cursor on screen before stays on screen, one
-    /// scrolled off stays off.
-    pub fn resize(&mut self, geom: Geometry) {
+    /// scrolled off stays off. View-led, the screen stays full and the
+    /// scroll within the text.
+    pub fn resize(&mut self, mut geom: Geometry) {
+        if self.lead == Lead::View {
+            geom.mode = Mode::NoWrap;
+        }
         if geom == self.geom {
             return;
         }
@@ -168,6 +196,13 @@ impl TextView {
         self.geom = geom;
         if shown {
             self.scroll_to_cursor();
+        }
+        if self.lead == Lead::View {
+            self.scroll_within(0);
+            // Measuring the widest line lays out every line.
+            if self.xoff > 0 {
+                self.scroll_sideways_within(0);
+            }
         }
     }
 

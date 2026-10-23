@@ -95,7 +95,6 @@ impl<T: Terminal> App<T> {
             self.mouse.dragging = false;
             return;
         }
-        let helping = self.help.is_some();
         match m.kind {
             MouseKind::Wheel { rows, cols } => {
                 let (rows, cols) = wheel(rows, cols, m.shift);
@@ -103,11 +102,10 @@ impl<T: Terminal> App<T> {
                     return;
                 }
                 self.act();
-                match (rows, cols) {
-                    (rows, _) if rows != 0 && helping => self.view.scroll_within(rows),
-                    (_, cols) if helping => self.view.scroll_sideways_within(cols),
-                    (rows, _) if rows != 0 => self.view.scroll(rows),
-                    (_, cols) => self.view.scroll_sideways(cols),
+                if rows != 0 {
+                    self.view.scroll(rows);
+                } else {
+                    self.view.scroll_sideways(cols);
                 }
             }
             MouseKind::Release => self.mouse.release(),
