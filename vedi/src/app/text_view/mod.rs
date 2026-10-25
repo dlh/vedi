@@ -297,11 +297,13 @@ impl TextView {
         };
     }
 
-    /// Whether the cursor's row is among the text rows on screen; with
-    /// no rows or no text, nothing is scrolled away from.
+    /// Whether the cursor is drawn: its row among the text rows on
+    /// screen, and its glyph on screen there, clear of the edge
+    /// markers. With no rows, no columns or no text, nothing is
+    /// scrolled away from.
     pub fn cursor_visible(&mut self) -> bool {
         let rows = self.geom.rows;
-        if rows == 0 || self.buf.is_empty() {
+        if rows == 0 || self.geom.cols == 0 || self.buf.is_empty() {
             return true;
         }
         let top = self.snap(self.top);
@@ -319,24 +321,7 @@ impl TextView {
         if bottom < crow {
             return false;
         }
-        let l = self.geom.layout();
-        if l.mode != Mode::NoWrap || l.width == 0 {
-            return true;
-        }
-        // As drawn: the markers take a cell only where there is text
-        // beyond them, and hide a cursor under them; with no > a glyph
-        // cut off at the right edge shows the cursor on its first cell.
-        let (x, w, width) = self.cursor_span();
-        let mark = usize::from(self.geom.edge_markers);
-        let left = if self.xoff > 0 { mark } else { 0 };
-        let right = if width > self.xoff + l.width { mark } else { 0 };
-        if x < self.xoff + left {
-            return false;
-        }
-        if right == 0 {
-            return x < self.xoff + l.width;
-        }
-        x + w <= self.xoff + l.width - right
+        self.cursor_on(crow).is_some_and(|c| c.shown)
     }
 
     /// Moves `top` and `xoff` the least that brings the cursor on

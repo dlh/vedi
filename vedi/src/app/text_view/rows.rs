@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::app::text_view::TextView;
 use crate::text::buffer::Pos;
-use crate::view::layout::{Laid, Layout};
+use crate::view::layout::{Laid, Layout, Mode};
 
 /// How many lines are kept laid out before starting over.
 const LAID_LINES: usize = 1024;
@@ -39,6 +39,20 @@ impl Row {
             col: self.col.unwrap_or(0),
         }
     }
+}
+
+/// The cursor's glyph on a screen row.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct CursorCell {
+    /// Cells from the row's left edge; negative, scrolled off to the
+    /// left.
+    pub x: isize,
+    pub width: usize,
+    /// On screen and clear of the < and > marking text off either
+    /// side: they take a cell only where there is text beyond them, and
+    /// hide a cursor under them. With no > a glyph cut off at the right
+    /// edge shows the cursor on its first cell.
+    pub shown: bool,
 }
 
 /// Lines laid out for one `Layout`, by index.
@@ -176,6 +190,48 @@ impl TextView {
             1
         };
         (x, w, xs[xs.len() - 1])
+    }
+
+    /// The cursor's glyph on row `p`, when it starts there: where the
+    /// frame draws it, and whether. The cursor on any char of a cluster
+    /// shows on the cluster, which has no smaller part to show it on.
+    /// Past the end of a line that shrank under it, until a motion
+    /// clamps it, the cursor is nowhere.
+    pub fn cursor_on(&mut self, p: Row) -> Option<CursorCell> {
+        let col = p.col?;
+        if p.line != self.cur.line {
+            return None;
+        }
+        let ln = self.line_layout(p.line);
+        let xs = ln.cells();
+        let n = xs.len() - 1;
+        if self.cur.col > n {
+            return None;
+        }
+        let (ci, _) = ln.glyph(self.cur.col);
+        let segi = ln.segment_at(col);
+        if ln.segment_at(ci) != segi {
+            return None;
+        }
+        let x = xs[ci] as isize - (xs[ln.segments()[segi].start] + self.xoff) as isize;
+        // The newline, after the last char, is one cell.
+        let width = if ci < n {
+            (xs[ci + 1] - xs[ci]).max(1)
+        } else {
+            1
+        };
+        let cols = self.geom.cols;
+        let mut shown = x >= 0 && x < cols as isize;
+        if self.geom.edge_markers && self.geom.mode == Mode::NoWrap {
+            let line_width = xs[n];
+            if self.xoff > 0 && line_width > 0 {
+                shown = shown && x != 0;
+            }
+            if line_width > self.xoff + cols {
+                shown = shown && (x + width as isize) < cols as isize;
+            }
+        }
+        Some(CursorCell { x, width, shown })
     }
 
     /// Makes row `p` the top one, stopping at the last screenful: each

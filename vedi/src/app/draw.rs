@@ -73,7 +73,7 @@ impl<T: Terminal> App<T> {
 
     /// Draws the row starting at `p` on screen row `y`, with `matches`
     /// the line's search matches, and returns the cursor's column when
-    /// the cursor is on it and shown.
+    /// the view shows it on this row.
     fn draw_row(&mut self, g: &mut Grid, y: usize, p: Row, matches: &[usize]) -> Option<usize> {
         let Some(col) = p.col else {
             self.draw_separator(g, y, p.line);
@@ -82,6 +82,7 @@ impl<T: Terminal> App<T> {
         let w = g.width();
         let geom = self.view.geometry();
         let (cursor, xoff) = (self.view.cursor(), self.view.xoff());
+        let cell = self.view.cursor_on(p);
         let ln = self.view.line_layout(p.line);
         let line = self.view.buf().line(p.line);
         let xs = ln.cells();
@@ -95,7 +96,7 @@ impl<T: Terminal> App<T> {
         // are one.
         let m = self.view.matcher().len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
-        let ci = (cursor.line == p.line).then(|| {
+        if cursor.line == p.line {
             let (ci, cj) = ln.glyph(cursor.col);
             // Searched, not scanned: a long line is drawn a row at a
             // time, each with all its matches.
@@ -109,28 +110,18 @@ impl<T: Terminal> App<T> {
                 }
                 cur_hi = k + m;
             }
-            ci
-        });
+        }
         let mut mi = 0;
         // The newline is a virtual cell after the last char, on the last
         // row: the cursor can rest on it, and it shows as one reverse
         // cell when selected.
         let end = seg.end + usize::from(segi + 1 == ln.rows());
         let colored = self.settings.view_style == ViewStyle::Color;
-        let (mut cur_x, mut cur_w) = (None, 1);
         let mut ri = 0;
         let mut i = seg.start;
         while i < end {
             let x = xs[i] as isize - x0;
-            // The cursor on any char of the glyph shows on the glyph,
-            // which has no smaller part to show it on.
             let (_, j) = ln.glyph(i);
-            if ci == Some(i) {
-                cur_x = Some(x);
-                if i < n {
-                    cur_w = (xs[i + 1] - xs[i]).max(1) as isize;
-                }
-            }
             let pos = Pos {
                 line: p.line,
                 col: i,
@@ -178,15 +169,11 @@ impl<T: Terminal> App<T> {
         // With edge markers on, text off either side of the screen is
         // marked at that edge. A wide char half under the > is dropped,
         // its cell kept in its style: the terminal would draw it over
-        // the marker. Motions keep the cursor clear of the markers; the
-        // wheel can scroll one over it, and then it is hidden as if off
-        // screen.
+        // the marker.
         let width = xs[n];
-        let mut shown = cur_x.is_some();
         if geom.edge_markers && geom.mode == Mode::NoWrap {
             if xoff > 0 && width > 0 {
                 put(g, 0, y, "<", EDGE, None);
-                shown = shown && cur_x != Some(0);
             }
             if width > xoff + w && w > 0 {
                 if w >= 2 {
@@ -197,7 +184,6 @@ impl<T: Terminal> App<T> {
                     }
                 }
                 put(g, w as isize - 1, y, ">", EDGE, None);
-                shown = shown && cur_x.is_some_and(|x| x + cur_w < w as isize);
             }
         }
         // In wrap mode a row whose line goes on below ends in a marker,
@@ -205,9 +191,7 @@ impl<T: Terminal> App<T> {
         if geom.wrap_marks() && seg.end < n {
             put(g, w as isize - 1, y, "\\", EDGE, None);
         }
-        cur_x
-            .filter(|_| shown)
-            .and_then(|x| usize::try_from(x).ok())
+        cell.filter(|c| c.shown).map(|c| c.x as usize)
     }
 
     /// Draws the row naming line `i`'s input: two dashes, the name as
