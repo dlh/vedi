@@ -212,26 +212,40 @@ impl Layout {
     }
 }
 
+/// The chars `[i, j)` drawn as one glyph with char `col`, in a line
+/// whose cells `xs` are as `Layout::cells` gives them: it and the rest
+/// of its cluster. The newline after the last char is a glyph of its
+/// own.
+pub fn glyph(xs: &[usize], col: usize) -> (usize, usize) {
+    let n = xs.len() - 1;
+    let mut i = col;
+    while !glyph_start(xs, i) {
+        i -= 1;
+    }
+    let mut j = i + 1;
+    while j < n && xs[j + 1] == xs[j] {
+        j += 1;
+    }
+    (i, j)
+}
+
+/// Whether char `col` starts a glyph: the first char, one with cells of
+/// its own, or the newline after the last, as is anything past it.
+/// Constant time, where `glyph` walks the cluster: a run of marks is
+/// checked mark by mark.
+pub fn glyph_start(xs: &[usize], col: usize) -> bool {
+    col == 0 || col >= xs.len() - 1 || xs[col + 1] != xs[col]
+}
+
 impl Laid {
     /// The cell columns, as `Layout::cells` gives them.
     pub fn cells(&self) -> &[usize] {
         &self.xs
     }
 
-    /// The chars `[i, j)` drawn as one glyph with char `col`: it and the
-    /// rest of its cluster. The newline after the last char is a glyph of
-    /// its own.
+    /// The glyph with char `col`, as `glyph` finds it in the cells.
     pub fn glyph(&self, col: usize) -> (usize, usize) {
-        let n = self.xs.len() - 1;
-        let mut i = col;
-        while i > 0 && i < n && self.xs[i + 1] == self.xs[i] {
-            i -= 1;
-        }
-        let mut j = i + 1;
-        while j < n && self.xs[j + 1] == self.xs[j] {
-            j += 1;
-        }
-        (i, j)
+        glyph(&self.xs, col)
     }
 
     /// The visual rows.
@@ -605,7 +619,14 @@ mod tests {
         ];
         for (col, want) in want.into_iter().enumerate() {
             assert_eq!(ln.glyph(col), want, "glyph({col})");
+            assert_eq!(
+                glyph_start(ln.cells(), col),
+                want.0 == col,
+                "glyph_start({col})"
+            );
         }
+        // A lone mark starts the text.
+        assert!(glyph_start(&Layout::default().cells(&chars("\u{301}a")), 0));
     }
 
     #[test]

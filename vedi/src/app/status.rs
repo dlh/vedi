@@ -8,7 +8,7 @@ use crate::input::action::{Action, Command};
 use crate::input::setting;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
-use crate::view::layout::{Layout, Mode as WrapMode, WrapStyle};
+use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Style;
 
@@ -113,7 +113,7 @@ impl<T: Terminal> App<T> {
         // The first glyph starting on screen: a wide one cut by the
         // edge leaves its cell blank.
         let first = (0..=text.len())
-            .find(|&i| xs[i] >= off && (i == text.len() || xs[i + 1] != xs[i]))
+            .find(|&i| xs[i] >= off && layout::glyph_start(&xs, i))
             .unwrap_or(text.len());
         let mut width = xs[first] - off + runes(g, xs[first] - off, h - 1, &text[first..], st);
         let cur = cur.map(|c| (c - off, h - 1));

@@ -5,7 +5,7 @@ use crate::app::text_view::Row;
 use crate::app::{App, Focus, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::text::buffer::Pos;
-use crate::view::layout::{Layout, Mode};
+use crate::view::layout::{self, Layout, Mode};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::{CUR_MATCH, EDGE, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
 
@@ -276,10 +276,7 @@ pub(super) fn runes(g: &mut Grid, x: usize, y: usize, text: &[char], st: Style) 
     let xs = Layout::default().cells(text);
     let mut i = 0;
     while i < text.len() {
-        let mut j = i + 1;
-        while j < text.len() && xs[j + 1] == xs[j] {
-            j += 1;
-        }
+        let (_, j) = layout::glyph(&xs, i);
         let s: String = text[i..j].iter().collect();
         glyph(g, (x + xs[i]) as isize, y, &s, xs[i + 1] - xs[i], st, None);
         i = j;
