@@ -9,8 +9,9 @@ use std::ops::Range;
 use std::os::unix::fs::FileExt;
 use std::sync::Arc;
 
-use crate::text::ansi::{self, Parser, Run};
+use crate::text::ansi::{self, Link, Parser, Run};
 use crate::text::index::{BLOCK_LINES, Block, Indexed};
+use crate::view::style::Style;
 
 /// A line index and a char index within it. `col` may equal the line's
 /// length, meaning after its last char.
@@ -323,6 +324,12 @@ impl Buffer {
 
     pub fn blocks(&self) -> usize {
         self.blocks.len()
+    }
+
+    /// The style and link in effect before block `k`'s first line.
+    pub fn block_state(&self, k: usize) -> Option<(Style, Option<Link>)> {
+        let b = self.blocks.get(k)?;
+        Some(self.parsers[b.parser as usize].state())
     }
 
     pub fn block_lines(&self, k: usize) -> Range<usize> {

@@ -60,8 +60,13 @@ impl Prompt {
     }
 
     fn start(&mut self, prefix: char) {
+        self.open_with(prefix, "");
+    }
+
+    /// `open`, with `text` on the line, the cursor at its end.
+    pub fn open_with(&mut self, prefix: char, text: &str) {
         self.prefix = prefix;
-        self.set("");
+        self.set(text);
         self.pos = self.history.len();
     }
 
@@ -85,7 +90,8 @@ impl Prompt {
             .and_then(|c| c.listing(&self.text()))
     }
 
-    fn text(&self) -> String {
+    /// The line without its prefix.
+    pub fn text(&self) -> String {
         self.text.iter().collect()
     }
 
@@ -302,6 +308,7 @@ impl<T: Terminal> App<T> {
             Focus::Viewing => None,
             Focus::Prompting(Kind::Search { .. }) => Some(&self.search),
             Focus::Prompting(Kind::Command) => Some(&self.command),
+            Focus::Prompting(Kind::Filter) => Some(&self.query),
         }
     }
 
@@ -310,16 +317,18 @@ impl<T: Terminal> App<T> {
             Focus::Viewing => None,
             Focus::Prompting(Kind::Search { .. }) => Some(&mut self.search),
             Focus::Prompting(Kind::Command) => Some(&mut self.command),
+            Focus::Prompting(Kind::Filter) => Some(&mut self.query),
         }
     }
 
     /// Gives a key to the open prompt. A line submitted runs once the
     /// prompt has closed, so the status line's row is the text's again
-    /// by then.
+    /// by then. The & prompt's keys are its own.
     pub(super) fn prompt_key(&mut self, kind: Kind, key: Key) -> Flow {
         let edit = match kind {
             Kind::Search { .. } => self.search.key(key),
             Kind::Command => self.command.key(key),
+            Kind::Filter => return self.filter_key(key),
         };
         match edit {
             Edit::Editing => Flow::Continue,
@@ -332,6 +341,7 @@ impl<T: Terminal> App<T> {
                 match kind {
                     Kind::Search { back } => self.search_submit(&line, back),
                     Kind::Command => self.run_command(&line),
+                    Kind::Filter => unreachable!("handled above"),
                 }
             }
         }

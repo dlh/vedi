@@ -34,6 +34,7 @@ pub enum Action {
     SearchBack,
     SearchNext,
     SearchPrev,
+    Filter,
     CommandPrompt,
     Cycle,
     Quit,
@@ -42,7 +43,7 @@ pub enum Action {
 }
 
 /// In declaration order: `name` indexes it.
-const NAMES: [(Action, &str); 33] = [
+const NAMES: [(Action, &str); 34] = [
     (Action::Up, "up"),
     (Action::Down, "down"),
     (Action::Left, "left"),
@@ -71,6 +72,7 @@ const NAMES: [(Action, &str); 33] = [
     (Action::SearchBack, "search_back"),
     (Action::SearchNext, "search_next"),
     (Action::SearchPrev, "search_prev"),
+    (Action::Filter, "filter"),
     (Action::CommandPrompt, "command"),
     (Action::Cycle, "cycle"),
     (Action::Quit, "quit"),

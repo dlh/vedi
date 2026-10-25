@@ -1,0 +1,32 @@
+A reload makes the list again from the new text, the pointer keeping
+its place.
+
+-- args --
+f.txt
+-- input --
+a1
+a2
+a3
+b
+-- keys --
+& "a" Ctrl+n Enter
+-- screen --
+{a}1
+{{a}}2
+{a}3
+
+
+&a  2/3  line 2/4  wrap           h help
+-- reload --
+a1
+a2
+a3
+a4
+b
+-- screen --
+{a}1
+{{a}}2
+{a}3
+{a}4
+
+&a  2/4  line 2/5  wrap           h help

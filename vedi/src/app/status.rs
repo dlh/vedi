@@ -3,7 +3,7 @@
 
 use crate::app::draw::runes;
 use crate::app::prompt::Prompt;
-use crate::app::{App, Flow, Focus, STDIN};
+use crate::app::{App, Flow, Focus, Kind, STDIN};
 use crate::input::action::{Action, Command};
 use crate::input::setting;
 use crate::text::ansi::ViewStyle;
@@ -71,7 +71,7 @@ impl<T: Terminal> App<T> {
 
     /// The reader's error, else the first a line read hit.
     fn read_error(&self) -> Option<ReadError> {
-        let buf = self.view.buf();
+        let buf = self.text_view().buf();
         match buf.finished() {
             Some(Err(e)) => Some(e),
             _ => buf.read_error(),
@@ -85,9 +85,10 @@ impl<T: Terminal> App<T> {
     /// naming whatever key shows help, is at the right edge unless help
     /// is unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
-    /// filled in in the other video and on screen. A prompt wider than
-    /// the screen scrolls to keep the cursor on it, at the right edge.
-    /// Returns the cell of an open prompt's cursor.
+    /// filled in in the other video and on screen; the & prompt has the
+    /// lines listed of the text's at the right edge, as the hint is. A
+    /// prompt wider than the screen scrolls to keep the cursor on it, at
+    /// the right edge. Returns the cell of an open prompt's cursor.
     pub(super) fn draw_status(&self, g: &mut Grid, at: usize) -> Option<(usize, usize)> {
         let (w, h) = (g.width(), g.height());
         let row = self.row();
@@ -136,6 +137,15 @@ impl<T: Terminal> App<T> {
                 width += runes(g, width, h - 1, m, ms);
             }
         }
+        if self.focus == Focus::Prompting(Kind::Filter)
+            && let Some(f) = &self.filter
+        {
+            let total = self.text_view().buf().len();
+            let count: Vec<char> = format!("{}/{total}", f.listed()).chars().collect();
+            if width + 2 + count.len() <= w {
+                runes(g, w - count.len(), h - 1, &count, st);
+            }
+        }
         let help = Command {
             action: Action::Help,
             extend: false,
@@ -174,26 +184,29 @@ impl<T: Terminal> App<T> {
 
     /// The input's name, which input of several, the line the cursor
     /// is on, the wrap mode and view style, and what is still being
-    /// read.
+    /// read. In a filter's list: the query, which listed line of how
+    /// many, and the text's line it is, named with its input when there
+    /// are several.
     fn summary(&self, width: usize, at: usize) -> String {
-        let mut mode = match (self.settings.mode, self.settings.wrap_style) {
-            (WrapMode::NoWrap, _) => "nowrap",
-            (_, WrapStyle::Word) => "word wrap",
-            _ => "wrap",
-        }
-        .to_string();
-        if self.settings.view_style != ViewStyle::Color {
-            mode = format!("{mode}  {}", self.settings.view_style);
-        }
-        let buf = self.view.buf();
-        let mut reading = if buf.finished().is_some() {
-            ""
-        } else {
-            "  reading…"
-        }
-        .to_string();
-        if self.next.is_some() {
-            reading.push_str("  reloading…");
+        let tail = self.mode_and_reading();
+        let buf = self.text_view().buf();
+        if let Some(f) = self.filter.as_ref().filter(|f| f.listing) {
+            let Some(li) = f.line(at) else {
+                return format!("&{}  0/0  {tail}", f.query());
+            };
+            let (_, lines) = buf.part(li);
+            let mut name = String::new();
+            if self.names.len() > 1 {
+                name = format!("{} ", self.input_name(li));
+            }
+            return format!(
+                "&{}  {}/{}  {name}line {}/{}  {tail}",
+                f.query(),
+                at + 1,
+                f.listed(),
+                li - lines.start + 1,
+                lines.len()
+            );
         }
         let (k, lines) = buf.part(at);
         let mut rest = String::new();
@@ -201,7 +214,7 @@ impl<T: Terminal> App<T> {
             rest = format!(" {}/{}", k + 1, self.names.len());
         }
         rest.push_str(&format!(
-            "  line {}/{}  {mode}{reading}",
+            "  line {}/{}  {tail}",
             at - lines.start + 1,
             lines.len()
         ));
@@ -212,11 +225,31 @@ impl<T: Terminal> App<T> {
         format!("{name}{rest}")
     }
 
+    /// The wrap mode and view style, and what is still being read.
+    fn mode_and_reading(&self) -> String {
+        let mut mode = match (self.settings.mode, self.settings.wrap_style) {
+            (WrapMode::NoWrap, _) => "nowrap",
+            (_, WrapStyle::Word) => "word wrap",
+            _ => "wrap",
+        }
+        .to_string();
+        if self.settings.view_style != ViewStyle::Color {
+            mode = format!("{mode}  {}", self.settings.view_style);
+        }
+        if self.text_view().buf().finished().is_none() {
+            mode.push_str("  reading…");
+        }
+        if self.next.is_some() {
+            mode.push_str("  reloading…");
+        }
+        mode
+    }
+
     /// What the status line calls the input line `at` came from: its
     /// name, or for stdin the window title in effect at that
     /// line, as a shell prompt sets to the directory.
     fn input_name(&self, at: usize) -> String {
-        let buf = self.view.buf();
+        let buf = self.text_view().buf();
         let name = self
             .names
             .get(buf.part_at(at))

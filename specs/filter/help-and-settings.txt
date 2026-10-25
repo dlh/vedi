@@ -1,0 +1,29 @@
+h shows the bindings over the list and any other key returns to it;
+a setting changed acts on the list as on the text.
+
+-- size --
+60x4
+-- input --
+a
+b
+-- keys --
+& "a" Enter h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+help  motion scrolls, / searches, any other key returns
+-- keys --
+q
+-- screen --
+{{a}}
+
+
+&a  1/1  line 1/2  wrap                               h help
+-- keys --
+w
+-- screen --
+{{a}}
+
+
+&a  1/1  line 1/2  nowrap                             h help

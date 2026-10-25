@@ -8,6 +8,7 @@ pub(crate) mod command;
 mod complete;
 mod copy;
 mod draw;
+mod filter;
 mod help;
 mod mouse;
 mod prompt;
@@ -37,6 +38,7 @@ use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
 use crate::view::screen::{Grid, Screen, Terminal};
+use filter::Filter;
 use prompt::Prompt;
 use text_view::{Geometry, Motion, Start, TextView};
 
@@ -66,6 +68,8 @@ enum Kind {
     Search { back: bool },
     /// The : prompt.
     Command,
+    /// The & prompt.
+    Filter,
 }
 
 pub struct App<T: Terminal> {
@@ -76,6 +80,9 @@ pub struct App<T: Terminal> {
     view: TextView,
     /// The text and its view, set aside while the bindings are shown.
     help: Option<TextView>,
+    /// The & filter, while one is open: its list is the view shown, or
+    /// set aside after Enter went to a line.
+    filter: Option<Filter>,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
     /// The last generation handed out: a dropped reload's is never
@@ -96,6 +103,8 @@ pub struct App<T: Terminal> {
     search: Prompt,
     /// The : prompt's line.
     command: Prompt,
+    /// The & prompt's line.
+    query: Prompt,
     mouse: mouse::State,
     /// `None` when the input cannot be read again.
     open: Option<Opener>,
@@ -133,6 +142,7 @@ impl<T: Terminal> App<T> {
             frame: Grid::new(0, 0),
             view: TextView::new(buffer, start, Geometry::default()),
             help: None,
+            filter: None,
             generation,
             last_gen: generation,
             copier: opts.copier,
@@ -146,6 +156,7 @@ impl<T: Terminal> App<T> {
             focus: Focus::Viewing,
             search: Prompt::default(),
             command: Prompt::default(),
+            query: Prompt::default(),
             mouse: mouse::State::default(),
             open: opts.open,
             open_cmd: opts.open_cmd,
@@ -282,6 +293,7 @@ impl<T: Terminal> App<T> {
     fn take_up(&mut self) -> Flow {
         let flow = self.swap_if_done();
         self.text_view_mut().appended();
+        self.extend_filter();
         flow
     }
 
@@ -294,13 +306,20 @@ impl<T: Terminal> App<T> {
         flow
     }
 
-    /// The text and its view: the one shown, or the one help set aside.
+    /// The text and its view: the one shown, or the one the filter or
+    /// help set aside.
     pub(super) fn text_view(&self) -> &TextView {
-        self.help.as_ref().unwrap_or(&self.view)
+        match &self.filter {
+            Some(f) if f.listing => &f.aside,
+            _ => self.help.as_ref().unwrap_or(&self.view),
+        }
     }
 
     pub(super) fn text_view_mut(&mut self) -> &mut TextView {
-        self.help.as_mut().unwrap_or(&mut self.view)
+        match &mut self.filter {
+            Some(f) if f.listing => &mut f.aside,
+            _ => self.help.as_mut().unwrap_or(&mut self.view),
+        }
     }
 
     /// Gives the keys to `f`; the status line comes or goes with it.
@@ -359,6 +378,9 @@ impl<T: Terminal> App<T> {
                 if let Some(p) = self.prompt_mut() {
                     p.paste(&text);
                 }
+                if self.focus == Focus::Prompting(Kind::Filter) {
+                    self.query_changed();
+                }
             }
             Event::Mouse(m) => self.handle_mouse(m),
             Event::Tick => self.tick(),
@@ -381,6 +403,9 @@ impl<T: Terminal> App<T> {
     }
 
     fn view_key(&mut self, c: Command) -> Flow {
+        if let Some(flow) = self.list_key(&c) {
+            return flow;
+        }
         let (v, e) = (&mut self.view, c.extend);
         match c.action {
             Action::Up => v.go(Motion::Up, e),
@@ -421,6 +446,7 @@ impl<T: Terminal> App<T> {
                 let found = v.find_prev();
                 return self.report(found);
             }
+            Action::Filter => self.open_filter(),
             Action::CommandPrompt => self.open_command(),
             Action::Cycle => return self.cycle(c.arg.as_deref().unwrap_or_default()),
             Action::Help => self.show_help(),

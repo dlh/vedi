@@ -200,12 +200,20 @@ const SECTIONS: &[HelpSection] = {
                     &[Act(SearchNext), Act(SearchPrev)],
                     "Next and previous match; ? swaps them",
                 ),
+                bound(
+                    &[Act(Filter)],
+                    "Filter: list the lines that match; Enter goes to one",
+                ),
             ],
         },
         HelpSection {
             name: "Prompts",
             rows: &[
-                fixed(&["Up", "Down"], "Recall earlier searches, or commands"),
+                fixed(&["Up", "Down"], "Recall earlier lines at this prompt"),
+                fixed(
+                    &["Ctrl+n", "Ctrl+p", "PgDn", "PgUp"],
+                    "Move the pointer at the & prompt",
+                ),
                 fixed(
                     &["Left", "Right", "Home", "End", "Cmd+Left", "Cmd+Right"],
                     "Move in the line",
@@ -359,13 +367,13 @@ mod tests {
         );
         assert_eq!(secs[1].rows, [row(&["Right", "Up"], "Move the cursor")]);
         assert_eq!(
-            secs[3].rows[1],
+            secs[3].rows[2],
             row(&["Left", "Right", "Home", "End"], "Move in the line")
         );
         assert_eq!(
-            secs[3].rows[4],
+            secs[3].rows[5],
             row(&["Ctrl+u"], "Delete to the start of the line")
         );
-        assert_eq!(secs[3].rows[6], row(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"));
+        assert_eq!(secs[3].rows[7], row(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"));
     }
 }

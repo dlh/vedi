@@ -1,0 +1,76 @@
+Enter on a listed line puts it in the middle of the screen, so what
+comes before and after it is in view; near the text's ends, as near
+the middle as the first or the last screenful allows. & brings the
+list back with its query, which Ctrl+u clears for the next. The
+screen as it is when Enter is pressed counts, not as it was when the
+list opened.
+
+-- input --
+l1
+l2
+l3
+l4
+l5
+l6
+l7
+l8
+l9
+l10
+l11
+l12
+l13
+l14
+l15
+l16
+l17
+l18
+l19
+l20
+-- keys --
+& "l15" Enter Enter
+-- screen --
+l13
+l14
+{{l15}}
+l16
+l17
+<stdin>  line 15/20  wrap         h help
+-- cursor --
+2 0
+-- keys --
+& Ctrl+u "l2" Enter Enter
+-- screen --
+l1
+{{l2}}
+l3
+l4
+l5
+<stdin>  line 2/20  wrap          h help
+-- keys --
+& Ctrl+u "l19" Enter Enter
+-- screen --
+l16
+l17
+l18
+{{l19}}
+l20
+<stdin>  line 19/20  wrap         h help
+-- keys --
+& Ctrl+u "l10" Enter
+-- resize --
+40x10
+-- keys --
+Enter
+-- screen --
+l6
+l7
+l8
+l9
+{{l10}}
+l11
+l12
+l13
+l14
+<stdin>  line 10/20  wrap         h help
+-- cursor --
+4 0

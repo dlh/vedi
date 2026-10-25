@@ -1,0 +1,41 @@
+Lines still being read join the list as they come, and the counts
+with them; the list ends when the input does.
+
+-- input --
+a1
+b
+-- keys --
+& "a"
+-- screen --
+{{a}}[1]
+
+
+
+
+&a                                   1/2
+-- input --
+a2
+-- screen --
+{{a}}[1]
+{a}2
+
+
+
+&a                                   2/3
+-- keys --
+Enter
+-- screen --
+{{a}}1
+{a}2
+
+
+
+&a  1/2  line 1/3  wrap  reading…
+-- eof --
+-- screen --
+{{a}}1
+{a}2
+
+
+
+&a  1/2  line 1/3  wrap           h help

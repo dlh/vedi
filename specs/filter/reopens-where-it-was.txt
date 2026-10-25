@@ -1,0 +1,37 @@
+After Enter goes to a line, & brings the list back as it was, the
+query and the pointer kept, to go on to another.
+
+-- input --
+x1
+x2
+x3
+y
+-- keys --
+& "x" Ctrl+n Enter Enter
+-- screen --
+{x}1
+{{x}}2
+{x}3
+y
+
+<stdin>  line 2/4  wrap           h help
+-- keys --
+&
+-- screen --
+{x}1
+{{x}}[2]
+{x}3
+
+
+&x                                   3/4
+-- keys --
+Ctrl+n Enter Enter
+-- screen --
+{x}1
+{x}2
+{{x}}3
+y
+
+<stdin>  line 3/4  wrap           h help
+-- cursor --
+2 0

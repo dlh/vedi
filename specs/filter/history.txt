@@ -1,0 +1,43 @@
+At the & prompt, Up recalls earlier queries, newest first, and the
+list follows; Down goes back toward what was being typed. A query is
+remembered when Enter keeps its list, not when Esc leaves it.
+
+-- input --
+foo
+bar
+-- keys --
+& "foo" Enter Esc & "bar" Enter Esc & "baz" Esc & Up
+-- screen --
+{{bar}}
+
+
+
+
+&bar                                 1/2
+-- keys --
+Up
+-- screen --
+{{foo}}
+
+
+
+
+&foo                                 1/2
+-- keys --
+Down Down
+-- screen --
+[foo]
+bar
+
+
+
+&                                    2/2
+-- keys --
+"ba"
+-- screen --
+{{ba}}[r]
+
+
+
+
+&ba                                  1/2

@@ -1,4 +1,4 @@
-.Dd October 23, 2026
+.Dd October 25, 2026
 .Dt VEDI 1
 .Os
 .Sh NAME
@@ -184,6 +184,8 @@ Search backward.
 Next and previous match;
 .Ic \&?
 swaps them.
+.It Ic &
+Filter: list the lines that match; Enter goes to one.
 .It Ic \&:
 Command prompt; see
 .Sx COMMANDS .
@@ -201,6 +203,17 @@ Show the key bindings.
 .El
 .Pp
 Click and drag select; a double-click the word, a triple-click the line.
+.Pp
+.Ic &
+lists the lines that match a query as it is typed; Ctrl+n and Ctrl+p move
+the pointer, Up and Down recall earlier queries.
+Enter keeps the list and gives it the keys, so it scrolls, selects and copies
+as the text does, and
+.Cm write
+saves it; Enter there goes to the line in the text, and
+.Ic &
+brings the list back.
+Esc leaves it.
 .Sh COMMANDS
 .Ic \&:
 opens a prompt on the status line.

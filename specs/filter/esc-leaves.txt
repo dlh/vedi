@@ -1,0 +1,66 @@
+Esc at the & prompt leaves the filter: the text is as it was, the
+cursor and the view where they were. Ctrl+g and Ctrl+c do the same.
+In the list with the prompt closed, Esc clears a selection first and
+leaves second. The query is forgotten, so & opens empty.
+
+-- input --
+a1
+b2
+a3
+-- keys --
+Down & "a" Esc
+-- screen --
+a1
+b2
+a3
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 0
+-- keys --
+& "a" Ctrl+g
+-- cursor --
+1 0
+-- keys --
+& "a" Ctrl+c
+-- cursor --
+1 0
+-- keys --
+& "a" Enter Shift+Right
+-- screen --
+[a]1
+{a}3
+
+
+
+&a  1/2  line 1/3  wrap           h help
+-- keys --
+Esc
+-- screen --
+{a}1
+{a}3
+
+
+
+&a  1/2  line 1/3  wrap           h help
+-- keys --
+Esc
+-- screen --
+a1
+b2
+a3
+
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 0
+-- keys --
+&
+-- screen --
+[a1]
+b2
+a3
+
+
+&                                    3/3

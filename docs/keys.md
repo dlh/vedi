@@ -33,7 +33,9 @@ and the search keys search them. These are the defaults.
 | / | Search; ignores case if lowercase; empty repeats |
 | ? | Search backward |
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
-| Up, Down | Recall earlier searches, or commands |
+| & | Filter: list the lines that match; Enter goes to one |
+| Up, Down | Recall earlier lines at this prompt |
+| Ctrl+n, Ctrl+p, PgDn, PgUp | Move the pointer at the & prompt |
 | Left, Right, Home, End, Cmd+Left, Cmd+Right | Move in the line |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | Alt+Backspace, Ctrl+Backspace, Ctrl+w | Delete the word before the cursor |
@@ -59,6 +61,19 @@ text's own colors. A match off the screen scrolls to the top row, or as near as
 the last screenful allows. With `edge_markers yes` in the config, nowrap mode
 marks text off the screen with a `<` or `>` in reverse video at that edge of the
 row, and wrap mode ends a row that continues below with a `\`.
+
+`&` filters. As the query is typed, the text rows list only the lines that
+match, colors kept, the pointed line in reverse video, and the right of the
+prompt row counts them against the text's lines. Ctrl+n, Ctrl+p, PgDn and PgUp
+move the pointer, Up and Down recall earlier queries, and the wheel scrolls.
+Enter keeps the list and gives it the keys:
+it scrolls, searches, selects and copies as the text does, so `y` copies the
+matching lines, and `:write` saves them. Enter there goes to the line in the
+text, in the middle of the screen or as near as the text's ends allow, with the
+query as the search pattern for `n` and `N`, and `&` brings the list back as it
+was. Esc leaves the list, after clearing a selection. Lines
+that are still being read join the list as they come, and a reload makes it
+again.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file named by
 `--config`, and `clear_all_shortcuts` there starts the map from nothing. A key

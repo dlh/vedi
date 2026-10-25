@@ -1,0 +1,54 @@
+The list follows the query: each character typed narrows it, each
+deleted widens it, and the empty query lists every line. Matching is
+the search's: a lowercase query ignores case, one with a capital does
+not.
+
+-- input --
+Foo
+foo bar
+bar
+-- keys --
+&
+-- screen --
+[Foo]
+foo bar
+bar
+
+
+&                                    3/3
+-- keys --
+"f"
+-- screen --
+{{F}}[oo]
+{f}oo bar
+
+
+
+&f                                   2/3
+-- keys --
+"oo b"
+-- screen --
+{{foo b}}[ar]
+
+
+
+
+&foo b                               1/3
+-- keys --
+Backspace Backspace "B"
+-- screen --
+
+
+
+
+
+&fooB                                0/3
+-- keys --
+Backspace Backspace Backspace Backspace
+-- screen --
+[Foo]
+foo bar
+bar
+
+
+&                                    3/3

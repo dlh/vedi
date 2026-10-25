@@ -13,7 +13,8 @@ use crate::view::style::Style;
 impl<T: Terminal> App<T> {
     /// Writes the selection, or with none the whole text, to the file
     /// `name`, made new, or emptied first when `overwrite`; a file that
-    /// exists is otherwise refused. A leading ~ is the home directory.
+    /// exists is otherwise refused. In a filter's list, the text is the
+    /// lines listed. A leading ~ is the home directory.
     /// The text goes as the view shows it: with its colors and links,
     /// with links alone, or as it came. Says how many lines went.
     pub(super) fn write(&mut self, name: &str, overwrite: bool) -> Result<Flow, String> {
@@ -33,7 +34,7 @@ impl<T: Terminal> App<T> {
             Err(e) => return Err(format!("write failed: {e}")),
         };
         let view = self.settings.view_style;
-        let v = self.text_view();
+        let v = &self.view;
         let buf = v.buf();
         let failed = |e: std::io::Error| format!("write failed: {e}");
         let lines = match v.selection() {
@@ -82,7 +83,7 @@ impl<T: Terminal> App<T> {
 /// under `Plain` the links alone; under `Raw` the text, escapes and all.
 /// Ends on no style or link. A line that cannot be read is empty on
 /// screen, and here an error: a file is never written short.
-fn shown(
+pub(super) fn shown(
     buf: &Buffer,
     view: ViewStyle,
     start: Pos,

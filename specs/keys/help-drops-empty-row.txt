@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x70
+80x73
 -- input --
 abc
 -- keys --
@@ -68,11 +68,14 @@ h
                                           empty repeats.
   ?                                       Search backward.
   n  N                                    Next and previous match; ? swaps them.
+  &                                       Filter: list the lines that match;
+                                          Enter goes to one.
  ------------------------------------------------------------------------------
 
                                     PROMPTS
 
-  Up  Down                                Recall earlier searches, or commands.
+  Up  Down                                Recall earlier lines at this prompt.
+  ⌃N  ⌃P  PgDn  PgUp                      Move the pointer at the & prompt.
   Left  Right  Home  End                  Move in the line.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Backspace  ⌃Backspace  ⌃W              Delete the word before the cursor.

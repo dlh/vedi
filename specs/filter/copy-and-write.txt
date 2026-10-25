@@ -1,0 +1,34 @@
+The list is text: Shift+Down extends a selection over listed lines, y
+copies them, and :write saves them, so the lines that match come out
+as one.
+
+-- input --
+err one
+ok
+err two
+ok
+-- keys --
+& "err" Enter Shift+Down y
+-- screen --
+[err one ]
+{{err}} two
+
+
+
+copied 1 line                     h help
+-- clipboard --
+err one
+
+-- keys --
+Esc : "write out.txt" Enter
+-- screen --
+{err} one
+{{err}} two
+
+
+
+wrote 2 lines to out.txt          h help
+-- written out.txt --
+err one
+err two
+

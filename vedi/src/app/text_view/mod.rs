@@ -402,6 +402,24 @@ impl TextView {
         self.place_top(crow);
     }
 
+    /// Puts the cursor's row in the middle of the screen, or as near
+    /// as the text's ends allow.
+    pub(super) fn center_cursor_row(&mut self) {
+        let rows = self.geom.rows;
+        if rows == 0 || self.buf.is_empty() {
+            return;
+        }
+        let mut p = self.snap(Row::text(self.cur));
+        for _ in 0..rows / 2 {
+            let prev = self.prev_row(p);
+            if prev == p {
+                break;
+            }
+            p = prev;
+        }
+        self.place_top(p);
+    }
+
     /// Decodes the text as raw or as colored. The lines' text changes
     /// under the view, which keeps its place as over a reload; laid out
     /// anew, a cursor on screen stays on screen.

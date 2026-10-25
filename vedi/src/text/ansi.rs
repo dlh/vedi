@@ -38,6 +38,11 @@ pub struct Parser {
 }
 
 impl Parser {
+    /// The style and link in effect.
+    pub fn state(&self) -> (Style, Option<Link>) {
+        (self.style, self.link.clone())
+    }
+
     /// The window title in effect after the last line: "" for none, or
     /// one cleared since.
     pub fn title(&self) -> &str {

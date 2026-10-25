@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x71
+80x74
 -- input --
 abc
 -- keys --
@@ -71,11 +71,14 @@ Alt+h
                                           empty repeats.
   ?                                       Search backward.
   n  N                                    Next and previous match; ? swaps them.
+  &                                       Filter: list the lines that match;
+                                          Enter goes to one.
  ------------------------------------------------------------------------------
 
                                     PROMPTS
 
-  Up  Down                                Recall earlier searches, or commands.
+  Up  Down                                Recall earlier lines at this prompt.
+  ⌃N  ⌃P  PgDn  PgUp                      Move the pointer at the & prompt.
   Left  Right  Home  End                  Move in the line.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Backspace  ⌃Backspace  ⌃W              Delete the word before the cursor.

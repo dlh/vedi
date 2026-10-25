@@ -1,6 +1,7 @@
 //! The search in the text: its pattern, direction and highlight.
 
 use crate::app::text_view::TextView;
+use crate::text::buffer::Pos;
 use crate::text::search::{self, Matcher};
 
 /// What a search found.
@@ -33,6 +34,31 @@ impl TextView {
             }
             None => self.find(backward, true),
         }
+    }
+
+    /// Highlights `m`'s matches, the cursor where it is; n and N go
+    /// forward from it.
+    pub fn set_matcher(&mut self, m: Matcher) {
+        self.highlight = !m.is_empty();
+        self.matcher = m;
+        self.backward = false;
+    }
+
+    /// Lands on `pos`, clamped to the text, its row in the middle of
+    /// the screen or as near as the ends allow, with `m` highlighted as
+    /// a search for it would leave it.
+    pub fn land(&mut self, m: Matcher, pos: Pos) {
+        self.set_matcher(m);
+        let n = self.buf.len();
+        if n == 0 {
+            return;
+        }
+        let line = pos.line.min(n - 1);
+        let col = pos.col.min(self.line_len(line));
+        self.cur = Pos { line, col };
+        self.drop();
+        self.center_cursor_row();
+        self.scroll_to_cursor();
     }
 
     pub fn find_next(&mut self) -> Outcome {

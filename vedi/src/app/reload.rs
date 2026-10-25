@@ -75,11 +75,13 @@ impl<T: Terminal> App<T> {
         flow
     }
 
-    /// Puts `buf`, decoded as the view style has it, under the view, or
-    /// under the view help set aside, which keeps its place. The old
-    /// buffer's files close with it.
+    /// Puts `buf`, decoded as the view style has it, under the text's
+    /// view, shown or set aside, which keeps its place; a filter's
+    /// list is made again from it. The old buffer's files close with
+    /// it.
     fn put(&mut self, mut buf: Buffer) {
         buf.set_literal(self.settings.view_style == ViewStyle::Raw);
         self.text_view_mut().change_text(|b| *b = buf);
+        self.refilter();
     }
 }

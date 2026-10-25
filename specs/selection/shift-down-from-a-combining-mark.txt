@@ -10,7 +10,7 @@ ábc
 / "́b" Enter Shift+Down y
 -- screen --
 first
-{á[}bc]
+{á}[bc]
 
 
 copied 1 line                     h help

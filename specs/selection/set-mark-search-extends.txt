@@ -9,7 +9,7 @@ bar foo
 -- keys --
 Right v / "foo" Enter
 -- screen --
-{f[}oo ]
+{f}[oo ]
 [bar ]{{foo}}
 
 

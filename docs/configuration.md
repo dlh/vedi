@@ -288,6 +288,9 @@ map N search_prev
 map Cmd+g search_next
 map Cmd+Shift+g search_prev
 
+# Filter: list the lines that match; Enter goes to one
+map & filter
+
 # Command prompt; N goes to line N
 map : command
 

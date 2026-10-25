@@ -2,7 +2,7 @@
 //! characters, separators and markers, and the cursor.
 
 use crate::app::text_view::Row;
-use crate::app::{App, Focus, STDIN};
+use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::text::buffer::Pos;
 use crate::view::layout::{self, Layout, Mode};
@@ -15,7 +15,8 @@ impl<T: Terminal> App<T> {
     /// waits for EOF only the status line is drawn: the view is not
     /// known until then. While help is up the bindings are the text, and
     /// no cursor is shown; nor is one scrolled off the side. An open
-    /// prompt has the cursor.
+    /// prompt has the cursor; at the & prompt the list's pointed line
+    /// is in reverse video instead.
     pub fn draw(&mut self) {
         self.sync_view();
         let (w, h) = self.screen.size();
@@ -82,6 +83,7 @@ impl<T: Terminal> App<T> {
         let w = g.width();
         let geom = self.view.geometry();
         let (cursor, xoff) = (self.view.cursor(), self.view.xoff());
+        let pointed = self.focus == Focus::Prompting(Kind::Filter) && cursor.line == p.line;
         let cell = self.view.cursor_on(p);
         let ln = self.view.line_layout(p.line);
         let line = self.view.buf().line(p.line);
@@ -152,7 +154,7 @@ impl<T: Terminal> App<T> {
                 } else {
                     Style::default()
                 };
-                if is_control(line.text[i]) {
+                if pointed || is_control(line.text[i]) {
                     st.reverse()
                 } else {
                     st

@@ -17,9 +17,9 @@ use crate::sys::opencmd::Killer;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::tests::{Fill, temp};
 use crate::text::buffer::{Progress, ReadError, Storage};
-use crate::text::index::Indexer;
+use crate::text::index::{BLOCK_LINES, Indexer};
 use crate::view::screen::TestTerminal;
-use crate::view::style::{CUR_MATCH, Color, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
+use crate::view::style::{Attrs, CUR_MATCH, Color, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
 
 const GEN: Gen = 1;
 
@@ -454,6 +454,134 @@ fn highlight_keeps_link() {
     press(&mut a, "Ctrl+a");
     assert_eq!((style(&a, 0, 0), link(&a, 0)), (SELECTION, linked));
     assert_eq!((style(&a, 1, 0), link(&a, 1)), (SELECTION, None));
+}
+
+/// A listed line is drawn in the colors the text shows it in, those it
+/// carries in from an earlier line included, though that line is not
+/// listed.
+#[test]
+fn list_keeps_carried_colors() {
+    let mut a = app(20, 4, "\x1b[31mred\nstill red\x1b[0m\nplain\n", options());
+    press(&mut a, "& s t i l l");
+    assert_eq!(row(&a, 0), "still red");
+    // Past the match, which has its own style.
+    assert_eq!(style(&a, 6, 0).fg, Color::Palette(1));
+    assert!(style(&a, 6, 0).attrs.contains(Attrs::REVERSE), "pointed");
+    assert_eq!(row(&a, 3), "&still           1/3");
+    press(
+        &mut a,
+        "Backspace Backspace Backspace Backspace Backspace p",
+    );
+    assert_eq!(row(&a, 0), "plain");
+    assert_eq!(style(&a, 1, 0).fg, Color::Default);
+}
+
+/// A line listed as its bytes came may leave a color on; a line listed
+/// apart from it is drawn in its own.
+#[test]
+fn list_resets_after_a_raw_line() {
+    let mut a = app(20, 4, "\x1b[31mred a\n\x1b[0mb\nplain a\n", options());
+    press(&mut a, "& a");
+    assert_eq!((row(&a, 0), row(&a, 1)), ("red a".into(), "plain a".into()));
+    assert_eq!(style(&a, 0, 0).fg, Color::Palette(1));
+    assert_eq!(style(&a, 0, 1).fg, Color::Default);
+}
+
+/// A line listed apart from the one before it is decoded, and leaves
+/// the list's state at a reset; the next listed line, though it follows
+/// it in the text, is decoded too, for the color it carries in.
+#[test]
+fn list_keeps_colors_after_a_skipped_line() {
+    let mut a = app(20, 4, "\x1b[31mskip\nmatch one\nmatch two\n", options());
+    press(&mut a, "& m a t c h Enter");
+    assert_eq!(row(&a, 1), "match two");
+    // Past the match, which has its own style.
+    assert_eq!(style(&a, 6, 1).fg, Color::Palette(1));
+}
+
+/// At a block the index knows the state, so lines go in as their bytes
+/// again, after the state.
+#[test]
+fn list_resyncs_colors_at_a_block() {
+    let mut input = String::from("\x1b[31mx\n");
+    input.extend(std::iter::repeat_n("y z\n", BLOCK_LINES));
+    let mut a = app(20, 4, &input, options());
+    press(&mut a, "& y Enter G");
+    assert_eq!(row(&a, 2), "y z");
+    assert_eq!(style(&a, 2, 2).fg, Color::Palette(1));
+}
+
+/// The text's read error shows over the list, and the list ends with it.
+#[test]
+fn list_keeps_read_error_in_status() {
+    let (mut a, mut ix) = reading(30, 4, options());
+    feed(&mut a, &mut ix, "partial\n");
+    done(&mut a, &mut ix, Some("disk on fire"));
+    press(&mut a, "& Enter");
+    assert_eq!(row(&a, 0), "partial");
+    assert_eq!(row(&a, 3), "read error: disk on fire");
+}
+
+/// An unterminated last line keeps the \r it ends with: listed with a
+/// newline after it, the two would read as CRLF. The reader delivers
+/// that line before it says the input is done, and the list takes it
+/// up then.
+#[test]
+fn list_keeps_a_final_carriage_return() {
+    let mut a = app(20, 4, "foo\r", options());
+    assert_eq!(row(&a, 0), "foo^M");
+    press(&mut a, "& Enter");
+    assert_eq!(row(&a, 0), "foo^M");
+
+    let (mut a, mut ix) = reading(20, 4, options());
+    feed(&mut a, &mut ix, "skip\nfoo\r");
+    press(&mut a, "& f o o");
+    done(&mut a, &mut ix, None);
+    assert_eq!(row(&a, 0), "foo^M");
+    assert_eq!(row(&a, 3), "&foo             1/2");
+}
+
+/// A block the file no longer holds lists as empty lines, not as the
+/// bytes of the block read before it: colored, where the first block
+/// goes in as its bytes, and raw, where every block does.
+#[test]
+fn list_does_not_reuse_a_block_it_could_not_read() {
+    for style in [ViewStyle::Color, ViewStyle::Raw] {
+        let text: String = (0..2 * BLOCK_LINES)
+            .map(|i| format!("line {i}\n"))
+            .collect();
+        let path = temp(text.as_bytes());
+        let mut f = Fill::paged(vec![File::open(&path).unwrap()]);
+        f.part();
+        f.write(text.as_bytes());
+        f.finish(None);
+        let mut opts = options();
+        opts.settings.view_style = style;
+        let mut a = App::new(TestTerminal::new(30, 4), f.buf, GEN, opts);
+        a.draw();
+        let cut = text.find(&format!("line {BLOCK_LINES}\n")).unwrap();
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_len(cut as u64)
+            .unwrap();
+        press(&mut a, "& Enter G");
+        assert_eq!(row(&a, 2), "", "{style}: the last listed line");
+        assert_eq!(row(&a, 3), "read error: input truncated", "{style}");
+        press(&mut a, "g");
+        assert_eq!(row(&a, 0), "line 0", "{style}");
+    }
+}
+
+/// A \r a line ends with, after the one the input's \r\n lost, stays:
+/// listed with a \n after it, the two would read as \r\n again.
+#[test]
+fn list_keeps_a_carriage_return_a_line_ends_with() {
+    let mut a = app(20, 4, "skip\nfoo\r\r\n", options());
+    assert_eq!(row(&a, 1), "foo^M");
+    press(&mut a, "& f o o Enter");
+    assert_eq!(row(&a, 0), "foo^M");
 }
 
 #[test]

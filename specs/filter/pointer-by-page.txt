@@ -1,0 +1,56 @@
+PgDn and PgUp move the pointer a page of rows, stopping at the last
+line and the first. The wheel scrolls the list under the pointer,
+which the next Ctrl+n brings back.
+
+-- size --
+20x4
+-- input --
+a1
+a2
+a3
+a4
+a5
+a6
+a7
+-- keys --
+& "a" PgDn
+-- screen --
+{a}2
+{a}3
+{{a}}[4]
+&a               7/7
+-- keys --
+PgDn PgDn
+-- screen --
+{a}5
+{a}6
+{{a}}[7]
+&a               7/7
+-- keys --
+PgUp
+-- screen --
+{{a}}[4]
+{a}5
+{a}6
+&a               7/7
+-- keys --
+PgUp PgUp
+-- screen --
+{{a}}[1]
+{a}2
+{a}3
+&a               7/7
+-- mouse --
+wheel down 1
+-- screen --
+{a}4
+{a}5
+{a}6
+&a               7/7
+-- keys --
+Ctrl+n
+-- screen --
+{{a}}[2]
+{a}3
+{a}4
+&a               7/7

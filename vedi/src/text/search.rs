@@ -248,6 +248,25 @@ impl<'a> Walk<'a> {
 
     /// `find` within block `k`.
     fn block(&mut self, k: usize, lines: &Range<usize>, dir: Dir) -> Option<Pos> {
+        let m = self.m;
+        self.scan(k, lines, dir, |li, text| {
+            let col = match dir {
+                Dir::Forward => m.find(text, 0),
+                Dir::Back => m.find_last(text, usize::MAX),
+            };
+            col.map(|col| Pos { line: li, col })
+        })
+    }
+
+    /// Decodes the lines of `lines` in block `k` whose bytes may match,
+    /// in `dir`'s order, and gives each to `f` until it returns `Some`.
+    fn scan<R>(
+        &mut self,
+        k: usize,
+        lines: &Range<usize>,
+        dir: Dir,
+        mut f: impl FnMut(usize, &[char]) -> Option<R>,
+    ) -> Option<R> {
         let Walk {
             buf,
             m,
@@ -296,15 +315,28 @@ impl<'a> Walk<'a> {
                 }
             }
             buf.text(li, text);
-            let col = match dir {
-                Dir::Forward => m.find(text, 0),
-                Dir::Back => m.find_last(text, usize::MAX),
-            };
-            if let Some(col) = col {
-                return Some(Pos { line: li, col });
+            if let Some(r) = f(li, text) {
+                return Some(r);
             }
         }
         None
+    }
+}
+
+/// Appends to `out` the lines of `lines` that hold a match, ascending.
+pub fn lines(buf: &Buffer, m: &Matcher, lines: Range<usize>, out: &mut Vec<usize>) {
+    let lines = lines.start..lines.end.min(buf.len());
+    if lines.is_empty() || m.is_empty() {
+        return;
+    }
+    let mut w = Walk::new(buf, m);
+    for k in lines.start / BLOCK_LINES..=(lines.end - 1) / BLOCK_LINES {
+        w.scan(k, &lines, Dir::Forward, |li, text| {
+            if m.find(text, 0).is_some() {
+                out.push(li);
+            }
+            None::<()>
+        });
     }
 }
 
@@ -579,11 +611,9 @@ mod tests {
         None
     }
 
-    /// From every position, `next` and `prev` find what decoding every
-    /// line finds, over text that bytes alone misjudge and across block
-    /// edges.
-    #[test]
-    fn walk_matches_every_line_decoded() {
+    /// Inputs that bytes alone misjudge, with odd lines across block
+    /// edges: the full set, one with CRLF, and a one-line one each way.
+    fn odd_inputs() -> Vec<Vec<u8>> {
         let odd = [
             "foo bar foo",
             "fo\x1b[31mo\x1b[0m",
@@ -614,31 +644,40 @@ mod tests {
         lines.push(b"end foo".to_vec());
         let mut crlf = lines[..3].join(&b"\r\n"[..]);
         crlf.extend_from_slice(b"\r\n");
-        let inputs = [lines.join(&b'\n'), crlf, b"foo".to_vec(), b"x".to_vec()];
-        let pats = [
-            "foo",
-            "Foo",
-            "FOO",
-            "oo",
-            "bar",
-            "k",
-            "i",
-            "ki",
-            "kelvin",
-            "istanbul",
-            "é",
-            "É",
-            "café",
-            "\u{FFFD}",
-            "a\u{FFFD}b",
-            "x",
-            "zzz",
-            "end",
-        ];
+        vec![lines.join(&b'\n'), crlf, b"foo".to_vec(), b"x".to_vec()]
+    }
+
+    /// Patterns that exercise folding, the byte filter and U+FFFD.
+    const ODD_PATS: [&str; 18] = [
+        "foo",
+        "Foo",
+        "FOO",
+        "oo",
+        "bar",
+        "k",
+        "i",
+        "ki",
+        "kelvin",
+        "istanbul",
+        "é",
+        "É",
+        "café",
+        "\u{FFFD}",
+        "a\u{FFFD}b",
+        "x",
+        "zzz",
+        "end",
+    ];
+
+    /// From every position, `next` and `prev` find what decoding every
+    /// line finds, over text that bytes alone misjudge and across block
+    /// edges.
+    #[test]
+    fn walk_matches_every_line_decoded() {
         let mut text = Vec::new();
-        for input in inputs {
+        for input in odd_inputs() {
             let buf = buffer(&input, false);
-            for pat in pats {
+            for pat in ODD_PATS {
                 let m = Matcher::new(pat);
                 for li in 0..buf.len() {
                     buf.text(li, &mut text);
@@ -659,6 +698,36 @@ mod tests {
                     }
                 }
             }
+        }
+    }
+
+    /// `lines` finds what decoding every line finds, over the same
+    /// text and patterns as `walk_matches_every_line_decoded`.
+    #[test]
+    fn lines_match_every_line_decoded() {
+        let mut text = Vec::new();
+        for input in odd_inputs() {
+            let buf = buffer(&input, false);
+            for pat in ODD_PATS {
+                let m = Matcher::new(pat);
+                let all: Vec<usize> = (0..buf.len())
+                    .filter(|&li| {
+                        buf.text(li, &mut text);
+                        m.find(&text, 0).is_some()
+                    })
+                    .collect();
+                for start in [0, 1, BLOCK_LINES - 1, BLOCK_LINES, BLOCK_LINES + 7] {
+                    let mut got = Vec::new();
+                    lines(&buf, &m, start..buf.len() + 5, &mut got);
+                    let want: Vec<usize> = all.iter().copied().filter(|&l| l >= start).collect();
+                    assert_eq!(got, want, "lines({pat:?}, {start}..)");
+                }
+            }
+            let mut got = Vec::new();
+            lines(&buf, &Matcher::new(""), 0..buf.len(), &mut got);
+            assert!(got.is_empty());
+            lines(&buf, &Matcher::new("x"), 3..3, &mut got);
+            assert!(got.is_empty());
         }
     }
 

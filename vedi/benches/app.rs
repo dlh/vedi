@@ -1,6 +1,6 @@
 //! The pager over a large colored input: taking the reader's data up,
-//! then a key, a wheel tick, a search, a resize and help, each drawn;
-//! and a prompt holding one long cluster, edited and drawn.
+//! then a key, a wheel tick, a search, a resize, help and the filter,
+//! each drawn; and a prompt holding one long cluster, edited and drawn.
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -212,6 +212,28 @@ fn help(c: &mut Criterion) {
     });
 }
 
+/// The filter over every line: & copies the whole text into the list,
+/// and Esc drops it. Then a query narrowed to the lines of one in a
+/// thousand and widened back to one in ten, as typing does.
+fn filter(c: &mut Criterion) {
+    let mut a = app();
+    c.bench_function("app/filter/open", |b| {
+        b.iter(|| {
+            press(&mut a, "&");
+            press(&mut a, "Esc");
+        })
+    });
+    for k in ["&", "0", "0"] {
+        press(&mut a, k);
+    }
+    c.bench_function("app/filter/type", |b| {
+        b.iter(|| {
+            press(&mut a, "0");
+            press(&mut a, "Backspace");
+        })
+    });
+}
+
 /// A key and its undo at a prompt whose text is one base, `MARKS`
 /// marks and a tail that scrolls the base just off the left edge: the
 /// row's search for the first glyph on screen starts at the marks, and
@@ -233,5 +255,7 @@ fn prompt(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, progress, keys, search, mouse, resize, help, prompt);
+criterion_group!(
+    benches, progress, keys, search, mouse, resize, help, filter, prompt
+);
 criterion_main!(benches);

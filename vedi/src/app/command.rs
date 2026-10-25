@@ -94,14 +94,16 @@ impl<T: Terminal> App<T> {
     }
 
     /// Puts `new` in force: the view is laid out for it, the text is
-    /// decoded as its view style has it, and auto_reload turning off
-    /// drops the reload a change asked for during the current one.
+    /// decoded as its view style has it and a filter's list made again
+    /// as it shows it, and auto_reload turning off drops the reload a
+    /// change asked for during the current one.
     fn apply_settings(&mut self, new: Settings) {
         let old = mem::replace(&mut self.settings, new);
         self.sync_view();
         if self.settings.view_style != old.view_style {
             let raw = self.settings.view_style == ViewStyle::Raw;
             self.text_view_mut().set_literal(raw);
+            self.refilter();
         }
         if old.auto_reload && !self.settings.auto_reload {
             self.dirty = false;

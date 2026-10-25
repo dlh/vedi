@@ -1,0 +1,19 @@
+With several inputs the status line names the listed line's input,
+and the list has no separator rows of its own.
+
+-- args --
+a.txt b.txt
+-- input --
+x1
+-- next-file --
+-- input --
+x2
+-- keys --
+& "x" Ctrl+n Enter
+-- screen --
+{x}1
+{{x}}2
+
+
+
+&x  2/2  b.txt line 1/1  wrap     h help

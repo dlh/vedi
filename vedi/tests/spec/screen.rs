@@ -30,13 +30,17 @@ pub fn render(term: &TestTerminal, status_shown: bool) -> String {
                 _ if c.style == CUR_MATCH => "{{",
                 _ => "",
             };
+            // A match closes before a bracket and opens after one, so
+            // the runs nest: [bar ]{{foo}} and {{foo}}[ bar].
+            if m != matched {
+                row.push_str(&"}".repeat(matched.len()));
+            }
             if r && !rev {
                 row.push('[');
             } else if !r && rev {
                 row.push(']');
             }
             if m != matched {
-                row.push_str(&"}".repeat(matched.len()));
                 row.push_str(m);
             }
             rev = r;

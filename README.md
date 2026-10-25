@@ -52,7 +52,9 @@ zsh and fish; an archive holds them in `man/` and `completions/`. See
       -v, --version                print the version
 
 With no files, `vedi` reads stdin. `h` shows the keys and `q` quits; Shift with
-the arrows, or the mouse, selects, and Ctrl+c or Cmd+c copies.
+the arrows, or the mouse, selects, and Ctrl+c or Cmd+c copies. `/` searches,
+and `&` lists only the lines that match, to copy as one or to pick one and go
+to it.
 
 SGR colors and attributes, including 24-bit color, and OSC 8 hyperlinks are
 drawn as the terminal would. Copy sends plain text.

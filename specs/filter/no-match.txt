@@ -1,0 +1,41 @@
+A query with no match lists nothing and counts none; Enter keeps the
+empty list, where Enter does nothing and Esc leaves.
+
+-- input --
+abc
+-- keys --
+& "zzz"
+-- screen --
+
+
+
+
+
+&zzz                                 0/1
+-- keys --
+Enter
+-- screen --
+
+
+
+
+
+&zzz  0/0  wrap                   h help
+-- keys --
+Enter
+-- screen --
+
+
+
+
+
+&zzz  0/0  wrap                   h help
+-- keys --
+Esc
+-- screen --
+abc
+
+
+
+
+<stdin>  line 1/1  wrap           h help

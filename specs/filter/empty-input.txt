@@ -1,0 +1,21 @@
+An input with no lines lists none.
+
+-- input --
+-- keys --
+& Enter
+-- screen --
+
+
+
+
+
+&  0/0  wrap                      h help
+-- keys --
+Esc
+-- screen --
+
+
+
+
+
+<stdin>  line 1/0  wrap           h help

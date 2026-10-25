@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use crate::app::event::{Mouse, MouseKind};
 use crate::app::text_view::Motion;
-use crate::app::{App, Focus};
+use crate::app::{App, Focus, Kind};
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
 
@@ -88,12 +88,16 @@ impl State {
 
 impl<T: Terminal> App<T> {
     /// A press returns from help like any key. The mouse is ignored at
-    /// the / and : prompts, and a press from before one is forgotten.
+    /// the prompts, but for the wheel at the & prompt, which scrolls the
+    /// list; a press from before one is forgotten.
     pub(super) fn handle_mouse(&mut self, m: Mouse) {
         if self.focus != Focus::Viewing {
             self.mouse.held = false;
             self.mouse.dragging = false;
-            return;
+            let wheel = matches!(m.kind, MouseKind::Wheel { .. });
+            if !(wheel && self.focus == Focus::Prompting(Kind::Filter)) {
+                return;
+            }
         }
         match m.kind {
             MouseKind::Wheel { rows, cols } => {

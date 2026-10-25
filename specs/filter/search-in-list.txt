@@ -1,0 +1,35 @@
+/ searches the list as it searches the text, and Enter goes to the
+line the cursor is on, wherever in it; the text's search is then the
+query's.
+
+-- input --
+a x
+a y
+b
+a z
+-- keys --
+& "a" Enter / "z" Enter
+-- screen --
+a x
+a y
+a {{z}}
+
+
+&a  3/3  line 4/4  wrap           h help
+-- cursor --
+2 2
+-- keys --
+Enter
+-- screen --
+{a} x
+{a} y
+b
+{a} z
+
+<stdin>  line 4/4  wrap           h help
+-- cursor --
+3 2
+-- keys --
+N
+-- cursor --
+3 0

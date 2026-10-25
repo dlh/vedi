@@ -5,7 +5,7 @@ when it has no selection of its own; Terminal.app keeps it.
 -- os --
 macos
 -- size --
-80x73
+80x76
 -- input --
 hello
 world
@@ -14,6 +14,9 @@ Shift+Right Shift+Right Cmd+c
 -- screen --
 [he]llo
 world
+
+
+
 
 
 
@@ -151,11 +154,14 @@ h
                                           empty repeats.
   ?                                       Search backward.
   n  N  ⌘G  ⌘Shift+G                      Next and previous match; ? swaps them.
+  &                                       Filter: list the lines that match;
+                                          Enter goes to one.
  ------------------------------------------------------------------------------
 
                                     PROMPTS
 
-  Up  Down                                Recall earlier searches, or commands.
+  Up  Down                                Recall earlier lines at this prompt.
+  ⌃N  ⌃P  PgDn  PgUp                      Move the pointer at the & prompt.
   Left  Right  Home  End  ⌘Left  ⌘Right   Move in the line.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Backspace  ⌃Backspace  ⌃W              Delete the word before the cursor.

@@ -1,0 +1,61 @@
+& opens a prompt, and as the query is typed the text rows list only
+the lines that match, the query highlighted and the pointed line in
+reverse video; the right of the prompt row counts the lines listed
+of the text's. Ctrl+n and Ctrl+p move the pointer. Enter keeps the list and
+gives it the keys, and the status line names the query, the pointed
+line of those listed and the text's line it is. Enter there goes to
+that line in the text, highlighted as a search would leave it, so n
+goes on to the next match.
+
+-- input --
+foo one
+bar
+foo two
+baz
+foo three
+-- keys --
+& "foo"
+-- screen --
+{{foo}}[ one]
+{foo} two
+{foo} three
+
+
+&foo                                 3/5
+-- cursor --
+5 4
+-- keys --
+Ctrl+n
+-- screen --
+{foo} one
+{{foo}}[ two]
+{foo} three
+
+
+&foo                                 3/5
+-- keys --
+Enter
+-- screen --
+{foo} one
+{{foo}} two
+{foo} three
+
+
+&foo  2/3  line 3/5  wrap         h help
+-- cursor --
+1 0
+-- keys --
+Enter
+-- screen --
+{foo} one
+bar
+{{foo}} two
+baz
+{foo} three
+<stdin>  line 3/5  wrap           h help
+-- cursor --
+2 0
+-- keys --
+n
+-- cursor --
+4 0
