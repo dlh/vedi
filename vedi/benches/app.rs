@@ -1,5 +1,6 @@
 //! The pager over a large colored input: taking the reader's data up,
-//! then a key, a wheel tick, a search, a resize and help, each drawn.
+//! then a key, a wheel tick, a search, a resize and help, each drawn;
+//! and a prompt holding one long cluster, edited and drawn.
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -21,6 +22,9 @@ const CHUNK: usize = 64 << 10;
 const W: usize = 200;
 const H: usize = 60;
 const GEN: Gen = 1;
+/// Combining marks on one base at the prompt: a cluster the row must
+/// not walk once per mark.
+const MARKS: usize = 20_000;
 
 struct NoClip;
 
@@ -208,5 +212,26 @@ fn help(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, progress, keys, search, mouse, resize, help);
+/// A key and its undo at a prompt whose text is one base, `MARKS`
+/// marks and a tail that scrolls the base just off the left edge: the
+/// row's search for the first glyph on screen starts at the marks, and
+/// the key finds its glyph, in a cluster thousands of chars long.
+fn prompt(c: &mut Criterion) {
+    let mut a = app();
+    press(&mut a, "/");
+    let mut text = String::from("a");
+    text.extend(std::iter::repeat_n('\u{301}', MARKS));
+    // With the / and the base, one cell wider than the row.
+    text.extend(std::iter::repeat_n('b', W - 1));
+    a.handle(Event::Paste(text));
+    draw(&mut a);
+    c.bench_function("app/prompt/marks", |b| {
+        b.iter(|| {
+            press(&mut a, "b");
+            press(&mut a, "Backspace");
+        })
+    });
+}
+
+criterion_group!(benches, progress, keys, search, mouse, resize, help, prompt);
 criterion_main!(benches);
