@@ -156,7 +156,7 @@ fn candidates(before: &[&str], settings: &Settings) -> Vec<String> {
         [s] => {
             return setting::lookup(s).map_or_else(Vec::new, |s| {
                 let values = s.values();
-                let next = s.next(&settings.value(s.name));
+                let next = s.next(&s.value(settings));
                 let at = values.iter().position(|&v| v == next).unwrap_or(0);
                 let (tail, head) = values.split_at(at);
                 head.iter().chain(tail).map(|&v| v.to_string()).collect()

@@ -119,7 +119,7 @@ impl<T: Terminal> App<T> {
             Cycle::No => Flow::Continue,
             Cycle::Toggle => self.toggle(name),
             Cycle::Values(_) => {
-                let line = format!("{name} {}", s.next(&self.settings.value(name)));
+                let line = format!("{name} {}", s.next(&s.value(&self.settings)));
                 match self.run_command(&line) {
                     Flow::Continue if !status::summarizes(name) => Flow::Say(line),
                     flow => flow,

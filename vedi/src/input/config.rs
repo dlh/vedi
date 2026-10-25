@@ -13,7 +13,6 @@ use crate::input::key::{Key, Mods};
 use crate::input::keymap::{Binding, DEFAULTS, Keymap};
 use crate::input::setting::{self, Settings};
 use crate::sys::words;
-use crate::view::layout::Mode;
 
 /// What a file sets.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -152,13 +151,10 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
     {
         return Err(format!("{verb} takes {}", setting::or_list(v.values())));
     }
-    // A terminal has at most u16::MAX cells a row; a wider tab
-    // overflows the layout's sums.
-    let positive = || match arg.parse::<u16>() {
-        Ok(n) if n > 0 => Ok(usize::from(n)),
-        _ => Err(format!("{verb} takes a number from 1 to 65535")),
-    };
-    let s = &mut c.settings;
+    if let Some(f) = setting::verb(verb).and_then(|v| v.field.as_ref()) {
+        (f.set)(&mut c.settings, arg).map_err(|takes| format!("{verb} takes {takes}"))?;
+        return Ok(Some(verb));
+    }
     match verb {
         "map" => {
             if f.len() != 3 && !(f.len() == 4 && f[2] == "cycle") {
@@ -175,19 +171,6 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
             c.keys.clear();
             c.clear = true;
         }
-        "auto_reload" => s.auto_reload = arg == "yes",
-        "wrap" => {
-            s.mode = if arg == "yes" {
-                Mode::Wrap
-            } else {
-                Mode::NoWrap
-            }
-        }
-        "edge_markers" => s.edge_markers = arg == "yes",
-        "file_separators" => s.file_separators = arg == "yes",
-        "status_line" => s.status_line = arg == "yes",
-        "wrap_style" => s.wrap_style = arg.parse().expect("checked"),
-        "view_style" => s.view_style = arg.parse().expect("checked"),
         "clipboard_cmd" => {
             if rest.is_empty() {
                 return Err("clipboard_cmd takes a command".to_string());
@@ -195,8 +178,6 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
             c.clipboard_cmd = Some(rest.to_string());
         }
         "open_cmd" => c.open_cmds.push(parse_open_cmd(rest)?),
-        "tab_width" => s.tab_width = positive()?,
-        "one_page_rows_below" => s.one_page_rows_below = positive()?,
         _ => return Err(format!("unknown verb {verb:?}")),
     }
     Ok(Some(verb))
@@ -256,7 +237,7 @@ mod tests {
     use crate::input::help::{Row, Section};
     use crate::input::key::KeyCode;
     use crate::text::ansi::ViewStyle;
-    use crate::view::layout::WrapStyle;
+    use crate::view::layout::{Mode, WrapStyle};
 
     fn key(name: &str) -> Key {
         name.parse().unwrap()

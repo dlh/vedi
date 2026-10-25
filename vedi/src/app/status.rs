@@ -5,6 +5,7 @@ use crate::app::draw::runes;
 use crate::app::prompt::Prompt;
 use crate::app::{App, Flow, Focus, STDIN};
 use crate::input::action::{Action, Command};
+use crate::input::setting;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
 use crate::view::layout::{Layout, Mode as WrapMode, WrapStyle};
@@ -25,9 +26,9 @@ enum Row<'a> {
 }
 
 /// Whether the summary row shows `verb`'s value, so cycle needn't say
-/// it: wrap, wrap_style and view_style are on it; status_line is it.
+/// it.
 pub(super) fn summarizes(verb: &str) -> bool {
-    matches!(verb, "wrap" | "wrap_style" | "view_style" | "status_line")
+    setting::verb(verb).is_some_and(|v| v.summarized)
 }
 
 impl<T: Terminal> App<T> {
