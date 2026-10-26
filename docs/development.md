@@ -16,7 +16,7 @@ Requires Rust and make.
     make release-notes  print the changelog the next release would carry (needs goreleaser)
     make release-tag    tag HEAD with the next version
     make aur            write the AUR packages to dist/aur/ (needs goreleaser and gh)
-    make media          record the README gif; needs vhs on PATH
+    make media          record the README gifs; needs vhs on PATH
 
 CI runs `fmt`, `test` and `tidy` on every push and PR; run them before
 committing. Behaviors are specified and tested in `specs/`; see
@@ -50,12 +50,14 @@ through before each pager, so none reads it from disk. The table in
 with [baleia.nvim](https://github.com/m00qek/baleia.nvim), was benchmarked until
 vedi 1.9.0 and then dropped.
 
-`media` runs `docs/media/demo.tape` with
+`media` runs `docs/media/demo.tape` and `filter.tape` with
 [vhs](https://github.com/charmbracelet/vhs) (`brew install vhs`, which brings
-ttyd and ffmpeg) over the checked-in `docs/media/sample.txt`, lorem ipsum with
-SGR colors and an OSC 8 link. vedi runs with its defaults: the config home is
+ttyd and ffmpeg): the first over the checked-in `docs/media/sample.txt`, lorem
+ipsum with SGR colors and an OSC 8 link, the second over
+`vedi/src/app/status.rs`, read through bat as the `open_cmd`, so it needs bat
+on PATH. vedi runs with its defaults otherwise: the config home is
 `docs/media`, which holds no config. Run it after a change to the drawing, and
-commit the gif it rewrites.
+commit the gifs it rewrites.
 
 Commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/). The release

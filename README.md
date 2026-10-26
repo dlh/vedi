@@ -5,6 +5,13 @@ with the keyboard or mouse, and copy it to the clipboard.
 
 ![vedi searching, selecting and copying colored text](docs/media/demo.gif)
 
+<details>
+<summary>The filter feature</summary>
+
+![vedi filtering a source file and copying a function](docs/media/filter.gif)
+
+</details>
+
 ## Install
 
 With [Homebrew](https://brew.sh):
