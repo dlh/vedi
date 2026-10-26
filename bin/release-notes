@@ -16,7 +16,7 @@ main() {
 	git checkout -q --detach "$ref"
 	git tag "$tag"
 	if ! log=$(VEDI_SKIP_BUILD=1 goreleaser release \
-		--skip=archive,homebrew,aur-source,notarize,publish,announce 2>&1); then
+		--skip=archive,homebrew,aur,aur-source,notarize,publish,announce 2>&1); then
 		echo "$log" >&2
 		exit 1
 	fi
