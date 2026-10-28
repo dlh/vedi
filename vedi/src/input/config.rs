@@ -448,7 +448,7 @@ mod tests {
             (
                 "unlisted modifier is unbound",
                 false,
-                Key::new(Home, Mods::CTRL),
+                Key::new(Home, Mods::ALT),
                 "none",
             ),
             ("cmd c", true, Key::new(ch('c'), Mods::CMD), "copy"),

@@ -1,8 +1,8 @@
 PgDn, Space, f, Ctrl+F and Ctrl+V scroll the view down a screenful of
 text rows; PgUp, b, Ctrl+B and Alt+v scroll it up one. The cursor
-stays where it was, hidden off screen. G and > go to the last line,
-g and < to the first. Ctrl+V and Alt+v are the emacs pair; less has
-Alt+v too.
+stays where it was, hidden off screen. G, > and Ctrl+End go to the
+last line, g, < and Ctrl+Home to the first. Ctrl+V and Alt+v are the
+emacs pair; less has Alt+v too.
 
 -- size --
 40x4
@@ -125,3 +125,21 @@ line 6
 <stdin>  line 4/10  wrap          h help
 -- cursor --
 hidden
+-- keys --
+Ctrl+End
+-- screen --
+line 8
+line 9
+line 10
+<stdin>  line 10/10  wrap         h help
+-- cursor --
+2 0
+-- keys --
+Ctrl+Home
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/10  wrap          h help
+-- cursor --
+0 0

@@ -39,9 +39,9 @@ Option then no longer types symbols in that terminal.
 
 ## macOS Terminal.app
 
-Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞ or ⇧⇟, so the program
-sees them as unshifted. To select with them, add these under Settings → Profiles
-→ Keyboard, action Send Text:
+Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞, ⇧⇟, ⌃Home, ⌃End,
+⌃⇧Home or ⌃⇧End, so the program sees them unmodified. To use them, add these
+under Settings → Profiles → Keyboard, action Send Text:
 
 | Key | Text |
 |-----|------|
@@ -51,6 +51,10 @@ sees them as unshifted. To select with them, add these under Settings → Profil
 | ⇧End | `\033[1;2F` |
 | ⇧⇞ | `\033[5;2~` |
 | ⇧⇟ | `\033[6;2~` |
+| ⌃Home | `\033[1;5H` |
+| ⌃End | `\033[1;5F` |
+| ⌃⇧Home | `\033[1;6H` |
+| ⌃⇧End | `\033[1;6F` |
 
 It does not support OSC 52, so copy uses `pbcopy`.
 

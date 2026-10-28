@@ -10,7 +10,7 @@ search key returns to the text and does nothing else, so q returns
 rather than quits and the cursor is where it was.
 
 -- size --
-80x74
+80x75
 -- input --
 abc
 def
@@ -37,7 +37,7 @@ Down h
   d  ⌃D                                   Down half a page.
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-  g  G  <  >                              First line, last line.
+  g  G  <  >  ⌃Home  ⌃End                 First line, last line.
   T  M  B                                 Top, middle, bottom row of the screen.
   [  ]                                    Previous, next input or title.
   :                                       Command prompt; N goes to line N.
@@ -47,6 +47,7 @@ Down h
 
   J  K  Shift+Up  Shift+Down  Shift+Left  Extend the selection.
   Shift+Right  Shift+Home  Shift+End
+  ⌃Shift+Home  ⌃Shift+End
   Shift+PgUp  Shift+PgDn                  Extend by a page.
   ⌃Shift+Left  ⌃Shift+Right  ⌥Shift+Left  Extend by word.
   ⌥Shift+Right
@@ -98,6 +99,7 @@ q
 -- screen --
 abc
 def
+
 
 
 

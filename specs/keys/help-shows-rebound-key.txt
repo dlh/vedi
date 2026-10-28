@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x74
+80x75
 -- input --
 abc
 -- keys --
@@ -32,7 +32,7 @@ Alt+h
   d  ⌃D                                   Down half a page.
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-  g  G  <  >                              First line, last line.
+  g  G  <  >  ⌃Home  ⌃End                 First line, last line.
   T  M  B                                 Top, middle, bottom row of the screen.
   [  ]                                    Previous, next input or title.
   :                                       Command prompt; N goes to line N.
@@ -42,6 +42,7 @@ Alt+h
 
   J  K  Shift+Up  Shift+Down  Shift+Left  Extend the selection.
   Shift+Right  Shift+Home  Shift+End
+  ⌃Shift+Home  ⌃Shift+End
   Shift+PgUp  Shift+PgDn                  Extend by a page.
   ⌃Shift+Left  ⌃Shift+Right  ⌥Shift+Left  Extend by word.
   ⌥Shift+Right

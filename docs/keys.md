@@ -16,11 +16,11 @@ and the search keys search them. These are the defaults.
 | d, Ctrl+d | Down half a page |
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
-| g, G, <, >, Cmd+Up, Cmd+Down | First line, last line |
+| g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | First line, last line |
 | T, M, B | Top, middle, bottom row of the screen |
 | [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
-| J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
+| J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Ctrl+Shift+Home, Ctrl+Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
 | Shift+PgUp, Shift+PgDn | Extend by a page |
 | Ctrl+Shift+Left, Ctrl+Shift+Right, Alt+Shift+Left, Alt+Shift+Right | Extend by word |
 | Ctrl+a, Cmd+a | Select all |
