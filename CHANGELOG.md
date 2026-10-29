@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.5.2 - 2026-10-28
+
+### Fixes
+
+- G goes to the end of the text, past a trailing newline
+
 ## v2.5.1 - 2026-10-28
 
 ### Fixes
