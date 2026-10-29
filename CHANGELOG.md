@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.5.3 - 2026-10-28
+
+### Fixes
+
+- write keeps a selected last newline
+
 ## v2.5.2 - 2026-10-28
 
 ### Fixes
