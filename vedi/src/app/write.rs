@@ -41,6 +41,10 @@ impl<T: Terminal> App<T> {
             Some((start, end)) => {
                 let mut out = Vec::new();
                 shown(buf, view, start, end, &mut out)?;
+                // Past the last line's newline takes it.
+                if end.col > buf.line(end.line).text.len() {
+                    out.push(b'\n');
+                }
                 w.write_all(&out).map_err(failed)?;
                 let mut lines = end.line - start.line + 1;
                 if end.col == 0 && end.line > start.line {

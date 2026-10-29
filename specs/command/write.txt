@@ -2,11 +2,12 @@ write and a file name saves the text to that file as the view shows
 it, and says how many lines went: with view_style color, each run's
 style as SGR and its link as OSC 8, a color carried in from an
 earlier line included; with plain, the text and its links; with raw,
-the input as it came. With a selection, write saves that alone. A
-file that exists is refused: write! overwrites it. The name is the
-rest of the line, spaces included; a leading ~ is the home directory,
-the status line keeping the name as typed. The input here holds the
-raw SGR sequences ESC [ 31 m and ESC [ 0 m.
+the input as it came. With a selection, write saves that alone, a
+selected last newline included. A file that exists is refused: write!
+overwrites it. The name is the rest of the line, spaces included; a
+leading ~ is the home directory, the status line keeping the name as
+typed. The input here holds the raw SGR sequences ESC [ 31 m and
+ESC [ 0 m.
 
 -- args --
 f.txt
@@ -124,3 +125,16 @@ two[^[][0m
 wrote 1 line to rs.txt            h help
 -- written rs.txt --
 [31mred
+-- keys --
+Esc G Ctrl+Shift+Home : "write end.txt" Enter
+-- screen --
+[^[[31mred ]
+[two^[[0m ]
+
+
+
+wrote 2 lines to end.txt          h help
+-- written end.txt --
+[31mred
+two[0m
+
