@@ -1,5 +1,9 @@
 version: 2
 
+before:
+  hooks:
+    - make licenses
+
 builds:
   - builder: rust
     binary: vedi
@@ -20,6 +24,8 @@ archives:
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
       - LICENSE
+      - src: target/LICENSE-THIRD-PARTY
+        dst: LICENSE-THIRD-PARTY
       - README.md
       - CHANGELOG.md
       - src: vedi/completions/*
@@ -117,6 +123,7 @@ aurs:
       email: git@dlh.dev
     package: |-
       install -Dm755 vedi "${pkgdir}/usr/bin/vedi"
+      install -Dm644 LICENSE-THIRD-PARTY "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE-THIRD-PARTY"
       install -Dm644 man/vedi.1 "${pkgdir}/usr/share/man/man1/vedi.1"
       install -Dm644 completions/vedi.bash "${pkgdir}/usr/share/bash-completion/completions/vedi"
       install -Dm644 completions/_vedi "${pkgdir}/usr/share/zsh/site-functions/_vedi"

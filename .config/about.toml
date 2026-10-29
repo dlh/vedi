@@ -1,0 +1,22 @@
+# Licenses a dependency may carry; each is compatible with GPL-3.0-only.
+accepted = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "ISC",
+    "CC0-1.0",
+    "Unlicense",
+    "BSD-2-Clause",
+    "Unicode-3.0",
+]
+# The release targets; a crate only another platform links is not shipped.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+]
+ignore-dev-dependencies = true
+ignore-build-dependencies = true
+
+[vedi]
+accepted = ["GPL-3.0-only"]

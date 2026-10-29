@@ -1,12 +1,18 @@
 # Development
 
-Requires Rust and make.
+Requires Rust and make. The other tools, at the versions CI uses, come from
+[mise](https://mise.jdx.dev): `.config/mise.toml` lists them and
+`.config/mise.lock` pins their checksums. `mise install` installs them, and
+`mise activate` in the shell puts them on PATH. vhs also needs ttyd and ffmpeg,
+which mise cannot install on macOS: `brew install ttyd ffmpeg`. `make aur` and
+the secrets script need [gh](https://cli.github.com), at any version.
 
 ## Checks
 
     make test           clippy, then cargo test --workspace
     make fmt            show what rustfmt would change (fails if any)
     make tidy           fail if Cargo.lock is out of date
+    make licenses       write target/LICENSE-THIRD-PARTY; fail on a license .config/about.toml does not accept
     make bench          criterion benchmarks
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) as a baseline, then here against it, BENCH_COUNT (10) samples each
     make install        cargo install --path vedi --locked
@@ -17,12 +23,15 @@ Requires Rust and make.
     make release-notes  print the notes the next release carries: the first CHANGELOG.md entry
     make release-tag    commit the CHANGELOG.md entry and tag HEAD with the next version
     make aur            write the AUR packages to dist/aur/ (needs goreleaser and gh)
-    make media          record the README gifs; needs vhs on PATH
+    make media          record the README gifs
 
-CI runs `fmt`, `test` and `tidy` on every push and PR; run them before
-committing. Behaviors are specified and tested in `specs/`; see
-`specs/README.md`. `bin/spec-step FILE` steps through one, showing the screen
-after each section.
+CI runs `fmt`, `test`, `tidy` and `licenses` on every push and PR; run them
+before committing. `licenses` runs
+[cargo-about](https://github.com/EmbarkStudios/cargo-about);
+`.config/about.toml` lists the licenses a dependency may carry, each compatible
+with GPL-3.0-only. Adding one is a decision, not a fix for a failing check.
+Behaviors are specified and tested in `specs/`; see `specs/README.md`.
+`bin/spec-step FILE` steps through one, showing the screen after each section.
 
 The man page, `vedi/man/vedi.1`, is hand-written mdoc. A change to a flag, a
 default key, a setting or a `:` command edits it in the same commit, and its
@@ -52,13 +61,12 @@ with [baleia.nvim](https://github.com/m00qek/baleia.nvim), was benchmarked until
 vedi 1.9.0 and then dropped.
 
 `media` runs `docs/media/demo.tape` and `filter.tape` with
-[vhs](https://github.com/charmbracelet/vhs) (`brew install vhs`, which brings
-ttyd and ffmpeg): the first over the checked-in `docs/media/sample.txt`, lorem
-ipsum with SGR colors and an OSC 8 link, the second over
-`vedi/src/app/status.rs`, read through bat as the `open_cmd`, so it needs bat
-on PATH. vedi runs with its defaults otherwise: the config home is
-`docs/media`, which holds no config. Run it after a change to the drawing, and
-commit the gifs it rewrites.
+[vhs](https://github.com/charmbracelet/vhs): the first over the checked-in
+`docs/media/sample.txt`, lorem ipsum with SGR colors and an OSC 8 link, the
+second over `vedi/src/app/status.rs`, read through bat as the `open_cmd`. vedi
+runs with its defaults otherwise: the config home is `docs/media`, which holds
+no config. Run it after a change to the drawing, and commit the gifs it
+rewrites.
 
 Commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/). `CHANGELOG.md`
@@ -108,6 +116,7 @@ builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
 publishes a GitHub release with archives, a source archive, `checksums.txt` and
 the tag's `CHANGELOG.md` entry as its notes. Each archive holds `CHANGELOG.md`,
+`LICENSE-THIRD-PARTY`, which `make licenses` writes before the build,
 the completion scripts of `vedi/completions/` in `completions/`, the man page
 `vedi/man/vedi.1` in `man/` and the Markdown of `docs/` in `docs/`. It then
 pushes a cask to
@@ -152,7 +161,6 @@ To load them from a 1Password item whose fields carry the same names:
 
 To try a release locally without tagging:
 
-    brew install goreleaser
     goreleaser build --snapshot --clean --single-target
 
 Output lands in `dist/`, which is ignored. Only this platform's binary builds

@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
+.PHONY: build install test licenses bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
 
 build:
 	cargo build --release -p vedi
@@ -9,6 +9,12 @@ install:
 test:
 	cargo clippy --workspace --all-targets -- -D warnings
 	cargo test --workspace
+
+# Writes target/LICENSE-THIRD-PARTY; fails on a dependency license
+# .config/about.toml does not accept. Needs cargo-about (mise install).
+licenses:
+	mkdir -p target
+	cargo about generate --locked --fail -c .config/about.toml -m vedi/Cargo.toml -o target/LICENSE-THIRD-PARTY .config/about.hbs
 
 bench:
 	cargo bench -p vedi
@@ -24,7 +30,7 @@ bench-compare:
 bench-pagers: build
 	cargo run --release -q -p bench -- --vedi $(CURDIR)/target/release/vedi $(BENCHFLAGS)
 
-# Needs vhs on PATH (brew install vhs), and bat for filter.tape. Rewrites
+# Needs vhs and bat (mise install), and ttyd and ffmpeg (brew install). Rewrites
 # docs/media/demo.gif and filter.gif. The config home holds no vedi.conf,
 # so the demos run with the defaults.
 media: build
@@ -39,7 +45,7 @@ fmt:
 tidy:
 	cargo metadata --locked --format-version 1 >/dev/null
 
-# Needs goreleaser on PATH (brew install goreleaser) and a git remote.
+# Needs goreleaser (mise install) and a git remote.
 release-check:
 	goreleaser check
 

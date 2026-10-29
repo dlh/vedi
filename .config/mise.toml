@@ -1,0 +1,8 @@
+[tools]
+"github:EmbarkStudios/cargo-about" = "0.9.3"
+goreleaser = "2.19.0"
+vhs = "0.12.1"
+bat = "0.26.1"
+
+[settings]
+lockfile = true
