@@ -19,9 +19,10 @@ sections() {
         if (subject !~ /^[a-z]+(\([^)]*\))?!?: /) next
         type = subject
         sub(/[(!:].*/, "", type)
+        bang = subject ~ /^[a-z]+(\([^)]*\))?!: /
         sub(/^[a-z]+(\([^)]*\))?!?: /, "", subject)
         body = "\n" $2
-        if ($1 ~ /^[a-z]+(\([^)]*\))?!: / || body ~ /\nBREAKING[ -]CHANGE: /) {
+        if (bang || body ~ /\nBREAKING[ -]CHANGE: /) {
             type = "breaking"
             if (match(body, /\nBREAKING[ -]CHANGE: [^\n]*(\n[^\n]+)*/)) {
                 note = substr(body, RSTART, RLENGTH)
