@@ -1,0 +1,25 @@
+#!/bin/sh
+# Tags HEAD with the next version and prints the push that releases it.
+# The release notes are the tag's CHANGELOG.md entry: unless the file
+# already leads with it, as after make changelog, this writes and commits
+# it first. Refuses a tree with uncommitted changes.
+set -eu
+
+main() {
+    cd "$(git rev-parse --show-toplevel)"
+    tag=$(bin/next-version)
+    if ! git diff --quiet HEAD; then
+        echo "commit or stash the changes first" >&2
+        exit 1
+    fi
+    top=$(sed -n '/^## /{s/^## //;s/ .*//;p;q;}' CHANGELOG.md)
+    if [ "$top" != "$tag" ]; then
+        bin/changelog -w
+        git add CHANGELOG.md
+        git commit -q -m "docs: changelog for $tag"
+    fi
+    git tag "$tag"
+    printf 'tagged %s; release it with:\n\ngit push origin main %s\n' "$tag" "$tag"
+}
+
+main "$@"

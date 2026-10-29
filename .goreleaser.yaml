@@ -3,8 +3,6 @@ version: 2
 builds:
   - builder: rust
     binary: vedi
-    # bin/release-notes wants only the changelog.
-    skip: '{{ isEnvSet "VEDI_SKIP_BUILD" }}'
     targets:
       - x86_64-unknown-linux-gnu
       - aarch64-unknown-linux-gnu
@@ -23,6 +21,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - CHANGELOG.md
       - src: vedi/completions/*
         dst: completions
       - src: vedi/man/*
@@ -37,31 +36,6 @@ checksum:
 source:
   enabled: true
   prefix_template: '{{ .ProjectName }}-{{ .Version }}/'
-
-# The changelog is feat, fix, perf and any breaking change; the rest
-# changes nothing a user sees. A type takes an optional scope and !, as
-# bin/next-version does.
-changelog:
-  filters:
-    exclude:
-      - '^refactor(\([^)]*\))?:'
-      - '^test(\([^)]*\))?:'
-      - '^docs(\([^)]*\))?:'
-      - '^build(\([^)]*\))?:'
-      - '^ci(\([^)]*\))?:'
-      - '^chore(\([^)]*\))?:'
-  groups:
-    - title: Features
-      regexp: '^feat(\([^)]*\))?!?:'
-      order: 0
-    - title: Fixes
-      regexp: '^fix(\([^)]*\))?!?:'
-      order: 1
-    - title: Performance
-      regexp: '^perf(\([^)]*\))?!?:'
-      order: 2
-    - title: Other
-      order: 999
 
 # Sign and notarize darwin binaries; skipped when secrets are absent.
 notarize:
@@ -125,7 +99,7 @@ aur_sources:
       install -Dm644 vedi/completions/vedi.bash "${pkgdir}/usr/share/bash-completion/completions/vedi"
       install -Dm644 vedi/completions/_vedi "${pkgdir}/usr/share/zsh/site-functions/_vedi"
       install -Dm644 vedi/completions/vedi.fish "${pkgdir}/usr/share/fish/vendor_completions.d/vedi.fish"
-      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md docs/*.md
+      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md CHANGELOG.md docs/*.md
     skip_upload: '{{ if not (isEnvSet "AUR_KEY") }}true{{ end }}'
 
 # Publish a binary package from the linux archives; skipped without the key.
@@ -147,5 +121,5 @@ aurs:
       install -Dm644 completions/vedi.bash "${pkgdir}/usr/share/bash-completion/completions/vedi"
       install -Dm644 completions/_vedi "${pkgdir}/usr/share/zsh/site-functions/_vedi"
       install -Dm644 completions/vedi.fish "${pkgdir}/usr/share/fish/vendor_completions.d/vedi.fish"
-      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md docs/*.md
+      install -Dm644 -t "${pkgdir}/usr/share/doc/vedi" README.md CHANGELOG.md docs/*.md
     skip_upload: '{{ if not (isEnvSet "AUR_KEY") }}true{{ end }}'

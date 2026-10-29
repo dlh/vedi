@@ -29,12 +29,15 @@ jobs:
         with:
           pattern: vedi-*
           path: ${{ runner.temp }}/prebuilt
+      # The release notes are the tag's CHANGELOG.md entry.
+      - if: github.ref_type == 'tag'
+        run: bin/release-notes "$GITHUB_REF_NAME" >"$RUNNER_TEMP/notes.md"
       - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
           args: >-
             ${{ github.event_name == 'workflow_dispatch'
             && 'release --snapshot --clean --skip=notarize,publish'
-            || 'release --clean' }}
+            || format('release --clean --release-notes={0}/notes.md', runner.temp) }}
         env:
           VEDI_PREBUILT: ${{ runner.temp }}/prebuilt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

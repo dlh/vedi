@@ -1,0 +1,96 @@
+#!/bin/sh
+# Prints the CHANGELOG.md entry for TAG, from the subjects of the commits
+# since the tag before it: a breaking change, feat, fix and perf each get
+# a section, in that order; any other type is left out, since it changes
+# nothing a user sees. Without TAG, the entry for the next release, headed
+# by the tag bin/next-version prints and today's date. With -w, prepends
+# the entry to CHANGELOG.md instead of printing it.
+# Usage: bin/changelog [-w] [TAG]
+set -eu
+
+# Prints the sections for the commits in $range. A breaking change is a
+# subject with a ! or a BREAKING CHANGE footer, which follows the subject.
+sections() {
+    git log --reverse --format='%s%x1f%b%x1e' "$range" | awk '
+    BEGIN { RS = "\036"; FS = "\037" }
+    {
+        subject = $1
+        sub(/^\n/, "", subject)
+        if (subject !~ /^[a-z]+(\([^)]*\))?!?: /) next
+        type = subject
+        sub(/[(!:].*/, "", type)
+        sub(/^[a-z]+(\([^)]*\))?!?: /, "", subject)
+        body = "\n" $2
+        if ($1 ~ /^[a-z]+(\([^)]*\))?!: / || body ~ /\nBREAKING[ -]CHANGE: /) {
+            type = "breaking"
+            if (match(body, /\nBREAKING[ -]CHANGE: [^\n]*(\n[^\n]+)*/)) {
+                note = substr(body, RSTART, RLENGTH)
+                sub(/^\nBREAKING[ -]CHANGE: /, "", note)
+                gsub(/\n/, " ", note)
+                subject = subject ": " note
+            }
+        }
+        entries[type] = entries[type] "- " subject "\n"
+    }
+    END {
+        order[1] = "breaking"; title["breaking"] = "Breaking changes"
+        order[2] = "feat"; title["feat"] = "Features"
+        order[3] = "fix"; title["fix"] = "Fixes"
+        order[4] = "perf"; title["perf"] = "Performance"
+        for (i = 1; i <= 4; i++)
+            if (order[i] in entries)
+                printf "### %s\n\n%s\n", title[order[i]], entries[order[i]]
+    }'
+}
+
+entry() {
+    printf '## %s - %s\n\n' "$tag" "$date"
+    sections
+}
+
+# Inserts $1 after the title line of CHANGELOG.md, which it creates.
+prepend() {
+    [ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
+    if grep -q "^## $tag " CHANGELOG.md; then
+        echo "CHANGELOG.md already has $tag" >&2
+        exit 1
+    fi
+    tmp=$(mktemp)
+    {
+        sed -n 1p CHANGELOG.md
+        printf '\n%s\n' "$1"
+        sed 1d CHANGELOG.md
+    } >"$tmp"
+    mv "$tmp" CHANGELOG.md
+}
+
+main() {
+    write=
+    while getopts w opt; do
+        case $opt in
+        w) write=1 ;;
+        *) exit 2 ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+    cd "$(git rev-parse --show-toplevel)"
+    if [ $# -gt 0 ]; then
+        tag=$1
+        git rev-parse -q --verify "refs/tags/$tag" >/dev/null
+        date=$(git log -1 --format=%cs "$tag")
+        prev=$(git describe --tags --abbrev=0 --match 'v*' "$tag^" 2>/dev/null) || prev=
+        range=${prev:+$prev..}$tag
+    else
+        tag=$(bin/next-version)
+        date=$(date +%F)
+        range=$(git describe --tags --abbrev=0 --match 'v*')..HEAD
+    fi
+    text=$(entry)
+    if [ -n "$write" ]; then
+        prepend "$text"
+    else
+        printf '%s\n' "$text"
+    fi
+}
+
+main "$@"

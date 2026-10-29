@@ -13,8 +13,9 @@ Requires Rust and make.
     make bench-pagers   vedi, less, moor, ov and vim on a large file; needs them on PATH
     make release-check  validate .goreleaser.yaml (needs goreleaser and a git remote)
     make next-version   print the next tag, from the commits since the last
-    make release-notes  print the changelog the next release would carry (needs goreleaser)
-    make release-tag    tag HEAD with the next version
+    make changelog      prepend the next release's entry to CHANGELOG.md, to edit before release-tag
+    make release-notes  print the notes the next release carries: the first CHANGELOG.md entry
+    make release-tag    commit the CHANGELOG.md entry and tag HEAD with the next version
     make aur            write the AUR packages to dist/aur/ (needs goreleaser and gh)
     make media          record the README gifs; needs vhs on PATH
 
@@ -60,10 +61,12 @@ on PATH. vedi runs with its defaults otherwise: the config home is
 commit the gifs it rewrites.
 
 Commit messages follow
-[Conventional Commits](https://www.conventionalcommits.org/). The release
-changelog is built from them: `feat:`, `fix:` and `perf:` each get a section;
-`refactor:`, `test:`, `docs:`, `build:`, `ci:` and `chore:` are left out, since
-they change nothing a user sees.
+[Conventional Commits](https://www.conventionalcommits.org/). `CHANGELOG.md`
+is built from their subjects at release time: a breaking change, `feat:`,
+`fix:` and `perf:` each get a section; `refactor:`, `test:`, `docs:`,
+`build:`, `ci:` and `chore:` are left out, since they change nothing a user
+sees. A subject is the changelog line, so it says what vedi does now, for the
+user.
 
 ## Keys
 
@@ -89,11 +92,14 @@ Backspace; only under the protocol does it delete a word at a prompt.
 `make next-version` prints the next tag: a breaking change (`type!:` or a
 `BREAKING CHANGE:` footer) bumps major, a `feat:` minor, a `fix:` or `perf:`
 patch. It fails when the commits since the last tag hold none of those.
-`make release-notes` prints the changelog that tag would carry.
-`make release-tag` tags HEAD with it and prints the push that releases it:
+`make release-tag` prepends that tag's entry to `CHANGELOG.md`, from the commit
+subjects, commits it, tags HEAD and prints the push that releases it:
 
     make release-tag
-    git push origin v1.2.3
+    git push origin main v1.2.3
+
+To edit the entry first, `make changelog` writes it without committing
+(`bin/changelog` prints it instead); commit it, and `release-tag` only tags.
 
 CI builds and tests linux amd64 and arm64 and darwin arm64, each on a runner of
 its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
@@ -101,9 +107,10 @@ its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
 builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
 publishes a GitHub release with archives, a source archive, `checksums.txt` and
-a changelog from the commit messages. Each archive holds the completion scripts
-of `vedi/completions/` in `completions/`, the man page `vedi/man/vedi.1` in
-`man/` and the Markdown of `docs/` in `docs/`. It then pushes a cask to
+the tag's `CHANGELOG.md` entry as its notes. Each archive holds `CHANGELOG.md`,
+the completion scripts of `vedi/completions/` in `completions/`, the man page
+`vedi/man/vedi.1` in `man/` and the Markdown of `docs/` in `docs/`. It then
+pushes a cask to
 [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
 `HOMEBREW_TAP_TOKEN`, and two packages to the AUR, skipped without `AUR_KEY`:
 [vedi](https://aur.archlinux.org/packages/vedi) builds the source archive,

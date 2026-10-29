@@ -18,6 +18,8 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
 - `vedi/man/vedi.1` is written by hand, in mdoc. A change to a flag, a
   default key, a setting or a `:` command edits it in the same commit, and its
   `.Dd` date; tests check it names each and that `mandoc -T lint` passes.
+- `CHANGELOG.md` is built from commit subjects by `make changelog` at release
+  time; a feature commit never edits it.
 - `make test` must pass before every commit.
 - `docs/development.md` says how to check, commit and release.
 - When updating the benchmarks in `docs/comparison.md`, its vedi version is the

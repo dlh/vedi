@@ -1,26 +1,19 @@
 #!/bin/sh
-# Prints the changelog a release at REF (default HEAD) would carry.
-# goreleaser writes one only for a tagged commit, so this tags REF in
-# a throwaway clone and releases there, building and publishing nothing.
-# Usage: bin/release-notes [REF]
+# Prints the release notes for TAG: its CHANGELOG.md entry, without the
+# heading. Default: the first entry. Fails when there is none.
+# Usage: bin/release-notes [TAG]
 set -eu
 
 main() {
-	root=$(git rev-parse --show-toplevel)
-	ref=$(git rev-parse --verify "${1:-HEAD}^{commit}")
-	tag=$("$root/bin/next-version" "$ref")
-	tmp=$(mktemp -d)
-	trap 'rm -rf "$tmp"' EXIT
-	git clone -q "$root" "$tmp"
-	cd "$tmp"
-	git checkout -q --detach "$ref"
-	git tag "$tag"
-	if ! log=$(VEDI_SKIP_BUILD=1 goreleaser release \
-		--skip=archive,homebrew,aur,aur-source,notarize,publish,announce 2>&1); then
-		echo "$log" >&2
-		exit 1
-	fi
-	cat dist/CHANGELOG.md
+    cd "$(git rev-parse --show-toplevel)"
+    notes=$(awk -v tag="${1:-}" '
+        /^## / { if (p) exit; p = tag == "" || $2 == tag; next }
+        p && (NF || started) { started = 1; print }' CHANGELOG.md)
+    if [ -z "$notes" ]; then
+        echo "CHANGELOG.md has no entry for ${1:-a release}" >&2
+        exit 1
+    fi
+    printf '%s\n' "$notes"
 }
 
 main "$@"

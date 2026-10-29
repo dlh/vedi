@@ -1,4 +1,4 @@
-.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version release-notes release-tag aur clean
+.PHONY: build install test bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
 
 build:
 	cargo build --release -p vedi
@@ -47,7 +47,12 @@ release-check:
 next-version:
 	@bin/next-version
 
-# Prints the changelog the next release would carry; needs goreleaser on PATH.
+# Prepends the next release's entry to CHANGELOG.md, to edit before
+# release-tag, which otherwise writes it.
+changelog:
+	@bin/changelog -w
+
+# Prints the notes the next release carries: the first CHANGELOG.md entry.
 release-notes:
 	@bin/release-notes
 
@@ -56,10 +61,10 @@ release-notes:
 aur:
 	@bin/aur-package
 
-# Tags HEAD with the next version; pushing the tag releases it.
+# Writes and commits the CHANGELOG.md entry unless it is there, then tags
+# HEAD with the next version; pushing the tag releases it.
 release-tag:
-	@tag=$$(bin/next-version) && git tag "$$tag" && \
-		printf 'tagged %s; release it with:\n\ngit push origin %s\n' "$$tag" "$$tag"
+	@bin/release-tag
 
 clean:
 	cargo clean
