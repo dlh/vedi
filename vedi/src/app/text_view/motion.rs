@@ -89,6 +89,7 @@ impl TextView {
             Motion::Down => left = self.move_rows(1),
             Motion::Left => self.move_col(-1),
             Motion::Right => self.move_col(1),
+            Motion::LineStart | Motion::LineEnd if self.at_end_row() => {}
             Motion::LineStart => self.cur.col = 0,
             Motion::LineEnd => self.cur.col = self.line_len(self.cur.line),
             Motion::PageUp => left = self.move_rows(-page),
@@ -98,7 +99,7 @@ impl TextView {
             Motion::WordLeft => self.word_left(),
             Motion::WordRight => self.word_right(),
             Motion::First => self.cur = Pos::default(),
-            Motion::Last => self.go_last(),
+            Motion::Last => self.cur = self.end_pos(),
             Motion::ScreenTop => self.screen_row(0),
             Motion::ScreenMiddle => self.screen_row(self.geom.rows / 2),
             Motion::ScreenBottom => self.screen_row(self.geom.rows.saturating_sub(1)),
@@ -113,7 +114,14 @@ impl TextView {
         } else if extending && left < 0 {
             self.cur = Pos::default();
         }
+        // The end of the text is a place in the file, not in the line:
+        // with wrap off the view keeps its side scroll and the cursor
+        // may sit off the right edge.
+        let xoff = self.xoff;
         self.scroll_to_cursor();
+        if m == Motion::Last && self.geom.mode == Mode::NoWrap {
+            self.xoff = xoff;
+        }
     }
 
     /// Moves the cursor `n` visual rows (negative is up), keeping its
@@ -125,7 +133,11 @@ impl TextView {
     /// it: one row's move steps over it.
     fn move_rows(&mut self, mut n: isize) -> isize {
         let mut ln = self.line_layout(self.cur.line);
-        let (mut row, x) = self.cursor_pos(&ln);
+        let (mut row, mut x) = self.cursor_pos(&ln);
+        // The end row is one past the last line's rows.
+        if self.at_end_row() {
+            (row, x) = (ln.rows(), 0);
+        }
         while n > 0 {
             if row + 1 < ln.rows() {
                 row += 1;
@@ -139,6 +151,8 @@ impl TextView {
                 };
                 ln = self.line_layout(self.cur.line);
                 row = 0;
+            } else if row < ln.rows() && self.last_newline(self.cur.line) {
+                row = ln.rows();
             } else {
                 break;
             }
@@ -162,7 +176,11 @@ impl TextView {
             }
             n += 1;
         }
-        self.cur.col = ln.col(row, x);
+        self.cur.col = if row == ln.rows() {
+            ln.cells().len()
+        } else {
+            ln.col(row, x)
+        };
         n
     }
 
@@ -172,11 +190,14 @@ impl TextView {
     /// comes back first.
     fn move_col(&mut self, d: isize) {
         let n = self.line_len(self.cur.line);
-        self.cur.col = self.cur.col.min(n);
+        let end = self.end_col(self.cur.line);
+        self.cur.col = self.cur.col.min(end);
         let ln = self.line_layout(self.cur.line);
         let xs = ln.cells();
         if d < 0 {
-            if self.cur.col > 0 {
+            if self.cur.col > n {
+                self.cur.col = n;
+            } else if self.cur.col > 0 {
                 self.cur.col -= 1;
                 while self.cur.col > 0 && xs[self.cur.col + 1] == xs[self.cur.col] {
                     self.cur.col -= 1;
@@ -190,6 +211,8 @@ impl TextView {
             while self.cur.col < n && xs[self.cur.col + 1] == xs[self.cur.col] {
                 self.cur.col += 1;
             }
+        } else if self.cur.col < end {
+            self.cur.col = end;
         } else if self.cur.line + 1 < self.buf.len() {
             self.cur.line += 1;
             self.cur.col = 0;
@@ -304,6 +327,9 @@ impl TextView {
         }
         let p = p.pos();
         let ln = self.line_layout(p.line);
+        if p.col >= ln.cells().len() {
+            return p;
+        }
         let (row, _) = ln.pos(p.col);
         Pos {
             line: p.line,

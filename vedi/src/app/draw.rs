@@ -93,6 +93,10 @@ impl<T: Terminal> App<T> {
         let x0 = (xs[seg.start] + xoff) as isize;
         let sel = self.view.selection();
         let n = line.text.len();
+        // The end row: nothing but the cursor.
+        if col > n {
+            return cell.filter(|c| c.shown).map(|c| c.x as usize);
+        }
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.

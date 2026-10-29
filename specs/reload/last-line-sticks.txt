@@ -1,5 +1,6 @@
 A cursor on the last line stays on the last line when the text read
-again is longer: a log that grows is followed.
+again is longer: a log that grows is followed. One on the end row stays
+past the text, longer or shorter.
 
 -- size --
 40x4
@@ -21,4 +22,31 @@ three
 four
 f.txt  line 4/4  wrap             h help
 -- cursor --
+2 3
+-- reload --
+one
+two
+three
+four
+
+-- keys --
+G
+-- screen --
+three
+four
+
+f.txt  line 4+1/4  wrap           h help
+-- cursor --
 2 0
+-- reload --
+one
+two
+three
+
+-- screen --
+three
+
+
+f.txt  line 3+1/3  wrap           h help
+-- cursor --
+1 0

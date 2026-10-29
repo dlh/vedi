@@ -21,7 +21,7 @@ c
 d
 hunk  line 7/7  wrap  h help
 -- cursor --
-2 0
+2 1
 -- keys --
 [
 -- screen --

@@ -1,0 +1,30 @@
+With wrap off, G goes to the end of a last line that has no newline
+without scrolling the view sideways, so the lines above stay readable;
+the cursor sits off the right edge, hidden, until a motion brings it
+back.
+
+-- size --
+10x4
+-- args --
+-S
+-- input --
+short
+abcdefghijklmnopqrstuvwxyz
+-- keys --
+G
+-- screen --
+short
+abcdefghij
+
+<stdin>  l
+-- cursor --
+hidden
+-- keys --
+Left
+-- screen --
+
+qrstuvwxyz
+
+<stdin>  l
+-- cursor --
+1 9

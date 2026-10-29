@@ -25,4 +25,4 @@ five
 six
 f.txt  line 6/6  wrap             h help
 -- cursor --
-2 0
+2 3

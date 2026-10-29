@@ -37,7 +37,7 @@ Down h
   d  ⌃D                                   Down half a page.
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-  g  G  <  >  ⌃Home  ⌃End                 First line, last line.
+  g  G  <  >  ⌃Home  ⌃End                 Start, end of the text.
   T  M  B                                 Top, middle, bottom row of the screen.
   [  ]                                    Previous, next input or title.
   :                                       Command prompt; N goes to line N.

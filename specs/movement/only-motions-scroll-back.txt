@@ -67,4 +67,4 @@ line 7
 line 8
 <stdin>  line 8/8  wrap           h help
 -- cursor --
-2 0
+2 6

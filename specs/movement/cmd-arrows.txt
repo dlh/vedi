@@ -24,7 +24,7 @@ line 4
 line 5
 <stdin>  line 5/5  wrap           h help
 -- cursor --
-2 0
+2 6
 -- keys --
 Cmd+Up
 -- screen --
@@ -52,13 +52,13 @@ Cmd+Shift+Down y
 -- screen --
 [line 3 ]
 [line 4 ]
-line 5
-copied 4 lines                    h help
+[line 5]
+copied 5 lines                    h help
 -- cursor --
-2 0
+2 6
 -- clipboard --
 line 1
 line 2
 line 3
 line 4
-
+line 5

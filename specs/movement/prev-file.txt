@@ -28,7 +28,7 @@ b5
 b6
 b.txt 2/2  line 6/6  wrap
 -- cursor --
-3 0
+3 2
 -- keys --
 [
 -- screen --

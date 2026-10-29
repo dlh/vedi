@@ -74,7 +74,7 @@ line 9
 line 10
 <stdin>  line 10/10  wrap         h help
 -- cursor --
-4 0
+4 7
 -- keys --
 Shift+Up : "1" Enter
 -- screen --

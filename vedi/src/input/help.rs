@@ -116,7 +116,7 @@ const SECTIONS: &[HelpSection] = {
                 bound(&[Act(HalfPageDown)], "Down half a page"),
                 bound(&[Act(HalfPageUp)], "Up half a page"),
                 bound(&[Act(WordLeft), Act(WordRight)], "Move by word"),
-                bound(&[Act(First), Act(Last)], "First line, last line"),
+                bound(&[Act(First), Act(Last)], "Start, end of the text"),
                 bound(
                     &[Act(ScreenTop), Act(ScreenMiddle), Act(ScreenBottom)],
                     "Top, middle, bottom row of the screen",

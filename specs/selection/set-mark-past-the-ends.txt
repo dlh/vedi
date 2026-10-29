@@ -34,7 +34,7 @@ copied 1 line                     h help
 -- clipboard --
 o
 -- keys --
-Esc G v Enter
+Esc Down v Enter
 -- screen --
 one
 [two]

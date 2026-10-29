@@ -43,7 +43,7 @@ pub static PAGERS: [Pager; 5] = [
         stdin: None,
         drawn: "",
         not_found: "not found:",
-        at_end: "{n}/{n}",
+        at_end: "{n}+1/{n}",
         end: "G",
         home: "g",
         quit: "q",

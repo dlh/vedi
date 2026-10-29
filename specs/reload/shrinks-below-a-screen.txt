@@ -26,4 +26,4 @@ bbb
 ccc
 f.txt  line 3/3  wrap             h help
 -- cursor --
-2 0
+2 3

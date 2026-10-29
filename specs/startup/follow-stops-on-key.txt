@@ -16,7 +16,7 @@ c
 a
 b
 c
-<stdin>  line 1/3  wrap  reading…
+<stdin>  line 2/3  wrap  reading…
 -- cursor --
-0 0
+1 0
 -- eof --

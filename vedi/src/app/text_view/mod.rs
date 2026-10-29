@@ -232,7 +232,7 @@ impl TextView {
             self.start.line = None;
         }
         if self.start.follow {
-            self.go_last();
+            self.cur = self.end_pos();
         }
         if let Some(s) = self.start.screen
             && eof
@@ -260,19 +260,17 @@ impl TextView {
     }
 
     /// Puts the view where the terminal had it. The buffer's last row
-    /// was the terminal's bottom row, so the top is rows-1 plus the
-    /// scroll above it; a trailing newline means the bottom row was
-    /// blank and not in the buffer, one row fewer. The status line's
-    /// row comes off the top of the screenful, and the cursor row moves
-    /// up with it. When scrolled, the cursor was below the view and
-    /// goes to the top.
+    /// was the terminal's bottom row, the end row when the input ends
+    /// in a newline, so the top is rows-1 plus the scroll above it. The
+    /// status line's row comes off the top of the screenful, and the
+    /// cursor row moves up with it. When scrolled, the cursor was below
+    /// the view and goes to the top.
     fn show_screen(&mut self, s: StartScreen) {
         if self.buf.is_empty() {
             return;
         }
         let rows = self.geom.rows;
-        let back =
-            rows as isize - 1 + s.scrolled_by as isize - isize::from(self.buf.trailing_newline());
+        let back = rows as isize - 1 + s.scrolled_by as isize;
         let end = self.end_pos();
         let mut top = self.snap(Row::text(end));
         for _ in 0..back {
@@ -333,7 +331,7 @@ impl TextView {
         }
         let n = self.buf.len();
         self.cur.line = self.cur.line.min(n.saturating_sub(1));
-        self.cur.col = self.cur.col.min(self.line_len(self.cur.line));
+        self.cur.col = self.cur.col.min(self.end_col(self.cur.line));
         self.top = self.snap(self.top);
         if n == 0 {
             return;
@@ -435,9 +433,10 @@ impl TextView {
     }
 
     /// Changes the text under the view and keeps the view's place: a
-    /// cursor that was on the last line goes to the new last line, and
-    /// every position is clamped, the line to the last and the column
-    /// to the line's end. The cursor and the anchor each stay in the
+    /// cursor that was on the last line goes to the new last line, one
+    /// past the text stays past it, and every position is clamped, the
+    /// line to the last and the column to the line's end. The cursor
+    /// and the anchor each stay in the
     /// input they were in: a file above that shrank would otherwise
     /// hand them to the next. A top past the new end starts over from
     /// the first row, so a text shorter than the screen fills it from
@@ -445,7 +444,8 @@ impl TextView {
     /// line no longer starts an input. The view scrolls only to a
     /// cursor that moved: new text is not a motion.
     pub fn change_text(&mut self, f: impl FnOnce(&mut Buffer)) {
-        let place = Place::of(&self.buf, self.cur, self.anchor);
+        let end = self.end_pos();
+        let place = Place::of(&self.buf, self.cur, self.anchor, end);
         f(&mut self.buf);
         let was = self.cur;
         let n = self.buf.len();
@@ -500,6 +500,13 @@ impl TextView {
             *a = clamp(*a, scratch);
         }
         self.laid.clear();
+        let end = self.end_pos();
+        if place.past {
+            self.cur = end;
+        }
+        if place.anchor_past {
+            self.anchor = Some(end);
+        }
         if self.cur != was {
             self.scroll_to_cursor();
         }
@@ -511,15 +518,22 @@ impl TextView {
 struct Place {
     /// The cursor was on the last line.
     at_end: bool,
+    /// The cursor was on the end row, past the text; the anchor was.
+    past: bool,
+    anchor_past: bool,
     /// The cursor's input, and the anchor's.
     cur: usize,
     anchor: Option<usize>,
 }
 
 impl Place {
-    fn of(buf: &Buffer, cur: Pos, anchor: Option<Pos>) -> Place {
+    /// `end` is the text's end: the end row, when it has one.
+    fn of(buf: &Buffer, cur: Pos, anchor: Option<Pos>, end: Pos) -> Place {
+        let past = |p: Pos| buf.trailing_newline() && p == end;
         Place {
             at_end: cur.line + 1 >= buf.len(),
+            past: past(cur),
+            anchor_past: anchor.is_some_and(past),
             cur: buf.part_at(cur.line),
             anchor: anchor.map(|a| buf.part_at(a.line)),
         }

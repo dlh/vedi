@@ -507,8 +507,8 @@ fn list_resyncs_colors_at_a_block() {
     input.extend(std::iter::repeat_n("y z\n", BLOCK_LINES));
     let mut a = app(20, 4, &input, options());
     press(&mut a, "& y Enter G");
-    assert_eq!(row(&a, 2), "y z");
-    assert_eq!(style(&a, 2, 2).fg, Color::Palette(1));
+    assert_eq!(row(&a, 1), "y z");
+    assert_eq!(style(&a, 2, 1).fg, Color::Palette(1));
 }
 
 /// The text's read error shows over the list, and the list ends with it.

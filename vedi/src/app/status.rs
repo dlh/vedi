@@ -12,6 +12,13 @@ use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Style;
 
+/// The row the status line names: a line, or the end row past it.
+#[derive(Copy, Clone)]
+pub(super) struct At {
+    line: usize,
+    past: bool,
+}
+
 /// What the status line shows, the first of these that applies.
 enum Row<'a> {
     Prompt(&'a Prompt),
@@ -89,7 +96,7 @@ impl<T: Terminal> App<T> {
     /// lines listed of the text's at the right edge, as the hint is. A
     /// prompt wider than the screen scrolls to keep the cursor on it, at
     /// the right edge. Returns the cell of an open prompt's cursor.
-    pub(super) fn draw_status(&self, g: &mut Grid, at: usize) -> Option<(usize, usize)> {
+    pub(super) fn draw_status(&self, g: &mut Grid, at: At) -> Option<(usize, usize)> {
         let (w, h) = (g.width(), g.height());
         let row = self.row();
         if h < 2 || matches!(row, Row::Hidden) {
@@ -163,15 +170,22 @@ impl<T: Terminal> App<T> {
     /// The line the status line names: the cursor's, or the top row's
     /// while the cursor is scrolled off screen, so it says where the
     /// view is.
-    pub(super) fn status_at(&mut self) -> usize {
+    pub(super) fn status_at(&mut self) -> At {
         if self.view.cursor_visible() {
-            self.view.cursor().line
+            At {
+                line: self.view.cursor().line,
+                past: self.view.at_end_row(),
+            }
         } else {
-            self.view.top().line
+            let top = self.view.top();
+            At {
+                line: top.line,
+                past: self.view.is_end_row(top),
+            }
         }
     }
 
-    fn status_text(&self, row: &Row, width: usize, at: usize) -> String {
+    fn status_text(&self, row: &Row, width: usize, at: At) -> String {
         match row {
             Row::Prompt(p) => p.line(),
             Row::HelpHint => "help  motion scrolls, / searches, any other key returns".into(),
@@ -187,9 +201,12 @@ impl<T: Terminal> App<T> {
     /// read. In a filter's list: the query, which listed line of how
     /// many, and the text's line it is, named with its input when there
     /// are several.
-    fn summary(&self, width: usize, at: usize) -> String {
+    fn summary(&self, width: usize, at: At) -> String {
         let tail = self.mode_and_reading();
         let buf = self.text_view().buf();
+        // The end row is one past the last line, and no line.
+        let past = if at.past { "+1" } else { "" };
+        let at = at.line;
         if let Some(f) = self.filter.as_ref().filter(|f| f.listing) {
             let Some(li) = f.line(at) else {
                 return format!("&{}  0/0  {tail}", f.query());
@@ -200,7 +217,7 @@ impl<T: Terminal> App<T> {
                 name = format!("{} ", self.input_name(li));
             }
             return format!(
-                "&{}  {}/{}  {name}line {}/{}  {tail}",
+                "&{}  {}{past}/{}  {name}line {}/{}  {tail}",
                 f.query(),
                 at + 1,
                 f.listed(),
@@ -214,7 +231,7 @@ impl<T: Terminal> App<T> {
             rest = format!(" {}/{}", k + 1, self.names.len());
         }
         rest.push_str(&format!(
-            "  line {}/{}  {tail}",
+            "  line {}{past}/{}  {tail}",
             at - lines.start + 1,
             lines.len()
         ));

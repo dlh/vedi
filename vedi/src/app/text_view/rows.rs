@@ -12,7 +12,8 @@ use crate::view::layout::{Laid, Layout, Mode};
 const LAID_LINES: usize = 1024;
 
 /// A row start: a line's separator row, which orders before the
-/// line's own rows, or the start of one of its segments.
+/// line's own rows, the start of one of its segments, or the end row,
+/// at the column past the last line's newline.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct Row {
     pub line: usize,
@@ -121,7 +122,7 @@ impl TextView {
                 ln
             }
         };
-        if i != self.cur.line || self.cur.col < n {
+        if i != self.cur.line || self.cur.col != n {
             return ln;
         }
         let mut l = l;
@@ -131,16 +132,32 @@ impl TextView {
         self.laid.newline_row(i, ln, l)
     }
 
-    /// Puts the cursor at the start of the last line's last row, so a
-    /// line that wraps shows its end. Moved to the line's start first:
-    /// a cursor already at its end would open a newline row.
-    pub fn go_last(&mut self) {
-        let line = self.buf.len().saturating_sub(1);
-        self.cur = Pos { line, col: 0 };
-        let ln = self.line_layout(line);
-        self.cur.col = ln.segments().last().map_or(0, |s| s.start);
+    /// Whether line `i` ends in the input's last newline, after which
+    /// comes the end row: an empty row where the cursor rests past the
+    /// text, as it rests on the next line's start past any other
+    /// newline. The row is no line: the count stays what wc says.
+    pub(super) fn last_newline(&self, i: usize) -> bool {
+        i + 1 == self.buf.len() && self.buf.trailing_newline()
     }
 
+    /// The last cursor column on line `i`: its newline, or the end row
+    /// past it, one more.
+    pub(super) fn end_col(&mut self, i: usize) -> usize {
+        self.line_len(i) + usize::from(self.last_newline(i))
+    }
+
+    /// Whether `p` is the end row.
+    pub fn is_end_row(&mut self, p: Row) -> bool {
+        p.col
+            .is_some_and(|c| self.last_newline(p.line) && c > self.line_len(p.line))
+    }
+
+    /// Whether the cursor is on the end row.
+    pub fn at_end_row(&mut self) -> bool {
+        self.is_end_row(Row::text(self.cur))
+    }
+
+    /// The end of the text, past the last newline if there is one.
     pub fn end_pos(&mut self) -> Pos {
         let n = self.buf.len();
         if n == 0 {
@@ -148,7 +165,7 @@ impl TextView {
         }
         Pos {
             line: n - 1,
-            col: self.line_len(n - 1),
+            col: self.end_col(n - 1),
         }
     }
 
@@ -182,6 +199,9 @@ impl TextView {
     pub(super) fn cursor_span(&mut self) -> (usize, usize, usize) {
         let ln = self.line_layout(self.cur.line);
         let xs = ln.cells();
+        if self.cur.col >= xs.len() {
+            return (0, 1, xs[xs.len() - 1]);
+        }
         let (g, _) = ln.glyph(self.cur.col);
         let (_, x) = ln.pos(g);
         let w = if g + 1 < xs.len() {
@@ -195,8 +215,8 @@ impl TextView {
     /// The cursor's glyph on row `p`, when it starts there: where the
     /// frame draws it, and whether. The cursor on any char of a cluster
     /// shows on the cluster, which has no smaller part to show it on.
-    /// Past the end of a line that shrank under it, until a motion
-    /// clamps it, the cursor is nowhere.
+    /// On the end row it is the first cell. Past the end of a line that
+    /// shrank under it, until a motion clamps it, the cursor is nowhere.
     pub fn cursor_on(&mut self, p: Row) -> Option<CursorCell> {
         let col = p.col?;
         if p.line != self.cur.line {
@@ -206,6 +226,14 @@ impl TextView {
         let xs = ln.cells();
         let n = xs.len() - 1;
         if self.cur.col > n {
+            if col <= n || !self.last_newline(p.line) {
+                return None;
+            }
+            let x = -(self.xoff as isize);
+            let shown = x >= 0 && self.geom.cols > 0;
+            return Some(CursorCell { x, width: 1, shown });
+        }
+        if col > n {
             return None;
         }
         let (ci, _) = ln.glyph(self.cur.col);
@@ -269,6 +297,13 @@ impl TextView {
             return Row::text(Pos::default());
         }
         let ln = self.line_layout(line);
+        let n = ln.cells().len() - 1;
+        if p.col.is_some_and(|c| c > n) && self.last_newline(line) {
+            return Row {
+                line,
+                col: Some(n + 1),
+            };
+        }
         let col = ln.segments()[ln.segment_at(p.col.unwrap_or(0))].start;
         Row {
             line,
@@ -286,6 +321,10 @@ impl TextView {
             });
         };
         let ln = self.line_layout(p.line);
+        let n = ln.cells().len() - 1;
+        if col > n {
+            return p;
+        }
         let i = ln.segment_at(col);
         if i + 1 < ln.rows() {
             return Row {
@@ -302,6 +341,12 @@ impl TextView {
                 col: 0,
             });
         }
+        if self.last_newline(p.line) {
+            return Row {
+                line: p.line,
+                col: Some(n + 1),
+            };
+        }
         p
     }
 
@@ -310,6 +355,13 @@ impl TextView {
     pub(super) fn prev_row(&mut self, p: Row) -> Row {
         if let Some(col) = p.col {
             let ln = self.line_layout(p.line);
+            let segs = ln.segments();
+            if col >= ln.cells().len() {
+                return Row {
+                    line: p.line,
+                    col: Some(segs[segs.len() - 1].start),
+                };
+            }
             let i = ln.segment_at(col);
             if i > 0 {
                 return Row {

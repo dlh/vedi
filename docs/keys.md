@@ -16,7 +16,7 @@ and the search keys search them. These are the defaults.
 | d, Ctrl+d | Down half a page |
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
-| g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | First line, last line |
+| g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
 | T, M, B | Top, middle, bottom row of the screen |
 | [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
@@ -53,7 +53,10 @@ The page keys and the wheel scroll the view and leave the cursor where it is,
 hidden off screen, so Shift with a click or an arrow selects from it across
 screens. The next motion brings the view back to it, and T, M or B puts it on
 the screen instead. The status line names the cursor's line, or the top row's
-while the cursor is off screen.
+while the cursor is off screen. Text that ends in a newline has an empty row
+after its last line, where the cursor rests past the text; it is no line, so
+the count stays what `wc -l` says and the status marks the cursor there as one
+past it, `line 5+1/5`.
 
 The selection is drawn in reverse video and search matches in black on bright
 yellow, the match the cursor is in in bright white on magenta, whatever the

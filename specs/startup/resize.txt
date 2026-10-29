@@ -33,4 +33,4 @@ line 10
 
 <stdin>  line 10/10  wrap         h help
 -- cursor --
-2 0
+2 7

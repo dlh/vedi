@@ -31,6 +31,10 @@ impl<T: Terminal> App<T> {
                 s.push('\n');
             }
             s.extend(&self.scratch[from..to]);
+            // Past the last line's newline takes it.
+            if li == end.line && end.col > n {
+                s.push('\n');
+            }
         }
         s
     }
