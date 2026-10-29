@@ -36,7 +36,9 @@ pub fn open(dest: &Path, overwrite: bool) -> io::Result<Saving> {
     let at = dest.with_file_name(format!(".{base}.vedi-{}", std::process::id()));
     let file = File::create_new(&at)?;
     if let Ok(perms) = fs::metadata(&dest).map(|m| m.permissions()) {
-        let _ = fs::set_permissions(&at, perms);
+        // On the handle: by path, a symlink swapped in for the file
+        // would carry the permissions to whatever it points at.
+        let _ = file.set_permissions(perms);
     }
     Ok(Saving {
         file,
