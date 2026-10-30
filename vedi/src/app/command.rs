@@ -68,7 +68,7 @@ impl<T: Terminal> App<T> {
     fn goto(&mut self, n: &str) {
         // Past usize is past the end all the same.
         let n = n.parse::<usize>().unwrap_or(usize::MAX);
-        let v = &mut self.view;
+        let v = &mut self.views.shown;
         let (_, lines) = v.buf().part(v.cursor().line);
         let line = lines
             .start
@@ -102,7 +102,7 @@ impl<T: Terminal> App<T> {
         self.sync_view();
         if self.settings.view_style != old.view_style {
             let raw = self.settings.view_style == ViewStyle::Raw;
-            self.text_view_mut().set_literal(raw);
+            self.views.text_mut().set_literal(raw);
             self.refilter();
         }
         if old.auto_reload && !self.settings.auto_reload {
@@ -147,7 +147,7 @@ impl<T: Terminal> App<T> {
             return Flow::Say("not a file".into());
         }
         self.through_open_cmd = !self.through_open_cmd;
-        self.view.deselect();
+        self.views.shown.deselect();
         self.next = None;
         self.dirty = false;
         self.reload_then(true, true)
@@ -157,7 +157,7 @@ impl<T: Terminal> App<T> {
     /// as the status line reports it; the text may be set aside under
     /// help.
     pub(super) fn open_cmd_status(&self) -> String {
-        let v = self.text_view();
+        let v = self.views.text();
         let (part, _) = v.buf().part(v.cursor().line);
         let argv = match &self.open_cmd {
             Some(f) if self.through_open_cmd => self.names.get(part).and_then(|n| f(n)),

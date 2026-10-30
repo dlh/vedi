@@ -6,6 +6,7 @@ use std::mem;
 
 use crate::app::prompt::Edit;
 use crate::app::text_view::{Motion, Start, TextView};
+use crate::app::views::Role;
 use crate::app::write::shown;
 use crate::app::{App, Flow, Focus, Kind};
 use crate::input::action::{Action, Command};
@@ -19,11 +20,8 @@ use crate::view::screen::Terminal;
 
 pub(super) struct Filter {
     state: State,
-    /// The view not shown: the text while the list is, the list after
-    /// Enter went to a line.
-    pub(super) aside: TextView,
-    /// The list is the view shown, or the one help set aside.
-    pub(super) listing: bool,
+    /// The list, after Enter went to a line in the text.
+    parked: Option<TextView>,
 }
 
 /// The query and what it found.
@@ -249,39 +247,32 @@ impl State {
 }
 
 impl<T: Terminal> App<T> {
-    /// Whether the list is the view shown, or the one help set aside.
+    /// Whether the list is up: shown, or under help.
     pub(super) fn listing(&self) -> bool {
-        self.filter.as_ref().is_some_and(|f| f.listing)
+        self.views.holds(Role::List)
     }
 
-    /// The filter, the text's buffer and the list's view: one of the
-    /// two is the view the filter does not hold, shown or set aside by
-    /// help.
+    /// The text's buffer, the list's view and the filter's state.
     fn filter_parts(&mut self) -> Option<(&Buffer, &mut TextView, &mut State)> {
         let f = self.filter.as_mut()?;
-        let other = self.help.as_mut().unwrap_or(&mut self.view);
-        let Filter {
-            aside,
-            listing,
-            state,
-            ..
-        } = f;
-        Some(if *listing {
-            (aside.buf(), other, state)
-        } else {
-            (other.buf(), aside, state)
+        Some(match &mut f.parked {
+            Some(list) => (self.views.text().buf(), list, &mut f.state),
+            None => {
+                let (text, list) = self.views.text_and(Role::List);
+                (text.buf(), list, &mut f.state)
+            }
         })
     }
 
     /// Opens the & prompt over the list: the one Enter left, with its
     /// query and its place, or a new one, over every line.
     pub(super) fn open_filter(&mut self) {
-        match &self.filter {
+        match &mut self.filter {
             None => {
                 let literal = self.settings.view_style == ViewStyle::Raw;
                 let buf = Buffer::new(Storage::Memory(Vec::new()), literal);
                 let list = TextView::new(buf, Start::default(), self.geometry());
-                let text = mem::replace(&mut self.view, list);
+                self.views.raise(Role::List, list);
                 self.filter = Some(Filter {
                     state: State {
                         matcher: Matcher::new(""),
@@ -290,14 +281,16 @@ impl<T: Terminal> App<T> {
                         ix: Indexer::new(),
                         last: None,
                     },
-                    aside: text,
-                    listing: true,
+                    parked: None,
                 });
                 self.relist(Vec::new(), 0);
                 self.point(0);
             }
-            Some(f) if !f.listing => self.swap_views(),
-            Some(_) => {}
+            Some(f) => {
+                if let Some(list) = f.parked.take() {
+                    self.views.raise(Role::List, list);
+                }
+            }
         }
         let query = self.filter.as_ref().map_or("", Filter::query).to_string();
         self.query.open_with('&', &query);
@@ -305,20 +298,10 @@ impl<T: Terminal> App<T> {
         self.focus(Focus::Prompting(Kind::Filter));
     }
 
-    /// Puts the list in the text's place, or the text back. Help is
-    /// never up: its keys return before they reach here.
-    fn swap_views(&mut self) {
-        debug_assert!(self.help.is_none());
-        if let Some(f) = &mut self.filter {
-            mem::swap(&mut self.view, &mut f.aside);
-            f.listing = !f.listing;
-        }
-    }
-
     /// Leaves the filter: the text as it was, the query forgotten.
     pub(super) fn close_filter(&mut self) {
-        if self.listing() {
-            self.swap_views();
+        if self.views.role() == Role::List {
+            self.views.lower(Role::List);
         }
         self.filter = None;
     }
@@ -331,22 +314,25 @@ impl<T: Terminal> App<T> {
         let Some(f) = &self.filter else {
             return;
         };
-        let p = self.view.cursor();
+        let p = self.views.shown.cursor();
         let Some(line) = f.line(p.line) else {
             return;
         };
         let m = f.state.matcher.clone();
-        self.swap_views();
+        let list = self.views.lower(Role::List);
+        if let Some(f) = &mut self.filter {
+            f.parked = Some(list);
+        }
         // The screen may have changed while the list was up.
         self.sync_view();
-        self.view.land(m, Pos { line, col: p.col });
+        self.views.shown.land(m, Pos { line, col: p.col });
     }
 
     /// What a key does in the list that it does not in the text: Enter
     /// with no selection goes to the cursor's line, Esc with none
     /// leaves. `None` for any other key.
     pub(super) fn list_key(&mut self, c: &Command) -> Option<Flow> {
-        if !self.listing() || c.extend || self.view.selection().is_some() {
+        if !self.listing() || c.extend || self.views.shown.selection().is_some() {
             return None;
         }
         match c.action {
@@ -363,7 +349,7 @@ impl<T: Terminal> App<T> {
     /// key edits the query, Up and Down among them, which recall earlier
     /// ones, and the list follows it.
     pub(super) fn filter_key(&mut self, key: Key) -> Flow {
-        let rows = self.view.rows() as isize;
+        let rows = self.views.shown.rows() as isize;
         let k = key.normalized();
         let by = match (k.code, k.mods) {
             (KeyCode::Char('n'), Mods::CTRL) => Some(1),
@@ -373,7 +359,7 @@ impl<T: Terminal> App<T> {
             _ => None,
         };
         if let Some(by) = by {
-            let line = self.view.cursor().line.saturating_add_signed(by);
+            let line = self.views.shown.cursor().line.saturating_add_signed(by);
             self.point(line);
             return Flow::Continue;
         }

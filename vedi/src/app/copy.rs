@@ -19,7 +19,7 @@ impl<T: Terminal> App<T> {
     fn selected_text(&mut self, start: Pos, end: Pos) -> String {
         let mut s = String::new();
         for li in start.line..=end.line {
-            self.view.buf().text(li, &mut self.scratch);
+            self.views.shown.buf().text(li, &mut self.scratch);
             let n = self.scratch.len();
             let from = if li == start.line {
                 start.col.min(n)
@@ -42,7 +42,7 @@ impl<T: Terminal> App<T> {
     /// Starts sending the selection to the clipboard; with nothing
     /// selected, what to say. The selection stays either way.
     fn start_copy(&mut self) -> Result<Copying, Flow> {
-        let Some((start, end)) = self.view.selection() else {
+        let Some((start, end)) = self.views.shown.selection() else {
             return Err(Flow::Say("nothing selected".into()));
         };
         let text = self.selected_text(start, end);

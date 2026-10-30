@@ -318,7 +318,7 @@ fn truncated_file_draws() {
     let mut a = App::new(TestTerminal::new(30, 4), f.buf, GEN, options());
     press(&mut a, "Right Right");
     // Evict the decoded block, not the layouts.
-    a.view.buf().line(100);
+    a.views.shown.buf().line(100);
     File::options()
         .write(true)
         .open(&path)
@@ -423,7 +423,7 @@ fn queued_progress_decodes_once() {
         }
         drop(tx);
         a.run(rx);
-        let _ = done_tx.send((a.view.buf().decodes(), a.cursor().line));
+        let _ = done_tx.send((a.views.shown.buf().decodes(), a.cursor().line));
     });
     let (decodes, line) = done_rx
         .recv_timeout(Duration::from_secs(5))

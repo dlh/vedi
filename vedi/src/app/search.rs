@@ -17,7 +17,7 @@ impl<T: Terminal> App<T> {
     /// prompt's way.
     pub(super) fn search_submit(&mut self, line: &str, back: bool) -> Flow {
         let pattern = (!line.is_empty()).then(|| Matcher::new(line));
-        let found = self.view.search(pattern, back);
+        let found = self.views.shown.search(pattern, back);
         self.report(found)
     }
 
@@ -25,7 +25,10 @@ impl<T: Terminal> App<T> {
     pub(super) fn report(&self, found: Outcome) -> Flow {
         match found {
             Outcome::NoPattern => Flow::Say("no search pattern".into()),
-            Outcome::NotFound => Flow::Say(format!("not found: {}", self.view.matcher().pattern())),
+            Outcome::NotFound => Flow::Say(format!(
+                "not found: {}",
+                self.views.shown.matcher().pattern()
+            )),
             Outcome::Wrapped => Flow::Say("search wrapped".into()),
             Outcome::Found => Flow::Continue,
         }

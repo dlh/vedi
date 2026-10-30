@@ -18,6 +18,7 @@ mod status;
 #[cfg(test)]
 mod tests;
 mod text_view;
+mod views;
 mod write;
 
 use std::path::PathBuf;
@@ -41,6 +42,7 @@ use crate::view::screen::{Grid, Screen, Terminal};
 use filter::Filter;
 use prompt::Prompt;
 use text_view::{Geometry, Motion, Start, TextView};
+use views::{Role, Views};
 
 /// How often the reader's data is drawn, at most.
 const REDRAW_EVERY: Duration = Duration::from_millis(50);
@@ -76,12 +78,9 @@ pub struct App<T: Terminal> {
     screen: Screen<T>,
     /// The last frame drawn, whose cells the next one reuses.
     frame: Grid,
-    /// The text and its view; the bindings' while help is up.
-    view: TextView,
-    /// The text and its view, set aside while the bindings are shown.
-    help: Option<TextView>,
-    /// The & filter, while one is open: its list is the view shown, or
-    /// set aside after Enter went to a line.
+    /// The text, and the list or the bindings when one is shown over it.
+    views: Views,
+    /// The & filter, while one is open.
     filter: Option<Filter>,
     /// The reader's generation; progress from any other is dropped.
     generation: Gen,
@@ -140,8 +139,7 @@ impl<T: Terminal> App<T> {
         let mut a = App {
             screen: Screen::new(term),
             frame: Grid::new(0, 0),
-            view: TextView::new(buffer, start, Geometry::default()),
-            help: None,
+            views: Views::new(TextView::new(buffer, start, Geometry::default())),
             filter: None,
             generation,
             last_gen: generation,
@@ -170,7 +168,7 @@ impl<T: Terminal> App<T> {
             pending: false,
         };
         a.sync_view();
-        a.view.appended();
+        a.views.shown.appended();
         a
     }
 
@@ -183,7 +181,7 @@ impl<T: Terminal> App<T> {
     }
 
     pub fn cursor(&self) -> Pos {
-        self.view.cursor()
+        self.views.shown.cursor()
     }
 
     /// Draws and handles events until an action quits or `rx` closes.
@@ -261,7 +259,7 @@ impl<T: Terminal> App<T> {
     fn reading_buf(&self) -> &Buffer {
         match &self.next {
             Some(p) => &p.buf,
-            None => self.text_view().buf(),
+            None => self.views.text().buf(),
         }
     }
 
@@ -276,7 +274,7 @@ impl<T: Terminal> App<T> {
     /// it was taken: a stale generation's is dropped.
     fn apply(&mut self, g: Gen, p: Progress) -> bool {
         if g == self.generation {
-            self.text_view_mut().apply(p);
+            self.views.text_mut().apply(p);
         } else if let Some(n) = &mut self.next
             && n.generation == g
         {
@@ -292,7 +290,7 @@ impl<T: Terminal> App<T> {
     /// the view on the new text.
     fn take_up(&mut self) -> Flow {
         let flow = self.swap_if_done();
-        self.text_view_mut().appended();
+        self.views.text_mut().appended();
         self.extend_filter();
         flow
     }
@@ -306,22 +304,6 @@ impl<T: Terminal> App<T> {
         flow
     }
 
-    /// The text and its view: the one shown, or the one the filter or
-    /// help set aside.
-    pub(super) fn text_view(&self) -> &TextView {
-        match &self.filter {
-            Some(f) if f.listing => &f.aside,
-            _ => self.help.as_ref().unwrap_or(&self.view),
-        }
-    }
-
-    pub(super) fn text_view_mut(&mut self) -> &mut TextView {
-        match &mut self.filter {
-            Some(f) if f.listing => &mut f.aside,
-            _ => self.help.as_mut().unwrap_or(&mut self.view),
-        }
-    }
-
     /// Gives the keys to `f`; the status line comes or goes with it.
     fn focus(&mut self, f: Focus) {
         self.focus = f;
@@ -332,7 +314,7 @@ impl<T: Terminal> App<T> {
     /// by the status line and the settings.
     fn sync_view(&mut self) {
         let g = self.geometry();
-        self.view.resize(g);
+        self.views.shown.resize(g);
     }
 
     fn geometry(&self) -> Geometry {
@@ -363,7 +345,7 @@ impl<T: Terminal> App<T> {
             Event::Key(k) => {
                 self.act();
                 return match self.focus {
-                    Focus::Viewing if self.help.is_some() => {
+                    Focus::Viewing if self.views.role() == Role::Help => {
                         let cmd = self.keys.lookup(k);
                         self.help_key(cmd)
                     }
@@ -397,7 +379,7 @@ impl<T: Terminal> App<T> {
     /// Records that the user did something: startup positioning stops
     /// and the one-shot status clears.
     fn act(&mut self) {
-        self.view.end_startup();
+        self.views.shown.end_startup();
         self.status = None;
         self.sync_view();
     }
@@ -406,7 +388,7 @@ impl<T: Terminal> App<T> {
         if let Some(flow) = self.list_key(&c) {
             return flow;
         }
-        let (v, e) = (&mut self.view, c.extend);
+        let (v, e) = (&mut self.views.shown, c.extend);
         match c.action {
             Action::Up => v.go(Motion::Up, e),
             Action::Down => v.go(Motion::Down, e),

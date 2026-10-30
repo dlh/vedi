@@ -60,7 +60,7 @@ impl<T: Terminal> App<T> {
         };
         self.generation = p.generation;
         self.put(p.buf);
-        let b = self.text_view().buf();
+        let b = self.views.text().buf();
         let failed = matches!(b.finished(), Some(Err(_))) || b.read_error().is_some();
         let flow = if p.names_open_cmd && !failed {
             Flow::Say(self.open_cmd_status())
@@ -81,7 +81,7 @@ impl<T: Terminal> App<T> {
     /// it.
     fn put(&mut self, mut buf: Buffer) {
         buf.set_literal(self.settings.view_style == ViewStyle::Raw);
-        self.text_view_mut().change_text(|b| *b = buf);
+        self.views.text_mut().change_text(|b| *b = buf);
         self.refilter();
     }
 }

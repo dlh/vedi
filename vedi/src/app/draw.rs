@@ -27,11 +27,11 @@ impl<T: Terminal> App<T> {
             g = Grid::new(w, h);
         }
         let mut cur = None;
-        if !self.view.start_pending() {
+        if !self.views.shown.start_pending() {
             cur = self.draw_text(&mut g);
         }
         // A prompt has the cursor.
-        if !self.view.cursor_shown() || self.focus != Focus::Viewing {
+        if !self.views.shown.cursor_shown() || self.focus != Focus::Viewing {
             cur = None;
         }
         let at = self.status_at();
@@ -47,22 +47,22 @@ impl<T: Terminal> App<T> {
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
-        let rows = self.view.rows();
-        let mut p = self.view.top();
+        let rows = self.views.shown.rows();
+        let mut p = self.views.shown.top();
         let mut cur = None;
         let mut y = 0;
         let mut matches = Vec::new();
         let mut match_line = None;
-        while y < rows && p.line < self.view.buf().len() {
-            if self.view.highlight() && match_line != Some(p.line) {
-                self.view.buf().text(p.line, &mut self.scratch);
-                matches = self.view.matcher().all(&self.scratch);
+        while y < rows && p.line < self.views.shown.buf().len() {
+            if self.views.shown.highlight() && match_line != Some(p.line) {
+                self.views.shown.buf().text(p.line, &mut self.scratch);
+                matches = self.views.shown.matcher().all(&self.scratch);
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches) {
                 cur = Some((x, y));
             }
-            let next = self.view.next_row(p);
+            let next = self.views.shown.next_row(p);
             if next == p {
                 break;
             }
@@ -81,17 +81,17 @@ impl<T: Terminal> App<T> {
             return None;
         };
         let w = g.width();
-        let geom = self.view.geometry();
-        let (cursor, xoff) = (self.view.cursor(), self.view.xoff());
+        let geom = self.views.shown.geometry();
+        let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
         let pointed = self.focus == Focus::Prompting(Kind::Filter) && cursor.line == p.line;
-        let cell = self.view.cursor_on(p);
-        let ln = self.view.line_layout(p.line);
-        let line = self.view.buf().line(p.line);
+        let cell = self.views.shown.cursor_on(p);
+        let ln = self.views.shown.line_layout(p.line);
+        let line = self.views.shown.buf().line(p.line);
         let xs = ln.cells();
         let segi = ln.segment_at(col);
         let seg = ln.segments()[segi];
         let x0 = (xs[seg.start] + xoff) as isize;
-        let sel = self.view.selection();
+        let sel = self.views.shown.selection();
         let n = line.text.len();
         // The end row: nothing but the cursor.
         if col > n {
@@ -100,7 +100,7 @@ impl<T: Terminal> App<T> {
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
-        let m = self.view.matcher().len();
+        let m = self.views.shown.matcher().len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
         if cursor.line == p.line {
             let (ci, cj) = ln.glyph(cursor.col);
@@ -205,7 +205,7 @@ impl<T: Terminal> App<T> {
     fn draw_separator(&self, g: &mut Grid, y: usize, i: usize) {
         let name: Vec<char> = self
             .names
-            .get(self.view.buf().part_at(i))
+            .get(self.views.shown.buf().part_at(i))
             .map_or(STDIN, String::as_str)
             .chars()
             .collect();

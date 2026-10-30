@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 
 use crate::app::event::{Mouse, MouseKind};
 use crate::app::text_view::Motion;
+use crate::app::views::Role;
 use crate::app::{App, Focus, Kind};
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
@@ -107,9 +108,9 @@ impl<T: Terminal> App<T> {
                 }
                 self.act();
                 if rows != 0 {
-                    self.view.scroll(rows);
+                    self.views.shown.scroll(rows);
                 } else {
-                    self.view.scroll_sideways(cols);
+                    self.views.shown.scroll_sideways(cols);
                 }
             }
             MouseKind::Release => self.mouse.release(),
@@ -135,9 +136,9 @@ impl<T: Terminal> App<T> {
     fn press(&mut self, x: usize, y: usize, shift: bool) {
         // Measured before act: clearing a message gives a hidden status
         // line's row back to the text, and the click was on the message.
-        let rows = self.view.rows();
+        let rows = self.views.shown.rows();
         self.act();
-        if self.help.is_some() {
+        if self.views.role() == Role::Help {
             self.hide_help();
             return;
         }
@@ -148,7 +149,7 @@ impl<T: Terminal> App<T> {
         let n = self.mouse.click_count(x, y, now);
         self.mouse.dragging = true;
         self.mouse.ticking = None;
-        let v = &mut self.view;
+        let v = &mut self.views.shown;
         if shift {
             let pos = v.cell_pos(x, y);
             self.mouse.last_press = Some(Click {
@@ -191,7 +192,7 @@ impl<T: Terminal> App<T> {
     /// the status row the view scrolls a row per tick while the button
     /// stays held.
     fn drag(&mut self, x: usize, y: usize) {
-        let v = &mut self.view;
+        let v = &mut self.views.shown;
         if v.selection().is_none()
             && let Some(l) = self.mouse.last_press
         {
@@ -226,7 +227,7 @@ impl<T: Terminal> App<T> {
         let d = self.edge();
         if d != 0 {
             self.act();
-            self.view.scroll(d);
+            self.views.shown.scroll(d);
             self.drag(self.mouse.drag_x, self.mouse.drag_y);
         }
     }

@@ -34,7 +34,7 @@ impl<T: Terminal> App<T> {
             Err(e) => return Err(format!("write failed: {e}")),
         };
         let view = self.settings.view_style;
-        let v = &self.view;
+        let v = &self.views.shown;
         let buf = v.buf();
         let failed = |e: std::io::Error| format!("write failed: {e}");
         let lines = match v.selection() {

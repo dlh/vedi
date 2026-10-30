@@ -4,6 +4,7 @@
 use std::mem;
 
 use crate::app::text_view::TextView;
+use crate::app::views::Role;
 use crate::app::{App, Flow};
 use crate::input::action::{Action, Command};
 use crate::input::help::Section;
@@ -22,7 +23,7 @@ impl<T: Terminal> App<T> {
     /// The search starts over: help's is its own.
     pub(super) fn show_help(&mut self) {
         let help = TextView::view_led(help_buffer(&self.keys.help()));
-        self.help = Some(mem::replace(&mut self.view, help));
+        self.views.raise(Role::Help, help);
         self.mouse.end_drag();
         self.sync_view();
     }
@@ -31,8 +32,8 @@ impl<T: Terminal> App<T> {
     /// screen as it is now at the next draw: a cursor that was on screen
     /// stays on screen, one scrolled off stays off.
     pub(super) fn hide_help(&mut self) {
-        if let Some(text) = self.help.take() {
-            self.view = text;
+        if self.views.role() == Role::Help {
+            self.views.lower(Role::Help);
         }
     }
 

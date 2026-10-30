@@ -3,6 +3,7 @@
 
 use crate::app::draw::runes;
 use crate::app::prompt::Prompt;
+use crate::app::views::Role;
 use crate::app::{App, Flow, Focus, Kind, STDIN};
 use crate::input::action::{Action, Command};
 use crate::input::setting;
@@ -43,7 +44,7 @@ impl<T: Terminal> App<T> {
         if let Some(p) = self.prompt() {
             return Row::Prompt(p);
         }
-        if self.help.is_some() && self.status.is_none() {
+        if self.views.role() == Role::Help && self.status.is_none() {
             return Row::HelpHint;
         }
         if let Some(s) = &self.status {
@@ -78,7 +79,7 @@ impl<T: Terminal> App<T> {
 
     /// The reader's error, else the first a line read hit.
     fn read_error(&self) -> Option<ReadError> {
-        let buf = self.text_view().buf();
+        let buf = self.views.text().buf();
         match buf.finished() {
             Some(Err(e)) => Some(e),
             _ => buf.read_error(),
@@ -147,7 +148,7 @@ impl<T: Terminal> App<T> {
         if self.focus == Focus::Prompting(Kind::Filter)
             && let Some(f) = &self.filter
         {
-            let total = self.text_view().buf().len();
+            let total = self.views.text().buf().len();
             let count: Vec<char> = format!("{}/{total}", f.listed()).chars().collect();
             if width + 2 + count.len() <= w {
                 runes(g, w - count.len(), h - 1, &count, st);
@@ -160,7 +161,10 @@ impl<T: Terminal> App<T> {
         };
         if let Some(k) = self.keys.find(&help) {
             let hint: Vec<char> = format!("{k} help").chars().collect();
-            if self.focus == Focus::Viewing && self.help.is_none() && width + 2 + hint.len() <= w {
+            if self.focus == Focus::Viewing
+                && self.views.role() != Role::Help
+                && width + 2 + hint.len() <= w
+            {
                 runes(g, w - hint.len(), h - 1, &hint, st);
             }
         }
@@ -171,16 +175,16 @@ impl<T: Terminal> App<T> {
     /// while the cursor is scrolled off screen, so it says where the
     /// view is.
     pub(super) fn status_at(&mut self) -> At {
-        if self.view.cursor_visible() {
+        if self.views.shown.cursor_visible() {
             At {
-                line: self.view.cursor().line,
-                past: self.view.at_end_row(),
+                line: self.views.shown.cursor().line,
+                past: self.views.shown.at_end_row(),
             }
         } else {
-            let top = self.view.top();
+            let top = self.views.shown.top();
             At {
                 line: top.line,
-                past: self.view.is_end_row(top),
+                past: self.views.shown.is_end_row(top),
             }
         }
     }
@@ -203,11 +207,13 @@ impl<T: Terminal> App<T> {
     /// are several.
     fn summary(&self, width: usize, at: At) -> String {
         let tail = self.mode_and_reading();
-        let buf = self.text_view().buf();
+        let buf = self.views.text().buf();
         // The end row is one past the last line, and no line.
         let past = if at.past { "+1" } else { "" };
         let at = at.line;
-        if let Some(f) = self.filter.as_ref().filter(|f| f.listing) {
+        if self.listing()
+            && let Some(f) = &self.filter
+        {
             let Some(li) = f.line(at) else {
                 return format!("&{}  0/0  {tail}", f.query());
             };
@@ -253,7 +259,7 @@ impl<T: Terminal> App<T> {
         if self.settings.view_style != ViewStyle::Color {
             mode = format!("{mode}  {}", self.settings.view_style);
         }
-        if self.text_view().buf().finished().is_none() {
+        if self.views.text().buf().finished().is_none() {
             mode.push_str("  reading…");
         }
         if self.next.is_some() {
@@ -266,7 +272,7 @@ impl<T: Terminal> App<T> {
     /// name, or for stdin the window title in effect at that
     /// line, as a shell prompt sets to the directory.
     fn input_name(&self, at: usize) -> String {
-        let buf = self.text_view().buf();
+        let buf = self.views.text().buf();
         let name = self
             .names
             .get(buf.part_at(at))
