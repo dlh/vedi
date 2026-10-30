@@ -1,11 +1,9 @@
 //! Where the cursor and the view go: rows, columns, words, inputs, the
 //! selection and the scrolls that leave the cursor where it is.
 
-use std::ops::Range;
-
 use unicode_width::UnicodeWidthChar;
 
-use crate::app::text_view::{Lead, Row, TextView};
+use crate::app::text_view::{Lead, Row, Selection, TextView};
 use crate::text::buffer::Pos;
 use crate::view::layout::Mode;
 
@@ -30,43 +28,6 @@ fn is_mark(c: char) -> bool {
                 | '\u{2028}'..='\u{202e}' | '\u{2060}'..='\u{206f}' | '\u{feff}'
                 | '\u{e0000}'..='\u{e007f}'
         )
-}
-
-/// A stretch of the text: `start` to `end`, each within its line, and
-/// the last line's newline when `newline`, the end being the end row.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct Selection {
-    pub start: Pos,
-    pub end: Pos,
-    pub newline: bool,
-}
-
-impl Selection {
-    /// How many lines it holds, the count a copy says: one that ends at
-    /// a line's start leaves that line out.
-    pub fn lines(&self) -> usize {
-        let short = self.end.col == 0 && !self.newline && self.end.line > self.start.line;
-        self.end.line - self.start.line + 1 - usize::from(short)
-    }
-
-    /// The columns it holds of line `line`, `n` chars long: `n` is the
-    /// line's newline, held when the range ends past it.
-    pub fn cols(&self, line: usize, n: usize) -> Range<usize> {
-        if line < self.start.line || line > self.end.line {
-            return 0..0;
-        }
-        let from = if line == self.start.line {
-            self.start.col.min(n)
-        } else {
-            0
-        };
-        let to = if line == self.end.line {
-            self.end.col.min(n) + usize::from(self.newline)
-        } else {
-            n + 1
-        };
-        from..to
-    }
 }
 
 /// Where a key, a click or a line number takes the cursor.

@@ -3,13 +3,9 @@
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use crate::app::text_view::Selection;
 use crate::app::{App, Flow};
-use crate::text::ansi::{Link, ViewStyle};
-use crate::text::buffer::Buffer;
-use crate::view::render::{osc8, sgr};
+use crate::text::ansi::ViewStyle;
 use crate::view::screen::Terminal;
-use crate::view::style::Style;
 
 impl<T: Terminal> App<T> {
     /// Writes the selection, or with none the whole text, to the file
@@ -50,7 +46,12 @@ impl<T: Terminal> App<T> {
                 let lines = sel.map_or(v.buf().len(), |s| s.lines());
                 let mut out = Vec::new();
                 if let Some(sel) = sel.or_else(|| v.whole()) {
-                    shown(v.buf(), view, sel, &mut out)?;
+                    sel.shown(v.buf(), view, &mut out);
+                }
+                // A line that cannot be read is empty on screen; a file
+                // is never written short.
+                if let Some(e) = v.buf().read_error() {
+                    return Err(format!("write failed: {e}"));
                 }
                 w.write_all(&out).map_err(failed)?;
                 lines
@@ -61,66 +62,5 @@ impl<T: Terminal> App<T> {
             1 => format!("wrote 1 line to {name}"),
             _ => format!("wrote {lines} lines to {name}"),
         }))
-    }
-}
-
-/// Appends the chars `sel` holds, lines joined with newlines, as the
-/// view shows them: under `Color` each run's style as SGR and its link
-/// as OSC 8, the style a line carries in from before included; under
-/// `Plain` the links alone; under `Raw` the text, escapes and all. Ends
-/// on no style or link, then the last newline when `sel` holds it. A
-/// line that cannot be read is empty on screen, and here an error: a
-/// file is never written short.
-pub(super) fn shown(
-    buf: &Buffer,
-    view: ViewStyle,
-    sel: Selection,
-    out: &mut Vec<u8>,
-) -> Result<(), String> {
-    let (mut style, mut link): (Style, Option<Link>) = Default::default();
-    let chars = |out: &mut Vec<u8>, text: &[char]| {
-        for c in text {
-            out.extend_from_slice(c.encode_utf8(&mut [0; 4]).as_bytes());
-        }
-    };
-    for li in sel.start.line..=sel.end.line {
-        let l = buf.line(li);
-        let n = l.text.len();
-        let cols = sel.cols(li, n);
-        let (from, to) = (cols.start, cols.end.min(n));
-        if li > sel.start.line {
-            out.push(b'\n');
-        }
-        if view == ViewStyle::Raw {
-            chars(out, &l.text[from..to]);
-            continue;
-        }
-        for run in &l.runs {
-            let (s, e) = (run.start.max(from), run.end.min(to));
-            if s >= e {
-                continue;
-            }
-            if view == ViewStyle::Color && run.style != style {
-                sgr(out, run.style);
-                style = run.style;
-            }
-            if let Some(l) = osc8(out, link.as_ref(), run.link.as_ref()) {
-                link = l;
-            }
-            chars(out, &l.text[s..e]);
-        }
-    }
-    if link.is_some() {
-        out.extend_from_slice(b"\x1b]8;;\x1b\\");
-    }
-    if style != Style::default() {
-        out.extend_from_slice(b"\x1b[0m");
-    }
-    if sel.newline {
-        out.push(b'\n');
-    }
-    match buf.read_error() {
-        Some(e) => Err(format!("write failed: {e}")),
-        None => Ok(()),
     }
 }

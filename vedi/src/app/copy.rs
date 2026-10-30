@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
-use crate::app::text_view::Selection;
 use crate::app::{App, CopyResult, Flow};
 use crate::sys::opencmd::Killer;
+use crate::text::ansi::ViewStyle;
 use crate::view::screen::Terminal;
 
 /// A copy under way.
@@ -15,28 +15,15 @@ pub(super) struct Copying {
 }
 
 impl<T: Terminal> App<T> {
-    /// The selected chars, lines joined with newlines.
-    fn selected_text(&mut self, sel: Selection) -> String {
-        let mut s = String::new();
-        for li in sel.start.line..=sel.end.line {
-            self.views.shown.buf().text(li, &mut self.scratch);
-            let n = self.scratch.len();
-            let cols = sel.cols(li, n);
-            s.extend(&self.scratch[cols.start..cols.end.min(n)]);
-            if cols.end > n {
-                s.push('\n');
-            }
-        }
-        s
-    }
-
     /// Starts sending the selection to the clipboard; with nothing
     /// selected, what to say. The selection stays either way.
     fn start_copy(&mut self) -> Result<Copying, Flow> {
         let Some(sel) = self.views.shown.selection() else {
             return Err(Flow::Say("nothing selected".into()));
         };
-        let text = self.selected_text(sel);
+        let mut out = Vec::new();
+        sel.shown(self.views.shown.buf(), ViewStyle::Raw, &mut out);
+        let text = String::from_utf8(out).expect("chars encoded as UTF-8");
         let lines = sel.lines();
         // A copy still under way would land after this one, maybe last.
         if let Some(k) = self.copying.take().and_then(|c| c.killer) {

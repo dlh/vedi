@@ -7,7 +7,6 @@ use std::mem;
 use crate::app::prompt::Edit;
 use crate::app::text_view::{Motion, Selection, Start, TextView};
 use crate::app::views::Role;
-use crate::app::write::shown;
 use crate::app::{App, Flow, Focus, Kind};
 use crate::input::action::{Action, Command};
 use crate::input::key::{Key, KeyCode, Mods};
@@ -186,7 +185,7 @@ impl State {
                     newline: false,
                 };
                 // A line that cannot be read is empty on screen, and here.
-                let _ = shown(text, style, line, &mut out);
+                line.shown(text, style, &mut out);
                 // The bytes say whether the line ended; unread, the last
                 // line's ending is the input's, known once it is done.
                 let ended = blocks.line(li).map_or_else(

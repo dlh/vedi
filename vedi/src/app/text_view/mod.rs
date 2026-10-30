@@ -7,16 +7,18 @@
 mod motion;
 mod rows;
 mod search;
+mod selection;
 
 use crate::app::StartScreen;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
+pub use motion::Motion;
 pub(crate) use motion::is_word;
-pub use motion::{Motion, Selection};
 use rows::LaidCache;
 pub use rows::{At, Row};
 pub use search::Outcome;
+pub use selection::Selection;
 
 /// The screen the view is laid out for.
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
