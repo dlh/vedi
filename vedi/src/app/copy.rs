@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
+use crate::app::text_view::Selection;
 use crate::app::{App, CopyResult, Flow};
 use crate::sys::opencmd::Killer;
-use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
 
 /// A copy under way.
@@ -16,23 +16,14 @@ pub(super) struct Copying {
 
 impl<T: Terminal> App<T> {
     /// The selected chars, lines joined with newlines.
-    fn selected_text(&mut self, start: Pos, end: Pos) -> String {
+    fn selected_text(&mut self, sel: Selection) -> String {
         let mut s = String::new();
-        for li in start.line..=end.line {
+        for li in sel.start.line..=sel.end.line {
             self.views.shown.buf().text(li, &mut self.scratch);
             let n = self.scratch.len();
-            let from = if li == start.line {
-                start.col.min(n)
-            } else {
-                0
-            };
-            let to = if li == end.line { end.col.min(n) } else { n };
-            if li > start.line {
-                s.push('\n');
-            }
-            s.extend(&self.scratch[from..to]);
-            // Past the last line's newline takes it.
-            if li == end.line && end.col > n {
+            let cols = sel.cols(li, n);
+            s.extend(&self.scratch[cols.start..cols.end.min(n)]);
+            if cols.end > n {
                 s.push('\n');
             }
         }
@@ -42,14 +33,11 @@ impl<T: Terminal> App<T> {
     /// Starts sending the selection to the clipboard; with nothing
     /// selected, what to say. The selection stays either way.
     fn start_copy(&mut self) -> Result<Copying, Flow> {
-        let Some((start, end)) = self.views.shown.selection() else {
+        let Some(sel) = self.views.shown.selection() else {
             return Err(Flow::Say("nothing selected".into()));
         };
-        let text = self.selected_text(start, end);
-        let mut lines = end.line - start.line + 1;
-        if end.col == 0 && end.line > start.line {
-            lines -= 1;
-        }
+        let text = self.selected_text(sel);
+        let lines = sel.lines();
         // A copy still under way would land after this one, maybe last.
         if let Some(k) = self.copying.take().and_then(|c| c.killer) {
             k.kill();

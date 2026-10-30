@@ -193,7 +193,7 @@ impl<T: Terminal> App<T> {
     /// stays held.
     fn drag(&mut self, x: usize, y: usize) {
         let v = &mut self.views.shown;
-        if v.selection().is_none()
+        if !v.has_selection()
             && let Some(l) = self.mouse.last_press
         {
             v.set_cursor(l.pos);

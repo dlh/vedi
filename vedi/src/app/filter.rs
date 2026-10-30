@@ -5,7 +5,7 @@
 use std::mem;
 
 use crate::app::prompt::Edit;
-use crate::app::text_view::{Motion, Start, TextView};
+use crate::app::text_view::{Motion, Selection, Start, TextView};
 use crate::app::views::Role;
 use crate::app::write::shown;
 use crate::app::{App, Flow, Focus, Kind};
@@ -179,13 +179,14 @@ impl State {
                 if self.last.is_some_and(|(_, raw)| raw) && !literal {
                     out.extend_from_slice(b"\x1b]8;;\x1b\\\x1b[0m");
                 }
-                let start = Pos { line: li, col: 0 };
-                let end = Pos {
-                    line: li,
-                    col: usize::MAX,
+                let n = text.line(li).text.len();
+                let line = Selection {
+                    start: Pos { line: li, col: 0 },
+                    end: Pos { line: li, col: n },
+                    newline: false,
                 };
                 // A line that cannot be read is empty on screen, and here.
-                let _ = shown(text, style, start, end, &mut out);
+                let _ = shown(text, style, line, &mut out);
                 // The bytes say whether the line ended; unread, the last
                 // line's ending is the input's, known once it is done.
                 let ended = blocks.line(li).map_or_else(
@@ -332,7 +333,7 @@ impl<T: Terminal> App<T> {
     /// with no selection goes to the cursor's line, Esc with none
     /// leaves. `None` for any other key.
     pub(super) fn list_key(&mut self, c: &Command) -> Option<Flow> {
-        if !self.listing() || c.extend || self.views.shown.selection().is_some() {
+        if !self.listing() || c.extend || self.views.shown.has_selection() {
             return None;
         }
         match c.action {

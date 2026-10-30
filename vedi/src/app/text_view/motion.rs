@@ -1,6 +1,8 @@
 //! Where the cursor and the view go: rows, columns, words, inputs, the
 //! selection and the scrolls that leave the cursor where it is.
 
+use std::ops::Range;
+
 use unicode_width::UnicodeWidthChar;
 
 use crate::app::text_view::{Lead, Row, TextView};
@@ -28,6 +30,43 @@ fn is_mark(c: char) -> bool {
                 | '\u{2028}'..='\u{202e}' | '\u{2060}'..='\u{206f}' | '\u{feff}'
                 | '\u{e0000}'..='\u{e007f}'
         )
+}
+
+/// A stretch of the text: `start` to `end`, each within its line, and
+/// the last line's newline when `newline`, the end being the end row.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct Selection {
+    pub start: Pos,
+    pub end: Pos,
+    pub newline: bool,
+}
+
+impl Selection {
+    /// How many lines it holds, the count a copy says: one that ends at
+    /// a line's start leaves that line out.
+    pub fn lines(&self) -> usize {
+        let short = self.end.col == 0 && !self.newline && self.end.line > self.start.line;
+        self.end.line - self.start.line + 1 - usize::from(short)
+    }
+
+    /// The columns it holds of line `line`, `n` chars long: `n` is the
+    /// line's newline, held when the range ends past it.
+    pub fn cols(&self, line: usize, n: usize) -> Range<usize> {
+        if line < self.start.line || line > self.end.line {
+            return 0..0;
+        }
+        let from = if line == self.start.line {
+            self.start.col.min(n)
+        } else {
+            0
+        };
+        let to = if line == self.end.line {
+            self.end.col.min(n) + usize::from(self.newline)
+        } else {
+            n + 1
+        };
+        from..to
+    }
 }
 
 /// Where a key, a click or a line number takes the cursor.
@@ -337,14 +376,41 @@ impl TextView {
         }
     }
 
-    /// The ordered selection bounds; `None` when there is no anchor or
-    /// it equals the cursor.
-    pub fn selection(&self) -> Option<(Pos, Pos)> {
-        let a = self.anchor?;
-        if a == self.cur {
+    /// The selection; `None` when there is no anchor or it equals the
+    /// cursor.
+    pub fn selection(&mut self) -> Option<Selection> {
+        if !self.has_selection() {
             return None;
         }
-        Some((a.min(self.cur), a.max(self.cur)))
+        let a = self.anchor?;
+        let (start, mut end) = (a.min(self.cur), a.max(self.cur));
+        let n = self.line_len(end.line);
+        // Past its line's newline: the end row, or what was the end row
+        // before more lines came in.
+        let newline = end.col > n;
+        end.col = end.col.min(n);
+        Some(Selection {
+            start,
+            end,
+            newline,
+        })
+    }
+
+    /// Whether anything is selected: an anchor apart from the cursor.
+    #[inline]
+    pub fn has_selection(&self) -> bool {
+        self.anchor.is_some_and(|a| a != self.cur)
+    }
+
+    /// The whole text as a selection; `None` with no text.
+    pub fn whole(&mut self) -> Option<Selection> {
+        let last = self.buf.len().checked_sub(1)?;
+        let n = self.line_len(last);
+        Some(Selection {
+            start: Pos::default(),
+            end: Pos { line: last, col: n },
+            newline: self.last_newline(last),
+        })
     }
 
     /// Anchors the selection at the cursor if there is none, so a

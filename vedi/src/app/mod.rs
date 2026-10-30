@@ -392,7 +392,7 @@ impl<T: Terminal> App<T> {
             Action::SetMark => v.set_mark(),
             Action::Copy => return self.copy(),
             Action::CopyAndQuit => {
-                if v.selection().is_some() {
+                if v.has_selection() {
                     return self.copy_and_wait();
                 }
                 v.go(Motion::Down, false);

@@ -3,6 +3,7 @@
 
 use crate::app::draw::runes;
 use crate::app::prompt::Prompt;
+use crate::app::text_view::At;
 use crate::app::views::Role;
 use crate::app::{App, Flow, Focus, Kind, STDIN};
 use crate::input::action::{Action, Command};
@@ -12,13 +13,6 @@ use crate::text::buffer::ReadError;
 use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Style;
-
-/// The row the status line names: a line, or the end row past it.
-#[derive(Copy, Clone)]
-pub(super) struct At {
-    line: usize,
-    past: bool,
-}
 
 /// What the status line shows, the first of these that applies.
 enum Row<'a> {
@@ -169,24 +163,6 @@ impl<T: Terminal> App<T> {
             }
         }
         cur
-    }
-
-    /// The line the status line names: the cursor's, or the top row's
-    /// while the cursor is scrolled off screen, so it says where the
-    /// view is.
-    pub(super) fn status_at(&mut self) -> At {
-        if self.views.shown.cursor_visible() {
-            At {
-                line: self.views.shown.cursor().line,
-                past: self.views.shown.at_end_row(),
-            }
-        } else {
-            let top = self.views.shown.top();
-            At {
-                line: top.line,
-                past: self.views.shown.is_end_row(top),
-            }
-        }
     }
 
     fn status_text(&self, row: &Row, width: usize, at: At) -> String {

@@ -1,10 +1,9 @@
 //! One frame: the text rows from the top, with the selection, control
 //! characters, separators and markers, and the cursor.
 
-use crate::app::text_view::Row;
+use crate::app::text_view::{Row, Selection};
 use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
-use crate::text::buffer::Pos;
 use crate::view::layout::{self, Layout, Mode};
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::{CUR_MATCH, EDGE, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
@@ -34,7 +33,7 @@ impl<T: Terminal> App<T> {
         if !self.views.shown.cursor_shown() || self.focus != Focus::Viewing {
             cur = None;
         }
-        let at = self.status_at();
+        let at = self.views.shown.at();
         let cur = self.draw_status(&mut g, at).or(cur);
         let cur = cur.filter(|&(x, _)| x < w);
         self.screen.present(&g, cur);
@@ -53,13 +52,14 @@ impl<T: Terminal> App<T> {
         let mut y = 0;
         let mut matches = Vec::new();
         let mut match_line = None;
+        let sel = self.views.shown.selection();
         while y < rows && p.line < self.views.shown.buf().len() {
             if self.views.shown.highlight() && match_line != Some(p.line) {
                 self.views.shown.buf().text(p.line, &mut self.scratch);
                 matches = self.views.shown.matcher().all(&self.scratch);
                 match_line = Some(p.line);
             }
-            if let Some(x) = self.draw_row(g, y, p, &matches) {
+            if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
                 cur = Some((x, y));
             }
             let next = self.views.shown.next_row(p);
@@ -73,13 +73,25 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the row starting at `p` on screen row `y`, with `matches`
-    /// the line's search matches, and returns the cursor's column when
-    /// the view shows it on this row.
-    fn draw_row(&mut self, g: &mut Grid, y: usize, p: Row, matches: &[usize]) -> Option<usize> {
+    /// the line's search matches and `sel` the selection, and returns
+    /// the cursor's column when the view shows it on this row.
+    fn draw_row(
+        &mut self,
+        g: &mut Grid,
+        y: usize,
+        p: Row,
+        matches: &[usize],
+        sel: Option<Selection>,
+    ) -> Option<usize> {
         let Some(col) = p.col else {
             self.draw_separator(g, y, p.line);
             return None;
         };
+        // The end row: nothing but the cursor.
+        if self.views.shown.is_end_row(p) {
+            let cell = self.views.shown.cursor_on(p);
+            return cell.filter(|c| c.shown).map(|c| c.x as usize);
+        }
         let w = g.width();
         let geom = self.views.shown.geometry();
         let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
@@ -91,12 +103,8 @@ impl<T: Terminal> App<T> {
         let segi = ln.segment_at(col);
         let seg = ln.segments()[segi];
         let x0 = (xs[seg.start] + xoff) as isize;
-        let sel = self.views.shown.selection();
         let n = line.text.len();
-        // The end row: nothing but the cursor.
-        if col > n {
-            return cell.filter(|c| c.shown).map(|c| c.x as usize);
-        }
+        let sel = sel.map_or(0..0, |s| s.cols(p.line, n));
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
@@ -128,11 +136,7 @@ impl<T: Terminal> App<T> {
         while i < end {
             let x = xs[i] as isize - x0;
             let (_, j) = ln.glyph(i);
-            let pos = Pos {
-                line: p.line,
-                col: i,
-            };
-            let selected = sel.is_some_and(|(s, e)| s <= pos && pos < e);
+            let selected = sel.contains(&i);
             if i == n {
                 if selected {
                     put(g, x, y, " ", SELECTION, None);

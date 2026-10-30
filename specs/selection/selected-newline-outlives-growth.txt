@@ -1,0 +1,27 @@
+A selection that reaches the end row keeps the last line's newline when
+more lines come in after it: the newline stays selected, and a copy ends
+with it.
+
+-- size --
+20x4
+-- input --
+a
+
+-- keys --
+G Ctrl+Shift+Home
+-- input --
+b
+
+-- keys --
+y
+-- screen --
+[a ]
+b
+
+copied 1 line
+-- cursor --
+0 0
+-- clipboard --
+a
+
+-- eof --

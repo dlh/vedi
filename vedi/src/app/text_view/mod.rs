@@ -12,10 +12,10 @@ use crate::app::StartScreen;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
-pub use motion::Motion;
 pub(crate) use motion::is_word;
+pub use motion::{Motion, Selection};
 use rows::LaidCache;
-pub use rows::Row;
+pub use rows::{At, Row};
 pub use search::Outcome;
 
 /// The screen the view is laid out for.
@@ -444,8 +444,7 @@ impl TextView {
     /// line no longer starts an input. The view scrolls only to a
     /// cursor that moved: new text is not a motion.
     pub fn change_text(&mut self, f: impl FnOnce(&mut Buffer)) {
-        let end = self.end_pos();
-        let place = Place::of(&self.buf, self.cur, self.anchor, end);
+        let place = self.place();
         f(&mut self.buf);
         let was = self.cur;
         let n = self.buf.len();
@@ -511,6 +510,17 @@ impl TextView {
             self.scroll_to_cursor();
         }
     }
+
+    fn place(&mut self) -> Place {
+        let anchor = self.anchor;
+        Place {
+            at_end: self.cur.line + 1 >= self.buf.len(),
+            past: self.at_end_row(),
+            anchor_past: anchor.is_some_and(|a| self.is_end_row(Row::text(a))),
+            cur: self.buf.part_at(self.cur.line),
+            anchor: anchor.map(|a| self.buf.part_at(a.line)),
+        }
+    }
 }
 
 /// Where a view was before its text changed.
@@ -524,18 +534,4 @@ struct Place {
     /// The cursor's input, and the anchor's.
     cur: usize,
     anchor: Option<usize>,
-}
-
-impl Place {
-    /// `end` is the text's end: the end row, when it has one.
-    fn of(buf: &Buffer, cur: Pos, anchor: Option<Pos>, end: Pos) -> Place {
-        let past = |p: Pos| buf.trailing_newline() && p == end;
-        Place {
-            at_end: cur.line + 1 >= buf.len(),
-            past: past(cur),
-            anchor_past: anchor.is_some_and(past),
-            cur: buf.part_at(cur.line),
-            anchor: anchor.map(|a| buf.part_at(a.line)),
-        }
-    }
 }

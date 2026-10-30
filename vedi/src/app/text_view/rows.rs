@@ -56,6 +56,14 @@ pub struct CursorCell {
     pub shown: bool,
 }
 
+/// Where the view is: a line, or the end row past it.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct At {
+    pub line: usize,
+    /// The end row: one past `line`, and no line.
+    pub past: bool,
+}
+
 /// Lines laid out for one `Layout`, by index.
 pub(super) struct LaidCache {
     layout: Layout,
@@ -153,12 +161,28 @@ impl TextView {
     }
 
     /// Whether the cursor is on the end row.
-    pub fn at_end_row(&mut self) -> bool {
+    pub(super) fn at_end_row(&mut self) -> bool {
         self.is_end_row(Row::text(self.cur))
     }
 
+    /// The line the view is at: the cursor's, or the top row's while
+    /// the cursor is scrolled off screen, so it says where the view is.
+    pub fn at(&mut self) -> At {
+        if self.cursor_visible() {
+            return At {
+                line: self.cur.line,
+                past: self.at_end_row(),
+            };
+        }
+        let top = self.top();
+        At {
+            line: top.line,
+            past: self.is_end_row(top),
+        }
+    }
+
     /// The end of the text, past the last newline if there is one.
-    pub fn end_pos(&mut self) -> Pos {
+    pub(super) fn end_pos(&mut self) -> Pos {
         let n = self.buf.len();
         if n == 0 {
             return Pos::default();
