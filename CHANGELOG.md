@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.5.4 - 2026-10-30
+
+### Fixes
+
+- write! sets the temp file's permissions on its handle
+
 ## v2.5.3 - 2026-10-28
 
 ### Fixes
