@@ -10,9 +10,9 @@ mod copy;
 mod draw;
 mod filter;
 mod help;
+mod input;
 mod mouse;
 mod prompt;
-mod reload;
 mod search;
 mod status;
 #[cfg(test)]
@@ -40,6 +40,7 @@ use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::reader::Gen;
 use crate::view::screen::{Grid, Screen, Terminal};
 use filter::Filter;
+use input::{Applied, Input};
 use prompt::Prompt;
 use text_view::{Geometry, Motion, Start, TextView};
 use views::{Role, Views};
@@ -82,11 +83,8 @@ pub struct App<T: Terminal> {
     views: Views,
     /// The & filter, while one is open.
     filter: Option<Filter>,
-    /// The reader's generation; progress from any other is dropped.
-    generation: Gen,
-    /// The last generation handed out: a dropped reload's is never
-    /// reused, so its reader's data stays dropped.
-    last_gen: Gen,
+    /// The readers: the text's, and a reload's.
+    input: Input,
     copier: Box<dyn Copier>,
     /// A copy whose result is still to come.
     copying: Option<copy::Copying>,
@@ -105,18 +103,9 @@ pub struct App<T: Terminal> {
     /// The & prompt's line.
     query: Prompt,
     mouse: mouse::State,
-    /// `None` when the input cannot be read again.
-    open: Option<Opener>,
-    open_cmd: Option<OpenCmdFor>,
     /// Opens the file :write saves to.
     write: Writer,
     home: Option<PathBuf>,
-    /// Off, a reload reads the files as they are, not through open_cmd.
-    through_open_cmd: bool,
-    /// A reload being read.
-    next: Option<reload::Pending>,
-    /// A change came during the reload: one more after it.
-    dirty: bool,
 
     /// A line's chars, decoded into it rather than allocated per call.
     scratch: Vec<char>,
@@ -141,8 +130,7 @@ impl<T: Terminal> App<T> {
             frame: Grid::new(0, 0),
             views: Views::new(TextView::new(buffer, start, Geometry::default())),
             filter: None,
-            generation,
-            last_gen: generation,
+            input: Input::new(opts.open, opts.open_cmd, generation),
             copier: opts.copier,
             copying: None,
             wake: opts.wake,
@@ -156,13 +144,8 @@ impl<T: Terminal> App<T> {
             command: Prompt::default(),
             query: Prompt::default(),
             mouse: mouse::State::default(),
-            open: opts.open,
-            open_cmd: opts.open_cmd,
             write: opts.write,
             home: opts.home,
-            through_open_cmd: true,
-            next: None,
-            dirty: false,
             scratch: Vec::new(),
             last_draw: None,
             pending: false,
@@ -257,10 +240,9 @@ impl<T: Terminal> App<T> {
     /// text's reader may still be at work during a reload; its data is
     /// then drawn at most the hold late.
     fn reading_buf(&self) -> &Buffer {
-        match &self.next {
-            Some(p) => &p.buf,
-            None => self.views.text().buf(),
-        }
+        self.input
+            .reloading()
+            .unwrap_or_else(|| self.views.text().buf())
     }
 
     fn redraw_due(&mut self) -> bool {
@@ -273,14 +255,10 @@ impl<T: Terminal> App<T> {
     /// Applies the reader's progress to its buffer and reports whether
     /// it was taken: a stale generation's is dropped.
     fn apply(&mut self, g: Gen, p: Progress) -> bool {
-        if g == self.generation {
-            self.views.text_mut().apply(p);
-        } else if let Some(n) = &mut self.next
-            && n.generation == g
-        {
-            n.buf.apply(p);
-        } else {
-            return false;
+        match self.input.apply(g, p) {
+            Applied::Text(p) => self.views.text_mut().apply(p),
+            Applied::Reload => {}
+            Applied::Dropped => return false,
         }
         self.pending = true;
         true

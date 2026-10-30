@@ -262,7 +262,7 @@ impl<T: Terminal> App<T> {
         if self.views.text().buf().finished().is_none() {
             mode.push_str("  reading…");
         }
-        if self.next.is_some() {
+        if self.input.reloading().is_some() {
             mode.push_str("  reloading…");
         }
         mode

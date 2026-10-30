@@ -106,7 +106,7 @@ impl<T: Terminal> App<T> {
             self.refilter();
         }
         if old.auto_reload && !self.settings.auto_reload {
-            self.dirty = false;
+            self.input.drop_queued();
         }
     }
 
@@ -138,31 +138,13 @@ impl<T: Terminal> App<T> {
         Flow::Continue
     }
 
-    /// Reads the files through open_cmd, or as they are. The selection
-    /// goes: the lines it covered are not the new text's. A reload
-    /// still being read is dropped: it may be waiting on a command
-    /// that never ends.
-    fn toggle_open_cmd(&mut self) -> Flow {
-        if self.open.is_none() {
-            return Flow::Say("not a file".into());
-        }
-        self.through_open_cmd = !self.through_open_cmd;
-        self.views.shown.deselect();
-        self.next = None;
-        self.dirty = false;
-        self.reload_then(true, true)
-    }
-
     /// The command the cursor's input is read through, or '' for none,
     /// as the status line reports it; the text may be set aside under
     /// help.
     pub(super) fn open_cmd_status(&self) -> String {
         let v = self.views.text();
         let (part, _) = v.buf().part(v.cursor().line);
-        let argv = match &self.open_cmd {
-            Some(f) if self.through_open_cmd => self.names.get(part).and_then(|n| f(n)),
-            _ => None,
-        };
+        let argv = self.names.get(part).and_then(|n| self.input.command_for(n));
         let cmd = argv.map_or_else(|| "''".to_string(), |a| a.join(" "));
         format!("open_cmd {cmd}")
     }

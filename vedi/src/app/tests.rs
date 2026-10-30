@@ -1006,6 +1006,23 @@ fn open_cmd_key_reports_failure() {
     assert_eq!(a.status.as_deref(), Some("reload failed: boom"));
 }
 
+/// O that fails to open still drops the selection: the mode turned, so
+/// the next reload brings text the selected lines are not in.
+#[test]
+fn open_cmd_toggle_deselects_when_open_fails() {
+    let (open, gens) = opener(1);
+    let mut a = app(30, 4, "old\n", with_opener(open));
+    press(&mut a, "Ctrl+a");
+    assert!(a.views.shown.selection().is_some());
+    press(&mut a, "O");
+    assert_eq!(a.status.as_deref(), Some("reload failed: boom"));
+    assert_eq!(a.views.shown.selection(), None);
+    press(&mut a, "R");
+    finish_reload(&mut a, &gens, 0, "new\n");
+    assert_eq!(row(&a, 0), "new");
+    assert_eq!(a.views.shown.selection(), None);
+}
+
 /// A file that vanished when a change came is read again on the next
 /// change.
 #[test]
