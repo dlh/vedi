@@ -230,7 +230,7 @@ impl<T: Terminal> App<T> {
         } else {
             None
         };
-        match (hold, self.mouse.ticking) {
+        match (hold, self.mouse.deadline()) {
             (Some(a), Some(b)) => Some(a.min(b)),
             (a, b) => a.or(b),
         }
