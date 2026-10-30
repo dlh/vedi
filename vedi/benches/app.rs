@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
-use vedi::app::{App, Copier, Done, Event, Mouse, MouseKind, Options, STDIN};
+use vedi::app::{App, Copier, Done, Event, Mouse, MouseKind, Options, Runtime, STDIN};
 use vedi::input::config;
 use vedi::input::key::Key;
 use vedi::input::setting::Settings;
@@ -56,13 +56,14 @@ fn options() -> Options {
         start_line: None,
         follow: false,
         screen: None,
-        copier: Box::new(NoClip),
-        wake: Arc::new(|| {}),
         clock: Box::new(Instant::now),
-        macos: false,
         keys: config::default_keymap(false),
-        open: None,
-        open_cmd: None,
+        runtime: Runtime {
+            copier: Box::new(NoClip),
+            wake: Arc::new(|| {}),
+            open: None,
+            open_cmd: None,
+        },
         write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
         home: None,
     }

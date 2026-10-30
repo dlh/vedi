@@ -28,8 +28,8 @@ use std::time::{Duration, Instant};
 pub use event::{Event, Mouse, MouseKind};
 pub use onepage::{Verdict, one_page};
 pub use options::{
-    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, STDIN, Sink, StartScreen, Wake,
-    Writer,
+    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, Runtime, STDIN, Sink,
+    StartScreen, Wake, Writer,
 };
 
 use crate::input::action::{Action, Command};
@@ -130,10 +130,10 @@ impl<T: Terminal> App<T> {
             frame: Grid::new(0, 0),
             views: Views::new(TextView::new(buffer, start, Geometry::default())),
             filter: None,
-            input: Input::new(opts.open, opts.open_cmd, generation),
-            copier: opts.copier,
+            input: Input::new(opts.runtime.open, opts.runtime.open_cmd, generation),
+            copier: opts.runtime.copier,
             copying: None,
-            wake: opts.wake,
+            wake: opts.runtime.wake,
             clock: opts.clock,
             names: opts.names,
             keys: opts.keys,

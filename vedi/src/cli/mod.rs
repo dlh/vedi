@@ -5,13 +5,11 @@ mod parse;
 
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::Instant;
 
-use crate::app::{self, Copier, Done, STDIN, Sink, StartScreen};
+use crate::app::{self, STDIN, Sink, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
-use crate::sys::proc::Killer;
 use crate::sys::{save, words};
 
 pub use completion::completion;
@@ -88,10 +86,14 @@ pub use crate::app::OpenCmdFor;
 impl Options {
     /// The app's options: each setting the flag's, else the config's,
     /// else the default. Inputs are named after `files` as given; `-`
-    /// and no files are stdin. The copier does nothing, the clock is
-    /// `Instant::now` and nothing reopens the input, for `main` to
-    /// replace.
-    pub fn app(&self, files: &[OsString], cfg: &Config, macos: bool) -> app::Options {
+    /// and no files are stdin.
+    pub fn app(
+        &self,
+        files: &[OsString],
+        cfg: &Config,
+        macos: bool,
+        runtime: app::Runtime,
+    ) -> app::Options {
         let names = if files.is_empty() {
             vec![STDIN.to_string()]
         } else {
@@ -112,13 +114,9 @@ impl Options {
             start_line: self.start_line,
             follow: self.follow,
             screen: self.screen,
-            copier: Box::new(NoCopier),
-            wake: Arc::new(|| {}),
             clock: Box::new(Instant::now),
-            macos,
             keys: cfg.keymap(macos),
-            open: None,
-            open_cmd: None,
+            runtime,
             write: Box::new(|name, overwrite| {
                 save::open(name, overwrite).map(|s| Box::new(s) as Box<dyn Sink>)
             }),
@@ -177,20 +175,15 @@ impl Options {
     }
 }
 
-struct NoCopier;
-
-impl Copier for NoCopier {
-    fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
-        done(Ok(()));
-        None
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
+    use crate::app::{Copier, Done};
     use crate::input::config::OpenCmd;
     use crate::input::setting;
+    use crate::sys::proc::Killer;
     use crate::text::ansi::ViewStyle;
     use crate::view::layout::{Mode, WrapStyle};
 
@@ -214,6 +207,22 @@ mod tests {
 
     fn cfg(src: &str) -> Config {
         config::parse("vedi.conf", src).unwrap()
+    }
+
+    fn runtime() -> app::Runtime {
+        struct NoCopier;
+        impl Copier for NoCopier {
+            fn copy(&mut self, _: &str, done: Done) -> Option<Killer> {
+                done(Ok(()));
+                None
+            }
+        }
+        app::Runtime {
+            copier: Box::new(NoCopier),
+            wake: Arc::new(|| {}),
+            open: None,
+            open_cmd: None,
+        }
     }
 
     /// The options with `src` as the setting flags' lines.
@@ -249,11 +258,10 @@ mod tests {
             screen: Some(screen),
             ..flags("wrap no")
         };
-        let got = o.app(&[], &cfg(""), false);
+        let got = o.app(&[], &cfg(""), false, runtime());
         assert_eq!(got.settings.mode, Mode::NoWrap);
         assert_eq!(got.start_line, Some(3));
         assert_eq!(got.screen, Some(screen));
-        assert!(got.open.is_none());
     }
 
     /// The flag decides the wrap mode and clipboard command; without one
@@ -316,7 +324,7 @@ mod tests {
             ("wrap yes", "wrap_style word", Mode::Wrap, WrapStyle::Word),
             ("wrap no", "wrap_style word", Mode::NoWrap, WrapStyle::Word),
         ] {
-            let got = flags(f).app(&[], &cfg(c), false);
+            let got = flags(f).app(&[], &cfg(c), false, runtime());
             assert_eq!(
                 (got.settings.mode, got.settings.wrap_style),
                 (mode, want),
@@ -461,7 +469,7 @@ mod tests {
     fn app_names() {
         let names = |files: &[&str]| {
             let files: Vec<OsString> = files.iter().map(OsString::from).collect();
-            none().app(&files, &cfg(""), false).names
+            none().app(&files, &cfg(""), false, runtime()).names
         };
         assert_eq!(names(&[]), [STDIN]);
         assert_eq!(names(&["a", "-", "b"]), ["a", STDIN, "b"]);

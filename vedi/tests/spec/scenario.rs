@@ -12,8 +12,8 @@ use std::time::Duration;
 use std::time::Instant;
 
 use vedi::app::{
-    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Sink, Verdict, Wake,
-    one_page,
+    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Runtime, Sink, Verdict,
+    Wake, one_page,
 };
 use vedi::cli;
 use vedi::input::config::{self, Config};
@@ -620,32 +620,34 @@ impl Scenario<'_, '_> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
             .map_err(|e| format!("args {:?}: {e}", self.args))?;
-        let mut opts = flags.app(&files, cfg, self.macos);
-        let files = names(&files);
-        opts.copier = match flags.clipboard_cmd(cfg) {
-            Some(cmd) => Box::new(CommandCopier::new(cmd, Killers::default())),
-            None => Box::new(Recorder(Rc::clone(&self.clip))),
-        };
-        opts.wake = Arc::clone(&self.wake);
-        let now = Rc::clone(&self.now);
-        opts.clock = Box::new(move || now.get());
         // The disk text, each file a part, finished: a reload lands at
         // once.
         let (disks, rendered) = (Rc::clone(&self.disks), Rc::clone(&self.rendered));
         let open_cmd = flags.open_cmd(cfg)?;
         let has_cmd = open_cmd.is_some();
         let file = !files.is_empty() && !files.iter().any(|f| f == "-");
-        opts.open = file.then(|| {
-            Box::new(move |_, through| {
-                let from = if through && has_cmd {
-                    &rendered
-                } else {
-                    &disks
-                };
-                Ok(disk_buffer(&from.borrow()))
-            }) as Opener
-        });
-        opts.open_cmd = open_cmd;
+        let runtime = Runtime {
+            copier: match flags.clipboard_cmd(cfg) {
+                Some(cmd) => Box::new(CommandCopier::new(cmd, Killers::default())),
+                None => Box::new(Recorder(Rc::clone(&self.clip))),
+            },
+            wake: Arc::clone(&self.wake),
+            open: file.then(|| {
+                Box::new(move |_, through| {
+                    let from = if through && has_cmd {
+                        &rendered
+                    } else {
+                        &disks
+                    };
+                    Ok(disk_buffer(&from.borrow()))
+                }) as Opener
+            }),
+            open_cmd,
+        };
+        let mut opts = flags.app(&files, cfg, self.macos, runtime);
+        let files = names(&files);
+        let now = Rc::clone(&self.now);
+        opts.clock = Box::new(move || now.get());
         let (written, existing) = (Rc::clone(&self.written), files.clone());
         opts.write = Box::new(move |name, overwrite| {
             let name = name.to_string_lossy();

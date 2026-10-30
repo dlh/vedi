@@ -62,19 +62,23 @@ pub struct Options {
     /// Keep the cursor on the last line until EOF (+G).
     pub follow: bool,
     pub screen: Option<StartScreen>,
+    pub clock: Clock,
+    pub keys: Keymap,
+    pub runtime: Runtime,
+    pub write: Writer,
+    /// What a leading ~ in a :write name stands for; `None` when unknown.
+    pub home: Option<PathBuf>,
+}
+
+/// What exists once the terminal and the loop do: the copier writes to
+/// the terminal, the wake and the opener send on the loop's channel.
+pub struct Runtime {
     pub copier: Box<dyn Copier>,
     pub wake: Wake,
-    pub clock: Clock,
-    /// There is a ⌘ key.
-    pub macos: bool,
-    pub keys: Keymap,
     /// `None` when the input cannot be read again, as a pipe cannot.
     pub open: Option<Opener>,
     /// The command each input was opened through, for the status line.
     pub open_cmd: Option<OpenCmdFor>,
-    pub write: Writer,
-    /// What a leading ~ in a :write name stands for; `None` when unknown.
-    pub home: Option<PathBuf>,
 }
 
 /// The view the terminal was showing, so the pager can open on the

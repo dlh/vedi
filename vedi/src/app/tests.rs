@@ -50,15 +50,20 @@ fn options() -> Options {
         start_line: None,
         follow: false,
         screen: None,
-        copier: Box::new(Clip(Rc::default())),
-        wake: Arc::new(|| {}),
         clock: Box::new(Instant::now),
-        macos: false,
         keys: config::default_keymap(false),
-        open: None,
-        open_cmd: None,
+        runtime: runtime(),
         write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
         home: None,
+    }
+}
+
+fn runtime() -> Runtime {
+    Runtime {
+        copier: Box::new(Clip(Rc::default())),
+        wake: Arc::new(|| {}),
+        open: None,
+        open_cmd: None,
     }
 }
 
@@ -641,7 +646,10 @@ fn clocked() -> (Options, Rc<Cell<Instant>>) {
 
 fn with_opener(open: Opener) -> Options {
     Options {
-        open: Some(open),
+        runtime: Runtime {
+            open: Some(open),
+            ..runtime()
+        },
         ..options()
     }
 }
@@ -690,18 +698,17 @@ fn end_reload(a: &mut App<TestTerminal>, gens: &Gens, i: usize, text: &str, err:
 }
 
 fn open_cmd_options(open: Opener) -> Options {
-    Options {
-        names: vec!["a.md".into()],
-        open_cmd: Some(Box::new(|name: &str| {
-            let cmd = match name.rsplit('.').next() {
-                Some("md") => "mdcat",
-                Some("txt") => "cat",
-                _ => return None,
-            };
-            Some(vec![cmd.into(), name.into()])
-        })),
-        ..with_opener(open)
-    }
+    let mut opts = with_opener(open);
+    opts.names = vec!["a.md".into()];
+    opts.runtime.open_cmd = Some(Box::new(|name: &str| {
+        let cmd = match name.rsplit('.').next() {
+            Some("md") => "mdcat",
+            Some("txt") => "cat",
+            _ => return None,
+        };
+        Some(vec![cmd.into(), name.into()])
+    }));
+    opts
 }
 
 /// The message names the input the cursor is in when the text lands,
@@ -1044,9 +1051,9 @@ fn copy_reports_when_the_copier_is_done() {
     let done = Rc::new(RefCell::new(Vec::new()));
     let woke = Arc::new(AtomicUsize::new(0));
     let mut opts = options();
-    opts.copier = Box::new(Slow(Rc::clone(&done)));
+    opts.runtime.copier = Box::new(Slow(Rc::clone(&done)));
     let w = Arc::clone(&woke);
-    opts.wake = Arc::new(move || {
+    opts.runtime.wake = Arc::new(move || {
         w.fetch_add(1, Ordering::SeqCst);
     });
     let mut a = app(20, 3, "ab\ncd\n", opts);
@@ -1070,7 +1077,7 @@ fn copy_reports_when_the_copier_is_done() {
 fn copy_supersedes_one_under_way() {
     let done = Rc::new(RefCell::new(Vec::new()));
     let mut opts = options();
-    opts.copier = Box::new(Slow(Rc::clone(&done)));
+    opts.runtime.copier = Box::new(Slow(Rc::clone(&done)));
     let mut a = app(20, 3, "ab\ncd\n", opts);
     press(&mut a, "Shift+Right y Shift+Down y");
     assert_eq!(done.borrow().len(), 2);
@@ -1100,7 +1107,7 @@ fn copy_and_quit_waits_for_the_copier() {
         done(Err("late".into()));
     });
     let mut opts = options();
-    opts.copier = Box::new(Handoff(tx));
+    opts.runtime.copier = Box::new(Handoff(tx));
     let mut a = app(20, 3, "ab\n", opts);
     assert_eq!(press(&mut a, "Shift+Right Enter"), Flow::Continue);
     assert_eq!(a.status.as_deref(), Some("copy failed: late"));

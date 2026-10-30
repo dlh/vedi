@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
-use vedi::app::{App, Event, Verdict, one_page};
+use vedi::app::{App, Event, Opener, Runtime, Verdict, one_page};
 use vedi::cli::{self, OpenCmdFor, USAGE};
 use vedi::input::config::{self, Config, LoadError};
 use vedi::sys::opencmd;
@@ -137,31 +137,31 @@ fn run() -> Result<(), Fail> {
         }
     }));
     let term = Crossterm::enter().map_err(|e| e.to_string())?;
-    let mut app_opts = opts.app(&files, &cfg, MACOS);
-    app_opts.copier = clipboard::pick(
-        opts.clipboard_cmd(&cfg),
-        &env::var("TERM_PROGRAM").unwrap_or_default(),
-        &env::var("TERM").unwrap_or_default(),
-        term.raw_writer(),
-        copies.clone(),
-    );
     let wake_tx = tx.clone();
-    app_opts.wake = Arc::new(move || {
-        let _ = wake_tx.send(Event::Copied);
-    });
-    if let Some(f) = &open_cmd {
-        let f = f.clone();
-        app_opts.open_cmd = Some(Box::new(move |name| f(name)));
-    }
-    if on_disk {
-        let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
-        app_opts.open = Some(Box::new(move |generation, through| {
-            let cmd = open_cmd.as_deref().filter(|_| through);
-            let input = open_input(&files, cmd).map_err(io::Error::other)?;
-            Ok(readers.start(input, view, generation, &tx))
-        }));
-    }
-    let mut app = App::new(term, buf, 0, app_opts);
+    let runtime = Runtime {
+        copier: clipboard::pick(
+            opts.clipboard_cmd(&cfg),
+            &env::var("TERM_PROGRAM").unwrap_or_default(),
+            &env::var("TERM").unwrap_or_default(),
+            term.raw_writer(),
+            copies.clone(),
+        ),
+        wake: Arc::new(move || {
+            let _ = wake_tx.send(Event::Copied);
+        }),
+        open_cmd: open_cmd
+            .clone()
+            .map(|f| Box::new(move |name: &str| f(name)) as OpenCmdFor),
+        open: on_disk.then(|| {
+            let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
+            Box::new(move |generation, through| {
+                let cmd = open_cmd.as_deref().filter(|_| through);
+                let input = open_input(&files, cmd).map_err(io::Error::other)?;
+                Ok(readers.start(input, view, generation, &tx))
+            }) as Opener
+        }),
+    };
+    let mut app = App::new(term, buf, 0, opts.app(&files, &cfg, MACOS, runtime));
     term::spawn_events(tx.clone());
     // Declared after the app, so dropped before the terminal is put back.
     let _watch = on_disk.then(|| {
