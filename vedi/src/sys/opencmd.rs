@@ -1,106 +1,25 @@
 //! Reads an input by running a command on it.
-#![allow(unsafe_code)]
 
 use std::ffi::{OsStr, OsString};
-use std::fs::File;
 use std::io::{self, Read};
 use std::os::unix::ffi::{OsStrExt, OsStringExt};
-use std::os::unix::process::CommandExt;
-use std::process::{Child, ChildStdout, Command, ExitStatus, Stdio};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::thread;
-use std::time::{Duration, Instant};
+use std::process::{ChildStdout, Command, Stdio};
 
-use super::{failure, scratch};
+use super::proc::{Group, Killer};
 use crate::text::buffer::ReadError;
 use crate::text::source::Source;
-
-/// How long Drop waits for a killed command to be reaped: SIGKILL
-/// takes effect at once unless the command is stuck in the kernel,
-/// and then no wait would do.
-const WAIT_DELAY: Duration = Duration::from_secs(1);
 
 /// A running command's output. Its failure, with its stderr, is the
 /// read error once the output ends.
 pub struct Cmd {
-    child: Child,
+    group: Group,
     out: ChildStdout,
-    stderr: Option<File>,
     state: State,
-    killer: Killer,
-}
-
-/// Kills a command whose reader may be blocked on it, which then sees
-/// the output end.
-#[derive(Clone)]
-pub struct Killer {
-    pid: libc::pid_t,
-    reaped: Arc<AtomicBool>,
-}
-
-impl Killer {
-    /// For `child`, started in its own process group.
-    pub fn new(child: &Child) -> io::Result<Killer> {
-        Ok(Killer {
-            pid: libc::pid_t::try_from(child.id()).map_err(io::Error::other)?,
-            reaped: Arc::new(AtomicBool::new(false)),
-        })
-    }
-
-    /// Waits for the command; reaped, it is not killed. A wait that
-    /// fails has no child either: SIGCHLD ignored at startup reaps it
-    /// before wait can.
-    pub fn wait(&self, child: &mut Child) -> io::Result<ExitStatus> {
-        let res = child.wait();
-        self.reaped.store(true, Ordering::SeqCst);
-        res
-    }
-
-    /// Kills the command and what it started. Once it is reaped its id
-    /// may be reused, so nothing is killed.
-    pub fn kill(&self) {
-        if self.reaped() {
-            return;
-        }
-        // SAFETY: kill takes no pointers. The group is the child's,
-        // unreaped when checked; one reaped since, its id reused within
-        // that window, would be killed; the window is one syscall wide.
-        unsafe { libc::kill(-self.pid, libc::SIGKILL) };
-    }
-
-    pub fn reaped(&self) -> bool {
-        self.reaped.load(Ordering::SeqCst)
-    }
-}
-
-/// Commands to kill when vedi exits. A `Mutex`, as the panic hook
-/// kills them from whichever thread panicked.
-#[derive(Clone, Default)]
-pub struct Killers(Arc<Mutex<Vec<Killer>>>);
-
-impl Killers {
-    /// Adds a command, letting those reaped go.
-    pub fn add(&self, k: Killer) {
-        let mut all = self.lock();
-        all.retain(|k| !k.reaped());
-        all.push(k);
-    }
-
-    pub fn kill_all(&self) {
-        self.lock().iter().for_each(Killer::kill);
-    }
-
-    pub fn lock(&self) -> MutexGuard<'_, Vec<Killer>> {
-        // A panic while held left the list whole.
-        self.0.lock().unwrap_or_else(PoisonError::into_inner)
-    }
 }
 
 enum State {
     Running,
-    /// Reaped: its group may be gone and its id reused, so it is not
-    /// killed. The error is `read_error`'s, until taken.
+    /// Reaped. The error is `read_error`'s, until taken.
     Reaped(Option<ReadError>),
 }
 
@@ -135,32 +54,20 @@ pub fn open(argv: &[String], name: &OsStr) -> io::Result<Cmd> {
     let Some((prog, rest)) = args.split_first() else {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "no command"));
     };
-    let stderr = scratch();
     let mut cmd = Command::new(prog);
-    cmd.args(rest)
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        // Its own group, so Drop kills what it started too.
-        .process_group(0);
-    match &stderr {
-        Some(f) => cmd.stderr(f.try_clone()?),
-        None => cmd.stderr(Stdio::null()),
-    };
-    let mut child = cmd.spawn()?;
-    let out = child.stdout.take().expect("stdout piped");
-    let killer = Killer::new(&child)?;
+    cmd.args(rest).stdin(Stdio::null()).stdout(Stdio::piped());
+    let mut group = Group::spawn(&mut cmd)?;
+    let out = group.stdout().expect("stdout piped");
     Ok(Cmd {
-        child,
+        group,
         out,
-        stderr,
         state: State::Running,
-        killer,
     })
 }
 
 impl Cmd {
     pub fn killer(&self) -> Killer {
-        self.killer.clone()
+        self.group.killer()
     }
 }
 
@@ -168,10 +75,7 @@ impl Source for Cmd {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.out.read(buf)?;
         if n == 0 && !buf.is_empty() && matches!(self.state, State::Running) {
-            let status = self.killer.wait(&mut self.child)?;
-            let err = (!status.success())
-                .then(|| ReadError::Command(failure(status, self.stderr.as_mut())));
-            self.state = State::Reaped(err);
+            self.state = State::Reaped(self.group.wait()?.map(ReadError::Command));
         }
         Ok(n)
     }
@@ -180,35 +84,6 @@ impl Source for Cmd {
         match &mut self.state {
             State::Reaped(err) => err.take(),
             State::Running => None,
-        }
-    }
-}
-
-impl Drop for Cmd {
-    fn drop(&mut self) {
-        if !matches!(self.state, State::Running) {
-            return;
-        }
-        self.killer.kill();
-        // Polled, not waited: a command stuck in the kernel, which
-        // SIGKILL does not end at once, is left behind rather than
-        // holding up the caller.
-        let until = Instant::now() + WAIT_DELAY;
-        loop {
-            match self.child.try_wait() {
-                Ok(Some(_)) => {
-                    self.killer.reaped.store(true, Ordering::SeqCst);
-                    return;
-                }
-                Ok(None) if Instant::now() < until => thread::sleep(Duration::from_millis(5)),
-                Ok(None) => return,
-                // No child to wait for: reaped already, as under an
-                // ignored SIGCHLD.
-                Err(_) => {
-                    self.killer.reaped.store(true, Ordering::SeqCst);
-                    return;
-                }
-            }
         }
     }
 }
@@ -237,17 +112,6 @@ mod tests {
         }
         let err = c.read_error().map(|e| e.to_string());
         (String::from_utf8(out).unwrap(), err)
-    }
-
-    fn read_exact(c: &mut Cmd, n: usize) -> String {
-        let mut out = Vec::new();
-        let mut buf = vec![0; n];
-        while out.len() < n {
-            let k = Source::read(c, &mut buf[..n - out.len()]).unwrap();
-            assert!(k > 0, "early end");
-            out.extend_from_slice(&buf[..k]);
-        }
-        String::from_utf8(out).unwrap()
     }
 
     // %s is the file name, one argument even with a space in it, and
@@ -335,108 +199,5 @@ mod tests {
         let start = Instant::now();
         drop(c);
         assert!(start.elapsed() < Duration::from_secs(2));
-    }
-
-    // A child of the command holding its stderr does not hold up Drop
-    // either.
-    #[test]
-    fn drop_kills_descendants() {
-        let mut c = open(
-            &args(&["sh", "-c", "sleep 10 & echo ready; wait"]),
-            OsStr::new("f"),
-        )
-        .unwrap();
-        assert_eq!(read_exact(&mut c, 6), "ready\n");
-        let start = Instant::now();
-        drop(c);
-        assert!(start.elapsed() < Duration::from_secs(2));
-    }
-
-    // A command that closed its stdout and runs on is ended too.
-    #[test]
-    fn drop_after_stdout_closed() {
-        let mut c = open(
-            &args(&["sh", "-c", "echo ready; exec 1>&-; sleep 10"]),
-            OsStr::new("f"),
-        )
-        .unwrap();
-        assert_eq!(read_exact(&mut c, 6), "ready\n");
-        let start = Instant::now();
-        drop(c);
-        assert!(start.elapsed() < Duration::from_secs(2));
-    }
-
-    // A reader blocked on a command that writes nothing is freed by its
-    // killer, and the command is gone.
-    #[test]
-    fn killer_frees_a_blocked_reader() {
-        let mut c = open(&args(&["sh", "-c", "exec sleep 3"]), OsStr::new("f")).unwrap();
-        let killer = c.killer();
-        let (tx, rx) = std::sync::mpsc::channel();
-        let reader = std::thread::spawn(move || {
-            let got = read_all(&mut c);
-            drop(c);
-            let _ = tx.send(got);
-        });
-        std::thread::sleep(Duration::from_millis(50));
-        killer.kill();
-        let got = rx
-            .recv_timeout(Duration::from_secs(1))
-            .expect("the read did not return");
-        reader.join().unwrap();
-        assert_eq!(got, (String::new(), Some("signal: 9 (SIGKILL)".into())));
-        // SAFETY: signal 0 only checks that the process exists.
-        let alive = unsafe { libc::kill(killer.pid, 0) } == 0;
-        assert!(!alive, "the command is still there");
-        killer.kill();
-    }
-
-    // A command reaped by Drop is not killed again: its id may be
-    // reused.
-    #[test]
-    fn drop_marks_reaped() {
-        let c = open(&args(&["sh", "-c", "exec sleep 3"]), OsStr::new("f")).unwrap();
-        let killer = c.killer();
-        assert!(!killer.reaped.load(Ordering::SeqCst));
-        drop(c);
-        assert!(killer.reaped.load(Ordering::SeqCst));
-    }
-
-    /// Reaps `pid` behind std's back, as an ignored SIGCHLD does: the
-    /// next wait on it fails.
-    fn reap(pid: libc::pid_t) {
-        let mut status = 0;
-        // SAFETY: waitpid writes the status to the int given.
-        assert_eq!(unsafe { libc::waitpid(pid, &mut status, 0) }, pid);
-    }
-
-    // A wait that fails has no child either, so it is not killed later:
-    // its id may be reused.
-    #[test]
-    fn failed_wait_marks_reaped() {
-        let mut child = Command::new("true").spawn().unwrap();
-        let killer = Killer::new(&child).unwrap();
-        reap(killer.pid);
-        assert!(killer.wait(&mut child).is_err());
-        assert!(killer.reaped());
-    }
-
-    // So does Drop's poll failing.
-    #[test]
-    fn drop_marks_reaped_when_the_poll_fails() {
-        let c = open(&args(&["sh", "-c", "exec sleep 3"]), OsStr::new("f")).unwrap();
-        let killer = c.killer();
-        killer.kill();
-        reap(killer.pid);
-        drop(c);
-        assert!(killer.reaped());
-    }
-
-    // Dropping after the output ended is fine.
-    #[test]
-    fn drop_after_eof() {
-        let mut c = open(&args(&["echo", "hi"]), OsStr::new("f")).unwrap();
-        assert_eq!(read_all(&mut c), ("hi f\n".into(), None));
-        drop(c);
     }
 }

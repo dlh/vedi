@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
 use crate::app::{App, CopyResult, Flow};
-use crate::sys::opencmd::Killer;
+use crate::sys::proc::Killer;
 use crate::text::ansi::ViewStyle;
 use crate::view::screen::Terminal;
 

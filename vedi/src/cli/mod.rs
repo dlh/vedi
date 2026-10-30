@@ -11,7 +11,7 @@ use std::time::Instant;
 use crate::app::{self, Copier, Done, STDIN, Sink, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
-use crate::sys::opencmd::Killer;
+use crate::sys::proc::Killer;
 use crate::sys::{save, words};
 
 pub use completion::completion;

@@ -19,7 +19,7 @@ use vedi::cli;
 use vedi::input::config::{self, Config};
 use vedi::input::keymap::Keymap;
 use vedi::sys::clipboard::CommandCopier;
-use vedi::sys::opencmd::{Killer, Killers};
+use vedi::sys::proc::{Killer, Killers};
 use vedi::text::ansi::ViewStyle;
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;

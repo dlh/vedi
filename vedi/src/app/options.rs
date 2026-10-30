@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
-use crate::sys::opencmd::Killer;
+use crate::sys::proc::Killer;
 use crate::text::buffer::Buffer;
 use crate::text::reader::Gen;
 

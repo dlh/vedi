@@ -10,7 +10,7 @@ use vedi::app::{App, Copier, Done, Event, Mouse, MouseKind, Options, STDIN};
 use vedi::input::config;
 use vedi::input::key::Key;
 use vedi::input::setting::Settings;
-use vedi::sys::opencmd::Killer;
+use vedi::sys::proc::Killer;
 use vedi::text::buffer::{Buffer, Progress, Storage};
 use vedi::text::index::Indexer;
 use vedi::text::reader::Gen;

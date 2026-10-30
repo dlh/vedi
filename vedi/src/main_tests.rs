@@ -219,7 +219,7 @@ fn reload_prunes_reaped_commands() {
     }
     let input = open_input(std::slice::from_ref(&f), Some(&cat)).unwrap();
     let _buf = readers.start(input, ViewStyle::Color, 3, &tx);
-    assert_eq!(readers.0.lock().len(), 1);
+    assert_eq!(readers.0.kept(), 1);
 }
 
 // A reload kills the commands reading the old input, not a clipboard

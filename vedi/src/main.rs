@@ -15,7 +15,8 @@ use std::thread;
 use vedi::app::{App, Event, Verdict, one_page};
 use vedi::cli::{self, OpenCmdFor, USAGE};
 use vedi::input::config::{self, Config, LoadError};
-use vedi::sys::opencmd::{self, Killer, Killers};
+use vedi::sys::opencmd;
+use vedi::sys::proc::{Killer, Killers};
 use vedi::sys::term::{self, Crossterm};
 use vedi::sys::watch::Watch;
 use vedi::sys::{clipboard, tty};
@@ -268,15 +269,7 @@ impl Readers {
     /// once it ends, as the app then swaps it in: until then the old
     /// text is still read and shown.
     fn start(&self, input: Input, view: ViewStyle, generation: Gen, tx: &Sender<Event>) -> Buffer {
-        // Kept until reaped, so exit reaches a set whose reload never
-        // ended.
-        let mut old = {
-            let mut all = self.0.lock();
-            all.retain(|k| !k.reaped());
-            let old = all.clone();
-            all.extend(input.killers);
-            old
-        };
+        let mut old = self.0.supersede(input.killers);
         let paged = matches!(input.storage, Storage::Paged(_));
         let buf = Buffer::new(input.storage, view == ViewStyle::Raw);
         let tx = tx.clone();

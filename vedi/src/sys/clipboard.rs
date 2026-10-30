@@ -1,16 +1,13 @@
 //! Sends text to the system clipboard.
 
-use std::fs::File;
 use std::io::Write;
-use std::os::unix::process::CommandExt;
-use std::process::{Child, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::thread;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
 
-use super::opencmd::{Killer, Killers};
-use super::{failure, scratch};
+use super::proc::{Group, Killer, Killers};
 use crate::app::{Copier, CopyResult, Done};
 
 /// The copier for the options: `cmd` when given, its runs added to
@@ -93,69 +90,33 @@ impl CommandCopier {
 
 impl Copier for CommandCopier {
     fn copy(&mut self, text: &str, done: Done) -> Option<Killer> {
-        let run = match Run::start(&self.cmd, &self.killers) {
+        let mut sh = Command::new("sh");
+        sh.args(["-c", &self.cmd])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null());
+        let mut run = match Group::spawn(&mut sh) {
             Ok(run) => run,
             Err(e) => {
-                done(Err(e));
+                done(Err(e.to_string()));
                 return None;
             }
         };
-        let killer = run.killer.clone();
+        let killer = run.killer();
+        self.killers.add(killer.clone());
         let text = text.to_string();
-        thread::spawn(move || done(run.finish(&text)));
+        thread::spawn(move || done(finish(&mut run, &text)));
         Some(killer)
     }
 }
 
-/// A command started, its result to wait for.
-struct Run {
-    child: Child,
-    killer: Killer,
-    stderr: Option<File>,
-}
-
-impl Run {
-    fn start(cmd: &str, killers: &Killers) -> Result<Run, String> {
-        // stderr goes to a file, not a pipe: a tool that forks a daemon
-        // to serve the selection (xclip) leaves it holding a pipe, and
-        // waiting would not return until the selection is lost.
-        let stderr = scratch();
-        let mut sh = Command::new("sh");
-        sh.args(["-c", cmd])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::null())
-            // Its own group, so the kill reaches what it started.
-            .process_group(0);
-        match &stderr {
-            Some(f) => sh.stderr(f.try_clone().map_err(|e| e.to_string())?),
-            None => sh.stderr(Stdio::null()),
-        };
-        let child = sh.spawn().map_err(|e| e.to_string())?;
-        let killer = Killer::new(&child).map_err(|e| e.to_string())?;
-        killers.add(killer.clone());
-        Ok(Run {
-            child,
-            killer,
-            stderr,
-        })
+/// Sends `text` to `run` and waits for it.
+fn finish(run: &mut Group, text: &str) -> CopyResult {
+    // A command that exits without reading closes the pipe; that is
+    // its exit status's to report.
+    if let Some(mut stdin) = run.stdin() {
+        let _ = stdin.write_all(text.as_bytes());
     }
-
-    /// Sends `text` and waits for the command.
-    fn finish(mut self, text: &str) -> CopyResult {
-        // A command that exits without reading closes the pipe; that
-        // is its exit status's to report.
-        if let Some(mut stdin) = self.child.stdin.take() {
-            let _ = stdin.write_all(text.as_bytes());
-        }
-        let status = self
-            .killer
-            .wait(&mut self.child)
-            .map_err(|e| e.to_string())?;
-        if status.success() {
-            return Ok(());
-        }
-        Err(failure(status, self.stderr.as_mut()))
-    }
+    run.wait().map_err(|e| e.to_string())?.map_or(Ok(()), Err)
 }
 
 #[cfg(test)]
@@ -277,11 +238,6 @@ mod tests {
         let (tx, rx) = mpsc::channel();
         CommandCopier::new("sleep 5", killers.clone())
             .copy("x", Box::new(move |r| tx.send(r).unwrap()));
-        let start = Instant::now();
-        while killers.lock().is_empty() {
-            assert!(start.elapsed() < Duration::from_secs(1), "not added");
-            thread::sleep(Duration::from_millis(5));
-        }
         killers.kill_all();
         assert_eq!(
             rx.recv_timeout(Duration::from_secs(1)).unwrap(),
@@ -292,7 +248,7 @@ mod tests {
             Ok(())
         );
         killers.kill_all();
-        assert!(killers.lock().iter().all(Killer::reaped));
+        assert!(killers.all_reaped());
     }
 
     // The command runs on a thread: copy returns while it does, and the
