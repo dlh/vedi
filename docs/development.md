@@ -118,13 +118,14 @@ publishes a GitHub release with archives, a source archive, `checksums.txt` and
 the tag's `CHANGELOG.md` entry as its notes. Each archive holds `CHANGELOG.md`,
 `LICENSE-THIRD-PARTY`, which `make licenses` writes before the build,
 the completion scripts of `vedi/completions/` in `completions/`, the man page
-`vedi/man/vedi.1` in `man/` and the Markdown of `docs/` in `docs/`. It then
-pushes a cask to
+`vedi/man/vedi.1` in `man/` and the Markdown of `docs/` in `docs/`. The source
+archive holds the tree and `LICENSE-THIRD-PARTY`. It then pushes a cask to
 [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
 `HOMEBREW_TAP_TOKEN`, and two packages to the AUR, skipped without `AUR_KEY`:
 [vedi](https://aur.archlinux.org/packages/vedi) builds the source archive,
 [vedi-bin](https://aur.archlinux.org/packages/vedi-bin) installs the linux
-archives.
+archives. Both install `LICENSE-THIRD-PARTY` under `/usr/share/licenses`; the
+GPL is in Arch's `licenses` package.
 `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds from a checkout print
 `git describe`.
 
