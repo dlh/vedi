@@ -408,7 +408,8 @@ impl Scenario<'_, '_> {
     /// tick the auto-scroll timer's. The clock moves on a second before
     /// every click or press, so two in a row are never a double-click;
     /// dblclick and tripleclick press two or three times without moving
-    /// it. A tick is the tick interval passing.
+    /// it, dblpress twice, holding the second. A tick is the tick
+    /// interval passing.
     fn mouse(&mut self, a: MouseAction) {
         let advance = |now: &Cell<Instant>, by: Duration| now.set(now.get() + by);
         let presses = match a.kind {
@@ -427,6 +428,12 @@ impl Scenario<'_, '_> {
             }
             Act::Press => {
                 advance(&self.now, Duration::from_secs(1));
+                self.send(MouseKind::Press, a.x, a.y, a.shift);
+            }
+            Act::DblPress => {
+                advance(&self.now, Duration::from_secs(1));
+                self.send(MouseKind::Press, a.x, a.y, a.shift);
+                self.send(MouseKind::Release, a.x, a.y, a.shift);
                 self.send(MouseKind::Press, a.x, a.y, a.shift);
             }
             Act::Release => self.send(MouseKind::Release, a.x, a.y, a.shift),

@@ -20,12 +20,12 @@ drag 2 0 2 1
 -- screen --
 abcdef
 [xy ]
-[z]zz
+[zz]z
 <stdin
 -- cursor --
-2 1
+2 2
 -- keys --
 y
 -- clipboard --
 xy
-z
+zz

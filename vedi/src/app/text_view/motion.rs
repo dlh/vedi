@@ -380,6 +380,35 @@ impl TextView {
         self.anchor.get_or_insert(self.cur);
     }
 
+    /// Extends the selection through the char at `to` when it is at or
+    /// past the anchor, and to it when before, as a Shift+click does:
+    /// the anchor is a place between chars, as Shift with an arrow key
+    /// leaves it. Anchors at the cursor with no selection. The view does
+    /// not scroll: the pointer is on screen, and the text must not move
+    /// under it.
+    pub fn extend_through(&mut self, to: Pos) {
+        self.extend();
+        self.cur = to;
+        if self.anchor.is_some_and(|a| to >= a) {
+            self.move_col(1);
+        }
+    }
+
+    /// Selects from the char at `from` through the one at `to`, either
+    /// way round, as a drag does: both are held, and the cursor lands at
+    /// `to`'s far side, after it when it is the later. The view does not
+    /// scroll, as in `extend_through`.
+    pub fn select_through(&mut self, from: Pos, to: Pos) {
+        self.cur = from.max(to);
+        self.move_col(1);
+        let past = self.cur;
+        (self.anchor, self.cur) = if to < from {
+            (Some(past), to)
+        } else {
+            (Some(from), past)
+        };
+    }
+
     /// Clears the selection, unless the mark is set.
     pub(super) fn drop(&mut self) {
         if !self.marking {

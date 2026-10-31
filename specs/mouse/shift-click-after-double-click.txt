@@ -9,12 +9,12 @@ foo bar_1 baz
 -- mouse --
 dblclick 0 6 Shift+click 0 12
 -- screen --
-foo [bar_1 ba]z
+foo [bar_1 baz]
 
 
 <stdin>  line 1/1  wrap           h help
 -- cursor --
-0 12
+0 13
 -- mouse --
 Shift+click 0 1
 -- screen --
@@ -27,9 +27,9 @@ f[oo ]bar_1 baz
 -- mouse --
 click 0 0 Shift+dblclick 0 5
 -- screen --
-[foo b]ar_1 baz
+[foo ba]r_1 baz
 
 
 <stdin>  line 1/1  wrap           h help
 -- cursor --
-0 5
+0 6

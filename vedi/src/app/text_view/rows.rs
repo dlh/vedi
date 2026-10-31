@@ -112,7 +112,7 @@ impl TextView {
     /// are held. A kept layout is used only while it fits the text: a
     /// line past the end may appear later, and a file may shrink. The
     /// cursor's line gets a row for its newline while the cursor is on
-    /// it and the line's last row is full. With wrap markers the
+    /// it, drawn, and the line's last row is full. With wrap markers the
     /// newline has the marker's column, unless a tab wider than the
     /// screen fills that too.
     pub fn line_layout(&mut self, i: usize) -> Rc<Laid> {
@@ -130,7 +130,7 @@ impl TextView {
                 ln
             }
         };
-        if i != self.cur.line || self.cur.col != n {
+        if i != self.cur.line || self.cur.col != n || self.hidden {
             return ln;
         }
         let mut l = l;

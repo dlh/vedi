@@ -88,6 +88,9 @@ pub struct TextView {
     anchor: Option<Pos>,
     /// The mark is set: motions extend the selection.
     marking: bool,
+    /// The cursor is not drawn: button 1 is down, and the pointer marks
+    /// the selection's end.
+    hidden: bool,
     /// The first visible row.
     top: Row,
     /// Horizontal scroll in `NoWrap` mode.
@@ -113,6 +116,7 @@ impl TextView {
             cur: Pos::default(),
             anchor: None,
             marking: false,
+            hidden: false,
             // The first row: line 0's separator, if it has one.
             top: Row::sep(0),
             xoff: 0,
@@ -139,9 +143,21 @@ impl TextView {
         &self.buf
     }
 
-    /// Whether the cursor is drawn: a view-led view's is not.
+    /// Whether the cursor is drawn: a view-led view's is not, nor a
+    /// hidden one.
     pub fn cursor_shown(&self) -> bool {
-        self.lead == Lead::Cursor
+        self.lead == Lead::Cursor && !self.hidden
+    }
+
+    /// Hides the cursor while button 1 is down: the pointer marks the
+    /// selection's end, and the row a full line would open for a cursor
+    /// on its newline would move the text under the pointer.
+    pub fn hide_cursor(&mut self) {
+        self.hidden = true;
+    }
+
+    pub fn show_cursor(&mut self) {
+        self.hidden = false;
     }
 
     pub fn cursor(&self) -> Pos {

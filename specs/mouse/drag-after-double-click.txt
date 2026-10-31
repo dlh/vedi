@@ -1,0 +1,36 @@
+Dragging from a double-click's second press extends the word's
+selection from the word's start: past its end, or before it.
+
+-- size --
+40x4
+-- input --
+foo bar_1 baz
+-- mouse --
+dblpress 0 6
+move 0 12
+-- screen --
+foo [bar_1 baz]
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+hidden
+-- mouse --
+release 0 12
+-- cursor --
+0 13
+-- keys --
+y
+-- clipboard --
+bar_1 baz
+-- mouse --
+dblpress 0 6
+move 0 1
+release 0 1
+-- screen --
+f[oo ]bar_1 baz
+
+
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 1

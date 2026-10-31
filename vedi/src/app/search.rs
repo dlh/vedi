@@ -9,7 +9,7 @@ impl<T: Terminal> App<T> {
     /// Opens the / prompt, or the ? prompt if `back`.
     pub(super) fn open_search(&mut self, back: bool) {
         self.focus(Focus::Prompting(Kind::Search { back }));
-        self.mouse.end_drag();
+        self.end_drag();
         self.search.open(if back { '?' } else { '/' });
     }
 

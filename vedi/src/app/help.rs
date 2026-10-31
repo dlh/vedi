@@ -22,9 +22,9 @@ impl<T: Terminal> App<T> {
     /// of their own, so drawing, scrolling and searching are the text's.
     /// The search starts over: help's is its own.
     pub(super) fn show_help(&mut self) {
+        self.end_drag();
         let help = TextView::view_led(help_buffer(&self.keys.help()));
         self.views.raise(Role::Help, help);
-        self.mouse.end_drag();
         self.sync_view();
     }
 

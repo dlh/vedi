@@ -1,5 +1,6 @@
 With the status line hidden, dragging onto the bottom row scrolls a
-row per tick, as the status row does.
+row per tick, as the status row does. The cursor is drawn again at the
+release.
 
 -- size --
 20x3
@@ -17,14 +18,18 @@ move 2 0
 -- screen --
 one
 [two ]
-three
+[t]hree
 -- cursor --
-2 0
+hidden
 -- mouse --
 tick
 -- screen --
 [two ]
 [three ]
-four
+[f]our
 -- cursor --
-2 0
+hidden
+-- mouse --
+release 2 0
+-- cursor --
+2 1

@@ -5,6 +5,8 @@ pub enum Act {
     DblClick,
     TripleClick,
     Press,
+    /// A double-click whose second press is held.
+    DblPress,
     Release,
     Move,
     Drag,
@@ -20,8 +22,8 @@ pub enum Dir {
     Right,
 }
 
-/// For click, dblclick, tripleclick, press, release and move only the
-/// first cell is used; drag presses at the first and releases at the
+/// For click, dblclick, tripleclick, press, dblpress, release and move
+/// only the first cell is used; drag presses at the first and releases at the
 /// second; all of those take shift, as wheel does with `dir` and `n`;
 /// tick uses `n`.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -38,7 +40,7 @@ pub struct MouseAction {
 }
 
 /// Turns a "-- mouse --" body into actions: "click R C", "dblclick R C",
-/// "tripleclick R C", "press R C", "release R C", "move R C",
+/// "tripleclick R C", "press R C", "dblpress R C", "release R C", "move R C",
 /// "drag R C R C", each optionally with "Shift+",
 /// "wheel [Shift+]up|down|left|right [N]" and "tick [N]", rows and
 /// columns 0-based.
@@ -90,6 +92,7 @@ pub fn parse_mouse(s: &str) -> Result<Vec<MouseAction>, String> {
             "dblclick" => Act::DblClick,
             "tripleclick" => Act::TripleClick,
             "press" => Act::Press,
+            "dblpress" => Act::DblPress,
             "release" => Act::Release,
             "move" => Act::Move,
             "drag" => Act::Drag,
@@ -138,7 +141,7 @@ mod tests {
     #[test]
     fn parse() {
         let acts = parse_mouse(
-            "click 1 2 dblclick 3 4 tripleclick 5 6 drag 0 1 2 3 wheel up wheel down 5 wheel left wheel Shift+right 2 click 0 0 press 1 1 release 2 0 move 5 0 tick tick 3 Shift+click 1 2 Shift+drag 0 1 2 3",
+            "click 1 2 dblclick 3 4 tripleclick 5 6 drag 0 1 2 3 wheel up wheel down 5 wheel left wheel Shift+right 2 click 0 0 press 1 1 dblpress 0 4 release 2 0 move 5 0 tick tick 3 Shift+click 1 2 Shift+drag 0 1 2 3",
         )
         .unwrap();
         let at = |kind, y, x| MouseAction {
@@ -173,6 +176,7 @@ mod tests {
             wheel(Dir::Right, 2, true),
             at(Act::Click, 0, 0),
             at(Act::Press, 1, 1),
+            at(Act::DblPress, 0, 4),
             at(Act::Release, 2, 0),
             at(Act::Move, 5, 0),
             MouseAction {

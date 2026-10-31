@@ -1,5 +1,6 @@
-Dragging selects from the press to where the button is released; the
-cursor ends there. Dragging up selects backward, and a drag onto the
+Dragging selects from the pressed cell through the one the button is
+released on, both held, as a terminal does; the cursor ends past the
+later of the two. Dragging up selects backward, and a drag onto the
 status line or past the last row stops on the last row.
 
 -- size --
@@ -13,34 +14,39 @@ drag 0 1 2 2
 -- screen --
 o[ne ]
 [two ]
-[th]ree
+[thr]ee
 
 <stdin>  line 3/3  wrap           h help
 -- cursor --
-2 2
+2 3
 -- keys --
 y
 -- clipboard --
 ne
 two
-th
+thr
 -- mouse --
 drag 1 1 0 2
 -- screen --
 on[e ]
-[t]wo
+[tw]o
 three
 
 <stdin>  line 1/3  wrap           h help
 -- cursor --
 0 2
+-- keys --
+y
+-- clipboard --
+e
+tw
 -- mouse --
 drag 0 0 3 4
 -- screen --
 [one ]
 [two ]
-[thre]e
+[three]
 
 <stdin>  line 3/3  wrap           h help
 -- cursor --
-2 4
+2 5

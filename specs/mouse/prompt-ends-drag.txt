@@ -22,7 +22,7 @@ tick 2
 one
 [two ]
 [three ]
-four
+[f]our
 /
 -- keys --
 Esc
@@ -33,10 +33,10 @@ release 3 0
 one
 [two ]
 [three ]
-four
+[f]our
 <stdin>  line 4/7  wrap           h help
 -- cursor --
-3 0
+3 1
 -- mouse --
 press 1 0
 move 4 0
@@ -48,7 +48,7 @@ tick 2
 one
 [two ]
 [three ]
-four
+[f]our
 :
 -- keys --
 Esc
@@ -73,7 +73,7 @@ click 3 0
 one
 [two ]
 [three ]
-four
+[f]our
 <stdin>  line 4/7  wrap           h help
 -- cursor --
-3 0
+3 1

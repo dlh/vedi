@@ -25,6 +25,7 @@ three
 hidden
 -- mouse --
 move 3 0
+release 3 0
 -- screen --
 one
 two

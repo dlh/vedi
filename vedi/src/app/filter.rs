@@ -267,6 +267,7 @@ impl<T: Terminal> App<T> {
     /// Opens the & prompt over the list: the one Enter left, with its
     /// query and its place, or a new one, over every line.
     pub(super) fn open_filter(&mut self) {
+        self.end_drag();
         match &mut self.filter {
             None => {
                 let literal = self.settings.view_style == ViewStyle::Raw;
@@ -294,7 +295,6 @@ impl<T: Terminal> App<T> {
         }
         let query = self.filter.as_ref().map_or("", Filter::query).to_string();
         self.query.open_with('&', &query);
-        self.mouse.end_drag();
         self.focus(Focus::Prompting(Kind::Filter));
     }
 

@@ -1,0 +1,43 @@
+A drag onto the last char of a row that fills the width ends the
+selection on the newline, which opens no row of its own while the
+cursor is hidden: the rows below stay where the pointer finds them. The
+row opens at the release, when the cursor is drawn there.
+
+-- size --
+5x5
+-- input --
+abcde
+fghij
+klmno
+-- mouse --
+press 0 0
+move 1 4
+-- screen --
+[abcde]
+[fghij]
+klmno
+
+<stdi
+-- cursor --
+hidden
+-- mouse --
+move 2 0
+-- screen --
+[abcde]
+[fghij]
+[k]lmno
+
+<stdi
+-- cursor --
+hidden
+-- mouse --
+move 1 4
+release 1 4
+-- screen --
+[abcde]
+[fghij]
+
+klmno
+<stdi
+-- cursor --
+2 0

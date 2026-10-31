@@ -1,0 +1,28 @@
+While button 1 is held on the text the cursor is not drawn: the pointer
+marks the selection's end. It comes back at the release, past the
+selection.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- mouse --
+press 0 1
+-- cursor --
+hidden
+-- mouse --
+move 2 2
+-- screen --
+o[ne ]
+[two ]
+[thr]ee
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+hidden
+-- mouse --
+release 2 2
+-- cursor --
+2 3

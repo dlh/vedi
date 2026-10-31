@@ -27,7 +27,7 @@ pub(super) fn is_command(name: &str) -> bool {
 impl<T: Terminal> App<T> {
     pub(super) fn open_command(&mut self) {
         self.focus(Focus::Prompting(Kind::Command));
-        self.mouse.end_drag();
+        self.end_drag();
         self.command.open_completing(':', &self.settings);
     }
 

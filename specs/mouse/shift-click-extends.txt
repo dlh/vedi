@@ -1,6 +1,7 @@
-Shift with a click extends the selection to that cell, from the
-cursor when nothing is selected, as Shift with an arrow key does. The
-anchor stays for the next one, and a plain click clears it.
+Shift with a click extends the selection through that cell when it
+lies past the anchor, and to it when before, as Shift with an arrow key
+does: the anchor is a place between chars, the cursor's when nothing is
+selected. It stays for the next one, and a plain click clears it.
 
 -- size --
 40x5
@@ -13,21 +14,21 @@ click 0 1 Shift+click 2 2
 -- screen --
 o[ne ]
 [two ]
-[th]ree
+[thr]ee
 
 <stdin>  line 3/3  wrap           h help
 -- cursor --
-2 2
+2 3
 -- mouse --
 Shift+click 1 1
 -- screen --
 o[ne ]
-[t]wo
+[tw]o
 three
 
 <stdin>  line 2/3  wrap           h help
 -- cursor --
-1 1
+1 2
 -- mouse --
 Shift+click 0 0
 -- screen --
@@ -38,6 +39,16 @@ three
 <stdin>  line 1/3  wrap           h help
 -- cursor --
 0 0
+-- mouse --
+Shift+click 2 2
+-- screen --
+o[ne ]
+[two ]
+[thr]ee
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+2 3
 -- mouse --
 click 1 1
 -- screen --

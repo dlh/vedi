@@ -1,5 +1,5 @@
 Shift+click moves the cursor and keeps the mark: the selection runs
-from the mark to the cell, and motions go on extending it.
+from the mark through the cell, and motions go on extending it.
 
 -- config --
 map v set_mark
@@ -14,10 +14,10 @@ Shift+click 1 1
 Right
 -- screen --
 a[bc ]
-[de]f
+[def]
 
 
 
 <stdin>  line 2/2  wrap           h help
 -- cursor --
-1 2
+1 3
