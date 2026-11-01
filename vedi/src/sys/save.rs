@@ -1,7 +1,10 @@
 //! The file :write saves to.
 
+#![allow(unsafe_code)]
+
 use std::fs::{self, File};
-use std::io::{self, Write};
+use std::io::{self, ErrorKind, Write};
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
 use crate::app::Sink;
@@ -18,16 +21,18 @@ pub struct Saving {
 }
 
 /// Opens `name` for writing: made new, or when `overwrite` replaced
-/// once done; `AlreadyExists` otherwise for one that exists.
+/// once done; `AlreadyExists` otherwise for one that exists. A symlink
+/// of the user's own is written through; another's is refused.
 pub fn open(dest: &Path, overwrite: bool) -> io::Result<Saving> {
-    let dest = dest.to_path_buf();
-    if !overwrite || !dest.exists() {
+    let me = unsafe { libc::geteuid() };
+    let (dest, old) = resolve(dest, me)?;
+    let Some(old) = old.filter(|_| overwrite) else {
         return Ok(Saving {
             file: File::create_new(&dest)?,
             at: dest,
             dest: None,
         });
-    }
+    };
     // A unique name beside the destination, on its file system, so the
     // rename is one.
     let base = dest
@@ -35,16 +40,60 @@ pub fn open(dest: &Path, overwrite: bool) -> io::Result<Saving> {
         .map_or(String::new(), |n| n.to_string_lossy().into_owned());
     let at = dest.with_file_name(format!(".{base}.vedi-{}", std::process::id()));
     let file = File::create_new(&at)?;
-    if let Ok(perms) = fs::metadata(&dest).map(|m| m.permissions()) {
-        // On the handle: by path, a symlink swapped in for the file
-        // would carry the permissions to whatever it points at.
-        let _ = file.set_permissions(perms);
+    // Only a file of the user's own lends its mode: another's was set
+    // by whoever put it there. On the handle: by path, a symlink
+    // swapped in for the file would carry the permissions to whatever
+    // it points at.
+    if old.uid() == me {
+        let _ = file.set_permissions(old.permissions());
     }
     Ok(Saving {
         file,
         at,
         dest: Some(dest),
     })
+}
+
+/// The file `name` means, through symlinks the user `me` owns, with
+/// what is there, if anything. Another's link is refused: followed, it
+/// would write wherever they chose; replaced, the user may have meant
+/// its target. So is one where another could swap it for theirs
+/// between the check and the read.
+fn resolve(name: &Path, me: u32) -> io::Result<(PathBuf, Option<fs::Metadata>)> {
+    let refused = |why| io::Error::new(ErrorKind::PermissionDenied, why);
+    let mut dest = name.to_path_buf();
+    for _ in 0..40 {
+        let md = match fs::symlink_metadata(&dest) {
+            Ok(md) => md,
+            Err(e) if e.kind() == ErrorKind::NotFound => return Ok((dest, None)),
+            Err(e) => return Err(e),
+        };
+        if !md.is_symlink() {
+            return Ok((dest, Some(md)));
+        }
+        if md.uid() != me {
+            return Err(refused("a symlink another user made"));
+        }
+        // Entries are replaced by whoever can write the directory, or
+        // in a sticky one by their owner and the directory's.
+        let dir = match dest.parent() {
+            Some(p) if !p.as_os_str().is_empty() => fs::metadata(p)?,
+            _ => fs::metadata(".")?,
+        };
+        let mode = dir.mode();
+        #[allow(
+            clippy::unnecessary_cast,
+            reason = "mode_t is u16 on macOS, u32 on Linux"
+        )]
+        let sticky = mode & libc::S_ISVTX as u32 != 0;
+        if !(dir.uid() == me && mode & 0o022 == 0 || sticky && (dir.uid() == me || dir.uid() == 0))
+        {
+            return Err(refused("a symlink in a directory others can write"));
+        }
+        let target = fs::read_link(&dest)?;
+        dest = dest.parent().unwrap_or(Path::new("")).join(target);
+    }
+    Err(io::Error::other("too many symlinks"))
 }
 
 impl Write for Saving {
@@ -160,6 +209,59 @@ mod tests {
             0o640
         );
         assert_eq!(d.names(), ["f"]);
+    }
+
+    /// A symlink of the user's own is written through: its target gets
+    /// the text and keeps its mode, the link stays; one pointing nowhere
+    /// gets its target made. The target is what exists, or not.
+    #[test]
+    fn writes_through_own_symlink() {
+        let d = Dir::new();
+        let target = d.path("target");
+        fs::write(&target, b"old").unwrap();
+        fs::set_permissions(&target, fs::Permissions::from_mode(0o640)).unwrap();
+        let link = d.path("link");
+        std::os::unix::fs::symlink("target", &link).unwrap();
+        let err = save(&link, false, b"new").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::AlreadyExists);
+        save(&link, true, b"new").unwrap();
+        assert!(fs::symlink_metadata(&link).unwrap().is_symlink());
+        assert_eq!(fs::read(&target).unwrap(), b"new");
+        assert_eq!(fs::metadata(&target).unwrap().mode() & 0o777, 0o640);
+        let dangling = d.path("dangling");
+        std::os::unix::fs::symlink("made", &dangling).unwrap();
+        save(&dangling, false, b"filled").unwrap();
+        assert!(fs::symlink_metadata(&dangling).unwrap().is_symlink());
+        assert_eq!(fs::read(d.path("made")).unwrap(), b"filled");
+        assert_eq!(d.names(), ["dangling", "link", "made", "target"]);
+    }
+
+    /// A symlink another user made is refused, followed or not; so is
+    /// one in a directory others can write, unless sticky; so is a loop.
+    #[test]
+    fn refuses_anothers_symlink() {
+        let d = Dir::new();
+        let link = d.path("link");
+        std::os::unix::fs::symlink(d.path("target"), &link).unwrap();
+        let me = fs::symlink_metadata(&link).unwrap().uid();
+        let err = resolve(&link, me.wrapping_add(1)).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(err.to_string(), "a symlink another user made");
+        let (dest, md) = resolve(&link, me).unwrap();
+        assert_eq!(dest, d.path("target"));
+        assert!(md.is_none());
+        fs::set_permissions(&d.0, fs::Permissions::from_mode(0o777)).unwrap();
+        let err = resolve(&link, me).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(err.to_string(), "a symlink in a directory others can write");
+        fs::set_permissions(&d.0, fs::Permissions::from_mode(0o1777)).unwrap();
+        assert_eq!(resolve(&link, me).unwrap().0, d.path("target"));
+        fs::set_permissions(&d.0, fs::Permissions::from_mode(0o755)).unwrap();
+        let a = d.path("a");
+        std::os::unix::fs::symlink("b", &a).unwrap();
+        std::os::unix::fs::symlink("a", d.path("b")).unwrap();
+        let err = resolve(&a, me).unwrap_err();
+        assert_eq!(err.to_string(), "too many symlinks");
     }
 
     /// A save dropped before done leaves the file as it was, or none.

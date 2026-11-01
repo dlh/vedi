@@ -118,7 +118,8 @@ and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
 links, under `view_style plain` the text and its links, under `raw` the input as
 it came. With a selection, it saves that alone. The name is the rest of the
 line; a leading `~` is the home directory. A file that exists is refused:
-`:write! FILE` replaces it, the input included, once the write is done.
+`:write! FILE` replaces it, the input included, once the write is done. A
+symlink of one's own is written through; another user's is refused.
 `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
 error on the status line. A paste goes in as one line, its newlines dropped, at
 this prompt and the search prompt.
