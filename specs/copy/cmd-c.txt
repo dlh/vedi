@@ -5,7 +5,7 @@ when it has no selection of its own; Terminal.app keeps it.
 -- os --
 macos
 -- size --
-80x76
+80x74
 -- input --
 hello
 world
@@ -14,8 +14,6 @@ Shift+Right Shift+Right Cmd+c
 -- screen --
 [he]llo
 world
-
-
 
 
 
@@ -107,7 +105,7 @@ h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
-  0  $  ⌘Left  ⌘Right
+  0  $  Enter  ⌘Left  ⌘Right
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.
@@ -144,8 +142,6 @@ h
                                     COPYING
 
   ⌃C  ⌘C  y                               Copy the selection as plain text.
-  Enter                                   Copy the selection and quit; with
-                                          none, down a line.
  ------------------------------------------------------------------------------
 
                                    SEARCHING

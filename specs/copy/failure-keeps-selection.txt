@@ -1,9 +1,11 @@
 When the clipboard command fails, the status line says so, the
-selection stays, and Enter, which waits for the command, does not
-quit. `false` is a command that always fails.
+selection stays, and copy_and_quit, which waits for the command, does
+not quit. `false` is a command that always fails.
 
 -- size --
 40x5
+-- config --
+map Enter copy_and_quit
 -- args --
 --clipboard-cmd false
 -- input --

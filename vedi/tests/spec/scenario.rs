@@ -795,7 +795,7 @@ mod tests {
             ),
             (
                 "wrong clipboard",
-                "T\n-- input --\nhi\n-- keys --\nCtrl+A Enter\n-- quit --\n-- clipboard --\nho\n",
+                "T\n-- input --\nhi\n-- keys --\nCtrl+A y q\n-- quit --\n-- clipboard --\nho\n",
                 "line 7, -- clipboard --: clipboard = \"hi\", want \"ho\"",
             ),
             (

@@ -443,7 +443,7 @@ mod tests {
                 Key::new(ch('G'), Mods::SHIFT),
                 "last",
             ),
-            ("enter", false, Key::new(Enter, Mods::NONE), "copy_and_quit"),
+            ("enter", false, Key::new(Enter, Mods::NONE), "down"),
             ("unbound rune", false, Key::new(ch('z'), Mods::NONE), "none"),
             (
                 "unlisted modifier is unbound",
@@ -904,7 +904,7 @@ open_cmd less %s
         let want = [
             (
                 &[
-                    "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$",
+                    "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "Enter",
                 ][..],
                 "Move the cursor",
             ),
@@ -954,6 +954,7 @@ open_cmd less %s
                 "k",
                 "0",
                 "$",
+                "Enter",
                 "Cmd+Left",
                 "Cmd+Right"
             ]
@@ -971,7 +972,7 @@ open_cmd less %s
         assert_eq!(
             secs[1].rows[0].keys,
             [
-                "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "h"
+                "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "Enter", "h"
             ]
         );
         assert!(
@@ -984,11 +985,7 @@ open_cmd less %s
     /// A section none of whose rows has a key is left out.
     #[test]
     fn help_empty_section() {
-        let m = default_keymap(false).apply(&[
-            bind("Ctrl+c", "none"),
-            bind("y", "none"),
-            bind("Enter", "none"),
-        ]);
+        let m = default_keymap(false).apply(&[bind("Ctrl+c", "none"), bind("y", "none")]);
         assert!(
             m.help().iter().all(|s| s.name != "Copying"),
             "Copying is shown with nothing in it"

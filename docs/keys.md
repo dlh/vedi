@@ -10,7 +10,7 @@ and the search keys search them. These are the defaults.
 | w | Toggle wrap / nowrap |
 | R | Reload the file |
 | O | Toggle reading through open_cmd |
-| Up, Down, Left, Right, Home, End, j, k, 0, $, Cmd+Left, Cmd+Right | Move the cursor |
+| Up, Down, Left, Right, Home, End, j, k, 0, $, Enter, Cmd+Left, Cmd+Right | Move the cursor |
 | PgDn, Space, f, Ctrl+f, Ctrl+v | Down a page |
 | PgUp, b, Ctrl+b, Alt+v | Up a page |
 | d, Ctrl+d | Down half a page |
@@ -29,7 +29,6 @@ and the search keys search them. These are the defaults.
 | Double-, triple-click | Select the word, the line |
 | Wheel | Scroll; with Shift, sideways |
 | Ctrl+c, Cmd+c, y | Copy the selection as plain text |
-| Enter | Copy the selection and quit; with none, down a line |
 | / | Search as typed; ignores case if lowercase; empty repeats |
 | ? | Search backward |
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
@@ -87,6 +86,7 @@ again.
 
 Any key can be rebound in `~/.config/vedi/vedi.conf`, or the file named by
 `--config`, and `clear_all_shortcuts` there starts the map from nothing. A key
-with no binding says so on the status line. The `set_mark` action, unbound by
-default, starts a selection that every motion extends, as `v` does in vim. See
-[configuration.md](configuration.md), which ends with vim and emacs maps.
+with no binding says so on the status line. Two actions are unbound by default:
+`set_mark` starts a selection that every motion extends, as `v` does in vim, and
+`copy_and_quit` copies the selection and quits, or with none moves down a line.
+See [configuration.md](configuration.md), which ends with vim and emacs maps.

@@ -1,11 +1,12 @@
 With the mark set, a row motion with no row left to take goes to the
 end of the text downward and to its start upward, as it does with
-Shift. So does Enter's move down, with nothing selected yet.
+Shift. So does copy_and_quit's move down, with nothing selected yet.
 
 -- size --
 40x5
 -- config --
 map v set_mark
+map Enter copy_and_quit
 -- input --
 one
 two

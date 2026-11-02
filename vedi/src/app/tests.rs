@@ -1108,6 +1108,9 @@ fn copy_and_quit_waits_for_the_copier() {
     });
     let mut opts = options();
     opts.runtime.copier = Box::new(Handoff(tx));
+    opts.keys = opts
+        .keys
+        .apply(&config::parse("t", "map Enter copy_and_quit").unwrap().keys);
     let mut a = app(20, 3, "ab\n", opts);
     assert_eq!(press(&mut a, "Shift+Right Enter"), Flow::Continue);
     assert_eq!(a.status.as_deref(), Some("copy failed: late"));

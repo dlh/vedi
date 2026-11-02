@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x75
+80x73
 -- input --
 abc
 -- keys --
@@ -26,7 +26,7 @@ Alt+h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
-  0  $  h
+  0  $  Enter  h
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.
@@ -62,8 +62,6 @@ Alt+h
                                     COPYING
 
   ⌃C  y                                   Copy the selection as plain text.
-  Enter                                   Copy the selection and quit; with
-                                          none, down a line.
  ------------------------------------------------------------------------------
 
                                    SEARCHING

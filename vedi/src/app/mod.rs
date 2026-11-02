@@ -331,10 +331,15 @@ impl<T: Terminal> App<T> {
                         let cmd = self.keys.lookup(k);
                         self.help_key(cmd)
                     }
-                    Focus::Viewing => match self.keys.lookup(k) {
-                        Some(c) => self.view_key(c),
-                        None => Flow::Say(format!("not bound: {k}")),
-                    },
+                    Focus::Viewing => {
+                        if let Some(flow) = self.list_key(k) {
+                            return flow;
+                        }
+                        match self.keys.lookup(k) {
+                            Some(c) => self.view_key(c),
+                            None => Flow::Say(format!("not bound: {k}")),
+                        }
+                    }
                     Focus::Prompting(kind) => self.prompt_key(kind, k),
                 };
             }
@@ -369,9 +374,6 @@ impl<T: Terminal> App<T> {
     }
 
     fn view_key(&mut self, c: Command) -> Flow {
-        if let Some(flow) = self.list_key(&c) {
-            return flow;
-        }
         let (v, e) = (&mut self.views.shown, c.extend);
         match c.action {
             Action::Up => v.go(Motion::Up, e),

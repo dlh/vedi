@@ -86,8 +86,8 @@ mouse selects when no program has taken the mouse.
 `open_cmd` leaves stdin as it is. A command that fails ends the text with a read
 error naming its exit status and stderr; `R` and auto-reload run it again. See
 [Pager](pager.md#the-inputs-name). `clipboard_cmd` runs in the background: the
-status line says `copying` until it is done, and Enter waits for it. A copy
-started before then ends it; so does quitting.
+status line says `copying` until it is done, and `copy_and_quit` waits for it.
+A copy started before then ends it; so does quitting.
 
 **open_cmd by file type.** A glob before the command, one with `*`, `?` or `[`,
 limits it to files whose name matches, case ignored; `[!a-c]` excludes, `[*]` is
@@ -186,6 +186,7 @@ map j down
 map k up
 map 0 home
 map $ end
+map Enter down
 map Cmd+Left home
 map Cmd+Right end
 
@@ -284,8 +285,8 @@ map Ctrl+c copy
 map Cmd+c copy
 map y copy
 
-# Copy the selection and quit; with none, down a line
-map Enter copy_and_quit
+# Copy the selection and quit; with none, down a line: copy_and_quit;
+# unbound by default
 
 # Search as typed; ignores case unless capitalized; empty repeats
 map / search

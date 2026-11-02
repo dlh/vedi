@@ -45,8 +45,8 @@ pub const USAGE: &str = r#"usage: vedi [flags] [file...]
 Flags in the VEDI environment variable apply to every run; the
 command line wins.
 
-Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, Enter copy and
-quit, / search, n/N next/prev, w toggle wrap, q quit.
+Keys: arrows move, Shift+arrows select, Ctrl+C/y copy, / search, n/N
+next/prev, w toggle wrap, q quit.
 
 Docs: https://github.com/dlh/vedi
 "#;

@@ -1,0 +1,25 @@
+copy_and_quit, unbound by default, copies the selection and quits.
+Without a selection it moves down one line, as Enter does in less, so
+Enter can take it. A selection with nothing in it is no selection.
+
+-- size --
+40x5
+-- config --
+map Enter copy_and_quit
+-- input --
+hello
+world
+there
+-- keys --
+Enter
+-- cursor --
+1 0
+-- keys --
+Shift+Right Shift+Left Enter
+-- cursor --
+2 0
+-- keys --
+Shift+Right Enter
+-- quit --
+-- clipboard --
+t

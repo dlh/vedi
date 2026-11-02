@@ -8,7 +8,6 @@ use crate::app::prompt::Edit;
 use crate::app::text_view::{Motion, Selection, Start, TextView};
 use crate::app::views::Role;
 use crate::app::{App, Flow, Focus, Kind};
-use crate::input::action::{Action, Command};
 use crate::input::key::{Key, KeyCode, Mods};
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::{Buffer, Pos, Progress, Storage};
@@ -334,16 +333,16 @@ impl<T: Terminal> App<T> {
         self.views.shown.land(m, Pos { line, col: p.col });
     }
 
-    /// What a key does in the list that it does not in the text: Enter
-    /// with no selection goes to the cursor's line, Esc with none
-    /// leaves. `None` for any other key.
-    pub(super) fn list_key(&mut self, c: &Command) -> Option<Flow> {
-        if !self.listing() || c.extend || self.views.shown.has_selection() {
+    /// The list's own keys, as at a prompt, before the map: Enter with
+    /// no selection goes to the cursor's line, Esc with none leaves.
+    /// `None` for any other key.
+    pub(super) fn list_key(&mut self, k: Key) -> Option<Flow> {
+        if !self.listing() || k.mods != Mods::NONE || self.views.shown.has_selection() {
             return None;
         }
-        match c.action {
-            Action::CopyAndQuit => self.jump(),
-            Action::ClearSelection => self.close_filter(),
+        match k.code {
+            KeyCode::Enter => self.jump(),
+            KeyCode::Esc => self.close_filter(),
             _ => return None,
         }
         Some(Flow::Continue)

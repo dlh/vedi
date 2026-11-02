@@ -23,7 +23,7 @@ only
 -- cursor --
 0 4
 -- keys --
-Ctrl+A Enter
+Ctrl+A y q
 -- quit --
 -- clipboard --
 only
