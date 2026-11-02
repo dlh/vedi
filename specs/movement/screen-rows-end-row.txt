@@ -1,0 +1,26 @@
+The end row after a trailing newline is one of the rows the text
+fills: with three lines and that row on a screen of five, M takes the
+third line, not the second, and B the end row.
+
+-- size --
+40x6
+-- input --
+l1
+l2
+l3
+
+-- keys --
+M
+-- screen --
+l1
+l2
+l3
+
+
+<stdin>  line 3/3  wrap           h help
+-- cursor --
+2 0
+-- keys --
+B
+-- cursor --
+3 0

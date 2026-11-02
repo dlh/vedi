@@ -1,7 +1,8 @@
 T, M and B put the cursor at the start of the top, middle and bottom
-row of the screen, and so bring back one scrolled off. A row naming
-an input is not a line: on one they take the text row after it, or
-before it on the bottom row.
+row of the screen, and so bring back one scrolled off. When the text
+ends on the screen, M takes the middle of the rows it fills and B
+its last. A row naming an input is not a line: on one they take the
+text row after it, or before it on the bottom row.
 
 -- size --
 28x5
@@ -16,6 +17,7 @@ a4
 -- input --
 b1
 b2
+b3
 -- keys --
 B
 -- screen --
@@ -41,7 +43,7 @@ a3
 a4
 ━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
-b.txt 2/2  line 1/2  wrap
+b.txt 2/2  line 1/3  wrap
 -- cursor --
 3 0
 -- keys --
@@ -73,12 +75,20 @@ PgDn
 -- screen --
 b1
 b2
+b3
 
-
-b.txt 2/2  line 1/2  wrap
+b.txt 2/2  line 1/3  wrap
 -- cursor --
 hidden
 -- keys --
 T
 -- cursor --
 0 0
+-- keys --
+M
+-- cursor --
+1 0
+-- keys --
+B
+-- cursor --
+2 0

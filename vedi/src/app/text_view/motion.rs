@@ -101,7 +101,10 @@ impl TextView {
             Motion::First => self.cur = Pos::default(),
             Motion::Last => self.cur = self.end_pos(),
             Motion::ScreenTop => self.screen_row(0),
-            Motion::ScreenMiddle => self.screen_row(self.geom.rows / 2),
+            Motion::ScreenMiddle => {
+                let n = self.rows_shown() / 2;
+                self.screen_row(n);
+            }
             Motion::ScreenBottom => self.screen_row(self.geom.rows.saturating_sub(1)),
             Motion::PrevInput => self.prev_input(),
             Motion::NextInput => self.next_input(),
@@ -290,6 +293,25 @@ impl TextView {
         self.cur = Pos { line, col: 0 };
         let top = self.with_sep(self.cur);
         self.place_top(top);
+    }
+
+    /// Rows the text fills from the top of the screen: the screen's,
+    /// unless the text ends on it.
+    fn rows_shown(&mut self) -> usize {
+        if self.geom.rows == 0 || self.buf.is_empty() {
+            return 0;
+        }
+        let mut p = self.snap(self.top);
+        let mut n = 1;
+        while n < self.geom.rows {
+            let q = self.next_row(p);
+            if q == p {
+                break;
+            }
+            p = q;
+            n += 1;
+        }
+        n
     }
 
     /// Puts the cursor at the start of the text row `n` rows below the

@@ -17,7 +17,7 @@ and the search keys search them. These are the defaults.
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
-| T, M, B | Top, middle, bottom row of the screen |
+| T, M, B | Top, middle, bottom of the shown text |
 | [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Ctrl+Shift+Home, Ctrl+Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |

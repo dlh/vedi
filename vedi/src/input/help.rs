@@ -119,7 +119,7 @@ const SECTIONS: &[HelpSection] = {
                 bound(&[Act(First), Act(Last)], "Start, end of the text"),
                 bound(
                     &[Act(ScreenTop), Act(ScreenMiddle), Act(ScreenBottom)],
-                    "Top, middle, bottom row of the screen",
+                    "Top, middle, bottom of the shown text",
                 ),
                 bound(
                     &[Act(PrevFile), Act(NextFile)],
