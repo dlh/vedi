@@ -13,7 +13,7 @@ first
 {á}[bc]
 
 
-copied 1 line                     h help
+copied 3 chars                    h help
 -- cursor --
 1 3
 -- clipboard --

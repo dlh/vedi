@@ -44,7 +44,7 @@ Cmd+Shift+Right y
 [line 1]
 line 2
 line 3
-copied 1 line                     h help
+copied 6 chars                    h help
 -- clipboard --
 line 1
 -- keys --

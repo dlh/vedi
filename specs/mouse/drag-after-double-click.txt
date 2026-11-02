@@ -29,6 +29,6 @@ release 0 1
 f[oo ]bar_1 baz
 
 
-copied 1 line                     h help
+copied 3 chars                    h help
 -- cursor --
 0 1

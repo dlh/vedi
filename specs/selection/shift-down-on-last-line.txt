@@ -14,7 +14,7 @@ hello world
 [second]
 
 
-copied 1 line                     h help
+copied 6 chars                    h help
 -- cursor --
 1 6
 -- clipboard --

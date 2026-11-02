@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, TryRecvError};
 
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::app::{App, CopyResult, Flow};
 use crate::sys::proc::Killer;
 use crate::text::ansi::ViewStyle;
@@ -9,8 +11,8 @@ use crate::view::screen::Terminal;
 /// A copy under way.
 pub(super) struct Copying {
     rx: Receiver<CopyResult>,
-    /// Lines selected, for the status line.
-    lines: usize,
+    /// How much was sent, for the status line: `3 lines`, `5 chars`.
+    amount: String,
     report: Report,
     killer: Option<Killer>,
 }
@@ -36,7 +38,7 @@ impl<T: Terminal> App<T> {
         let mut out = Vec::new();
         sel.shown(self.views.shown.buf(), ViewStyle::Raw, &mut out);
         let text = String::from_utf8(out).expect("chars encoded as UTF-8");
-        let lines = sel.lines();
+        let amount = amount(&text, sel.lines());
         // A copy still under way would land after this one, maybe last.
         if let Some(k) = self.copying.take().and_then(|c| c.killer) {
             k.kill();
@@ -52,7 +54,7 @@ impl<T: Terminal> App<T> {
         );
         Ok(Copying {
             rx,
-            lines,
+            amount,
             report,
             killer,
         })
@@ -87,7 +89,7 @@ impl<T: Terminal> App<T> {
             Err(flow) => return flow,
         };
         let res = c.rx.recv().unwrap_or_else(|_| Err("no result".into()));
-        match copied(c.lines, res) {
+        match copied(&c.amount, res) {
             (_, true) => Flow::Quit,
             (msg, false) => Flow::Say(msg),
         }
@@ -113,19 +115,30 @@ impl<T: Terminal> App<T> {
     }
 }
 
+/// How much `text`, `lines` long, is to the eye: its lines when it
+/// holds a newline, else its chars, a grapheme cluster each as drawn.
+fn amount(text: &str, lines: usize) -> String {
+    let (n, noun) = if text.contains('\n') {
+        (lines, "line")
+    } else {
+        (text.graphemes(true).count(), "char")
+    };
+    let s = if n == 1 { "" } else { "s" };
+    format!("{n} {noun}{s}")
+}
+
 /// The flow a finished copy's result makes under its report.
 fn said(c: &Copying, res: CopyResult) -> Flow {
-    match copied(c.lines, res) {
+    match copied(&c.amount, res) {
         (_, true) if c.report == Report::Failure => Flow::Continue,
         (msg, _) => Flow::Say(msg),
     }
 }
 
 /// What the status line says of a copy's result, and whether it went.
-fn copied(lines: usize, res: CopyResult) -> (String, bool) {
+fn copied(amount: &str, res: CopyResult) -> (String, bool) {
     match res {
-        Ok(()) if lines == 1 => ("copied 1 line".into(), true),
-        Ok(()) => (format!("copied {lines} lines"), true),
+        Ok(()) => (format!("copied {amount}"), true),
         Err(e) => (format!("copy failed: {e}"), false),
     }
 }

@@ -16,6 +16,6 @@ hello
 world
 
 
-copied 1 line                     h help
+copied 1 char                     h help
 -- cursor --
 1 1

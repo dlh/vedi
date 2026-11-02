@@ -13,7 +13,7 @@ Shift+Right Shift+Right Shift+Right Shift+Right Shift+Right Ctrl+C
 second
 
 
-copied 1 line                     h help
+copied 5 chars                    h help
 -- cursor --
 0 5
 -- clipboard --

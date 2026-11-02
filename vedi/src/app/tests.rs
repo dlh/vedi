@@ -1067,7 +1067,7 @@ fn copy_reports_when_the_copier_is_done() {
     done.borrow_mut().remove(0)(Ok(()));
     assert_eq!(woke.load(Ordering::SeqCst), 1);
     a.handle(Event::Copied);
-    assert_eq!(a.status.as_deref(), Some("copied 1 line"));
+    assert_eq!(a.status.as_deref(), Some("copied 1 char"));
     assert!(!a.copying());
 }
 

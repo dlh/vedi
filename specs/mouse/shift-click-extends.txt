@@ -36,7 +36,7 @@ Shift+click 0 0
 two
 three
 
-copied 1 line                     h help
+copied 1 char                     h help
 -- cursor --
 0 0
 -- mouse --

@@ -16,4 +16,4 @@ Shift+Right y
 
 
 
-copied 1 line                     h help
+copied 1 char                     h help
