@@ -11,6 +11,6 @@ ábc
 {{áb}}c
 
 
-<stdin>  line 1/1  wrap           h help
+<stdin>  line 1/1  /́b  1/1  wrap  h help
 -- cursor --
 0 0

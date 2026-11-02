@@ -11,6 +11,6 @@ is highlighted whole: it has no cells of its own to mark.
 {{👨‍👩‍👧}}x
 
 
-<stdin>  line 1/1  wrap           h help
+<stdin>  line 1/1  /👩  1/1  wrap
 -- cursor --
 0 0

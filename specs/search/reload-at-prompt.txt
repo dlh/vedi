@@ -1,0 +1,33 @@
+A reload while the prompt is open: Esc puts back the cursor and the
+selection clamped to the new text, and counts the matches again.
+
+-- args --
+f.txt
+-- input --
+l1
+l2
+l3
+l4
+
+-- keys --
+/ "l" Enter Down Down Down Shift+Up Shift+Up Shift+Up /
+-- reload --
+l1
+l2
+
+-- keys --
+Esc
+-- screen --
+[l1 ]
+{l}2
+
+
+
+f.txt  line 1/2  /l  1/2  wrap    h help
+-- cursor --
+0 0
+-- keys --
+y
+-- clipboard --
+l1
+

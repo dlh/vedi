@@ -52,7 +52,7 @@ bar
 {{foo}} two
 baz
 {foo} three
-<stdin>  line 3/5  wrap           h help
+<stdin>  line 3/5  /foo  2/3  wrap
 -- cursor --
 2 0
 -- keys --

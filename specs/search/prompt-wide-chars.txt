@@ -10,4 +10,4 @@ marks on the character before them.
 -- screen --
 {{日本語 café}}
 
-/日本語 café
+/日本語 café     1/1

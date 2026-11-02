@@ -1,7 +1,8 @@
 A search, n or N that lands on a row off the screen scrolls that row to
 the top, not just into view, so the text after the match shows. A match
 already on screen does not scroll, and one in the last screenful shows
-the last screenful, not blank rows, from either side.
+the last screenful, not blank rows, from either side. The count names
+the last match visited until the next lands.
 
 -- input --
 line 1
@@ -32,7 +33,7 @@ line 8
 {foo} 9
 line 10
 line 11
-<stdin>  line 7/20  wrap          h help
+<stdin>  line 7/20  /foo  1/3  wrap
 -- cursor --
 0 0
 -- keys --
@@ -43,7 +44,7 @@ line 8
 {{foo}} 9
 line 10
 line 11
-<stdin>  line 9/20  wrap          h help
+<stdin>  line 9/20  /foo  2/3  wrap
 -- cursor --
 2 0
 -- keys --
@@ -54,7 +55,7 @@ line 17
 line 18
 {{foo}} 19
 line 20
-<stdin>  line 19/20  wrap         h help
+<stdin>  line 19/20  /foo  3/3  wrap
 -- cursor --
 3 0
 -- keys --
@@ -65,7 +66,7 @@ line 10
 line 11
 line 12
 line 13
-<stdin>  line 9/20  wrap          h help
+<stdin>  line 9/20  /foo  2/3  wrap
 -- cursor --
 0 0
 -- keys --
@@ -78,7 +79,7 @@ line 20
 
 
 
-<stdin>  line 20/20  wrap         h help
+<stdin>  line 20/20  /foo  2/3  wrap
 -- keys --
 N
 -- screen --
@@ -87,6 +88,6 @@ line 17
 line 18
 {{foo}} 19
 line 20
-<stdin>  line 19/20  wrap         h help
+<stdin>  line 19/20  /foo  3/3  wrap
 -- cursor --
 3 0

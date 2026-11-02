@@ -1,0 +1,23 @@
+Esc after a reload emptied the file while the prompt was open counts
+the matches again, and finds none.
+
+-- args --
+f.txt
+-- input --
+foo
+foo
+
+-- keys --
+/ "foo" Enter /
+-- reload --
+-- keys --
+Esc
+-- screen --
+
+
+
+
+
+f.txt  line 1/0  /foo  0/0  wrap  h help
+-- cursor --
+hidden

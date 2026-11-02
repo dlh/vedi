@@ -19,7 +19,7 @@ Left
 -- screen --
 café
 
-/cafxé
+/cafxé           0/0
 -- cursor --
 2 5
 -- keys --
@@ -31,6 +31,6 @@ Backspace
 -- screen --
 café
 
-/cafx
+/cafx            0/0
 -- cursor --
 2 5

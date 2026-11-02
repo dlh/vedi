@@ -17,6 +17,7 @@ pub use motion::Motion;
 pub(crate) use motion::is_word;
 use rows::LaidCache;
 pub use rows::{At, Row};
+use search::Count;
 pub use search::{Origin, Outcome};
 pub use selection::Selection;
 
@@ -101,6 +102,9 @@ pub struct TextView {
     /// The last search was backward, and so n goes up and N down.
     backward: bool,
     highlight: bool,
+    count: Option<Count>,
+    /// Times the text was changed under the view, as by a reload.
+    edition: usize,
     laid: LaidCache,
     /// A line's chars, decoded into it rather than allocated per call.
     scratch: Vec<char>,
@@ -125,6 +129,8 @@ impl TextView {
             matcher: Matcher::new(""),
             backward: false,
             highlight: false,
+            count: None,
+            edition: 0,
             laid: LaidCache::new(geom.layout()),
             scratch: Vec::new(),
         }
@@ -228,6 +234,7 @@ impl TextView {
     /// burst of it is in.
     pub fn apply(&mut self, p: Progress) {
         self.buf.apply(p);
+        self.extend_count();
     }
 
     /// Runs after the reader appended lines: applies a pending +N,
@@ -464,6 +471,7 @@ impl TextView {
     pub fn change_text(&mut self, f: impl FnOnce(&mut Buffer)) {
         let place = self.place();
         f(&mut self.buf);
+        self.edition += 1;
         let was = self.cur;
         let n = self.buf.len();
         let (buf, scratch) = (&self.buf, &mut self.scratch);
@@ -478,17 +486,6 @@ impl TextView {
                 col: p.col.min(scratch.len()),
             }
         };
-        // `line` within input `part`; an input that emptied yields to the
-        // next.
-        let within = |part: usize, line: usize| {
-            let parts = buf.parts();
-            let Some(&start) = parts.get(part).filter(|_| n > 0) else {
-                return line;
-            };
-            let lo = start.min(n - 1);
-            let hi = parts.get(part + 1).map_or(n, |&e| e.max(lo + 1)).min(n) - 1;
-            line.clamp(lo, hi)
-        };
         let line = if place.at_end {
             n.saturating_sub(1)
         } else {
@@ -496,7 +493,7 @@ impl TextView {
         };
         self.cur = clamp(
             Pos {
-                line: within(place.cur, line),
+                line: within(buf, place.cur, line),
                 col: self.cur.col,
             },
             scratch,
@@ -513,7 +510,7 @@ impl TextView {
             ));
         }
         if let (Some(a), Some(part)) = (&mut self.anchor, place.anchor) {
-            a.line = within(part, a.line);
+            a.line = within(buf, part, a.line);
             *a = clamp(*a, scratch);
         }
         self.laid.clear();
@@ -527,6 +524,9 @@ impl TextView {
         if self.cur != was {
             self.scroll_to_cursor();
         }
+        if self.count.is_some() {
+            self.recount();
+        }
     }
 
     fn place(&mut self) -> Place {
@@ -539,6 +539,19 @@ impl TextView {
             anchor: anchor.map(|a| self.buf.part_at(a.line)),
         }
     }
+}
+
+/// `line` within input `part` of `buf`; an input that emptied yields
+/// to the next.
+pub(super) fn within(buf: &Buffer, part: usize, line: usize) -> usize {
+    let n = buf.len();
+    let parts = buf.parts();
+    let Some(&start) = parts.get(part).filter(|_| n > 0) else {
+        return line;
+    };
+    let lo = start.min(n - 1);
+    let hi = parts.get(part + 1).map_or(n, |&e| e.max(lo + 1)).min(n) - 1;
+    line.clamp(lo, hi)
 }
 
 /// Where a view was before its text changed.

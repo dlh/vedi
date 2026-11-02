@@ -88,8 +88,9 @@ impl<T: Terminal> App<T> {
     /// is unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
     /// filled in in the other video and on screen; the & prompt has the
-    /// lines listed of the text's at the right edge, as the hint is. A
-    /// prompt wider than the screen scrolls to keep the cursor on it, at
+    /// lines listed of the text's at the right edge, as the hint is, and the
+    /// / prompt which match of how many the line lands on, 0/0 with
+    /// none, while the line is not empty. A prompt wider than the screen scrolls to keep the cursor on it, at
     /// the right edge. Returns the cell of an open prompt's cursor.
     pub(super) fn draw_status(&self, g: &mut Grid, at: At) -> Option<(usize, usize)> {
         let (w, h) = (g.width(), g.height());
@@ -148,6 +149,16 @@ impl<T: Terminal> App<T> {
                 runes(g, w - count.len(), h - 1, &count, st);
             }
         }
+        if let Focus::Prompting(Kind::Search { .. }) = self.focus
+            && let Some(p) = prompt
+            && !p.text().is_empty()
+            && let Some((at, of)) = self.views.shown.count()
+        {
+            let count: Vec<char> = format!("{at}/{of}").chars().collect();
+            if width + 2 + count.len() <= w {
+                runes(g, w - count.len(), h - 1, &count, st);
+            }
+        }
         let help = Command {
             action: Action::Help,
             extend: false,
@@ -180,9 +191,11 @@ impl<T: Terminal> App<T> {
     /// is on, the wrap mode and view style, and what is still being
     /// read. In a filter's list: the query, which listed line of how
     /// many, and the text's line it is, named with its input when there
-    /// are several.
+    /// are several. After the line, the search while its highlight is
+    /// on: the pattern and which match of how many.
     fn summary(&self, width: usize, at: At) -> String {
         let tail = self.mode_and_reading();
+        let search = self.search_part();
         let buf = self.views.text().buf();
         // The end row is one past the last line, and no line.
         let past = if at.past { "+1" } else { "" };
@@ -199,7 +212,7 @@ impl<T: Terminal> App<T> {
                 name = format!("{} ", self.input_name(li));
             }
             return format!(
-                "&{}  {}{past}/{}  {name}line {}/{}  {tail}",
+                "&{}  {}{past}/{}  {name}line {}/{}{search}  {tail}",
                 f.query(),
                 at + 1,
                 f.listed(),
@@ -213,7 +226,7 @@ impl<T: Terminal> App<T> {
             rest = format!(" {}/{}", k + 1, self.names.len());
         }
         rest.push_str(&format!(
-            "  line {}{past}/{}  {tail}",
+            "  line {}{past}/{}{search}  {tail}",
             at - lines.start + 1,
             lines.len()
         ));
@@ -222,6 +235,20 @@ impl<T: Terminal> App<T> {
             width.saturating_sub(rest.chars().count()),
         );
         format!("{name}{rest}")
+    }
+
+    /// The search, while its highlight is on: the pattern after / or ?
+    /// for the direction n goes, and which match of how many.
+    fn search_part(&self) -> String {
+        let v = &self.views.shown;
+        match v.count() {
+            Some((at, of)) => format!(
+                "  {}{}  {at}/{of}",
+                if v.backward() { '?' } else { '/' },
+                v.matcher().pattern()
+            ),
+            None => String::new(),
+        }
     }
 
     /// The wrap mode and view style, and what is still being read.

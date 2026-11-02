@@ -21,28 +21,28 @@ end
 foo
 bar
 {{food}}
-/food
+/food                                1/1
 -- keys --
 Backspace
 -- screen --
 {{foo}}
 bar
 {foo}d
-/foo
+/foo                                 1/2
 -- keys --
 "x"
 -- screen --
 foo
 bar
 food
-/foox
+/foox                                0/0
 -- keys --
 Ctrl+u "end"
 -- screen --
 l4
 l5
 {{end}}
-/end
+/end                                 1/1
 -- keys --
 Esc
 -- screen --
@@ -65,7 +65,7 @@ Shift+Right Shift+Right / "bar"
 foo
 {{bar}}
 food
-/bar
+/bar                                 1/1
 -- keys --
 Esc
 -- screen --
@@ -81,7 +81,7 @@ Esc / "d" Enter
 foo
 bar
 foo{{d}}
-<stdin>  line 3/6  wrap           h help
+<stdin>  line 3/6  /d  1/2  wrap  h help
 -- cursor --
 2 3
 -- keys --
@@ -90,13 +90,13 @@ foo{{d}}
 foo
 {{bar}}
 food
-?bar
+?bar                                 1/1
 -- keys --
 Esc n
 -- screen --
 l4
 l5
 en{{d}}
-<stdin>  line 6/6  wrap           h help
+<stdin>  line 6/6  /d  2/2  wrap  h help
 -- cursor --
 2 2

@@ -14,7 +14,7 @@ y
 {x}3
 y
 
-<stdin>  line 2/4  wrap           h help
+<stdin>  line 2/4  /x  2/3  wrap  h help
 -- keys --
 &
 -- screen --
@@ -32,6 +32,6 @@ Ctrl+n Enter Enter
 {{x}}3
 y
 
-<stdin>  line 3/4  wrap           h help
+<stdin>  line 3/4  /x  3/3  wrap  h help
 -- cursor --
 2 0

@@ -63,7 +63,10 @@ yellow, the match the cursor is in in bright white on magenta, whatever the
 text's own colors. A match off the screen scrolls to the top row, or as near as
 the last screenful allows. The search runs as the pattern is typed, each key
 going to the first match from where the prompt opened, and Esc puts the screen
-back as it was. With `edge_markers yes` in the config, nowrap mode marks text
+back as it was. The right of the prompt row counts the matches, the one landed
+on and how many; after Enter the status line names the pattern and the count
+after the line, `/foo  3/17`, with `?` for a backward search, until Esc clears
+the highlight. With `edge_markers yes` in the config, nowrap mode marks text
 off the screen with a `<` or `>` in reverse video at that edge of the row, and
 wrap mode ends a row that continues below with a `\`.
 

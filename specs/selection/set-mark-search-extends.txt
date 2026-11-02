@@ -14,6 +14,6 @@ Right v / "foo" Enter
 
 
 
-<stdin>  line 2/2  wrap           h help
+<stdin>  line 2/2  /foo  2/2  wrap
 -- cursor --
 1 4

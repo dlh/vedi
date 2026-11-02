@@ -1,0 +1,91 @@
+The right edge of the prompt row counts the matches as the line is
+typed: the one landed on and how many there are, 0/0 with none. After
+Enter the summary row names the pattern after the line, / or ? for the
+direction n goes, and the count, until Esc clears the highlight. n and
+N step the count; from a cursor moved off its match, the match landed
+on is counted again.
+
+-- size --
+50x6
+-- input --
+foo
+bar foo
+foo
+-- keys --
+/ "fo"
+-- screen --
+{{fo}}o
+bar {fo}o
+{fo}o
+
+
+/fo                                            1/3
+-- keys --
+"x"
+-- screen --
+foo
+bar foo
+foo
+
+
+/fox                                           0/0
+-- keys --
+Backspace Enter
+-- screen --
+{{fo}}o
+bar {fo}o
+{fo}o
+
+
+<stdin>  line 1/3  /fo  1/3  wrap           h help
+-- cursor --
+0 0
+-- keys --
+n
+-- screen --
+{fo}o
+bar {{fo}}o
+{fo}o
+
+
+<stdin>  line 2/3  /fo  2/3  wrap           h help
+-- keys --
+Left n
+-- screen --
+{fo}o
+bar {{fo}}o
+{fo}o
+
+
+<stdin>  line 2/3  /fo  2/3  wrap           h help
+-- cursor --
+1 4
+-- keys --
+N
+-- screen --
+{{fo}}o
+bar {fo}o
+{fo}o
+
+
+<stdin>  line 1/3  /fo  1/3  wrap           h help
+-- keys --
+Down ? "fo" Enter
+-- screen --
+{{fo}}o
+bar {fo}o
+{fo}o
+
+
+<stdin>  line 1/3  ?fo  1/3  wrap           h help
+-- cursor --
+0 0
+-- keys --
+Esc
+-- screen --
+foo
+bar foo
+foo
+
+
+<stdin>  line 1/3  wrap                     h help

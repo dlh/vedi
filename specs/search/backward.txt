@@ -14,7 +14,7 @@ Down Down ? "foo"
 {foo} 3
 
 
-?foo
+?foo                                 2/3
 -- keys --
 Enter
 -- screen --
@@ -23,7 +23,7 @@ Enter
 {foo} 3
 
 
-<stdin>  line 2/3  wrap           h help
+<stdin>  line 2/3  ?foo  2/3  wrap
 -- cursor --
 1 0
 -- keys --

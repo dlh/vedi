@@ -108,6 +108,6 @@ Esc / "ine" Home "l" Enter
 
 
 
-<stdin>  line 1/2  word wrap      h help
+<stdin>  line 1/2  /line  1/2  word wrap
 -- cursor --
 0 0

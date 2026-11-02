@@ -12,7 +12,7 @@ foo
 -- screen --
 start
 {{foo}}
-<stdin>  line 2/2  wrap           h help
+<stdin>  line 2/2  /foo  1/1  wrap
 -- cursor --
 1 0
 -- keys --
@@ -20,6 +20,6 @@ start
 -- screen --
 start
 {{foo}}
-<stdin>  line 2/2  wrap  raw      h help
+<stdin>  line 2/2  /foo  1/1  wrap  raw
 -- cursor --
 1 0

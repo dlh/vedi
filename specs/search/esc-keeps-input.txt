@@ -1,0 +1,30 @@
+Esc after a reload while the prompt was open keeps the cursor in its
+input, clamped to that input's lines, as the reload itself does: a
+file above that shrank would otherwise hand it to the next.
+
+-- size --
+28x5
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+-- keys --
+Down Down /
+-- reload a.txt --
+a1
+-- keys --
+Esc
+-- screen --
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
+a1
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
+b1
+a.txt 1/2  line 1/1  wrap
+-- cursor --
+1 0

@@ -10,7 +10,7 @@ banana
 -- screen --
 b{{ana}}{na}
 
-<stdin>  line 1/1  wrap           h help
+<stdin>  line 1/1  /ana  1/2  wrap
 -- cursor --
 0 1
 -- keys --
@@ -18,6 +18,6 @@ n
 -- screen --
 b{{anana}}
 
-<stdin>  line 1/1  wrap           h help
+<stdin>  line 1/1  /ana  2/2  wrap
 -- cursor --
 0 3

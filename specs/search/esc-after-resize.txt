@@ -1,0 +1,29 @@
+Esc after the screen shrank while the prompt was open keeps a cursor
+that was on screen on screen, as a resize does.
+
+-- size --
+40x6
+-- input --
+line 1
+line 2
+line 3
+line 4
+line 5
+line 6
+line 7
+line 8
+line 9
+line 10
+-- keys --
+Down Down Down / "line 1"
+-- resize --
+40x4
+-- keys --
+Esc
+-- screen --
+line 2
+line 3
+line 4
+<stdin>  line 4/10  wrap          h help
+-- cursor --
+2 0

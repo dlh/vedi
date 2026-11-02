@@ -72,6 +72,6 @@ Esc / "line 1" Ctrl+w
 
 
 
-/line
+/line                                1/1
 -- cursor --
 5 6

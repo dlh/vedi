@@ -1,0 +1,50 @@
+Lines still being read join the count as they come, with the prompt
+open as well as closed, and a reload counts again, the cursor where
+it was.
+
+-- size --
+50x6
+-- args --
+f.txt
+-- input --
+foo
+bar foo
+foo
+
+-- keys --
+/ "fo" Enter /
+-- input --
+foo 4
+
+-- keys --
+Esc
+-- screen --
+{{fo}}o
+bar {fo}o
+{fo}o
+{fo}o 4
+
+f.txt  line 1/4  /fo  1/4  wrap  reading…   h help
+-- keys --
+n n n
+-- screen --
+{fo}o
+bar {fo}o
+{fo}o
+{{fo}}o 4
+
+f.txt  line 4/4  /fo  4/4  wrap  reading…   h help
+-- eof --
+-- reload --
+fo
+fo
+
+-- screen --
+{fo}
+{{fo}}
+
+
+
+f.txt  line 2/2  /fo  2/2  wrap             h help
+-- cursor --
+1 0

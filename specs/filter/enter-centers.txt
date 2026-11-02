@@ -34,7 +34,7 @@ l14
 {{l15}}
 l16
 l17
-<stdin>  line 15/20  wrap         h help
+<stdin>  line 15/20  /l15  1/1  wrap
 -- cursor --
 2 0
 -- keys --
@@ -45,7 +45,7 @@ l1
 l3
 l4
 l5
-<stdin>  line 2/20  wrap          h help
+<stdin>  line 2/20  /l2  1/2  wrap
 -- keys --
 & Ctrl+u "l19" Enter Enter
 -- screen --
@@ -54,7 +54,7 @@ l17
 l18
 {{l19}}
 l20
-<stdin>  line 19/20  wrap         h help
+<stdin>  line 19/20  /l19  1/1  wrap
 -- keys --
 & Ctrl+u "l10" Enter
 -- resize --
@@ -71,6 +71,6 @@ l11
 l12
 l13
 l14
-<stdin>  line 10/20  wrap         h help
+<stdin>  line 10/20  /l10  1/1  wrap
 -- cursor --
 4 0

@@ -27,7 +27,7 @@ no search pattern                 h help
 {foo} 3
 
 
-<stdin>  line 2/3  wrap           h help
+<stdin>  line 2/3  /foo  2/3  wrap
 -- cursor --
 1 0
 -- keys --

@@ -14,7 +14,7 @@ foo
 
 
 
-/bar
+/bar                                 1/1
 -- keys --
 Up
 -- screen --
@@ -23,7 +23,7 @@ bar
 
 
 
-/foo
+/foo                                 1/1
 -- keys --
 Up
 -- screen --
@@ -32,7 +32,7 @@ bar
 
 
 
-/foo
+/foo                                 1/1
 -- keys --
 Down Down "ba"
 -- screen --
@@ -41,7 +41,7 @@ foo
 
 
 
-/ba
+/ba                                  1/1
 -- keys --
 Up Backspace "z"
 -- screen --
@@ -50,7 +50,7 @@ bar
 
 
 
-/baz
+/baz                                 0/0
 -- keys --
 Down
 -- screen --
@@ -59,7 +59,7 @@ foo
 
 
 
-/ba
+/ba                                  1/1
 -- keys --
 Esc / "baz" Enter / "baz" Enter / Up Up
 -- screen --
@@ -68,4 +68,4 @@ foo
 
 
 
-/bar
+/bar                                 1/1

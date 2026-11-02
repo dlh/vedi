@@ -24,7 +24,7 @@ no search pattern
   d  ⌃D                                   Down {{half}} a page.
   u  ⌃U                                   Up {half} a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-/half
+/half                                                    1/2
 -- keys --
 Enter
 -- screen --
@@ -54,7 +54,7 @@ q
 {{page}} 1
 {page} 2
 
-<stdin>  line 1/2  wrap                               h help
+<stdin>  line 1/2  /page  1/2  wrap                   h help
 -- cursor --
 0 0
 -- keys --

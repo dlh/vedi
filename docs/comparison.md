@@ -82,9 +82,9 @@ columns of colored text each, and reports the median of five runs.
 | peak memory, file, MB | 8.5 | 2.4 | 345.7 | 76.0 | 99.0 |
 | peak memory, stdin, MB | 76.8 | 94.2 | 353.9 | 228.0 | 174.7 |
 
-The search covers the whole input, which is read by then. moor searches as each
-character is typed, so its time is four searches. vim runs with its plugin and
-no other configuration.
+The search covers the whole input, which is read by then. vedi and moor search
+as each character is typed, so their times are four searches; vedi's row is from
+before it did. vim runs with its plugin and no other configuration.
 
 neovim is no longer in the run. In its last, on 2026-10-03, 0.12.5 with
 baleia.nvim of 2026-06-01 took 7.3 s to the first screen and 2.2 GB of memory.

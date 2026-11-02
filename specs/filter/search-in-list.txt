@@ -1,6 +1,6 @@
 / searches the list as it searches the text, and Enter goes to the
 line the cursor is on, wherever in it; the text's search is then the
-query's.
+query's, counted from the line's place.
 
 -- input --
 a x
@@ -15,7 +15,7 @@ a y
 a {{z}}
 
 
-&a  3/3  line 4/4  wrap           h help
+&a  3/3  line 4/4  /z  1/1  wrap  h help
 -- cursor --
 2 2
 -- keys --
@@ -26,7 +26,7 @@ Enter
 b
 {a} z
 
-<stdin>  line 4/4  wrap           h help
+<stdin>  line 4/4  /a  3/3  wrap  h help
 -- cursor --
 3 2
 -- keys --

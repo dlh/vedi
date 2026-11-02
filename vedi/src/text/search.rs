@@ -185,9 +185,13 @@ impl Matcher {
             .find(|&i| self.match_at(text, i))
     }
 
-    /// Every match's start; matches may overlap.
+    /// Every match's start, ascending; matches may overlap.
+    pub fn starts<'a>(&'a self, text: &'a [char]) -> impl Iterator<Item = usize> + 'a {
+        std::iter::successors(self.find(text, 0), move |&i| self.find(text, i + 1))
+    }
+
     pub fn all(&self, text: &[char]) -> Vec<usize> {
-        std::iter::successors(self.find(text, 0), |&i| self.find(text, i + 1)).collect()
+        self.starts(text).collect()
     }
 }
 
@@ -340,6 +344,39 @@ pub fn lines(buf: &Buffer, m: &Matcher, lines: Range<usize>, out: &mut Vec<usize
     }
 }
 
+/// How many matches `lines` hold, each one n would visit.
+pub fn count(buf: &Buffer, m: &Matcher, lines: Range<usize>) -> usize {
+    let lines = lines.start..lines.end.min(buf.len());
+    if lines.is_empty() || m.is_empty() {
+        return 0;
+    }
+    let mut n = 0;
+    let mut w = Walk::new(buf, m);
+    for k in lines.start / BLOCK_LINES..=(lines.end - 1) / BLOCK_LINES {
+        w.scan(k, &lines, Dir::Forward, |_, text| {
+            n += m.starts(text).count();
+            None::<()>
+        });
+    }
+    n
+}
+
+/// How many matches start at or before `at`, and how many there are.
+pub fn position(buf: &Buffer, m: &Matcher, at: Pos) -> (usize, usize) {
+    let n = buf.len();
+    if at.line >= n {
+        let all = count(buf, m, 0..n);
+        return (all, all);
+    }
+    let before = count(buf, m, 0..at.line);
+    let mut w = Walk::new(buf, m);
+    let (upto, on) = m
+        .starts(w.line(at.line))
+        .fold((0, 0), |(u, o), i| (u + usize::from(i <= at.col), o + 1));
+    let after = count(buf, m, at.line + 1..n);
+    (before + upto, before + on + after)
+}
+
 /// The first match at or after `from` (strictly after when `after`),
 /// wrapping around the end.
 pub fn next(buf: &Buffer, m: &Matcher, from: Pos, after: bool) -> Option<Found> {
@@ -457,6 +494,37 @@ mod tests {
         assert_eq!(m.find_last(&text, 6), Some(3));
         assert_eq!(m.find_last(&text, 0), None);
         assert_eq!(Matcher::new("aa").all(&chars("aaaa")), [0, 1, 2]);
+    }
+
+    /// Matches are counted as n visits them, overlapping ones each;
+    /// a position is how many start at or before it.
+    #[test]
+    fn counts() {
+        let b = mk(&["foo", "bar foo", "foo", "zzz"]);
+        let m = Matcher::new("foo");
+        assert_eq!(count(&b, &m, 0..4), 3);
+        assert_eq!(count(&b, &m, 1..2), 1);
+        assert_eq!(count(&b, &m, 2..99), 1);
+        assert_eq!(count(&b, &m, 4..4), 0);
+        assert_eq!(count(&b, &Matcher::new(""), 0..4), 0);
+        assert_eq!(count(&b, &Matcher::new("zzz"), 0..4), 1);
+        for (p, want) in [
+            (at(0, 0), (1, 3)),
+            (at(1, 3), (1, 3)),
+            (at(1, 4), (2, 3)),
+            (at(2, 0), (3, 3)),
+            (at(3, 0), (3, 3)),
+            (at(9, 0), (3, 3)),
+        ] {
+            assert_eq!(position(&b, &m, p), want, "{p:?}");
+        }
+        assert_eq!(position(&b, &Matcher::new("q"), at(0, 0)), (0, 0));
+        let b = mk(&["banana"]);
+        let m = Matcher::new("ana");
+        assert_eq!(count(&b, &m, 0..1), 2);
+        assert_eq!(position(&b, &m, at(0, 0)), (0, 2));
+        assert_eq!(position(&b, &m, at(0, 1)), (1, 2));
+        assert_eq!(position(&b, &m, at(0, 3)), (2, 2));
     }
 
     #[test]
