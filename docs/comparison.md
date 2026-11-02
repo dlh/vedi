@@ -73,27 +73,27 @@ columns of colored text each, and reports the median of five runs.
 
 | | vedi | less | moor | ov | vim |
 |---|---:|---:|---:|---:|---:|
-| first screen from a file, ms | 5.0 | 5.3 | 34.8 | 64.8 | 544.3 |
-| then to the last line, ms | 79.3 | 238.2 | 107.8 | 2.6 | 9.1 |
-| then back to the first, ms | 0.2 | 0.3 | 0.4 | 0.2 | 4.9 |
-| a search that finds nothing, ms | 15.9 | 991.4 | 122.6 | 1769.7 | 23.4 |
-| first screen from stdin, ms | 4.7 | 4.9 | 28.3 | 63.4 | 663.7 |
-| that search, from stdin, ms | 5.5 | 970.1 | 115.6 | 1724.8 | 21.7 |
-| peak memory, file, MB | 8.5 | 2.4 | 345.7 | 76.0 | 99.0 |
-| peak memory, stdin, MB | 76.8 | 94.2 | 353.9 | 228.0 | 174.7 |
+| first screen from a file, ms | 5.5 | 5.4 | 36.5 | 63.9 | 541.6 |
+| then to the last line, ms | 86.3 | 234.8 | 106.6 | 2.2 | 9.2 |
+| then back to the first, ms | 0.2 | 0.2 | 0.3 | 0.2 | 4.8 |
+| a search that finds nothing, ms | 71.3 | 969.6 | 120.2 | 1736.5 | 23.8 |
+| first screen from stdin, ms | 5.1 | 5.5 | 28.8 | 63.5 | 663.3 |
+| that search, from stdin, ms | 26.7 | 959.7 | 118.0 | 1713.6 | 22.3 |
+| peak memory, file, MB | 8.7 | 2.4 | 344.4 | 75.7 | 99.1 |
+| peak memory, stdin, MB | 77.0 | 94.2 | 347.4 | 227.8 | 174.7 |
 
 The search covers the whole input, which is read by then. vedi and moor search
-as each character is typed, so their times are four searches; vedi's row is from
-before it did. vim runs with its plugin and no other configuration.
+as each character is typed, so their times are four searches. vim runs with its
+plugin and no other configuration.
 
 neovim is no longer in the run. In its last, on 2026-10-03, 0.12.5 with
 baleia.nvim of 2026-06-01 took 7.3 s to the first screen and 2.2 GB of memory.
 
 | Run | |
 |---|---|
-| Date | 2026-10-12 |
+| Date | 2026-11-02 |
 | Machine | Apple M3 Max, macOS 26.3 |
-| vedi | 2.0.0 |
+| vedi | 2.6.0 |
 | less | 704 |
 | moor | 2.19.2 |
 | ov | 0.54.0 |
