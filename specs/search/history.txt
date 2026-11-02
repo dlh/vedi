@@ -1,5 +1,6 @@
 At the prompt, Up recalls earlier queries, newest first, and Down goes
-back toward what was being typed. Editing a recalled query leaves the
+back toward what was being typed. Each entry recalled is searched for
+from where the prompt opened. Editing a recalled query leaves the
 history alone; a query equal to the newest entry is not added again.
 
 -- input --
@@ -17,8 +18,8 @@ foo
 -- keys --
 Up
 -- screen --
-foo
-{{bar}}
+{{foo}}
+bar
 
 
 
@@ -26,8 +27,8 @@ foo
 -- keys --
 Up
 -- screen --
-foo
-{{bar}}
+{{foo}}
+bar
 
 
 
@@ -36,7 +37,7 @@ foo
 Down Down "ba"
 -- screen --
 foo
-{{bar}}
+{{ba}}r
 
 
 
@@ -45,7 +46,7 @@ foo
 Up Backspace "z"
 -- screen --
 foo
-{{bar}}
+bar
 
 
 
@@ -54,7 +55,7 @@ foo
 Down
 -- screen --
 foo
-{{bar}}
+{{ba}}r
 
 
 
@@ -63,7 +64,7 @@ foo
 Esc / "baz" Enter / "baz" Enter / Up Up
 -- screen --
 foo
-bar
+{{bar}}
 
 
 

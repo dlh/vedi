@@ -281,7 +281,7 @@ map y copy
 # Copy the selection and quit; with none, down a line
 map Enter copy_and_quit
 
-# Search; ignores case unless capitalized; empty repeats
+# Search as typed; ignores case unless capitalized; empty repeats
 map / search
 
 # Search backward

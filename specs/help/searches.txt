@@ -1,7 +1,8 @@
 / and ? search the bindings as they search the text: the match is
 highlighted and scrolled into view, n and N step through the matches,
 and a search that finds nothing or wraps says so in the banner's
-place. A search starts from the screen as scrolled. The search is
+place. A search starts from the screen as scrolled, and the bindings are
+searched as the line is typed, as the text is. The search is
 help's own: it starts with no pattern, and the text's pattern, its
 direction and its highlight are back on return.
 
@@ -20,9 +21,9 @@ no search pattern
 -- keys --
 / "half"
 -- screen --
-                            SUMMARY OF VEDI COMMANDS
-
-      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+  d  ⌃D                                   Down {{half}} a page.
+  u  ⌃U                                   Up {half} a page.
+  ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
 /half
 -- keys --
 Enter

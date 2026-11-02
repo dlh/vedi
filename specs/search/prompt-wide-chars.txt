@@ -8,6 +8,6 @@ marks on the character before them.
 -- keys --
 / "日本語 café"
 -- screen --
-日本語 café
+{{日本語 café}}
 
 /日本語 café

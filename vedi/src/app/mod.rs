@@ -42,7 +42,7 @@ use crate::view::screen::{Grid, Screen, Terminal};
 use filter::Filter;
 use input::{Applied, Input};
 use prompt::Prompt;
-use text_view::{Geometry, Motion, Start, TextView};
+use text_view::{Geometry, Motion, Origin, Start, TextView};
 use views::{Role, Views};
 
 /// How often the reader's data is drawn, at most.
@@ -98,6 +98,9 @@ pub struct App<T: Terminal> {
     focus: Focus,
     /// The / and ? prompts' line.
     search: Prompt,
+    /// Where the view was when the / prompt opened, which each edit of
+    /// the line searches from.
+    origin: Option<Origin>,
     /// The : prompt's line.
     command: Prompt,
     /// The & prompt's line.
@@ -141,6 +144,7 @@ impl<T: Terminal> App<T> {
             status: None,
             focus: Focus::Viewing,
             search: Prompt::default(),
+            origin: None,
             command: Prompt::default(),
             query: Prompt::default(),
             mouse: mouse::State::default(),
@@ -338,8 +342,10 @@ impl<T: Terminal> App<T> {
                 if let Some(p) = self.prompt_mut() {
                     p.paste(&text);
                 }
-                if self.focus == Focus::Prompting(Kind::Filter) {
-                    self.query_changed();
+                match self.focus {
+                    Focus::Prompting(Kind::Filter) => self.query_changed(),
+                    Focus::Prompting(Kind::Search { back }) => self.search_typed(back),
+                    _ => {}
                 }
             }
             Event::Mouse(m) => self.handle_mouse(m),

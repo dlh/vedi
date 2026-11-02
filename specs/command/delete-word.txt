@@ -67,7 +67,7 @@ line 1
 -- keys --
 Esc / "line 1" Ctrl+w
 -- screen --
-line 1
+{{line }}1
 
 
 

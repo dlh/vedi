@@ -1,6 +1,6 @@
 //! The search in the text: its pattern, direction and highlight.
 
-use crate::app::text_view::TextView;
+use crate::app::text_view::{Row, TextView};
 use crate::text::buffer::Pos;
 use crate::text::search::{self, Matcher};
 
@@ -14,6 +14,18 @@ pub enum Outcome {
     Wrapped,
 }
 
+/// Where a view was when a search prompt opened: searched from as the
+/// line is typed, and gone back to.
+pub struct Origin {
+    cur: Pos,
+    anchor: Option<Pos>,
+    top: Row,
+    xoff: usize,
+    matcher: Matcher,
+    backward: bool,
+    highlight: bool,
+}
+
 impl TextView {
     pub fn matcher(&self) -> &Matcher {
         &self.matcher
@@ -21,6 +33,46 @@ impl TextView {
 
     pub fn highlight(&self) -> bool {
         self.highlight
+    }
+
+    pub fn origin(&mut self) -> Origin {
+        Origin {
+            cur: self.cur,
+            anchor: self.anchor,
+            top: self.top(),
+            xoff: self.xoff,
+            matcher: self.matcher.clone(),
+            backward: self.backward,
+            highlight: self.highlight,
+        }
+    }
+
+    /// Puts the view back where `o` was. The text may have been
+    /// reloaded since, so the cursor is clamped to it; the top row is
+    /// snapped when next read.
+    pub fn back_to(&mut self, o: &Origin) {
+        self.cur = o.cur;
+        self.anchor = o.anchor;
+        self.top = o.top;
+        self.xoff = o.xoff;
+        self.matcher = o.matcher.clone();
+        self.backward = o.backward;
+        self.highlight = o.highlight;
+        let n = self.buf.len();
+        if n == 0 {
+            self.cur = Pos::default();
+            self.anchor = None;
+            return;
+        }
+        self.cur.line = self.cur.line.min(n - 1);
+        self.cur.col = self.cur.col.min(self.end_col(self.cur.line));
+    }
+
+    /// Searches for `m` from where `o` was, as `search` does from the
+    /// cursor.
+    pub fn search_from(&mut self, o: &Origin, m: Matcher, backward: bool) -> Outcome {
+        self.back_to(o);
+        self.search(Some(m), backward)
     }
 
     /// Searches for `pattern`, or for the last one again, from the

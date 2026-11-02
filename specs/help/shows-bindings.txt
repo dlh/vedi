@@ -73,8 +73,8 @@ Down h
 
                                    SEARCHING
 
-  /                                       Search; ignores case if lowercase;
-                                          empty repeats.
+  /                                       Search as typed; ignores case if
+                                          lowercase; empty repeats.
   ?                                       Search backward.
   n  N                                    Next and previous match; ? swaps them.
   &                                       Filter: list the lines that match;

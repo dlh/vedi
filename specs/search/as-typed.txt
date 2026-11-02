@@ -1,0 +1,102 @@
+Each character typed at the / prompt searches for the line from where
+the prompt opened: the first match from there is highlighted apart and
+scrolled into view, Backspace widens from there and not from the last
+match, and a line with no match shows the screen as it was. Esc puts
+back the cursor, the selection, the view and the pattern from before
+the prompt; Enter keeps what the last keystroke found. ? does the same
+backward.
+
+-- size --
+40x4
+-- input --
+foo
+bar
+food
+l4
+l5
+end
+-- keys --
+/ "food"
+-- screen --
+foo
+bar
+{{food}}
+/food
+-- keys --
+Backspace
+-- screen --
+{{foo}}
+bar
+{foo}d
+/foo
+-- keys --
+"x"
+-- screen --
+foo
+bar
+food
+/foox
+-- keys --
+Ctrl+u "end"
+-- screen --
+l4
+l5
+{{end}}
+/end
+-- keys --
+Esc
+-- screen --
+foo
+bar
+food
+<stdin>  line 1/6  wrap           h help
+-- cursor --
+0 0
+-- keys --
+n
+-- screen --
+foo
+bar
+food
+no search pattern                 h help
+-- keys --
+Shift+Right Shift+Right / "bar"
+-- screen --
+foo
+{{bar}}
+food
+/bar
+-- keys --
+Esc
+-- screen --
+[fo]o
+bar
+food
+<stdin>  line 1/6  wrap           h help
+-- cursor --
+0 2
+-- keys --
+Esc / "d" Enter
+-- screen --
+foo
+bar
+foo{{d}}
+<stdin>  line 3/6  wrap           h help
+-- cursor --
+2 3
+-- keys --
+? "bar"
+-- screen --
+foo
+{{bar}}
+food
+?bar
+-- keys --
+Esc n
+-- screen --
+l4
+l5
+en{{d}}
+<stdin>  line 6/6  wrap           h help
+-- cursor --
+2 2

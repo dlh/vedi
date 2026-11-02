@@ -1,5 +1,5 @@
-A paste at the / prompt goes in as one line, its newlines dropped; Enter
-searches for it.
+A paste at the / prompt goes in as one line, its newlines dropped; the
+paste is searched for, and Enter keeps the match.
 
 -- input --
 foo bar
@@ -10,8 +10,8 @@ bar
 bar
 
 -- screen --
-foo bar
-bar
+foo {{bar}}
+{bar}
 
 
 

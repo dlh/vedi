@@ -193,7 +193,7 @@ const SECTIONS: &[HelpSection] = {
             rows: &[
                 bound(
                     &[Act(Search)],
-                    "Search; ignores case if lowercase; empty repeats",
+                    "Search as typed; ignores case if lowercase; empty repeats",
                 ),
                 bound(&[Act(SearchBack)], "Search backward"),
                 bound(

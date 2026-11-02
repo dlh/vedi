@@ -30,7 +30,7 @@ and the search keys search them. These are the defaults.
 | Wheel | Scroll; with Shift, sideways |
 | Ctrl+c, Cmd+c, y | Copy the selection as plain text |
 | Enter | Copy the selection and quit; with none, down a line |
-| / | Search; ignores case if lowercase; empty repeats |
+| / | Search as typed; ignores case if lowercase; empty repeats |
 | ? | Search backward |
 | n, N, Cmd+g, Cmd+Shift+g | Next and previous match; ? swaps them |
 | & | Filter: list the lines that match; Enter goes to one |
@@ -61,9 +61,11 @@ past it, `line 5+1/5`.
 The selection is drawn in reverse video and search matches in black on bright
 yellow, the match the cursor is in in bright white on magenta, whatever the
 text's own colors. A match off the screen scrolls to the top row, or as near as
-the last screenful allows. With `edge_markers yes` in the config, nowrap mode
-marks text off the screen with a `<` or `>` in reverse video at that edge of the
-row, and wrap mode ends a row that continues below with a `\`.
+the last screenful allows. The search runs as the pattern is typed, each key
+going to the first match from where the prompt opened, and Esc puts the screen
+back as it was. With `edge_markers yes` in the config, nowrap mode marks text
+off the screen with a `<` or `>` in reverse video at that edge of the row, and
+wrap mode ends a row that continues below with a `\`.
 
 `&` filters. As the query is typed, the text rows list only the lines that
 match, colors kept, the pointed line in reverse video, and the right of the

@@ -17,7 +17,7 @@ pub use motion::Motion;
 pub(crate) use motion::is_word;
 use rows::LaidCache;
 pub use rows::{At, Row};
-pub use search::Outcome;
+pub use search::{Origin, Outcome};
 pub use selection::Selection;
 
 /// The screen the view is laid out for.

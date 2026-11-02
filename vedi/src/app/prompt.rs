@@ -323,7 +323,8 @@ impl<T: Terminal> App<T> {
 
     /// Gives a key to the open prompt. A line submitted runs once the
     /// prompt has closed, so the status line's row is the text's again
-    /// by then. The & prompt's keys are its own.
+    /// by then. The & prompt's keys are its own; the / prompt's line is
+    /// searched for as it changes.
     pub(super) fn prompt_key(&mut self, kind: Kind, key: Key) -> Flow {
         let edit = match kind {
             Kind::Search { .. } => self.search.key(key),
@@ -331,9 +332,17 @@ impl<T: Terminal> App<T> {
             Kind::Filter => return self.filter_key(key),
         };
         match edit {
-            Edit::Editing => Flow::Continue,
+            Edit::Editing => {
+                if let Kind::Search { back } = kind {
+                    self.search_typed(back);
+                }
+                Flow::Continue
+            }
             Edit::Cancel => {
                 self.focus(Focus::Viewing);
+                if let Kind::Search { .. } = kind {
+                    self.search_cancel();
+                }
                 Flow::Continue
             }
             Edit::Submit(line) => {

@@ -13,7 +13,7 @@ baz
 -- keys --
 Alt+Backspace
 -- screen --
-foo bar
+foo {{bar}}
 baz
 
 
@@ -35,7 +35,7 @@ baz
 -- keys --
 Ctrl+u
 -- screen --
-foo bar
+foo b{{ar}}
 baz
 
 
