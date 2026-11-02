@@ -14,6 +14,8 @@ _arguments -S \
     '--cursor-col=[put the cursor in this column of the last screenful]:column:' \
     '(--clipboard-cmd --no-clipboard-cmd)--clipboard-cmd=[pipe copied text to a command instead of OSC 52]:command:_command_names -e' \
     '(--clipboard-cmd --no-clipboard-cmd)--no-clipboard-cmd[copy with OSC 52, or pbcopy in Terminal.app]' \
+    '(--copy-on-select --no-copy-on-select)--copy-on-select[copy what the mouse selects when the button comes up]' \
+    '(--copy-on-select --no-copy-on-select)--no-copy-on-select[leave what the mouse selects to the copy keys]' \
     '(--open-cmd --no-open-cmd)--open-cmd=[read each file by running a command, %s the file]:command:_command_names -e' \
     '(--open-cmd --no-open-cmd)--no-open-cmd[read each file as it is]' \
     '--tab-width=[draw a tab as this many cells]:cells:' \

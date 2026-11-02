@@ -4,9 +4,10 @@
 
 use std::time::{Duration, Instant};
 
+use crate::app::copy::Report;
 use crate::app::event::{Mouse, MouseKind};
 use crate::app::views::Role;
-use crate::app::{App, Focus, Kind};
+use crate::app::{App, Flow, Focus, Kind};
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
 
@@ -202,20 +203,23 @@ impl State {
 impl<T: Terminal> App<T> {
     /// A press returns from help like any key. The mouse is ignored at
     /// the prompts, but for the wheel at the & prompt, which scrolls the
-    /// list; a press from before one is forgotten.
-    pub(super) fn handle_mouse(&mut self, m: Mouse) {
+    /// list; a press from before one is forgotten. Releasing a drag
+    /// copies what it selected, as a terminal does when it keeps the
+    /// mouse; a press that went to help or the status line leaves an
+    /// older selection be.
+    pub(super) fn handle_mouse(&mut self, m: Mouse) -> Flow {
         if self.focus != Focus::Viewing {
             self.mouse.release();
             let wheel = matches!(m.kind, MouseKind::Wheel { .. });
             if !(wheel && self.focus == Focus::Prompting(Kind::Filter)) {
-                return;
+                return Flow::Continue;
             }
         }
         match m.kind {
             MouseKind::Wheel { rows, cols } => {
                 let (rows, cols) = wheel(rows, cols, m.shift);
                 if rows == 0 && cols == 0 {
-                    return;
+                    return Flow::Continue;
                 }
                 self.act();
                 if rows != 0 {
@@ -225,8 +229,17 @@ impl<T: Terminal> App<T> {
                 }
             }
             MouseKind::Release => {
+                let selected = self.mouse.dragging() && self.views.shown.has_selection();
                 self.mouse.release();
                 self.views.shown.show_cursor();
+                if selected && self.settings.copy_on_select {
+                    let report = if self.settings.status_line {
+                        Report::All
+                    } else {
+                        Report::Failure
+                    };
+                    return self.copy(report);
+                }
             }
             // Motion with the button down looks like a press.
             MouseKind::Press | MouseKind::Drag => match self.mouse.down() {
@@ -235,6 +248,7 @@ impl<T: Terminal> App<T> {
                 Down::Held => {}
             },
         }
+        Flow::Continue
     }
 
     /// Returns from help, ignores the status line, and otherwise puts

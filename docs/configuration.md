@@ -46,6 +46,7 @@ so far, defaults included.
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
+| `copy_on_select` | `yes` | `--copy-on-select`, `--no-copy-on-select` | Copy what the mouse selects when the button comes up. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
 | `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command, by name pattern or for all; `%s` is the file name. |
 
@@ -62,7 +63,8 @@ In wrap mode a row that continues on the next ends in `\`, and text wraps a
 column early to leave room for it.
 
 **status_line no.** The text has the bottom row. The line comes back for a
-prompt, a message, help or a read error, and goes with the next key.
+prompt, a message, help or a read error, and goes with the next key. A copy the
+mouse makes says nothing unless it fails, so the row stays under the next click.
 
 **view_style plain.** The text is drawn in the terminal's default colors,
 without its SGR colors and attributes; links stay, and `-F` prints the same. The
@@ -73,6 +75,10 @@ as its characters, the ESC as `^[` in reverse video, and colors nothing. Search
 finds its text and copy sends it. No title names stdin, and `[` and `]` stop
 only at inputs. Changing to or from `raw` keeps the cursor's line and clamps its
 column. `-F` prints the escapes spelled out. The status line shows `raw`.
+
+**copy_on_select no.** Releasing the mouse button no longer copies what it
+selected; the copy keys do. By default it does, as a terminal copies what the
+mouse selects when no program has taken the mouse.
 
 **clipboard_cmd** and **open_cmd** take the rest of the line as the command, so
 `clipboard_cmd xclip -selection clipboard` and
@@ -112,14 +118,14 @@ of the run:
 
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a setting to
 its next value, the first after the last; it takes `wrap`, `wrap_style`,
-`edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`
-and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R` and `q` do.
-`:write FILE` saves the text to FILE as the view shows it: with its colors and
-links, under `view_style plain` the text and its links, under `raw` the input as
-it came. With a selection, it saves that alone. The name is the rest of the
-line; a leading `~` is the home directory. A file that exists is refused:
-`:write! FILE` replaces it, the input included, once the write is done. A
-symlink of one's own is written through; another user's is refused.
+`edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`,
+`copy_on_select` and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R`
+and `q` do. `:write FILE` saves the text to FILE as the view shows it: with its
+colors and links, under `view_style plain` the text and its links, under `raw`
+the input as it came. With a selection, it saves that alone. The name is the
+rest of the line; a leading `~` is the home directory. A file that exists is
+refused: `:write! FILE` replaces it, the input included, once the write is done.
+A symlink of one's own is written through; another user's is refused.
 `clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
 error on the status line. A paste goes in as one line, its newlines dropped, at
 this prompt and the search prompt.

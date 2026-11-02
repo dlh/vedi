@@ -19,8 +19,6 @@ hidden
 release 0 12
 -- cursor --
 0 13
--- keys --
-y
 -- clipboard --
 bar_1 baz
 -- mouse --
@@ -31,6 +29,6 @@ release 0 1
 f[oo ]bar_1 baz
 
 
-<stdin>  line 1/1  wrap           h help
+copied 1 line                     h help
 -- cursor --
 0 1

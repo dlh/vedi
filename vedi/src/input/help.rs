@@ -186,6 +186,10 @@ const SECTIONS: &[HelpSection] = {
                     &[Act(CopyAndQuit)],
                     "Copy the selection and quit; with none, down a line",
                 ),
+                bound(
+                    &[Cyc("copy_on_select")],
+                    "Toggle copying what the mouse selects",
+                ),
             ],
         },
         HelpSection {

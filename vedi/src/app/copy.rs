@@ -11,13 +11,25 @@ pub(super) struct Copying {
     rx: Receiver<CopyResult>,
     /// Lines selected, for the status line.
     lines: usize,
+    report: Report,
     killer: Option<Killer>,
+}
+
+/// What of a copy the status line says.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(super) enum Report {
+    /// How much went, or why it did not.
+    All,
+    /// Why it did not, only: with the status line hidden a message
+    /// takes a row from the text, and one the mouse brought would move
+    /// the text under the next click of a double or triple click.
+    Failure,
 }
 
 impl<T: Terminal> App<T> {
     /// Starts sending the selection to the clipboard; with nothing
     /// selected, what to say. The selection stays either way.
-    fn start_copy(&mut self) -> Result<Copying, Flow> {
+    fn start_copy(&mut self, report: Report) -> Result<Copying, Flow> {
         let Some(sel) = self.views.shown.selection() else {
             return Err(Flow::Say("nothing selected".into()));
         };
@@ -38,22 +50,31 @@ impl<T: Terminal> App<T> {
                 wake();
             }),
         );
-        Ok(Copying { rx, lines, killer })
+        Ok(Copying {
+            rx,
+            lines,
+            report,
+            killer,
+        })
     }
 
-    /// Sends the selection to the clipboard and says how it went. A
-    /// copier that takes time reports on `Event::Copied`; a copy
-    /// started before then is ended.
-    pub(super) fn copy(&mut self) -> Flow {
-        let c = match self.start_copy() {
+    /// Sends the selection to the clipboard and says how it went, as
+    /// far as `report` has it said. A copier that takes time reports on
+    /// `Event::Copied`; a copy started before then is ended.
+    pub(super) fn copy(&mut self, report: Report) -> Flow {
+        let c = match self.start_copy(report) {
             Ok(c) => c,
             Err(flow) => return flow,
         };
         match c.rx.try_recv() {
-            Ok(res) => Flow::Say(copied(c.lines, res).0),
+            Ok(res) => said(&c, res),
             Err(_) => {
+                let flow = match c.report {
+                    Report::All => Flow::Say("copying".into()),
+                    Report::Failure => Flow::Continue,
+                };
                 self.copying = Some(c);
-                Flow::Say("copying".into())
+                flow
             }
         }
     }
@@ -61,7 +82,7 @@ impl<T: Terminal> App<T> {
     /// Sends the selection to the clipboard and waits for the result:
     /// quits on success, else says what went wrong.
     pub(super) fn copy_and_wait(&mut self) -> Flow {
-        let c = match self.start_copy() {
+        let c = match self.start_copy(Report::All) {
             Ok(c) => c,
             Err(flow) => return flow,
         };
@@ -82,14 +103,21 @@ impl<T: Terminal> App<T> {
             Err(TryRecvError::Empty) => return Flow::Continue,
             Err(TryRecvError::Disconnected) => Err("no result".into()),
         };
-        let lines = c.lines;
-        self.copying = None;
-        Flow::Say(copied(lines, res).0)
+        let c = self.copying.take().expect("checked");
+        said(&c, res)
     }
 
     /// A copy's result is still to come.
     pub fn copying(&self) -> bool {
         self.copying.is_some()
+    }
+}
+
+/// The flow a finished copy's result makes under its report.
+fn said(c: &Copying, res: CopyResult) -> Flow {
+    match copied(c.lines, res) {
+        (_, true) if c.report == Report::Failure => Flow::Continue,
+        (msg, _) => Flow::Say(msg),
     }
 }
 

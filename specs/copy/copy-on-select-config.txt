@@ -1,0 +1,28 @@
+copy_on_select no in the config leaves the clipboard to the copy keys:
+the mouse only selects, and y copies.
+
+-- size --
+40x5
+-- config --
+copy_on_select no
+-- input --
+hello
+-- mouse --
+drag 0 0 0 1
+-- screen --
+[he]llo
+
+
+
+<stdin>  line 1/1  wrap           h help
+-- clipboard --
+-- keys --
+y
+-- screen --
+[he]llo
+
+
+
+copied 1 line                     h help
+-- clipboard --
+he

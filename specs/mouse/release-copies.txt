@@ -1,0 +1,82 @@
+Releasing the button after a drag, a double- or triple-click or a
+Shift+click copies the selection, as the terminal would have had the
+pager not taken the mouse, and the status line says so. A click
+selects nothing and copies nothing: the clipboard keeps the last copy.
+:copy_on_select no stops it for the rest of the run; y still copies.
+
+-- size --
+40x5
+-- input --
+one
+two
+three
+-- mouse --
+drag 0 1 2 2
+-- screen --
+o[ne ]
+[two ]
+[thr]ee
+
+copied 3 lines                    h help
+-- cursor --
+2 3
+-- clipboard --
+ne
+two
+thr
+-- mouse --
+dblclick 1 0
+-- screen --
+one
+[two]
+three
+
+copied 1 line                     h help
+-- clipboard --
+two
+-- mouse --
+click 0 0
+-- screen --
+one
+two
+three
+
+<stdin>  line 1/3  wrap           h help
+-- clipboard --
+two
+-- mouse --
+Shift+click 2 2
+-- screen --
+[one ]
+[two ]
+[thr]ee
+
+copied 3 lines                    h help
+-- clipboard --
+one
+two
+thr
+-- keys --
+: "copy_on_select no" Enter
+-- mouse --
+drag 1 0 1 2
+-- screen --
+one
+[two]
+three
+
+<stdin>  line 2/3  wrap           h help
+-- clipboard --
+one
+two
+thr
+-- keys --
+y
+-- screen --
+one
+[two]
+three
+
+copied 1 line                     h help
+-- clipboard --
+two

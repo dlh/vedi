@@ -348,7 +348,7 @@ impl<T: Terminal> App<T> {
                     _ => {}
                 }
             }
-            Event::Mouse(m) => self.handle_mouse(m),
+            Event::Mouse(m) => return self.handle_mouse(m),
             Event::Tick => self.tick(),
             Event::Copied => return self.copy_done(),
             Event::Changed => {
@@ -396,7 +396,7 @@ impl<T: Terminal> App<T> {
             Action::SelectAll => v.select_all(),
             Action::ClearSelection => v.clear_selection(),
             Action::SetMark => v.set_mark(),
-            Action::Copy => return self.copy(),
+            Action::Copy => return self.copy(copy::Report::All),
             Action::CopyAndQuit => {
                 if v.has_selection() {
                     return self.copy_and_wait();

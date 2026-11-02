@@ -42,11 +42,9 @@ tick
 [four ]
 [five ]
 [s]ix
-<stdin>  line 6/7  wrap           h help
+copied 5 lines                    h help
 -- cursor --
 3 1
--- keys --
-y
 -- clipboard --
 two
 three
@@ -84,8 +82,6 @@ tick
 release 0 0
 -- cursor --
 0 0
--- keys --
-y
 -- clipboard --
 one
 two

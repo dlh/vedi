@@ -38,6 +38,6 @@ release 1 4
 [fghij]
 
 klmno
-<stdi
+copie
 -- cursor --
 2 0

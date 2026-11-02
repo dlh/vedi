@@ -16,7 +16,7 @@ o[ne ]
 [two ]
 [thr]ee
 
-<stdin>  line 3/3  wrap           h help
+copied 3 lines                    h help
 -- cursor --
 2 3
 -- mouse --
@@ -26,7 +26,7 @@ o[ne ]
 [tw]o
 three
 
-<stdin>  line 2/3  wrap           h help
+copied 2 lines                    h help
 -- cursor --
 1 2
 -- mouse --
@@ -36,7 +36,7 @@ Shift+click 0 0
 two
 three
 
-<stdin>  line 1/3  wrap           h help
+copied 1 line                     h help
 -- cursor --
 0 0
 -- mouse --
@@ -46,7 +46,7 @@ o[ne ]
 [two ]
 [thr]ee
 
-<stdin>  line 3/3  wrap           h help
+copied 3 lines                    h help
 -- cursor --
 2 3
 -- mouse --

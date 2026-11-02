@@ -29,6 +29,7 @@ pub const USAGE: &str = r#"usage: vedi [flags] [file...]
   --cursor-col N               put the cursor in column N of the last screenful
   --clipboard-cmd CMD          pipe copied text to CMD instead of OSC 52
   --no-clipboard-cmd           copy with OSC 52, or pbcopy in Terminal.app
+  --[no-]copy-on-select        copy what the mouse selects when the button comes up (default: on)
   --open-cmd CMD               read each file by running CMD, %s the file
   --no-open-cmd                read each file as it is
   --tab-width N                draw a tab as N cells (default: 8)

@@ -13,6 +13,8 @@ complete -c vedi -l cursor-row -x -d 'Put the cursor on row N of the last screen
 complete -c vedi -l cursor-col -x -d 'Put the cursor in column N of the last screenful'
 complete -c vedi -l clipboard-cmd -x -a '(__fish_complete_command)' -d 'Pipe copied text to a command instead of OSC 52'
 complete -c vedi -l no-clipboard-cmd -d 'Copy with OSC 52, or pbcopy in Terminal.app'
+complete -c vedi -l copy-on-select -d 'Copy what the mouse selects when the button comes up'
+complete -c vedi -l no-copy-on-select -d 'Leave what the mouse selects to the copy keys'
 complete -c vedi -l open-cmd -x -a '(__fish_complete_command)' -d 'Read each file by running a command, %s the file'
 complete -c vedi -l no-open-cmd -d 'Read each file as it is'
 complete -c vedi -l tab-width -x -d 'Draw a tab as N cells'

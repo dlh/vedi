@@ -81,6 +81,9 @@ instead of writing it with OSC 52.
 Copy with OSC 52, or
 .Xr pbcopy 1
 in Terminal.app.
+.It Fl \-copy\-on\-select , Fl \-no\-copy\-on\-select
+Copy what the mouse selects when the button comes up.
+Default: on.
 .It Fl \-open\-cmd Ar cmd
 Read each file by running
 .Ar cmd ,
@@ -205,6 +208,9 @@ Show the key bindings.
 .El
 .Pp
 Click and drag select; a double-click the word, a triple-click the line.
+The release copies the selection, unless
+.Cm copy_on_select
+is off.
 .Pp
 .Ic &
 lists the lines that match a query as it is typed; a search whose highlight
@@ -233,7 +239,7 @@ Go to line
 .It Cm cycle Ar setting
 Step a setting to its next value, the first after the last:
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
-.Cm auto_reload , Cm status_line , Cm view_style
+.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select
 or
 .Cm open_cmd .
 .It Cm map Ar key action
@@ -272,8 +278,8 @@ A setting is its flag with
 for
 .Ql \- :
 .Cm wrap , Cm wrap_style , Cm tab_width , Cm edge_markers , Cm file_separators ,
-.Cm auto_reload , Cm status_line , Cm view_style , Cm one_page_rows_below ,
-.Cm clipboard_cmd
+.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select ,
+.Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd ,
 which a glob before the command limits to the files it matches.

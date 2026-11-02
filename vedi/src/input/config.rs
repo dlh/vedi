@@ -288,7 +288,7 @@ mod tests {
             ]
         );
         assert_eq!(parse("empty", ""), Ok(Config::default()));
-        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style or open_cmd";
+        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd";
         let bad = [
             (
                 "map h left\nbind j down\n",

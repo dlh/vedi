@@ -18,6 +18,8 @@ pub struct Settings {
     /// Off, the status line shows only when it has something to say.
     pub status_line: bool,
     pub view_style: ViewStyle,
+    /// Releasing the mouse button copies the selection it made.
+    pub copy_on_select: bool,
     /// Rows -F leaves below the text.
     pub one_page_rows_below: usize,
 }
@@ -33,6 +35,7 @@ impl Default for Settings {
             auto_reload: true,
             status_line: true,
             view_style: ViewStyle::Color,
+            copy_on_select: true,
             one_page_rows_below: 1,
         }
     }
@@ -214,6 +217,20 @@ pub const VERBS: &[Verb] = &[
         flag: true,
     },
     Verb {
+        name: "copy_on_select",
+        cycle: YES_NO,
+        field: Some(Field {
+            get: |s| yes_no(s.copy_on_select),
+            set: |s, a| {
+                s.copy_on_select = a == "yes";
+                Ok(())
+            },
+        }),
+        summarized: false,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
         name: "clipboard_cmd",
         cycle: Cycle::No,
         field: None,
@@ -374,6 +391,7 @@ mod tests {
                 "auto_reload",
                 "status_line",
                 "view_style",
+                "copy_on_select",
                 "one_page_rows_below",
             ]
         );
@@ -430,6 +448,7 @@ mod tests {
                 "auto_reload",
                 "status_line",
                 "view_style",
+                "copy_on_select",
                 "one_page_rows_below",
             ]
         );

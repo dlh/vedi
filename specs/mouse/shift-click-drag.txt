@@ -14,11 +14,9 @@ o[ne ]
 [two ]
 [thr]ee
 
-<stdin>  line 3/3  wrap           h help
+copied 3 lines                    h help
 -- cursor --
 2 3
--- keys --
-y
 -- clipboard --
 ne
 two

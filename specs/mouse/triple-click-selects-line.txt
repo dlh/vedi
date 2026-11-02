@@ -14,11 +14,9 @@ tripleclick 0 5
 baz qux
 
 
-<stdin>  line 2/2  wrap           h help
+copied 1 line                     h help
 -- cursor --
 1 0
--- keys --
-y
 -- clipboard --
 foo bar
 
@@ -29,10 +27,8 @@ foo bar
 [baz qux]
 
 
-<stdin>  line 2/2  wrap           h help
+copied 1 line                     h help
 -- cursor --
 1 7
--- keys --
-y
 -- clipboard --
 baz qux

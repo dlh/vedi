@@ -18,7 +18,7 @@ Tab
 line 1
 
 
-:cycle auto_reload   [auto_reload]  edge_markers  file_separators  open_cmd  status_line  view_style  wrap  wrap
+:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  open_cmd  status_line  view_s
 -- keys --
 Esc : "cycle wrap_" Tab Enter
 -- screen --

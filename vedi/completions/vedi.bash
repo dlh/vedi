@@ -51,6 +51,7 @@ _vedi() {
             --auto-reload --no-auto-reload
             --scrolled-by --cursor-row --cursor-col
             --clipboard-cmd --no-clipboard-cmd
+            --copy-on-select --no-copy-on-select
             --open-cmd --no-open-cmd
             --tab-width
             --edge-markers --no-edge-markers

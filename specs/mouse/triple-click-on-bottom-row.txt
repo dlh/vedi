@@ -20,22 +20,12 @@ one
 two
 three
 [four ]
-<stdin>  line 1/6  wrap           h help
+copied 1 line                     h help
 -- cursor --
 hidden
 -- mouse --
 move 3 0
 release 3 0
--- screen --
-one
-two
-three
-[four ]
-<stdin>  line 1/6  wrap           h help
--- cursor --
-hidden
--- keys --
-y
 -- screen --
 one
 two

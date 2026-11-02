@@ -3,7 +3,8 @@ current one, the first after the last: wrap_style char becomes word,
 and word char again. A setting the status line does not show,
 edge_markers or auto_reload, is reported there with its new value.
 Anything but wrap, wrap_style, edge_markers, file_separators,
-auto_reload, status_line, view_style or open_cmd is an error.
+auto_reload, status_line, view_style, copy_on_select or open_cmd is an
+error.
 
 -- size --
 60x5
@@ -48,7 +49,7 @@ e sun
 
 auto_reload yes                                       h help
 -- resize --
-110x5
+130x5
 -- keys --
 : "cycle tab_width" Enter
 -- screen --
@@ -56,7 +57,7 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 
 
 
-cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style or open_cmd
+cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd
 -- keys --
 : "cycle" Enter
 -- screen --
@@ -64,4 +65,4 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 
 
 
-cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style or open_cmd
+cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd

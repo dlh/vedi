@@ -1,0 +1,41 @@
+With the status line hidden, a copy the mouse makes says nothing when
+it goes: a message would take the bottom row from the text, and the
+third click of a triple-click there would land on it. The copy keys
+still report, as the message row is theirs to bring.
+
+-- size --
+40x3
+-- config --
+status_line no
+-- input --
+one
+two
+three
+
+-- mouse --
+dblclick 1 0
+-- screen --
+one
+[two]
+three
+-- cursor --
+1 3
+-- clipboard --
+two
+-- mouse --
+tripleclick 2 0
+-- screen --
+one
+two
+[three ]
+-- cursor --
+hidden
+-- clipboard --
+three
+
+-- keys --
+y
+-- screen --
+one
+two
+copied 1 line                     h help

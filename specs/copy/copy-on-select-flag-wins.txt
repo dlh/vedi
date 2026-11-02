@@ -1,0 +1,20 @@
+--copy-on-select overrides copy_on_select no in the config for one run.
+
+-- size --
+40x5
+-- args --
+--copy-on-select
+-- config --
+copy_on_select no
+-- input --
+hello
+-- mouse --
+drag 0 0 0 1
+-- screen --
+[he]llo
+
+
+
+copied 1 line                     h help
+-- clipboard --
+he
