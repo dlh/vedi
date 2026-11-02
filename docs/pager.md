@@ -20,6 +20,10 @@ the first lines may scroll off; say how many rows it takes:
 Without a terminal, `-F` measures against `COLUMNS` and `LINES`, else 80×25, and
 prints what fits.
 
+A short name for the prompt: `v log.txt`, `make 2>&1 | v`.
+
+    alias v=vedi
+
 ## VEDI
 
 vedi reads flags from the `VEDI` environment variable before those on its
