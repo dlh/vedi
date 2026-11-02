@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.6.0 - 2026-11-02
+
+### Features
+
+- / and ? search as the line is typed
+- the status line counts the matches
+- & starts with the search pattern
+- the mouse copies what it selects
+- Enter moves down a line
+
+### Fixes
+
+- write saves through a symlink of the user's own, refuses another's
+- M takes the middle of the rows the text fills
+- a copy within a line counts its chars
+
 ## v2.5.5 - 2026-10-31
 
 ### Fixes
