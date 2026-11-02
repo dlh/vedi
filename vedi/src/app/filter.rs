@@ -268,8 +268,12 @@ impl<T: Terminal> App<T> {
     /// query and its place, or a new one, over every line.
     pub(super) fn open_filter(&mut self) {
         self.end_drag();
-        match &mut self.filter {
+        let query = match &mut self.filter {
             None => {
+                // A search being looked at is what the list starts from.
+                let v = &self.views.shown;
+                let seed = v.highlight() && !v.matcher().is_empty();
+                let query = seed.then(|| v.matcher().pattern().to_string());
                 let literal = self.settings.view_style == ViewStyle::Raw;
                 let buf = Buffer::new(Storage::Memory(Vec::new()), literal);
                 let list = TextView::new(buf, Start::default(), self.geometry());
@@ -286,16 +290,18 @@ impl<T: Terminal> App<T> {
                 });
                 self.relist(Vec::new(), 0);
                 self.point(0);
+                query.unwrap_or_default()
             }
             Some(f) => {
                 if let Some(list) = f.parked.take() {
                     self.views.raise(Role::List, list);
                 }
+                f.query().to_string()
             }
-        }
-        let query = self.filter.as_ref().map_or("", Filter::query).to_string();
+        };
         self.query.open_with('&', &query);
         self.focus(Focus::Prompting(Kind::Filter));
+        self.query_changed();
     }
 
     /// Leaves the filter: the text as it was, the query forgotten.

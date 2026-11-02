@@ -72,8 +72,10 @@ wrap mode ends a row that continues below with a `\`.
 
 `&` filters. As the query is typed, the text rows list only the lines that
 match, colors kept, the pointed line in reverse video, and the right of the
-prompt row counts them against the text's lines. Ctrl+n, Ctrl+p, PgDn and PgUp
-move the pointer, Up and Down recall earlier queries, and the wheel scrolls.
+prompt row counts them against the text's lines. A search whose highlight is
+on starts the query, its matches listed at once; Ctrl+u clears it. Ctrl+n,
+Ctrl+p, PgDn and PgUp move the pointer, Up and Down recall earlier queries,
+and the wheel scrolls.
 Enter keeps the list and gives it the keys:
 it scrolls, searches, selects and copies as the text does, so `y` copies the
 matching lines, and `:write` saves them. Enter there goes to the line in the

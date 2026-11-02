@@ -1,0 +1,49 @@
+& starts with the search pattern while its highlight is on, the list
+already showing its matches; Ctrl+u clears it for another query. Once
+Esc has cleared the highlight the prompt starts empty, and a parked
+list comes back with its own query whatever was searched since.
+
+-- input --
+foo one
+bar
+foo two
+baz
+foo three
+-- keys --
+/ "foo" Enter &
+-- screen --
+{{foo}}[ one]
+{foo} two
+{foo} three
+
+
+&foo                                 3/5
+-- cursor --
+5 4
+-- keys --
+Ctrl+u "ba"
+-- screen --
+{{ba}}[r]
+{ba}z
+
+
+
+&ba                                  2/5
+-- keys --
+Esc Esc &
+-- screen --
+[foo one]
+bar
+foo two
+baz
+foo three
+&                                    5/5
+-- keys --
+Esc & "ba" Enter Enter / "foo" Enter &
+-- screen --
+{{ba}}[r]
+{ba}z
+
+
+
+&ba                                  2/5
