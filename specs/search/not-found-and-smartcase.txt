@@ -14,7 +14,7 @@ foo
 
 
 
-not found: FOO                    h help
+[not found: FOO]                    h help
 -- cursor --
 0 0
 -- keys --
@@ -25,7 +25,7 @@ foo
 
 
 
-not found: FOO                    h help
+[not found: FOO]                    h help
 -- keys --
 / "foo" Enter n
 -- screen --

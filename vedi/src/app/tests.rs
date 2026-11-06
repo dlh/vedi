@@ -19,7 +19,9 @@ use crate::text::buffer::tests::{Fill, temp};
 use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::{BLOCK_LINES, Indexer};
 use crate::view::screen::TestTerminal;
-use crate::view::style::{Attrs, CUR_MATCH, Color, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
+use crate::view::style::{
+    Attrs, CUR_MATCH, Color, ERROR, MATCH, NOTE, SELECTION, SEP_NAME, SEP_RULE, Style,
+};
 
 const GEN: Gen = 1;
 
@@ -141,6 +143,14 @@ fn row(a: &App<TestTerminal>, y: usize) -> String {
 
 fn style(a: &App<TestTerminal>, x: usize, y: usize) -> Style {
     a.terminal().cell(x, y).style
+}
+
+fn note(m: &str) -> Option<(Tone, String)> {
+    Some((Tone::Note, m.to_string()))
+}
+
+fn error(m: &str) -> Option<(Tone, String)> {
+    Some((Tone::Error, m.to_string()))
 }
 
 /// Feeds keys by name, redrawing after each, and reports whether the
@@ -288,7 +298,101 @@ fn read_error_in_status() {
     feed(&mut a, &mut ix, "partial");
     done(&mut a, &mut ix, Some("disk on fire"));
     assert_eq!(row(&a, 3), "read error: disk on fire");
+    assert_eq!(style(&a, 0, 3), ERROR);
     assert_eq!(row(&a, 0), "partial", "text kept after error");
+}
+
+/// A message follows the summary, its words alone in its tone's
+/// colors: the row around them stays in reverse video, and the next
+/// key takes them off it.
+#[test]
+fn message_follows_the_summary() {
+    let mut a = app(60, 4, "foo\nbar\nfoo", options());
+    let bar = Style::default().reverse();
+    press(&mut a, "/ f o o Enter n n");
+    assert_eq!(
+        row(&a, 3),
+        "<stdin>  line 1/3  /foo  1/2  wrap  search wrapped    h help"
+    );
+    for (x, want) in [
+        (0, bar),
+        (35, bar),
+        (36, NOTE),
+        (49, NOTE),
+        (50, bar),
+        (59, bar),
+    ] {
+        assert_eq!(style(&a, x, 3), want, "cell {x}");
+    }
+    press(&mut a, "x");
+    assert_eq!(
+        row(&a, 3),
+        "<stdin>  line 1/3  /foo  1/2  wrap  not bound: x      h help"
+    );
+    for (x, want) in [(35, bar), (36, ERROR), (47, ERROR), (48, bar)] {
+        assert_eq!(style(&a, x, 3), want, "cell {x}");
+    }
+    press(&mut a, "j");
+    assert_eq!(style(&a, 36, 3), bar);
+}
+
+/// On a row too narrow for both, the message is alone, at the left
+/// edge.
+#[test]
+fn message_alone_on_a_narrow_row() {
+    let mut a = app(30, 4, "foo\nbar\nfoo", options());
+    let bar = Style::default().reverse();
+    press(&mut a, "/ f o o Enter n n");
+    assert_eq!(row(&a, 3), "search wrapped          h help");
+    for (x, want) in [(0, NOTE), (13, NOTE), (14, bar), (29, bar)] {
+        assert_eq!(style(&a, x, 3), want, "cell {x}");
+    }
+}
+
+/// Each message's tone: a note for what was done, an error for what
+/// could not be.
+#[test]
+fn message_tones() {
+    let mut a = app(30, 4, "foo\nbar\nfoo", options());
+    press(&mut a, "n");
+    assert_eq!(a.status, error("no search pattern"));
+    press(&mut a, "/ x Enter");
+    assert_eq!(a.status, error("not found: x"));
+    press(&mut a, "/ f o o Enter n n");
+    assert_eq!(a.status, note("search wrapped"));
+    press(&mut a, "x");
+    assert_eq!(a.status, error("not bound: x"));
+    for (line, want) in [
+        ("frob", error("unknown command \"frob\"")),
+        ("cycle edge_markers", note("edge_markers yes")),
+        ("write out", error("write failed: no file")),
+    ] {
+        let flow = a.run_command(line);
+        a.say(flow);
+        assert_eq!(a.status, want);
+    }
+    press(&mut a, "Shift+Right y");
+    assert_eq!(a.status, note("copied 1 char"));
+}
+
+/// A hidden status line's row comes in reverse video for a message,
+/// alone on it.
+#[test]
+fn message_alone_on_a_hidden_status_row() {
+    let opts = Options {
+        settings: Settings {
+            status_line: false,
+            ..Settings::default()
+        },
+        ..options()
+    };
+    let mut a = app(30, 2, "foo\nfoo", opts);
+    press(&mut a, "/ f o o Enter n n");
+    assert_eq!(row(&a, 1), "search wrapped          h help");
+    assert_eq!(style(&a, 0, 1), NOTE);
+    assert_eq!(style(&a, 14, 1), Style::default().reverse());
+    press(&mut a, "j");
+    assert_eq!(row(&a, 1), "foo");
 }
 
 /// A read error brings a hidden status line back, and keeps it through
@@ -773,7 +877,7 @@ fn open_cmd_status_lands_with_text() {
     press(&mut a, "O");
     assert!(row(&a, 3).contains("reloading…"), "{:?}", row(&a, 3));
     finish_reload(&mut a, &gens, 0, "raw\n");
-    assert!(row(&a, 3).starts_with("open_cmd ''"), "{:?}", row(&a, 3));
+    assert!(row(&a, 3).ends_with("  open_cmd ''"), "{:?}", row(&a, 3));
     press(&mut a, "O");
     end_reload(&mut a, &gens, 1, "", Some("exit 1"));
     assert!(
@@ -1010,7 +1114,7 @@ fn open_cmd_key_reports_failure() {
     let (open, _) = opener(usize::MAX);
     let mut a = app(30, 4, "old\n", with_opener(open));
     press(&mut a, "O");
-    assert_eq!(a.status.as_deref(), Some("reload failed: boom"));
+    assert_eq!(a.status, error("reload failed: boom"));
 }
 
 /// O that fails to open still drops the selection: the mode turned, so
@@ -1022,7 +1126,7 @@ fn open_cmd_toggle_deselects_when_open_fails() {
     press(&mut a, "Ctrl+a");
     assert!(a.views.shown.selection().is_some());
     press(&mut a, "O");
-    assert_eq!(a.status.as_deref(), Some("reload failed: boom"));
+    assert_eq!(a.status, error("reload failed: boom"));
     assert_eq!(a.views.shown.selection(), None);
     press(&mut a, "R");
     finish_reload(&mut a, &gens, 0, "new\n");
@@ -1058,7 +1162,7 @@ fn copy_reports_when_the_copier_is_done() {
     });
     let mut a = app(20, 3, "ab\ncd\n", opts);
     press(&mut a, "Shift+Right y");
-    assert_eq!(a.status.as_deref(), Some("copying"));
+    assert_eq!(a.status, note("copying"));
     assert!(a.copying());
     press(&mut a, "Down");
     assert_eq!(a.status, None, "a key clears the status");
@@ -1067,7 +1171,7 @@ fn copy_reports_when_the_copier_is_done() {
     done.borrow_mut().remove(0)(Ok(()));
     assert_eq!(woke.load(Ordering::SeqCst), 1);
     a.handle(Event::Copied);
-    assert_eq!(a.status.as_deref(), Some("copied 1 char"));
+    assert_eq!(a.status, note("copied 1 char"));
     assert!(!a.copying());
 }
 
@@ -1084,10 +1188,10 @@ fn copy_supersedes_one_under_way() {
     done.borrow_mut().remove(0)(Ok(()));
     a.handle(Event::Copied);
     assert!(a.copying(), "the first copy's result is dropped");
-    assert_eq!(a.status.as_deref(), Some("copying"));
+    assert_eq!(a.status, note("copying"));
     done.borrow_mut().remove(0)(Err("late".into()));
     a.handle(Event::Copied);
-    assert_eq!(a.status.as_deref(), Some("copy failed: late"));
+    assert_eq!(a.status, error("copy failed: late"));
 }
 
 // Enter quits on success, so it waits for the result.
@@ -1113,6 +1217,6 @@ fn copy_and_quit_waits_for_the_copier() {
         .apply(&config::parse("t", "map Enter copy_and_quit").unwrap().keys);
     let mut a = app(20, 3, "ab\n", opts);
     assert_eq!(press(&mut a, "Shift+Right Enter"), Flow::Continue);
-    assert_eq!(a.status.as_deref(), Some("copy failed: late"));
+    assert_eq!(a.status, error("copy failed: late"));
     answer.join().unwrap();
 }

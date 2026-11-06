@@ -24,7 +24,7 @@ Right : "tab_width 4" Enter
 
 
 
-tab_width takes a number from 1 to 65535
+[tab_width takes a number from 1 to 65535]
 -- keys --
 : "tab_width 65536" Enter
 -- screen --
@@ -32,4 +32,4 @@ tab_width takes a number from 1 to 65535
 
 
 
-tab_width takes a number from 1 to 65535
+[tab_width takes a number from 1 to 65535]

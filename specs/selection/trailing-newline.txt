@@ -18,7 +18,7 @@ Down Shift+Down y
 one
 [two ]
 
-copied 1 line
+[copied 1 line]
 -- cursor --
 2 0
 -- clipboard --
@@ -30,7 +30,7 @@ Esc Up End Shift+Right y
 one
 two[ ]
 
-copied 1 line
+[copied 1 line]
 -- cursor --
 2 0
 -- clipboard --
@@ -42,7 +42,7 @@ Shift+Left y
 one
 two
 
-nothing selected
+[nothing selected]
 -- cursor --
 1 3
 -- keys --
@@ -51,7 +51,7 @@ G Ctrl+Shift+Home y
 [one ]
 [two ]
 
-copied 2 lines
+[copied 2 lines]
 -- cursor --
 0 0
 -- clipboard --

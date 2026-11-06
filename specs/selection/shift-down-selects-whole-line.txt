@@ -15,7 +15,7 @@ Shift+Down y
 second
 
 
-copied 1 line                     h help
+<stdin>  line 2/2  wrap  [copied 1 line]
 -- cursor --
 1 0
 -- clipboard --

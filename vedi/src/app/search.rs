@@ -52,8 +52,8 @@ impl<T: Terminal> App<T> {
     /// What to say of what a search found.
     pub(super) fn report(&self, found: Outcome) -> Flow {
         match found {
-            Outcome::NoPattern => Flow::Say("no search pattern".into()),
-            Outcome::NotFound => Flow::Say(format!(
+            Outcome::NoPattern => Flow::Fail("no search pattern".into()),
+            Outcome::NotFound => Flow::Fail(format!(
                 "not found: {}",
                 self.views.shown.matcher().pattern()
             )),

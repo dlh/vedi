@@ -193,7 +193,7 @@ impl<T: Terminal> App<T> {
     fn started(&mut self, started: Result<(), Refused>, by_key: bool) -> Flow {
         match started {
             Ok(()) => self.swap_if_done(),
-            Err(e) if by_key => Flow::Say(e.to_string()),
+            Err(e) if by_key => Flow::Fail(e.to_string()),
             Err(_) => Flow::Continue,
         }
     }

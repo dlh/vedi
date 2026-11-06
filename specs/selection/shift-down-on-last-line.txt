@@ -14,7 +14,7 @@ hello world
 [second]
 
 
-copied 6 chars                    h help
+<stdin>  line 2/2  wrap  [copied 6 chars]
 -- cursor --
 1 6
 -- clipboard --

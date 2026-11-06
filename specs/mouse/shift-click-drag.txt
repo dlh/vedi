@@ -14,7 +14,7 @@ o[ne ]
 [two ]
 [thr]ee
 
-copied 3 lines                    h help
+<stdin>  line 3/3  wrap  [copied 3 lines]
 -- cursor --
 2 3
 -- clipboard --

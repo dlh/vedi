@@ -13,7 +13,7 @@ Shift+Right Shift+Right Shift+Right Shift+Right Shift+Right Ctrl+C
 second
 
 
-copied 5 chars                    h help
+<stdin>  line 1/2  wrap  [copied 5 chars]
 -- cursor --
 0 5
 -- clipboard --

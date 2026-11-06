@@ -13,6 +13,6 @@ End / "👩" Enter
 {{👨‍👩‍👧}}abcdefgh
 
 
-search wra
+[search wra]
 -- cursor --
 0 0

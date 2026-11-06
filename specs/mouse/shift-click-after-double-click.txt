@@ -12,7 +12,7 @@ dblclick 0 6 Shift+click 0 12
 foo [bar_1 baz]
 
 
-copied 9 chars                    h help
+<stdin>  line 1/1  wrap  [copied 9 chars]
 -- cursor --
 0 13
 -- mouse --
@@ -21,7 +21,7 @@ Shift+click 0 1
 f[oo ]bar_1 baz
 
 
-copied 3 chars                    h help
+<stdin>  line 1/1  wrap  [copied 3 chars]
 -- cursor --
 0 1
 -- mouse --
@@ -30,6 +30,6 @@ click 0 0 Shift+dblclick 0 5
 [foo ba]r_1 baz
 
 
-copied 6 chars                    h help
+<stdin>  line 1/1  wrap  [copied 6 chars]
 -- cursor --
 0 6

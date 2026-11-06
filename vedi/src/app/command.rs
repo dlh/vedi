@@ -33,7 +33,7 @@ impl<T: Terminal> App<T> {
 
     /// Runs a : line; an error is what it says.
     pub(super) fn run_command(&mut self, line: &str) -> Flow {
-        self.command(line).unwrap_or_else(Flow::Say)
+        self.command(line).unwrap_or_else(Flow::Fail)
     }
 
     /// A number alone, or goto and a number, goes to that 1-based line,

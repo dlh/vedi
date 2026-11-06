@@ -14,5 +14,5 @@ Shift+Right Cmd+c
 
 
 
-not bound: Cmd+c                  h help
+[not bound: Cmd+c]                  h help
 -- clipboard --

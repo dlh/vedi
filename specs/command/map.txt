@@ -21,4 +21,4 @@ line 2
 line 3
 
 
-map takes a key and an action     h help
+[map takes a key and an action]     h help

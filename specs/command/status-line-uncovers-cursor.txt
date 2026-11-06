@@ -37,6 +37,6 @@ Down y
 -- screen --
 line 3
 line 4
-nothing selected          h help
+[nothing selected]          h help
 -- cursor --
 1 0

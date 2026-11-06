@@ -16,4 +16,4 @@ Shift+Right y
 
 
 
-copied 1 char                     h help
+<stdin>  line 1/1  wrap  [copied 1 char]

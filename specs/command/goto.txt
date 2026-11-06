@@ -56,7 +56,7 @@ line 7
 line 8
 line 9
 line 10
-goto takes a line number          h help
+[goto takes a line number]          h help
 -- cursor --
 4 0
 -- keys --
@@ -67,4 +67,4 @@ line 7
 line 8
 line 9
 line 10
-goto takes a line number          h help
+[goto takes a line number]          h help

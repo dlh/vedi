@@ -17,7 +17,7 @@ o[ne ]
 [two ]
 [thr]ee
 
-copied 3 lines                    h help
+<stdin>  line 3/3  wrap  [copied 3 lines]
 -- cursor --
 2 3
 -- clipboard --
@@ -31,7 +31,7 @@ one
 [two]
 three
 
-copied 3 chars                    h help
+<stdin>  line 2/3  wrap  [copied 3 chars]
 -- clipboard --
 two
 -- mouse --
@@ -51,7 +51,7 @@ Shift+click 2 2
 [two ]
 [thr]ee
 
-copied 3 lines                    h help
+<stdin>  line 3/3  wrap  [copied 3 lines]
 -- clipboard --
 one
 two
@@ -77,6 +77,6 @@ one
 [two]
 three
 
-copied 3 chars                    h help
+<stdin>  line 2/3  wrap  [copied 3 chars]
 -- clipboard --
 two

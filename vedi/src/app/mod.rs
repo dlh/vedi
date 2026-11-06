@@ -42,6 +42,7 @@ use crate::view::screen::{Grid, Screen, Terminal};
 use filter::Filter;
 use input::{Applied, Input};
 use prompt::Prompt;
+use status::Tone;
 use text_view::{Geometry, Motion, Origin, Start, TextView};
 use views::{Role, Views};
 
@@ -53,7 +54,10 @@ const REDRAW_EVERY: Duration = Duration::from_millis(50);
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Flow {
     Continue,
+    /// What was done.
     Say(String),
+    /// What could not be.
+    Fail(String),
     Quit,
 }
 
@@ -94,7 +98,7 @@ pub struct App<T: Terminal> {
     keys: Keymap,
     settings: Settings,
     /// What a handler last said, until the next key.
-    status: Option<String>,
+    status: Option<(Tone, String)>,
     focus: Focus,
     /// The / and ? prompts' line.
     search: Prompt,
@@ -337,7 +341,7 @@ impl<T: Terminal> App<T> {
                         }
                         match self.keys.lookup(k) {
                             Some(c) => self.view_key(c),
-                            None => Flow::Say(format!("not bound: {k}")),
+                            None => Flow::Fail(format!("not bound: {k}")),
                         }
                     }
                     Focus::Prompting(kind) => self.prompt_key(kind, k),

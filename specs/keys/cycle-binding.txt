@@ -33,7 +33,7 @@ abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyza[
 
 
 
-edge_markers yes                                                          h help
+<stdin>  line 1/1  nowrap  [edge_markers yes]                               h help
 -- keys --
 Alt+w
 -- screen --
@@ -46,7 +46,7 @@ abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab
 
 
 
-edge_markers no                                                           h help
+<stdin>  line 1/1  nowrap  [edge_markers no]                                h help
 -- keys --
 h
 -- screen --

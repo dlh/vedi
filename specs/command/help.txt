@@ -26,6 +26,6 @@ abc
 
 
 
-help takes no argument
+<stdin>  line 1/1  wrap  [help takes no argument]
 -- cursor --
 0 0

@@ -42,7 +42,7 @@ bar {foo}
 {foo}
 
 
-search wrapped                    h help
+[search wrapped]                    h help
 -- cursor --
 0 0
 -- keys --
@@ -53,7 +53,7 @@ bar {foo}
 {{foo}}
 
 
-search wrapped                    h help
+[search wrapped]                    h help
 -- cursor --
 2 0
 -- keys --
@@ -64,7 +64,7 @@ bar {foo}
 [fo]{{o}}
 
 
-copied 2 chars                    h help
+[copied 2 chars]                    h help
 -- clipboard --
 fo
 -- keys --

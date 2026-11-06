@@ -58,7 +58,7 @@ n
 foo
 bar
 food
-no search pattern                 h help
+[no search pattern]                 h help
 -- keys --
 Shift+Right Shift+Right / "bar"
 -- screen --

@@ -14,7 +14,7 @@ Right y
 -- screen --
 line 1
 line 2
-nothing selected          h help
+[nothing selected]          h help
 -- mouse --
 click 2 0
 -- screen --

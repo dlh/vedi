@@ -38,4 +38,4 @@ y
 -- screen --
 one
 two
-copied 1 line                     h help
+[copied 1 line]                     h help

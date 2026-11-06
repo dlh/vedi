@@ -33,7 +33,7 @@ impl<T: Terminal> App<T> {
     /// selected, what to say. The selection stays either way.
     fn start_copy(&mut self, report: Report) -> Result<Copying, Flow> {
         let Some(sel) = self.views.shown.selection() else {
-            return Err(Flow::Say("nothing selected".into()));
+            return Err(Flow::Fail("nothing selected".into()));
         };
         let mut out = Vec::new();
         sel.shown(self.views.shown.buf(), ViewStyle::Raw, &mut out);
@@ -91,7 +91,7 @@ impl<T: Terminal> App<T> {
         let res = c.rx.recv().unwrap_or_else(|_| Err("no result".into()));
         match copied(&c.amount, res) {
             (_, true) => Flow::Quit,
-            (msg, false) => Flow::Say(msg),
+            (msg, false) => Flow::Fail(msg),
         }
     }
 
@@ -131,7 +131,8 @@ fn amount(text: &str, lines: usize) -> String {
 fn said(c: &Copying, res: CopyResult) -> Flow {
     match copied(&c.amount, res) {
         (_, true) if c.report == Report::Failure => Flow::Continue,
-        (msg, _) => Flow::Say(msg),
+        (msg, true) => Flow::Say(msg),
+        (msg, false) => Flow::Fail(msg),
     }
 }
 

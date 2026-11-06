@@ -18,7 +18,7 @@ y
 [a ]
 b
 
-copied 1 line
+[copied 1 line]
 -- cursor --
 0 0
 -- clipboard --

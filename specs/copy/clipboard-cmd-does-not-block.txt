@@ -16,6 +16,6 @@ hello
 world
 
 
-copied 1 char                     h help
+<stdin>  line 2/2  wrap  [copied 1 char]
 -- cursor --
 1 1

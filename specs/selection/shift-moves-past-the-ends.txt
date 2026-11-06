@@ -15,7 +15,7 @@ Right Shift+Up y
 two
 three
 
-copied 1 char                     h help
+<stdin>  line 1/3  wrap  [copied 1 char]
 -- cursor --
 0 0
 -- clipboard --
@@ -27,7 +27,7 @@ one[ ]
 [two ]
 [three]
 
-copied 3 lines                    h help
+<stdin>  line 3/3  wrap  [copied 3 lines]
 -- cursor --
 2 5
 -- clipboard --
@@ -41,7 +41,7 @@ Esc Shift+PgUp y
 [two ]
 [three]
 
-copied 3 lines                    h help
+<stdin>  line 1/3  wrap  [copied 3 lines]
 -- cursor --
 0 0
 -- clipboard --

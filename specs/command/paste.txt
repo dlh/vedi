@@ -24,6 +24,6 @@ line 2
 
 
 
-goto takes a line number          h help
+[goto takes a line number]          h help
 -- cursor --
 0 0

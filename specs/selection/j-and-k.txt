@@ -14,7 +14,7 @@ J J y
 [line 2 ]
 line 3
 
-copied 2 lines                    h help
+<stdin>  line 3/3  wrap  [copied 2 lines]
 -- cursor --
 2 0
 -- keys --
@@ -24,6 +24,6 @@ K y
 line 2
 line 3
 
-copied 1 line                     h help
+<stdin>  line 2/3  wrap  [copied 1 line]
 -- cursor --
 1 0

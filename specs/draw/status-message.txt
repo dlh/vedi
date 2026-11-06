@@ -1,0 +1,47 @@
+A message follows the status line's summary, two spaces after it,
+until the next key; the hint goes first when the row is short. On a row
+too narrow for the summary and the message, the message has it alone.
+
+-- size --
+60x4
+-- input --
+foo
+bar
+foo
+-- keys --
+/ "foo" Enter n n
+-- screen --
+{{foo}}
+bar
+{foo}
+<stdin>  line 1/3  /foo  1/2  wrap  [search wrapped]    h help
+-- keys --
+x
+-- screen --
+{{foo}}
+bar
+{foo}
+<stdin>  line 1/3  /foo  1/2  wrap  [not bound: x]      h help
+-- keys --
+n
+-- screen --
+{foo}
+bar
+{{foo}}
+<stdin>  line 3/3  /foo  2/2  wrap                    h help
+-- resize --
+50x4
+-- keys --
+n
+-- screen --
+{{foo}}
+bar
+{foo}
+<stdin>  line 1/3  /foo  1/2  wrap  [search wrapped]
+-- resize --
+49x4
+-- screen --
+{{foo}}
+bar
+{foo}
+[search wrapped]                             h help

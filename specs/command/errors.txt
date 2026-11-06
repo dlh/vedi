@@ -12,7 +12,7 @@ line 2
 
 
 
-unknown command "frobnicate"      h help
+[unknown command "frobnicate"]      h help
 -- cursor --
 1 0
 -- keys --
@@ -23,7 +23,7 @@ line 2
 
 
 
-unknown command "1x"              h help
+[unknown command "1x"]              h help
 -- cursor --
 1 0
 -- keys --
@@ -34,6 +34,6 @@ line 2
 
 
 
-wrap_style takes char or word     h help
+[wrap_style takes char or word]     h help
 -- cursor --
 1 0

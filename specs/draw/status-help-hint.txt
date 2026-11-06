@@ -23,4 +23,4 @@ y
 -- screen --
 abc
 
-nothing selected                  h help
+[nothing selected]                  h help

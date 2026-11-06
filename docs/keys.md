@@ -57,6 +57,11 @@ after its last line, where the cursor rests past the text; it is no line, so
 the count stays what `wc -l` says and the status marks the cursor there as one
 past it, `line 5+1/5`.
 
+A message follows the status line's summary until the next key, its words in
+black on yellow for what was done, `search wrapped`, and in bright white on red
+for what could not be, `not found: foo`, or a read error. On a line too narrow
+for both, the message has it alone.
+
 The selection is drawn in reverse video and search matches in black on bright
 yellow, the match the cursor is in in bright white on magenta, whatever the
 text's own colors. A match off the screen scrolls to the top row, or as near as

@@ -15,7 +15,7 @@ ok
 
 
 
-copied 1 line                     h help
+&err  2/2  line 3/4  wrap  [copied 1 line]
 -- clipboard --
 err one
 
@@ -27,7 +27,7 @@ Esc : "write out.txt" Enter
 
 
 
-wrote 2 lines to out.txt          h help
+[wrote 2 lines to out.txt]          h help
 -- written out.txt --
 err one
 err two

@@ -50,6 +50,6 @@ n
 {foo} 3
 
 
-search wrapped                    h help
+[search wrapped]                    h help
 -- cursor --
 0 0

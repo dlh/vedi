@@ -32,7 +32,7 @@ line 3
 line 1
 line 2
 line 3
-unknown command "frob"    h help
+[unknown command "frob"]    h help
 -- keys --
 Down
 -- screen --
@@ -48,7 +48,7 @@ y
 line 1
 line 2
 line 3
-nothing selected          h help
+[nothing selected]          h help
 -- keys --
 : "cycle status_line" Enter
 -- screen --

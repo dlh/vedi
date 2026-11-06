@@ -35,4 +35,4 @@ line 1
 -- screen --
 line 1
 
-view_style takes color, plain or raw    h help
+[view_style takes color, plain or raw]    h help

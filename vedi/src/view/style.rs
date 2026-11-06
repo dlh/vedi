@@ -96,6 +96,11 @@ pub const CUR_MATCH: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(5));
 /// The `<`, `>` and `\` marking text off screen: reverse, as controls
 /// are, so they read as the pager's and not the text's.
 pub const EDGE: Style = PLAIN.reverse();
+/// What the status line says was done: the base yellow, apart from a
+/// match's bright one on the row above.
+pub const NOTE: Style = PLAIN.fg(Color::Palette(0)).bg(Color::Palette(3));
+/// What it says could not be done.
+pub const ERROR: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(1));
 pub const SEP_NAME: Style = PLAIN.bold();
 /// Cyan, which reads on light and dark palettes alike, so the row
 /// stands out from the text while the name stays as legible as it.
@@ -143,6 +148,8 @@ mod tests {
         assert_eq!(EDGE, d.reverse());
         assert_eq!(MATCH, d.fg(Color::Palette(0)).bg(Color::Palette(11)));
         assert_eq!(CUR_MATCH, d.fg(Color::Palette(15)).bg(Color::Palette(5)));
+        assert_eq!(NOTE, d.fg(Color::Palette(0)).bg(Color::Palette(3)));
+        assert_eq!(ERROR, d.fg(Color::Palette(15)).bg(Color::Palette(1)));
         assert_eq!(SEP_NAME, d.bold());
         assert_eq!(SEP_RULE, d.fg(Color::Palette(6)));
     }

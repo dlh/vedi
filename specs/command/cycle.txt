@@ -39,7 +39,7 @@ the quick brown fox jumps over the lazy dog, then naps in th
 e sun
 
 
-auto_reload no                                        h help
+<stdin>  line 1/1  wrap  [auto_reload no]               h help
 -- keys --
 : "cycle auto_reload" Enter
 -- screen --
@@ -47,7 +47,7 @@ the quick brown fox jumps over the lazy dog, then naps in th
 e sun
 
 
-auto_reload yes                                       h help
+<stdin>  line 1/1  wrap  [auto_reload yes]              h help
 -- resize --
 130x5
 -- keys --
@@ -57,7 +57,7 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 
 
 
-cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd
+[cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd]
 -- keys --
 : "cycle" Enter
 -- screen --
@@ -65,4 +65,4 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 
 
 
-cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd
+[cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd]

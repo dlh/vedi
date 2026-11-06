@@ -15,7 +15,7 @@ old
 
 
 
-reload takes no argument          h help
+[reload takes no argument]          h help
 -- keys --
 : "reload" Enter
 -- screen --

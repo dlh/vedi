@@ -14,7 +14,7 @@ Cmd+a y
 [second]
 
 
-copied 2 lines                    h help
+<stdin>  line 2/2  wrap  [copied 2 lines]
 -- cursor --
 1 6
 -- clipboard --

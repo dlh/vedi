@@ -42,7 +42,7 @@ tick
 [four ]
 [five ]
 [s]ix
-copied 5 lines                    h help
+<stdin>  line 6/7  wrap  [copied 5 lines]
 -- cursor --
 3 1
 -- clipboard --

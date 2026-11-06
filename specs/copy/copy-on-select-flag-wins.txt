@@ -15,6 +15,6 @@ drag 0 0 0 1
 
 
 
-copied 2 chars                    h help
+<stdin>  line 1/1  wrap  [copied 2 chars]
 -- clipboard --
 he

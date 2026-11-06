@@ -20,7 +20,7 @@ one
 two
 three
 [four ]
-copied 1 line                     h help
+<stdin>  line 1/6  wrap  [copied 1 line]
 -- cursor --
 hidden
 -- mouse --
@@ -31,7 +31,7 @@ one
 two
 three
 [four ]
-copied 1 line                     h help
+<stdin>  line 1/6  wrap  [copied 1 line]
 -- cursor --
 hidden
 -- clipboard --

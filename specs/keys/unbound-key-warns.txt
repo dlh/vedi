@@ -11,7 +11,7 @@ abc
 
 
 
-not bound: z                      h help
+<stdin>  line 1/1  wrap  [not bound: z]
 -- keys --
 Right
 -- screen --

@@ -37,6 +37,6 @@ b.txt 2/2  line 2/3  wrap
 b1
 b2
 b3
-file_separators yes   h help
+[file_separators yes]   h help
 -- cursor --
 1 0

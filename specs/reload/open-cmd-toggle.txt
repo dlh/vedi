@@ -20,7 +20,7 @@ world
 
 
 
-open_cmd ''                       h help
+f.txt  line 2/2  wrap  [open_cmd '']
 -- cursor --
 1 1
 -- keys --
@@ -31,6 +31,6 @@ worLd
 
 
 
-open_cmd sed s/l/L/g %s           h help
+[open_cmd sed s/l/L/g %s]           h help
 -- cursor --
 1 1

@@ -21,7 +21,7 @@ drag 2 0 2 1
 abcdef
 [xy ]
 [zz]z
-copied
+[copied]
 -- cursor --
 2 2
 -- clipboard --

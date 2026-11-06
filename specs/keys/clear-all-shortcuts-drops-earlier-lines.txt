@@ -14,7 +14,7 @@ abc
 
 
 
-not bound: j
+<stdin>  line 1/1  wrap  [not bound: j]
 -- keys --
 x
 -- quit --

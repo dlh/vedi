@@ -21,6 +21,6 @@ re[^[][{{31m}}d {31m}
 -- screen --
 re[^[][31md 31m
 
-not found: red                    h help
+[not found: red]                    h help
 -- cursor --
 0 5

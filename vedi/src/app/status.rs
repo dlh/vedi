@@ -12,14 +12,23 @@ use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
 use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
-use crate::view::style::Style;
+use crate::view::style::{ERROR, NOTE, Style};
+
+/// What a message tells of: something done, or something that could
+/// not be.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(super) enum Tone {
+    Note,
+    Error,
+}
 
 /// What the status line shows, the first of these that applies.
 enum Row<'a> {
     Prompt(&'a Prompt),
     /// How help is left, unless something was said under it.
     HelpHint,
-    Message(&'a str),
+    /// What was said, after the summary where the two fit.
+    Message(Tone, &'a str),
     ReadError(ReadError),
     /// The input's name and the cursor's line.
     Summary,
@@ -41,8 +50,8 @@ impl<T: Terminal> App<T> {
         if self.views.role() == Role::Help && self.status.is_none() {
             return Row::HelpHint;
         }
-        if let Some(s) = &self.status {
-            return Row::Message(s);
+        if let Some((tone, s)) = &self.status {
+            return Row::Message(*tone, s);
         }
         if let Some(e) = self.read_error() {
             return Row::ReadError(e);
@@ -62,13 +71,13 @@ impl<T: Terminal> App<T> {
     /// Puts what a handler said on the status line, where it stays
     /// until the next key, and passes the rest of `flow` on.
     pub(super) fn say(&mut self, flow: Flow) -> Flow {
-        match flow {
-            Flow::Say(m) => {
-                self.status = Some(m);
-                Flow::Continue
-            }
-            flow => flow,
-        }
+        let said = match flow {
+            Flow::Say(m) => (Tone::Note, m),
+            Flow::Fail(m) => (Tone::Error, m),
+            flow => return flow,
+        };
+        self.status = Some(said);
+        Flow::Continue
     }
 
     /// The reader's error, else the first a line read hit.
@@ -81,9 +90,12 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the row on the bottom row, which needs two rows to exist,
-    /// unless the line is hidden: in reverse video, or plain
-    /// while a prompt is open, so the terminal's cursor shows on it,
-    /// where on a reverse row it is the row's own color. "h help",
+    /// unless the line is hidden: in reverse video, or plain while a
+    /// prompt is open, so the terminal's cursor shows on it, where on
+    /// a reverse row it is the row's own color. A message follows the
+    /// summary, its words in its tone's colors, and a read error's are
+    /// in an error's; the row keeps its video, so nothing else on it
+    /// changes. "h help",
     /// naming whatever key shows help, is at the right edge unless help
     /// is unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
@@ -108,7 +120,8 @@ impl<T: Terminal> App<T> {
             (Style::default().reverse(), Style::default())
         };
         g.fill_row(h - 1, st);
-        let text: Vec<char> = self.status_text(&row, w, at).chars().collect();
+        let (text, said) = self.status_text(&row, w, at);
+        let text: Vec<char> = text.chars().collect();
         let xs = Layout::default().cells(&text);
         let cur = prompt.map(|p| xs[p.cursor()]);
         // At no width the cursor is off screen anyway; the offset must
@@ -121,6 +134,14 @@ impl<T: Terminal> App<T> {
             .unwrap_or(text.len());
         let mut width = xs[first] - off + runes(g, xs[first] - off, h - 1, &text[first..], st);
         let cur = cur.map(|c| (c - off, h - 1));
+        if let Some((tone, m)) = said {
+            let st = match tone {
+                Tone::Note => NOTE,
+                Tone::Error => ERROR,
+            };
+            let m: Vec<char> = m.chars().collect();
+            width += runes(g, width, h - 1, &m, st);
+        }
         if let Some((ms, at)) = prompt.and_then(Prompt::listing) {
             let ms: Vec<Vec<char>> = ms.iter().map(|m| m.chars().collect()).collect();
             let cells = |m: &[char]| 2 + Layout::default().cells(m)[m.len()];
@@ -176,15 +197,40 @@ impl<T: Terminal> App<T> {
         cur
     }
 
-    fn status_text(&self, row: &Row, width: usize, at: At) -> String {
-        match row {
+    /// The row's text, and the message after it.
+    fn status_text(&self, row: &Row, width: usize, at: At) -> (String, Option<(Tone, String)>) {
+        let said = match row {
+            Row::Message(tone, s) => Some((*tone, s.to_string())),
+            Row::ReadError(e) => Some((Tone::Error, format!("read error: {e}"))),
+            _ => None,
+        };
+        let text = match row {
             Row::Prompt(p) => p.line(),
             Row::HelpHint => "help  motion scrolls, / searches, any other key returns".into(),
-            Row::Message(s) => s.to_string(),
-            Row::ReadError(e) => format!("read error: {e}"),
+            Row::Message(_, s) => self.lead(s, width, at),
             Row::Summary => self.summary(width, at),
-            Row::Hidden => String::new(),
+            Row::ReadError(_) | Row::Hidden => String::new(),
+        };
+        (text, said)
+    }
+
+    /// The summary `said` follows, and the gap between them. Nothing
+    /// where the message is alone: with the line hidden, under help,
+    /// over a read error, or on a row too narrow for both.
+    fn lead(&self, said: &str, width: usize, at: At) -> String {
+        if !self.settings.status_line
+            || self.views.role() == Role::Help
+            || self.read_error().is_some()
+        {
+            return String::new();
         }
+        let said = cells(said);
+        let mut lead = self.summary(width.saturating_sub(said + 2), at);
+        lead.push_str("  ");
+        if cells(&lead) + said > width {
+            return String::new();
+        }
+        lead
     }
 
     /// The input's name, which input of several, the line the cursor
@@ -290,15 +336,16 @@ impl<T: Terminal> App<T> {
     }
 }
 
+fn cells(s: &str) -> usize {
+    let chars: Vec<char> = s.chars().collect();
+    Layout::default().cells(&chars)[chars.len()]
+}
+
 /// `name` within `width` cells: whole; else its first directory, "…"
 /// and as much of its end as fits, a gap in the middle rather than a
 /// head cut off, which reads as a parent; else the file name alone, to
 /// clip at the edge.
 fn fit(name: &str, width: usize) -> String {
-    let cells = |s: &str| {
-        let chars: Vec<char> = s.chars().collect();
-        Layout::default().cells(&chars)[chars.len()]
-    };
     if cells(name) <= width {
         return name.to_string();
     }

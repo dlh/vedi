@@ -23,7 +23,7 @@ two
 
 
 
-wrote 2 lines to out.txt          h help
+[wrote 2 lines to out.txt]          h help
 -- written out.txt --
 [0;31mred
 two[0m
@@ -36,7 +36,7 @@ two
 
 
 
-out.txt exists; write! overwrites
+[out.txt exists; write! overwrites]
 -- keys --
 : "write f.txt" Enter
 -- screen --
@@ -45,7 +45,7 @@ two
 
 
 
-f.txt exists; write! overwrites   h help
+[f.txt exists; write! overwrites]   h help
 -- keys --
 : "write! out.txt" Enter
 -- screen --
@@ -54,7 +54,7 @@ two
 
 
 
-wrote 2 lines to out.txt          h help
+[wrote 2 lines to out.txt]          h help
 -- keys --
 : "write ~/out.txt" Enter
 -- screen --
@@ -63,7 +63,7 @@ two
 
 
 
-wrote 2 lines to ~/out.txt        h help
+[wrote 2 lines to ~/out.txt]        h help
 -- written /home/u/out.txt --
 [0;31mred
 two[0m
@@ -76,7 +76,7 @@ two
 
 
 
-write takes a file name           h help
+[write takes a file name]           h help
 -- keys --
 Down Shift+Right Shift+Right : "write my sel.txt" Enter
 -- screen --
@@ -85,7 +85,7 @@ red
 
 
 
-wrote 1 line to my sel.txt        h help
+[wrote 1 line to my sel.txt]        h help
 -- written my sel.txt --
 [0;31mtw[0m
 -- keys --
@@ -96,7 +96,7 @@ two
 
 
 
-wrote 2 lines to p.txt            h help
+[wrote 2 lines to p.txt]            h help
 -- written p.txt --
 red
 two
@@ -109,7 +109,7 @@ two[^[][0m
 
 
 
-wrote 2 lines to r.txt            h help
+[wrote 2 lines to r.txt]            h help
 -- written r.txt --
 [31mred
 two[0m
@@ -122,7 +122,7 @@ two[^[][0m
 
 
 
-wrote 1 line to rs.txt            h help
+[wrote 1 line to rs.txt]            h help
 -- written rs.txt --
 [31mred
 -- keys --
@@ -133,7 +133,7 @@ Esc G Ctrl+Shift+Home : "write end.txt" Enter
 
 
 
-wrote 2 lines to end.txt          h help
+[wrote 2 lines to end.txt]          h help
 -- written end.txt --
 [31mred
 two[0m

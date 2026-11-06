@@ -12,4 +12,4 @@ abc
 
 
 
-not bound: q                      h help
+<stdin>  line 1/1  wrap  [not bound: q]

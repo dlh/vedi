@@ -14,7 +14,7 @@ Ctrl+A y
 [second]
 
 
-copied 2 lines                    h help
+<stdin>  line 2/2  wrap  [copied 2 lines]
 -- cursor --
 1 6
 -- clipboard --
@@ -35,4 +35,4 @@ hello world
 second
 
 
-nothing selected                  h help
+[nothing selected]                  h help

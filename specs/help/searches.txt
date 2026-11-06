@@ -17,7 +17,7 @@ page 2
                             SUMMARY OF VEDI COMMANDS
 
       ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
-no search pattern
+[no search pattern]
 -- keys --
 / "half"
 -- screen --
@@ -40,7 +40,7 @@ n n
   d  ⌃D                                   Down {{half}} a page.
   u  ⌃U                                   Up {half} a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-search wrapped
+[search wrapped]
 -- keys --
 G ? Enter
 -- screen --

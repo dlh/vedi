@@ -22,4 +22,4 @@ abc
 
 
 
-no search pattern                 h help
+[no search pattern]                 h help

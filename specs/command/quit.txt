@@ -11,7 +11,7 @@ abc
 
 
 
-quit takes no argument            h help
+[quit takes no argument]            h help
 -- keys --
 : "quit" Enter
 -- quit --
