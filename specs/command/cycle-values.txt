@@ -1,0 +1,140 @@
+cycle SETTING V1 V2… sets the setting to the value after its current
+one in the list, the first when the current is not in it: tab_width
+8 4 takes the default 8 cells to 4, then 8, then 4 again. Any setting
+the prompt takes may be given values, two or more and none twice,
+each checked as the setting checks it; a key may be bound to the
+same, and the help screen names its values. A setting without fixed
+values needs them; open_cmd takes none. This file holds a raw tab.
+
+-- size --
+60x5
+-- config --
+map T cycle tab_width 2 4
+-- input --
+	x
+-- screen --
+        x
+
+
+
+<stdin>  line 1/1  wrap                               h help
+-- keys --
+: "cycle tab_width 8 4" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [tab_width 4]                  h help
+-- keys --
+: "cycle tab_width 8 4" Enter
+-- screen --
+        x
+
+
+
+<stdin>  line 1/1  wrap  [tab_width 8]                  h help
+-- keys --
+: "cycle tab_width 8 4" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [tab_width 4]                  h help
+-- keys --
+T
+-- screen --
+  x
+
+
+
+<stdin>  line 1/1  wrap  [tab_width 2]                  h help
+-- keys --
+T
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [tab_width 4]                  h help
+-- keys --
+: "cycle view_style plain color" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  plain                        h help
+-- keys --
+: "cycle view_style plain color" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap                               h help
+-- keys --
+: "cycle wrap_style plain color" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [wrap_style takes char or word]
+-- keys --
+: "cycle tab_width 4 x" Enter
+-- screen --
+    x
+
+
+
+[tab_width takes a number from 1 to 65535]              h help
+-- keys --
+: "cycle tab_width" Enter
+-- screen --
+    x
+
+
+
+[cycle tab_width takes two or more values]              h help
+-- keys --
+: "cycle edge_markers yes" Enter
+-- screen --
+    x
+
+
+
+[cycle edge_markers takes two or more values]           h help
+-- keys --
+: "cycle tab_width 4 04" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [cycle tab_width repeats 4]    h help
+-- keys --
+: "cycle open_cmd a b" Enter
+-- screen --
+    x
+
+
+
+<stdin>  line 1/1  wrap  [cycle open_cmd takes no values]
+-- resize --
+80x11
+-- keys --
+h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the config file.
+
+  h                                       Show the key bindings.
+  q                                       Quit.
+  w                                       Toggle wrap / nowrap.
+  R                                       Reload the file.
+  O                                       Toggle reading through open_cmd.
+  T                                       Cycle tab_width: 2, 4.
+help  motion scrolls, / searches, any other key returns

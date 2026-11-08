@@ -1,5 +1,5 @@
 use crate::text::ansi::ViewStyle;
-use crate::view::layout::{Mode, WrapStyle};
+use crate::view::layout::{DEFAULT_TAB, Mode, WrapStyle};
 
 /// What a config line, a flag or the : prompt sets, as the pager holds
 /// it. `Default` is the value with none of them.
@@ -136,7 +136,14 @@ pub const VERBS: &[Verb] = &[
         name: "tab_width",
         cycle: Cycle::No,
         field: Some(Field {
-            get: |s| s.tab_width.to_string(),
+            // No line says 0: the default is spelled as the width it is.
+            get: |s| {
+                match s.tab_width {
+                    0 => DEFAULT_TAB,
+                    n => n,
+                }
+                .to_string()
+            },
             set: |s, a| {
                 s.tab_width = positive(a)?;
                 Ok(())
@@ -278,11 +285,19 @@ pub const VERBS: &[Verb] = &[
     },
 ];
 
-/// What cycle takes, in order.
+/// What cycle alone takes, in order.
 pub fn names() -> impl Iterator<Item = &'static str> {
     VERBS
         .iter()
         .filter(|v| v.cycle != Cycle::No)
+        .map(|v| v.name)
+}
+
+/// What cycle takes in either form, alone or with values, in order.
+pub fn cycled() -> impl Iterator<Item = &'static str> {
+    VERBS
+        .iter()
+        .filter(|v| v.takes_list() || v.cycle != Cycle::No)
         .map(|v| v.name)
 }
 
@@ -344,14 +359,39 @@ impl Verb {
         self.field.as_ref().map_or_else(String::new, |f| (f.get)(s))
     }
 
+    /// Whether cycle takes a list of values for it: a setting the
+    /// prompt takes.
+    pub fn takes_list(&self) -> bool {
+        self.field.is_some() && self.prompt
+    }
+
+    /// `arg` as the setting spells it, or the error for what the verb
+    /// takes; "" for a verb that is no setting.
+    pub fn check(&self, arg: &str) -> Result<String, String> {
+        if !self.values().is_empty() && !self.values().contains(&arg) {
+            return Err(format!("{} takes {}", self.name, or_list(self.values())));
+        }
+        let Some(f) = &self.field else {
+            return Ok(String::new());
+        };
+        let mut s = Settings::default();
+        (f.set)(&mut s, arg).map_err(|takes| format!("{} takes {takes}", self.name))?;
+        Ok((f.get)(&s))
+    }
+
     /// The value after `v`: the first after the last, or after a value
     /// not in the list.
     pub fn next(&self, v: &str) -> &'static str {
-        let values = self.values();
-        match values.iter().position(|&x| x == v) {
-            Some(i) => values[(i + 1) % values.len()],
-            None => values[0],
-        }
+        next_in(self.values(), v)
+    }
+}
+
+/// The value of `values` after `v`: the first after the last, or
+/// after a value not in the list.
+pub fn next_in<'a>(values: &[&'a str], v: &str) -> &'a str {
+    match values.iter().position(|&x| x == v) {
+        Some(i) => values[(i + 1) % values.len()],
+        None => values[0],
     }
 }
 
@@ -414,6 +454,54 @@ mod tests {
             assert_eq!(err, Err("a number from 1 to 65535"), "{bad:?}");
         }
         assert_eq!(verb("map").unwrap().value(&s), "");
+        assert_eq!(verb("tab_width").unwrap().value(&s), "8");
+    }
+
+    /// check spells a value as the setting does, and errs as a config
+    /// line would; a verb that is no setting takes anything, as "".
+    #[test]
+    fn check_values() {
+        let tab = verb("tab_width").unwrap();
+        assert_eq!(tab.check("08"), Ok("8".to_string()));
+        assert_eq!(
+            tab.check("x"),
+            Err("tab_width takes a number from 1 to 65535".to_string())
+        );
+        let style = verb("wrap_style").unwrap();
+        assert_eq!(style.check("word"), Ok("word".to_string()));
+        assert_eq!(
+            style.check("plain"),
+            Err("wrap_style takes char or word".to_string())
+        );
+        assert_eq!(verb("open_cmd").unwrap().check("bat"), Ok(String::new()));
+    }
+
+    /// cycle takes a list for every setting the prompt takes, and
+    /// alone those with fixed values and open_cmd.
+    #[test]
+    fn cycled_verbs() {
+        let lists: Vec<&str> = VERBS
+            .iter()
+            .filter(|v| v.takes_list())
+            .map(|v| v.name)
+            .collect();
+        assert_eq!(
+            lists,
+            [
+                "wrap",
+                "wrap_style",
+                "tab_width",
+                "edge_markers",
+                "file_separators",
+                "auto_reload",
+                "status_line",
+                "view_style",
+                "copy_on_select",
+            ]
+        );
+        let mut want = lists;
+        want.push("open_cmd");
+        assert_eq!(cycled().collect::<Vec<_>>(), want);
     }
 
     /// The prompt takes every verb but the three a running pager

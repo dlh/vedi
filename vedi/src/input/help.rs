@@ -251,7 +251,9 @@ const SECTIONS: &[HelpSection] = {
 impl Keymap {
     /// The help screen for the map: a row none of whose actions has a
     /// key is left out, and a section with no rows left. A fixed Cmd+
-    /// key is listed where the map binds any, that is on macOS.
+    /// key is listed where the map binds any, that is on macOS. A key
+    /// that cycles a setting through its own values gets a row naming
+    /// them, at the end of the first section, one row per list.
     pub fn help(&self) -> Vec<Section> {
         let cmd = self
             .bindings()
@@ -281,6 +283,9 @@ impl Keymap {
                     });
                 }
             }
+            if s.name.is_empty() {
+                rows.extend(self.cycle_rows());
+            }
             if !rows.is_empty() {
                 secs.push(Section {
                     name: s.name.to_string(),
@@ -289,6 +294,33 @@ impl Keymap {
             }
         }
         secs
+    }
+
+    /// A row for each list of values a key cycles a setting through,
+    /// in map order, with every key bound to that list.
+    fn cycle_rows(&self) -> Vec<Row> {
+        let mut rows: Vec<(&str, Row)> = Vec::new();
+        for b in self.bindings() {
+            let Some(c) = &b.cmd else { continue };
+            let Some(arg) = c.arg.as_deref().filter(|_| c.action == Action::Cycle) else {
+                continue;
+            };
+            let Some((setting, values)) = arg.split_once(' ') else {
+                continue;
+            };
+            let key = b.key.to_string();
+            match rows.iter_mut().find(|(a, _)| *a == arg) {
+                Some((_, row)) => row.keys.push(key),
+                None => rows.push((
+                    arg,
+                    Row {
+                        keys: vec![key],
+                        doc: format!("Cycle {setting}: {}", values.replace(' ', ", ")),
+                    },
+                )),
+            }
+        }
+        rows.into_iter().map(|(_, row)| row).collect()
     }
 }
 
@@ -379,5 +411,35 @@ mod tests {
             row(&["Ctrl+u"], "Delete to the start of the line")
         );
         assert_eq!(secs[3].rows[7], row(&["Esc", "Ctrl+g", "Ctrl+c"], "Cancel"));
+    }
+
+    /// A key cycling a setting through given values is on a row of its
+    /// own naming them, not the setting's, keys to one list together;
+    /// the rows end the first section in map order.
+    #[test]
+    fn help_lists_cycle_values() {
+        let bind = |k: &str, c: &str| Binding {
+            key: k.parse::<Key>().unwrap(),
+            cmd: Some(c.parse().unwrap()),
+        };
+        let m = Keymap::new(vec![
+            bind("V", "cycle view_style color plain"),
+            bind("v", "cycle view_style"),
+            bind("T", "cycle tab_width 2 4"),
+            bind("Alt+t", "cycle tab_width 2 4"),
+        ]);
+        let secs = m.help();
+        let row = |keys: &[&str], doc: &str| Row {
+            keys: keys.iter().map(|k| k.to_string()).collect(),
+            doc: doc.to_string(),
+        };
+        assert_eq!(
+            secs[0].rows,
+            [
+                row(&["v"], "Cycle the view style: color, plain, raw"),
+                row(&["V"], "Cycle view_style: color, plain"),
+                row(&["T", "Alt+t"], "Cycle tab_width: 2, 4"),
+            ]
+        );
     }
 }

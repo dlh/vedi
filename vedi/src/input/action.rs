@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::input::setting;
+use crate::input::setting::{self, Verb};
 
 /// Movement actions come first, so `is_movement` is a range.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
@@ -123,7 +123,8 @@ impl FromStr for Action {
 }
 
 /// A decoded key. `extend` is Shift on a movement: extend the
-/// selection instead of clearing it. `arg` is Cycle's setting.
+/// selection instead of clearing it. `arg` is Cycle's setting, and
+/// the values to step through when given, one space apart.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Command {
     pub action: Action,
@@ -177,20 +178,47 @@ impl fmt::Display for Command {
     }
 }
 
-/// An action, or cycle and its setting. go_to_line is command's old
-/// name.
+/// An action, or cycle and its setting, with the values to step
+/// through when the setting has no fixed ones or these are wanted
+/// instead; each is checked, and spelled, as the setting has it.
+/// go_to_line is command's old name.
 impl FromStr for Command {
     type Err = ActionError;
 
     fn from_str(text: &str) -> Result<Command, ActionError> {
         let f: Vec<&str> = text.split_whitespace().collect();
         if f.first() == Some(&"cycle") {
+            let cycle = |arg: String| Command {
+                action: Action::Cycle,
+                extend: false,
+                arg: Some(arg),
+            };
             return match f[..] {
-                [_, name] if setting::names().any(|n| n == name) => Ok(Command {
-                    action: Action::Cycle,
-                    extend: false,
-                    arg: Some(name.to_string()),
-                }),
+                [_, name] if setting::names().any(|n| n == name) => Ok(cycle(name.to_string())),
+                [_, name] if setting::verb(name).is_some_and(Verb::takes_list) => {
+                    Err(ActionError::CycleValues(name.to_string()))
+                }
+                [_, name, ref values @ ..] if !values.is_empty() => {
+                    let v = setting::verb(name).ok_or(ActionError::Cycle)?;
+                    if !v.takes_list() {
+                        return Err(ActionError::CycleNoValues(name.to_string()));
+                    }
+                    // One value is a set, not a cycle.
+                    if values.len() < 2 {
+                        return Err(ActionError::CycleValues(name.to_string()));
+                    }
+                    let mut arg = vec![name.to_string()];
+                    for &val in values {
+                        let val = v.check(val).map_err(ActionError::Setting)?;
+                        // A repeat is a step that goes nowhere, or
+                        // one never reached.
+                        if arg[1..].contains(&val) {
+                            return Err(ActionError::CycleRepeat(name.to_string(), val));
+                        }
+                        arg.push(val);
+                    }
+                    Ok(cycle(arg.join(" ")))
+                }
                 _ => Err(ActionError::Cycle),
             };
         }
@@ -221,6 +249,15 @@ pub enum ActionError {
     Unknown(String),
     /// cycle without one of the settings.
     Cycle,
+    /// cycle with fewer than two values for a setting that has no
+    /// fixed ones, or with one value for any.
+    CycleValues(String),
+    /// cycle with values for a setting that takes none: open_cmd.
+    CycleNoValues(String),
+    /// cycle with a value given twice, as the setting spells it.
+    CycleRepeat(String, String),
+    /// A value the setting refuses: its own error.
+    Setting(String),
 }
 
 impl fmt::Display for ActionError {
@@ -231,6 +268,12 @@ impl fmt::Display for ActionError {
                 let names: Vec<&str> = setting::names().collect();
                 write!(f, "cycle takes {}", setting::or_list(&names))
             }
+            ActionError::CycleValues(name) => {
+                write!(f, "cycle {name} takes two or more values")
+            }
+            ActionError::CycleNoValues(name) => write!(f, "cycle {name} takes no values"),
+            ActionError::CycleRepeat(name, val) => write!(f, "cycle {name} repeats {val}"),
+            ActionError::Setting(e) => f.write_str(e),
         }
     }
 }
@@ -315,9 +358,56 @@ mod tests {
 
     /// cycle takes one of the settings, in any spacing, and prints back
     /// as cycle and the setting; alone or with anything else it is an
-    /// error naming the settings.
+    /// error naming the settings. With values it takes any setting the
+    /// prompt does, each value checked and spelled as the setting has
+    /// it, two at least and none twice; a setting without fixed values
+    /// needs them.
     #[test]
     fn cycle() {
+        let c: Command = "cycle  tab_width  04 8".parse().unwrap();
+        assert_eq!(c.arg.as_deref(), Some("tab_width 4 8"));
+        assert_eq!(c.to_string(), "cycle tab_width 4 8");
+        let c: Command = "cycle view_style plain color".parse().unwrap();
+        assert_eq!(c.to_string(), "cycle view_style plain color");
+        for (text, want) in [
+            (
+                "cycle tab_width",
+                "cycle tab_width takes two or more values",
+            ),
+            (
+                "cycle tab_width 4",
+                "cycle tab_width takes two or more values",
+            ),
+            (
+                "cycle edge_markers yes",
+                "cycle edge_markers takes two or more values",
+            ),
+            ("cycle open_cmd a b", "cycle open_cmd takes no values"),
+            ("cycle open_cmd a", "cycle open_cmd takes no values"),
+            (
+                "cycle wrap_style plain color",
+                "wrap_style takes char or word",
+            ),
+            (
+                "cycle tab_width 4 x",
+                "tab_width takes a number from 1 to 65535",
+            ),
+            (
+                "cycle one_page_rows_below 1 2",
+                "cycle one_page_rows_below takes no values",
+            ),
+            ("cycle tab_width 4 04", "cycle tab_width repeats 4"),
+            (
+                "cycle wrap_style word char word",
+                "cycle wrap_style repeats word",
+            ),
+        ] {
+            assert_eq!(
+                text.parse::<Command>().unwrap_err().to_string(),
+                want,
+                "{text}"
+            );
+        }
         let want = [
             "wrap",
             "wrap_style",
@@ -341,7 +431,7 @@ mod tests {
             );
             assert_eq!(c.to_string(), format!("cycle {name}"));
         }
-        for text in ["cycle", "cycle tab_width", "cycle wrap yes"] {
+        for text in ["cycle", "cycle foo", "cycle foo 1 2"] {
             let err = text.parse::<Command>().unwrap_err();
             assert_eq!(
                 err.to_string(),

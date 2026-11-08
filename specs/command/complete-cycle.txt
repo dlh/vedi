@@ -1,5 +1,5 @@
 Tab after cycle, at the prompt or after map's key, offers the
-settings it takes.
+settings it takes; after the setting, its fixed values.
 
 -- size --
 110x4
@@ -18,7 +18,14 @@ Tab
 line 1
 
 
-:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  open_cmd  status_line  view_s
+:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  open_cmd  status_line  tab_wi
+-- keys --
+Esc : "cycle view_style " Tab
+-- screen --
+line 1
+
+
+:cycle view_style color   [color]  plain  raw
 -- keys --
 Esc : "cycle wrap_" Tab Enter
 -- screen --

@@ -145,19 +145,16 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
         [_, arg] => arg,
         _ => "",
     };
-    // A verb with values is checked here, so its arm need not.
-    if let Some(v) = setting::lookup(verb)
-        && !v.values().contains(&arg)
+    if let Some(v) = setting::verb(verb)
+        && let Some(f) = &v.field
     {
-        return Err(format!("{verb} takes {}", setting::or_list(v.values())));
-    }
-    if let Some(f) = setting::verb(verb).and_then(|v| v.field.as_ref()) {
-        (f.set)(&mut c.settings, arg).map_err(|takes| format!("{verb} takes {takes}"))?;
+        v.check(arg)?;
+        (f.set)(&mut c.settings, arg).expect("checked");
         return Ok(Some(verb));
     }
     match verb {
         "map" => {
-            if f.len() != 3 && !(f.len() == 4 && f[2] == "cycle") {
+            if f.len() != 3 && !(f.len() > 3 && f[2] == "cycle") {
                 return Err("map takes a key and an action".to_string());
             }
             let key: Key = f[1].parse().map_err(|e| format!("{e}"))?;
@@ -264,7 +261,7 @@ mod tests {
 
     #[test]
     fn parse_keys() {
-        let src = "# vim\n\nmap h left\n\tmap  L\tselect_right \nmap ? none\r\nmap Alt+w cycle wrap_style\n";
+        let src = "# vim\n\nmap h left\n\tmap  L\tselect_right \nmap ? none\r\nmap Alt+w cycle wrap_style\nmap T cycle  tab_width 04 8\n";
         let c = parse("vedi.conf", src).unwrap();
         assert_eq!(
             c.keys,
@@ -284,6 +281,10 @@ mod tests {
                 Binding {
                     key: Key::new(KeyCode::Char('w'), Mods::ALT),
                     cmd: cmd("cycle wrap_style")
+                },
+                Binding {
+                    key: Key::new(KeyCode::Char('T'), Mods::NONE),
+                    cmd: cmd("cycle tab_width 4 8")
                 },
             ]
         );
@@ -314,10 +315,22 @@ mod tests {
                 r#"vedi.conf:1: unknown action "select_copy""#,
             ),
             ("map h cycle\n", cycle),
-            ("map h cycle tab_width\n", cycle),
+            ("map h cycle foo\n", cycle),
+            (
+                "map h cycle tab_width\n",
+                "vedi.conf:1: cycle tab_width takes two or more values",
+            ),
             (
                 "map h cycle wrap yes\n",
-                "vedi.conf:1: map takes a key and an action",
+                "vedi.conf:1: cycle wrap takes two or more values",
+            ),
+            (
+                "map h cycle wrap yes maybe\n",
+                "vedi.conf:1: wrap takes yes or no",
+            ),
+            (
+                "map h cycle open_cmd bat\n",
+                "vedi.conf:1: cycle open_cmd takes no values",
             ),
             (
                 "map h toggle_wrap\n",

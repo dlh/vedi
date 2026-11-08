@@ -119,16 +119,18 @@ of the run:
 `:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a setting to
 its next value, the first after the last; it takes `wrap`, `wrap_style`,
 `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`,
-`copy_on_select` and `open_cmd`. `:help`, `:reload` and `:quit` do what `h`, `R`
-and `q` do. `:write FILE` saves the text to FILE as the view shows it: with its
-colors and links, under `view_style plain` the text and its links, under `raw`
-the input as it came. With a selection, it saves that alone. The name is the
-rest of the line; a leading `~` is the home directory. A file that exists is
-refused: `:write! FILE` replaces it, the input included, once the write is done.
-A symlink of one's own is written through; another user's is refused.
-`clear_all_shortcuts` is refused: it would unbind `:` and `q`. A bad line is an
-error on the status line. A paste goes in as one line, its newlines dropped, at
-this prompt and the search prompt.
+`copy_on_select` and `open_cmd`. `:cycle tab_width 4 8` steps through the values
+given instead: the one after the current, or the first when the current is not
+among them; any setting the prompt takes may be given two or more. `:help`,
+`:reload` and `:quit` do what `h`, `R` and `q` do. `:write FILE` saves the text
+to FILE as the view shows it: with its colors and links, under `view_style
+plain` the text and its links, under `raw` the input as it came. With a
+selection, it saves that alone. The name is the rest of the line; a leading `~`
+is the home directory. A file that exists is refused: `:write! FILE` replaces
+it, the input included, once the write is done. A symlink of one's own is
+written through; another user's is refused. `clear_all_shortcuts` is refused: it
+would unbind `:` and `q`. A bad line is an error on the status line. A paste
+goes in as one line, its newlines dropped, at this prompt and the search prompt.
 
 Tab completes the word being typed. One match fills it in; several fill in what
 they share, or the first of them, and list them under the prompt, and Tab again
@@ -156,7 +158,8 @@ single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in front: `q`,
 - Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,
   as `Alt+<`, is read as on a US layout.
 
-`h` shows the bindings in effect.
+`h` shows the bindings in effect; a key that cycles a setting through given
+values is on a row naming them.
 
 ## Actions
 
@@ -166,8 +169,8 @@ The [defaults](#defaults) below name every action, with three exceptions:
   clearing it: `left` and `select_left`, `page_down` and `select_page_down`.
 - `set_mark` starts a selection that every motion then extends until `set_mark`
   again, `clear_selection` or a click ends it: vim's `v`, emacs's `Ctrl+Space`.
-- `cycle <setting>` steps a setting, as in [Commands](#commands). It is the one
-  action that takes an argument.
+- `cycle <setting> [value...]` steps a setting, as in [Commands](#commands). It
+  is the one action that takes an argument.
 
 ## Defaults
 

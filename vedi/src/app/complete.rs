@@ -148,11 +148,16 @@ fn last_word(text: &str) -> (&str, Vec<&str>) {
 /// The words that may come after `before`, the words before the one
 /// being completed: a command first, then its argument. Names come
 /// sorted; a setting's values from the one after its current, so the
-/// first is a change.
+/// first is a change; cycle's setting's values in their order.
 fn candidates(before: &[&str], settings: &Settings) -> Vec<String> {
     let mut names: Vec<String> = match before {
         [] => commands().map(String::from).collect(),
-        ["cycle"] | ["map", _, "cycle"] => setting::names().map(String::from).collect(),
+        ["cycle"] | ["map", _, "cycle"] => setting::cycled().map(String::from).collect(),
+        ["cycle", s, ..] | ["map", _, "cycle", s, ..] => {
+            return setting::lookup(s).map_or_else(Vec::new, |s| {
+                s.values().iter().map(|&v| v.to_string()).collect()
+            });
+        }
         [s] => {
             return setting::lookup(s).map_or_else(Vec::new, |s| {
                 let values = s.values();

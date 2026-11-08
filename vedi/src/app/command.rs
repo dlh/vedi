@@ -111,22 +111,30 @@ impl<T: Terminal> App<T> {
     }
 
     /// Sets a setting to the value after its current one, the first
-    /// after the last, and says the new value unless the status line
-    /// shows it anyway.
-    pub(super) fn cycle(&mut self, name: &str) -> Flow {
-        let Some(s) = setting::verb(name) else {
+    /// after the last or when the current is not among them: its own
+    /// values, or those `arg` gives after its name. Says the new value
+    /// unless the status line shows it anyway.
+    pub(super) fn cycle(&mut self, arg: &str) -> Flow {
+        let mut words = arg.split_whitespace();
+        let Some(s) = words.next().and_then(setting::verb) else {
             return Flow::Continue;
         };
-        match s.cycle {
-            Cycle::No => Flow::Continue,
-            Cycle::Toggle => self.toggle(name),
-            Cycle::Values(_) => {
-                let line = format!("{name} {}", s.next(&s.value(&self.settings)));
-                match self.run_command(&line) {
-                    Flow::Continue if !status::summarizes(name) => Flow::Say(line),
-                    flow => flow,
-                }
+        let name = s.name;
+        let values: Vec<&str> = words.collect();
+        let cur = s.value(&self.settings);
+        let next = if values.is_empty() {
+            match s.cycle {
+                Cycle::No => return Flow::Continue,
+                Cycle::Toggle => return self.toggle(name),
+                Cycle::Values(_) => s.next(&cur),
             }
+        } else {
+            setting::next_in(&values, &cur)
+        };
+        let line = format!("{name} {next}");
+        match self.run_command(&line) {
+            Flow::Continue if !status::summarizes(name) => Flow::Say(line),
+            flow => flow,
         }
     }
 

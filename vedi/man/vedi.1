@@ -1,4 +1,4 @@
-.Dd November 2, 2026
+.Dd November 8, 2026
 .Dt VEDI 1
 .Os
 .Sh NAME
@@ -234,12 +234,16 @@ for the rest of the run, and these:
 .It Ar n , Cm goto Ar n
 Go to line
 .Ar n .
-.It Cm cycle Ar setting
+.It Cm cycle Ar setting Op Ar value ...
 Step a setting to its next value, the first after the last:
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
 .Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select
 or
 .Cm open_cmd .
+With values, step through those instead, to the one after the current
+or the first when the current is not among them; any setting the
+prompt takes may be given two or more, none twice:
+.Ql cycle tab_width 4 8 .
 .It Cm map Ar key action
 Bind a key, as in the config file.
 .It Cm help , Cm reload , Cm quit
