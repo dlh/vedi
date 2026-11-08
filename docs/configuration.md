@@ -108,39 +108,28 @@ The selection is cleared.
 
 ## Commands
 
-`:` opens a prompt on the status line. It takes any setting above but
-`clipboard_cmd`, `open_cmd` and `one_page_rows_below`, and `map`, for the rest
-of the run:
+`:` opens a prompt on the status line. A bad command is an error there.
 
-    :wrap_style word
-    :tab_width 4
-    :map x quit
+| Command | Effect |
+| --- | --- |
+| `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
+| `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
+| `:22`, `:goto 22` | Go to line 22. |
+| `:cycle <setting>` | Step a setting to its next value, the first after the last. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select` and `open_cmd`. |
+| `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
+| `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
+| `:write FILE` | Save the text, or the selection when there is one, to a new FILE. |
+| `:write! FILE` | The same, replacing a FILE that exists, the file being viewed included. |
 
-`:22`, or `:goto 22`, goes to line 22. `:cycle wrap_style` steps a setting to
-its next value, the first after the last; it takes `wrap`, `wrap_style`,
-`edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`,
-`copy_on_select` and `open_cmd`. `:cycle tab_width 4 8` steps through the values
-given instead: the one after the current, or the first when the current is not
-among them; any setting the prompt takes may be given two or more. `:help`,
-`:reload` and `:quit` do what `h`, `R` and `q` do. `:write FILE` saves the text
-to FILE as the view shows it: with its colors and links, under `view_style
-plain` the text and its links, under `raw` the input as it came. With a
-selection, it saves that alone. The name is the rest of the line; a leading `~`
-is the home directory. A file that exists is refused: `:write! FILE` replaces
-it, the input included, once the write is done. A symlink of one's own is
-written through; another user's is refused. `clear_all_shortcuts` is refused: it
-would unbind `:` and `q`. A bad line is an error on the status line. A paste
-goes in as one line, its newlines dropped, at this prompt and the search prompt.
+**write.** The text goes as the view shows it: with its colors and links;
+under `view_style plain`, the text and its links; under `raw`, the input as it
+came. The name is the rest of the line; a leading `~` is the home directory. A
+symlink of your own is written through; another user's is refused.
 
-Tab completes the word being typed. One match fills it in; several fill in what
-they share, or the first of them, and list them under the prompt, and Tab again
-steps through them. A setting's values start after its current one, so
-`:edge_markers` Tab Tab turns them on when they are off; after a whole value,
-Tab fills in the next. Up and Down recall earlier commands; Esc, Ctrl+g and
-Ctrl+c cancel. The cursor moves in the line as it does in the text, and a
-line wider than the screen scrolls to keep it in view; Alt+Backspace or Ctrl+w
-deletes the word before it, Cmd+Backspace or Ctrl+u the line before it.
-[keys.md](keys.md) lists the prompt keys.
+**Editing.** Tab completes the command or setting, then its values, starting
+after the current one; Up and Down recall earlier commands; Esc, Ctrl+g and
+Ctrl+c cancel. [keys.md](keys.md) lists the rest of the prompt keys. A paste
+goes in as one line, its newlines dropped, here and at the search prompt.
 
 ## Keys
 
