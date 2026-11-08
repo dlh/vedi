@@ -4,6 +4,7 @@
 use std::mem;
 
 use crate::app::text_view::Motion;
+use crate::app::write::Form;
 use crate::app::{App, Flow, Focus, Kind, status};
 use crate::input::action::Command;
 use crate::input::config::{self, Config};
@@ -39,7 +40,8 @@ impl<T: Terminal> App<T> {
     /// A number alone, or goto and a number, goes to that 1-based line,
     /// clamped to the input; cycle steps a setting; help, reload and
     /// quit do what their keys do; write saves the input to the file
-    /// named by the rest of the line; a config verb sets what it would
+    /// named by the rest of the line, after a form flag when there is
+    /// one; a config verb sets what it would
     /// in a file, for the rest of the run. Nothing typed does nothing.
     fn command(&mut self, line: &str) -> Result<Flow, String> {
         let f: Vec<&str> = line.split_whitespace().collect();
@@ -54,10 +56,17 @@ impl<T: Terminal> App<T> {
                 let c: Command = line.parse().map_err(|e| format!("{e}"))?;
                 return Ok(self.view_key(c));
             }
-            ["write" | "write!"] => return Err("write takes a file name".into()),
             [verb @ ("write" | "write!"), ..] => {
-                let name = line.trim_start()[verb.len()..].trim();
-                return self.write(name, verb == "write!");
+                let mut form = Form::Plain;
+                let mut name = line.trim_start()[verb.len()..].trim();
+                if let Some(flag) = f.get(1).filter(|w| w.starts_with("--")) {
+                    form = Form::flag(flag).ok_or("write takes --color or --raw")?;
+                    name = name[flag.len()..].trim();
+                }
+                if name.is_empty() {
+                    return Err("write takes a file name".into());
+                }
+                return self.write(name, verb == "write!", form);
             }
             [verb, ..] if is_command(verb) => self.set(line)?,
             [verb, ..] => return Err(format!("unknown command {verb:?}")),

@@ -122,13 +122,14 @@ The selection is cleared.
 | `:cycle <setting>` | Step a setting to its next value, the first after the last. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select` and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
 | `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
-| `:write FILE` | Save the text, or the selection when there is one, to a new FILE. |
+| `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |
+| `:write --raw FILE` | Save the input itself, byte for byte; a selection's lines whole. |
+| `:write --color FILE` | Save what the screen shows, with its colors and links as SGR and OSC 8. |
 | `:write! FILE` | The same, replacing a FILE that exists, the file being viewed included. |
 
-**write.** The text goes as the view shows it: with its colors and links;
-under `view_style plain`, the text and its links; under `raw`, the input as it
-came. The name is the rest of the line; a leading `~` is the home directory. A
-symlink of your own is written through; another user's is refused.
+**write.** The name is the rest of the line; a leading `~` is the home
+directory. A symlink of your own is written through; another user's is
+refused.
 
 **Editing.** Tab completes the command or setting, then its values, starting
 after the current one; Up and Down recall earlier commands; Esc, Ctrl+g and

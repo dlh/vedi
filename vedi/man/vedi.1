@@ -261,10 +261,15 @@ What
 and
 .Ic q
 do.
-.It Cm write Ar file
-Save the text as shown, or the selection, to a new file;
+.It Cm write Oo Fl \-color | Fl \-raw Oc Ar file
+Save the text as plain text, or the selection, to a new file;
 .Cm write!
 replaces one that exists.
+.Fl \-raw
+saves the input itself, byte for byte, a selection's lines whole;
+.Fl \-color
+saves what the screen shows, encoded afresh as SGR and OSC 8, the
+color a selection starts in written first.
 A symlink of the user's own is written through; another's is refused.
 .El
 .Pp

@@ -1,13 +1,19 @@
-write and a file name saves the text to that file as the view shows
-it, and says how many lines went: with view_style color, each run's
-style as SGR and its link as OSC 8, a color carried in from an
-earlier line included; with plain, the text and its links; with raw,
-the input as it came. With a selection, write saves that alone, a
-selected last newline included. A file that exists is refused: write!
-overwrites it. The name is the rest of the line, spaces included; a
-leading ~ is the home directory, the status line keeping the name as
-typed. The input here holds the raw SGR sequences ESC [ 31 m and
-ESC [ 0 m.
+write and a file name saves the text to that file as copy sends it,
+and says how many lines went: plain, its colors and links dropped,
+under view_style color and plain alike; with raw, the input as it
+came. With a selection, write saves that alone, a selected last
+newline included. A flag before the name saves something else: --raw
+the input itself, byte for byte, a selection's lines whole, since a
+cut through an escape means nothing, one it ends at the start of left
+out; --color what the screen shows, encoded afresh, one SGR per
+change of style and links as OSC 8, the color a selection starts in
+written first so an excerpt stands on its own. Under view_style raw
+the escapes are text, and --color writes them as text, as plain does.
+Tab after write offers the flags. A file
+that exists is refused: write! overwrites it. The name is the rest of
+the line, spaces included; a leading ~ is the home directory, the
+status line keeping the name as typed. The input here holds the raw
+SGR sequences ESC [ 31 m and ESC [ 0 m.
 
 -- args --
 f.txt
@@ -25,8 +31,8 @@ two
 
 [wrote 2 lines to out.txt]          h help
 -- written out.txt --
-[0;31mred
-two[0m
+red
+two
 
 -- keys --
 : "write out.txt" Enter
@@ -65,8 +71,8 @@ two
 
 [wrote 2 lines to ~/out.txt]        h help
 -- written /home/u/out.txt --
-[0;31mred
-two[0m
+red
+two
 
 -- keys --
 : "write" Enter
@@ -87,7 +93,95 @@ red
 
 [wrote 1 line to my sel.txt]        h help
 -- written my sel.txt --
+tw
+-- keys --
+: "write --color cs.txt" Enter
+-- screen --
+red
+[tw]o
+
+
+
+[wrote 1 line to cs.txt]            h help
+-- written cs.txt --
 [0;31mtw[0m
+-- keys --
+: "write --raw l.txt" Enter
+-- screen --
+red
+[tw]o
+
+
+
+[wrote 1 line to l.txt]             h help
+-- written l.txt --
+two[0m
+
+-- keys --
+Esc Up Home Shift+Down : "write --raw one.txt" Enter
+-- screen --
+[red ]
+two
+
+
+
+[wrote 1 line to one.txt]           h help
+-- written one.txt --
+[31mred
+
+-- keys --
+Esc : "write --color c.txt" Enter
+-- screen --
+red
+two
+
+
+
+[wrote 2 lines to c.txt]            h help
+-- written c.txt --
+[0;31mred
+two[0m
+
+-- keys --
+: "write --raw b.txt" Enter
+-- screen --
+red
+two
+
+
+
+[wrote 2 lines to b.txt]            h help
+-- written b.txt --
+[31mred
+two[0m
+
+-- keys --
+: "write --color" Enter
+-- screen --
+red
+two
+
+
+
+[write takes a file name]           h help
+-- keys --
+: "write --bold x.txt" Enter
+-- screen --
+red
+two
+
+
+
+[write takes --color or --raw]      h help
+-- keys --
+: "write " Tab Tab
+-- screen --
+red
+two
+
+
+
+:write --color   [--color]  --raw
 -- keys --
 Esc : "view_style plain" Enter : "write p.txt" Enter
 -- screen --
@@ -111,6 +205,19 @@ two[^[][0m
 
 [wrote 2 lines to r.txt]            h help
 -- written r.txt --
+[31mred
+two[0m
+
+-- keys --
+: "write --color rc.txt" Enter
+-- screen --
+[^[][31mred
+two[^[][0m
+
+
+
+[wrote 2 lines to rc.txt]           h help
+-- written rc.txt --
 [31mred
 two[0m
 

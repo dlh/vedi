@@ -69,7 +69,8 @@ drawn as the terminal would. Copy sends plain text.
 
 `:` opens a command prompt, where any setting from the config file can be
 changed for the rest of the run, and `:write FILE` saves the text, or the
-selection, to a file as shown.
+selection, to a file as plain text; `--raw` saves the input itself, `--color`
+what the screen shows, colors and all.
 
 A file that changes on disk is read again, so a log that grows is followed.
 

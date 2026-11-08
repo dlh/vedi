@@ -37,7 +37,7 @@ struct State {
 }
 
 /// The text's bytes a block at a time, for copying lines undecoded.
-struct Blocks<'a> {
+pub(super) struct Blocks<'a> {
     buf: &'a Buffer,
     k: Option<usize>,
     bytes: Vec<u8>,
@@ -46,7 +46,7 @@ struct Blocks<'a> {
 }
 
 impl<'a> Blocks<'a> {
-    fn new(buf: &'a Buffer) -> Blocks<'a> {
+    pub(super) fn new(buf: &'a Buffer) -> Blocks<'a> {
         Blocks {
             buf,
             k: None,
@@ -57,7 +57,7 @@ impl<'a> Blocks<'a> {
 
     /// Line `li`'s bytes, its `\n` included, or `None` when they cannot
     /// be read.
-    fn line(&mut self, li: usize) -> Option<&[u8]> {
+    pub(super) fn line(&mut self, li: usize) -> Option<&[u8]> {
         let k = li / BLOCK_LINES;
         if self.k != Some(k) {
             // A read that fails leaves nothing of the block before.
