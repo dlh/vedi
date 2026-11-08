@@ -1,60 +1,125 @@
 Two clicks on the same cell within 400ms select the word there: the
-letters, digits and underscores around the clicked one, on its line.
-On a cell that is not in a word the cursor moves and nothing is
-selected. Two clicks further apart in time are two clicks.
+letters, digits and underscores around the clicked one, with the
+punctuation that joins them to the next word, so a path or a link is
+one word, less punctuation at its end; a click on the punctuation
+selects the same. Brackets and quotes never join. On a cell that is
+not in a word, or on punctuation with a word on only one side, the
+cursor moves and nothing is selected. Two clicks further apart in time
+are two clicks.
 
 -- size --
 40x5
 -- input --
 foo bar_1 baz
-qux
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
 -- mouse --
 dblclick 0 6
 -- screen --
 foo [bar_1] baz
-qux
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
 
-
-<stdin>  line 1/2  wrap  [copied 5 chars]
+<stdin>  line 1/3  wrap  [copied 5 chars]
 -- cursor --
 0 9
 -- mouse --
 dblclick 0 4
 -- screen --
 foo [bar_1] baz
-qux
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
 
-
-<stdin>  line 1/2  wrap  [copied 5 chars]
+<stdin>  line 1/3  wrap  [copied 5 chars]
 -- cursor --
 0 9
 -- mouse --
-dblclick 1 0
+dblclick 1 4
 -- screen --
 foo bar_1 baz
-[qux]
+see [a/b.c], foo.bar(x) q='v' end.
+go to https://example.net/ now
 
-
-<stdin>  line 2/2  wrap  [copied 3 chars]
+<stdin>  line 2/3  wrap  [copied 5 chars]
 -- cursor --
-1 3
+1 9
+-- mouse --
+dblclick 1 7
+-- screen --
+foo bar_1 baz
+see [a/b.c], foo.bar(x) q='v' end.
+go to https://example.net/ now
+
+<stdin>  line 2/3  wrap  [copied 5 chars]
+-- cursor --
+1 9
+-- mouse --
+dblclick 1 11
+-- screen --
+foo bar_1 baz
+see a/b.c, [foo.bar](x) q='v' end.
+go to https://example.net/ now
+
+<stdin>  line 2/3  wrap  [copied 7 chars]
+-- cursor --
+1 18
+-- mouse --
+dblclick 1 25
+-- screen --
+foo bar_1 baz
+see a/b.c, foo.bar(x) q='[v]' end.
+go to https://example.net/ now
+
+<stdin>  line 2/3  wrap  [copied 1 char]
+-- cursor --
+1 26
+-- mouse --
+dblclick 1 28
+-- screen --
+foo bar_1 baz
+see a/b.c, foo.bar(x) q='v' [end].
+go to https://example.net/ now
+
+<stdin>  line 2/3  wrap  [copied 3 chars]
+-- cursor --
+1 31
+-- mouse --
+dblclick 2 15
+-- screen --
+foo bar_1 baz
+see a/b.c, foo.bar(x) q='v' end.
+go to [https://example.net]/ now
+
+<stdin>  line 3/3  wrap  [copied 19 chars]
+-- cursor --
+2 25
+-- mouse --
+dblclick 1 9
+-- screen --
+foo bar_1 baz
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
+
+<stdin>  line 2/3  wrap           h help
+-- cursor --
+1 9
 -- mouse --
 dblclick 0 3
 -- screen --
 foo bar_1 baz
-qux
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
 
-
-<stdin>  line 1/2  wrap           h help
+<stdin>  line 1/3  wrap           h help
 -- cursor --
 0 3
 -- mouse --
 click 0 1 click 0 1
 -- screen --
 foo bar_1 baz
-qux
+see a/b.c, foo.bar(x) q='v' end.
+go to https://example.net/ now
 
-
-<stdin>  line 1/2  wrap           h help
+<stdin>  line 1/3  wrap           h help
 -- cursor --
 0 1

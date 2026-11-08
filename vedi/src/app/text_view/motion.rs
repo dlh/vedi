@@ -18,6 +18,55 @@ pub(crate) fn is_word(c: char) -> bool {
     c.is_alphanumeric() || c == '_' || is_mark(c)
 }
 
+/// The word a double-click on `col` selects: a run of word characters
+/// and the punctuation between it and the next, so a path, a link and
+/// `std::fs` are one word. Brackets and quotes never join: `f(x)` is
+/// two, `foo='bar'` three.
+fn word_at(text: &[char], col: usize) -> Option<(usize, usize)> {
+    let c = *text.get(col)?;
+    if !is_word(c) && !joins(c) {
+        return None;
+    }
+    let (mut i, mut j) = (col, col + 1);
+    loop {
+        while i > 0 && is_word(text[i - 1]) {
+            i -= 1;
+        }
+        let mut k = i;
+        while k > 0 && joins(text[k - 1]) {
+            k -= 1;
+        }
+        if k == i || k == 0 || !is_word(text[k - 1]) {
+            break;
+        }
+        i = k;
+    }
+    loop {
+        while j < text.len() && is_word(text[j]) {
+            j += 1;
+        }
+        let mut k = j;
+        while k < text.len() && joins(text[k]) {
+            k += 1;
+        }
+        if k == j || k == text.len() || !is_word(text[k]) {
+            break;
+        }
+        j = k;
+    }
+    // A click on punctuation with no word on one side.
+    (is_word(text[i]) && is_word(text[j - 1])).then_some((i, j))
+}
+
+fn joins(c: char) -> bool {
+    !is_word(c)
+        && !c.is_whitespace()
+        && !matches!(
+            c,
+            '(' | ')' | '[' | ']' | '{' | '}' | '<' | '>' | '"' | '\'' | '`'
+        )
+}
+
 /// Approximately M: what takes no cell, less the format characters
 /// that also take none.
 fn is_mark(c: char) -> bool {
@@ -473,17 +522,9 @@ impl TextView {
     /// Selects the word around the cursor, if it is on one.
     pub fn select_word(&mut self) {
         self.buf.text(self.cur.line, &mut self.scratch);
-        let text = &self.scratch;
-        if self.cur.col >= text.len() || !is_word(text[self.cur.col]) {
+        let Some((i, j)) = word_at(&self.scratch, self.cur.col) else {
             return;
-        }
-        let (mut i, mut j) = (self.cur.col, self.cur.col + 1);
-        while i > 0 && is_word(text[i - 1]) {
-            i -= 1;
-        }
-        while j < text.len() && is_word(text[j]) {
-            j += 1;
-        }
+        };
         self.anchor = Some(Pos {
             line: self.cur.line,
             col: i,
@@ -640,5 +681,25 @@ mod tests {
         for c in [' ', '-', '.', '/', '\u{200d}', '\u{200b}'] {
             assert!(!is_word(c), "{c:?}");
         }
+    }
+
+    #[test]
+    fn word_at_joins_punctuation() {
+        let at = |s: &str, col| {
+            let t: Vec<char> = s.chars().collect();
+            word_at(&t, col).map(|(i, j)| t[i..j].iter().collect::<String>())
+        };
+        assert_eq!(at("see a/b/c, end.", 7).as_deref(), Some("a/b/c"));
+        assert_eq!(at("see a/b/c, end.", 5).as_deref(), Some("a/b/c"));
+        assert_eq!(at("see a/b/c, end.", 11).as_deref(), Some("end"));
+        assert_eq!(at("see a/b/c, end.", 9), None);
+        assert_eq!(at("see a/b/c, end.", 14), None);
+        assert_eq!(at("std::fs::read(x)", 0).as_deref(), Some("std::fs::read"));
+        assert_eq!(at("std::fs::read(x)", 14).as_deref(), Some("x"));
+        assert_eq!(at("\"a/b\" -> c", 1).as_deref(), Some("a/b"));
+        assert_eq!(at("\"a/b\" -> c", 0), None);
+        assert_eq!(at("\"a/b\" -> c", 6), None);
+        assert_eq!(at("foo='bar'", 5).as_deref(), Some("bar"));
+        assert_eq!(at("foo='bar'", 0).as_deref(), Some("foo"));
     }
 }

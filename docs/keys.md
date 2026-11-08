@@ -58,6 +58,10 @@ after its last line, where the cursor rests past the text; it is no line, so
 the count stays what `wc -l` says and the status marks the cursor there as one
 past it, `line 5+1/5`.
 
+A double-click's word spans the punctuation between it and the next, so a path
+or a link, `https://example.net/a`, is one word; brackets and quotes do not
+join, so `f(x)` is two.
+
 A message follows the status line's summary until the next key, its words in
 black on yellow for what was done, `search wrapped`, and in bright white on red
 for what could not be, `not found: foo`, or a read error. On a line too narrow
