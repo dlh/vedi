@@ -4,6 +4,7 @@ _arguments -S \
     '(-S --no-wrap --wrap)'{-S,--no-wrap}'[do not wrap long lines]' \
     '(-S --no-wrap --wrap)--wrap[wrap long lines]' \
     '--wrap-style=[wrap at the screen'\''s edge or at words]:style:(char word)' \
+    '--wrap-width=[wrap rows at this many cells when the screen is wider]:cells:' \
     '(-F --quit-if-one-page --no-quit-if-one-page)'{-F,--quit-if-one-page}'[print the text and quit if it fits the screen]' \
     '(-F --quit-if-one-page --no-quit-if-one-page)--no-quit-if-one-page[page text that fits the screen]' \
     '--one-page-rows-below=[rows -F leaves below the text, for the prompt]:rows:' \

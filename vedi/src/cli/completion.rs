@@ -225,7 +225,11 @@ mod tests {
         }
         // words is the command line as bash splits it: = is a word of its own.
         let cases: [(&str, &[&str], &str); 16] = [
-            ("flag prefix", &["--wr"], "--wrap\n--wrap-style"),
+            (
+                "flag prefix",
+                &["--wr"],
+                "--wrap\n--wrap-style\n--wrap-width",
+            ),
             ("no- form", &["--no-w"], "--no-wrap"),
             ("short flags", &["-F"], "-F"),
             ("wrap style", &["--wrap-style", ""], "char\nword"),

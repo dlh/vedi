@@ -30,6 +30,8 @@ pub struct Geometry {
     pub height: usize,
     pub cols: usize,
     pub mode: Mode,
+    /// Cells wrap mode has on a wider screen; zero is the screen's.
+    pub wrap_width: usize,
     /// Cells per tab stop; zero is the default.
     pub tab: usize,
     pub wrap_style: WrapStyle,
@@ -40,19 +42,32 @@ pub struct Geometry {
 }
 
 impl Geometry {
+    /// The columns a row may fill: `wrap_width` in wrap mode, when set
+    /// and the screen is wider.
+    pub fn wrap_cols(&self) -> usize {
+        if self.mode == Mode::Wrap && self.wrap_width > 0 {
+            self.cols.min(self.wrap_width)
+        } else {
+            self.cols
+        }
+    }
+
+    /// The column of the bar marking where wrap_width ends, when the
+    /// screen goes on past it.
+    pub fn guide_col(&self) -> Option<usize> {
+        Some(self.wrap_cols()).filter(|&c| c < self.cols)
+    }
+
     /// Whether wrap mode marks rows that continue: the last column is
     /// then the marker's, and text wraps a column early. Under three
     /// columns there is no room.
     pub fn wrap_marks(&self) -> bool {
-        self.edge_markers && self.mode == Mode::Wrap && self.cols > 2
+        self.edge_markers && self.mode == Mode::Wrap && self.wrap_cols() > 2
     }
 
     pub fn layout(&self) -> Layout {
-        let width = if self.wrap_marks() {
-            self.cols - 1
-        } else {
-            self.cols
-        };
+        let cols = self.wrap_cols();
+        let width = if self.wrap_marks() { cols - 1 } else { cols };
         Layout {
             width,
             mode: self.mode,

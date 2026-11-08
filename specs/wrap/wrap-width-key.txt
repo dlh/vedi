@@ -1,0 +1,28 @@
+W is cycle wrap_width 0 80 by default: it wraps rows at the screen's
+edge, then at 80 cells, and from a width of its own goes to 0 first.
+
+-- size --
+100x4
+-- config --
+wrap_width 90
+-- input --
+the quick brown fox jumps over the lazy dog, then naps in the sun and dreams of chasing it
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in the sun and dreams of chasing it│
+                                                                                          │
+                                                                                          │
+<stdin>  line 1/1  wrap                                                                       h help
+-- keys --
+W
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in the sun and dreams of chasing it
+
+
+<stdin>  line 1/1  wrap  [wrap_width 0]                                                         h help
+-- keys --
+W
+-- screen --
+the quick brown fox jumps over the lazy dog, then naps in the sun and dreams of │
+chasing it                                                                      │
+                                                                                │
+<stdin>  line 1/1  wrap  [wrap_width 80]                                                        h help

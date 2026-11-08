@@ -1,0 +1,25 @@
+--wrap-width N wraps at N cells despite the config's wrap_width. A
+screen narrower than N wraps at its edge, with no bar.
+
+-- size --
+40x5
+-- args --
+--wrap-width 20
+-- config --
+wrap_width 30
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox │
+jumps over the lazy │
+dog                 │
+                    │
+<stdin>  line 1/1  wrap           h help
+-- resize --
+16x5
+-- screen --
+the quick brown
+fox jumps over t
+he lazy dog
+
+<stdin>  line 1/

@@ -310,6 +310,7 @@ impl<T: Terminal> App<T> {
             height,
             cols,
             mode: self.settings.mode,
+            wrap_width: self.settings.wrap_width,
             tab: self.settings.tab_width,
             wrap_style: self.settings.wrap_style,
             separators: self.settings.file_separators && self.names.len() > 1,

@@ -81,6 +81,10 @@ const SECTIONS: &[HelpSection] = {
                 bound(&[Act(Help)], "Show the key bindings"),
                 bound(&[Act(Quit)], "Quit"),
                 bound(&[Cyc("wrap")], "Toggle wrap / nowrap"),
+                bound(
+                    &[Cyc("wrap_width 0 80")],
+                    "Wrap at 80 cells / the screen's edge",
+                ),
                 bound(&[Cyc("wrap_style")], "Cycle the wrap style: char, word"),
                 bound(&[Cyc("edge_markers")], "Toggle the edge markers"),
                 bound(
@@ -297,7 +301,8 @@ impl Keymap {
     }
 
     /// A row for each list of values a key cycles a setting through,
-    /// in map order, with every key bound to that list.
+    /// in map order, with every key bound to that list; a list the
+    /// table has a row for, the default W's, is on that row.
     fn cycle_rows(&self) -> Vec<Row> {
         let mut rows: Vec<(&str, Row)> = Vec::new();
         for b in self.bindings() {
@@ -308,6 +313,13 @@ impl Keymap {
             let Some((setting, values)) = arg.split_once(' ') else {
                 continue;
             };
+            let tabled = SECTIONS.iter().flat_map(|s| s.rows).any(|r| match r.keys {
+                Keys::Bound(cmds) => cmds.iter().any(|h| h == c),
+                Keys::Fixed(_) => false,
+            });
+            if tabled {
+                continue;
+            }
             let key = b.key.to_string();
             match rows.iter_mut().find(|(a, _)| *a == arg) {
                 Some((_, row)) => row.keys.push(key),
@@ -415,7 +427,8 @@ mod tests {
 
     /// A key cycling a setting through given values is on a row of its
     /// own naming them, not the setting's, keys to one list together;
-    /// the rows end the first section in map order.
+    /// the rows end the first section in map order. The default W's
+    /// list has a row in the table, and no other.
     #[test]
     fn help_lists_cycle_values() {
         let bind = |k: &str, c: &str| Binding {
@@ -427,6 +440,7 @@ mod tests {
             bind("v", "cycle view_style"),
             bind("T", "cycle tab_width 2 4"),
             bind("Alt+t", "cycle tab_width 2 4"),
+            bind("W", "cycle wrap_width 0 80"),
         ]);
         let secs = m.help();
         let row = |keys: &[&str], doc: &str| Row {
@@ -436,6 +450,7 @@ mod tests {
         assert_eq!(
             secs[0].rows,
             [
+                row(&["W"], "Wrap at 80 cells / the screen's edge"),
                 row(&["v"], "Cycle the view style: color, plain, raw"),
                 row(&["V"], "Cycle view_style: color, plain"),
                 row(&["T", "Alt+t"], "Cycle tab_width: 2, 4"),

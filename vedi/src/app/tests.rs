@@ -20,7 +20,7 @@ use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::{BLOCK_LINES, Indexer};
 use crate::view::screen::TestTerminal;
 use crate::view::style::{
-    Attrs, CUR_MATCH, Color, ERROR, MATCH, NOTE, SELECTION, SEP_NAME, SEP_RULE, Style,
+    Attrs, CUR_MATCH, Color, ERROR, GUIDE, MATCH, NOTE, SELECTION, SEP_NAME, SEP_RULE, Style,
 };
 
 const GEN: Gen = 1;
@@ -192,6 +192,18 @@ fn view_style_plain() {
     a.run_command("view_style color");
     a.draw();
     assert_eq!(style(&a, 0, 0).fg, Color::Palette(1));
+}
+
+/// The wrap_width bar is dim, on text rows and the blank ones below.
+#[test]
+fn wrap_width_guide_style() {
+    let mut opts = options();
+    opts.settings.wrap_width = 10;
+    let a = app(20, 5, "abc", opts);
+    assert_eq!(row(&a, 0), "abc       │");
+    for y in [0, 3] {
+        assert_eq!(style(&a, 10, y), GUIDE, "row {y}");
+    }
 }
 
 #[test]

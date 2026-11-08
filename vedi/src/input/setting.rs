@@ -7,6 +7,8 @@ use crate::view::layout::{DEFAULT_TAB, Mode, WrapStyle};
 pub struct Settings {
     pub mode: Mode,
     pub wrap_style: WrapStyle,
+    /// Cells wrap mode has on a wider screen; 0 for the screen's.
+    pub wrap_width: usize,
     /// Cells per tab stop; 0 for the default.
     pub tab_width: usize,
     /// Mark text off the sides with < and >, a wrapped row with \.
@@ -29,6 +31,7 @@ impl Default for Settings {
         Settings {
             mode: Mode::Wrap,
             wrap_style: WrapStyle::Char,
+            wrap_width: 0,
             tab_width: 0,
             edge_markers: false,
             file_separators: true,
@@ -52,6 +55,14 @@ fn positive(arg: &str) -> Result<usize, &'static str> {
     match arg.parse::<u16>() {
         Ok(n) if n > 0 => Ok(usize::from(n)),
         _ => Err("a number from 1 to 65535"),
+    }
+}
+
+/// `positive`, or 0 for off.
+fn count(arg: &str) -> Result<usize, &'static str> {
+    match arg.parse::<u16>() {
+        Ok(n) => Ok(usize::from(n)),
+        _ => Err("a number from 0 to 65535"),
     }
 }
 
@@ -129,6 +140,20 @@ pub const VERBS: &[Verb] = &[
             },
         }),
         summarized: true,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
+        name: "wrap_width",
+        cycle: Cycle::No,
+        field: Some(Field {
+            get: |s| s.wrap_width.to_string(),
+            set: |s, a| {
+                s.wrap_width = count(a)?;
+                Ok(())
+            },
+        }),
+        summarized: false,
         prompt: true,
         flag: true,
     },
@@ -425,6 +450,7 @@ mod tests {
             [
                 "wrap",
                 "wrap_style",
+                "wrap_width",
                 "tab_width",
                 "edge_markers",
                 "file_separators",
@@ -452,6 +478,11 @@ mod tests {
         for bad in ["0", "65536", "x", ""] {
             let err = (verb("tab_width").unwrap().field.as_ref().unwrap().set)(&mut s, bad);
             assert_eq!(err, Err("a number from 1 to 65535"), "{bad:?}");
+        }
+        let set = &verb("wrap_width").unwrap().field.as_ref().unwrap().set;
+        assert_eq!(set(&mut s, "0"), Ok(()));
+        for bad in ["65536", "x", ""] {
+            assert_eq!(set(&mut s, bad), Err("a number from 0 to 65535"), "{bad:?}");
         }
         assert_eq!(verb("map").unwrap().value(&s), "");
         assert_eq!(verb("tab_width").unwrap().value(&s), "8");
@@ -490,6 +521,7 @@ mod tests {
             [
                 "wrap",
                 "wrap_style",
+                "wrap_width",
                 "tab_width",
                 "edge_markers",
                 "file_separators",
@@ -530,6 +562,7 @@ mod tests {
             [
                 "wrap",
                 "wrap_style",
+                "wrap_width",
                 "tab_width",
                 "edge_markers",
                 "file_separators",

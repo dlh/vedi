@@ -18,10 +18,10 @@ help  motion scrolls, / searches, any other key returns
 PgDn
 -- screen --
   w                                       Toggle wrap / nowr
+  W                                       Wrap at 80 cells /
   R                                       Reload the file.
   O                                       Toggle reading thr
  -----------------------------------------------------------
-
 help  motion scrolls, / searches, any other key returns
 -- keys --
 G

@@ -135,7 +135,7 @@ impl TextView {
         }
         let mut l = l;
         if self.geom.wrap_marks() {
-            l.width = self.geom.cols;
+            l.width = self.geom.wrap_cols();
         }
         self.laid.newline_row(i, ln, l)
     }

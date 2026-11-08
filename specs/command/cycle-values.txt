@@ -123,7 +123,7 @@ T
 
 <stdin>  line 1/1  wrap  [cycle open_cmd takes no values]
 -- resize --
-80x11
+80x12
 -- keys --
 h
 -- screen --
@@ -134,6 +134,7 @@ h
   h                                       Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  W                                       Wrap at 80 cells / the screen's edge.
   R                                       Reload the file.
   O                                       Toggle reading through open_cmd.
   T                                       Cycle tab_width: 2, 4.

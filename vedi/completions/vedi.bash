@@ -36,7 +36,7 @@ _vedi() {
         COMPREPLY=($(compgen -W 'bash zsh fish' -- "$cur"))
         return
         ;;
-    --one-page-rows-below | --scrolled-by | --cursor-row | --cursor-col | --tab-width)
+    --one-page-rows-below | --scrolled-by | --cursor-row | --cursor-col | --tab-width | --wrap-width)
         return
         ;;
     --clipboard-cmd | --open-cmd)
@@ -46,7 +46,7 @@ _vedi() {
     esac
     if [[ $cur == -* && $prev != -- ]]; then
         COMPREPLY=($(compgen -W '
-            -S --wrap --no-wrap --wrap-style
+            -S --wrap --no-wrap --wrap-style --wrap-width
             -F --quit-if-one-page --no-quit-if-one-page --one-page-rows-below
             --auto-reload --no-auto-reload
             --scrolled-by --cursor-row --cursor-col

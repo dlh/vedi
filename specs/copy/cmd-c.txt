@@ -5,7 +5,7 @@ when it has no selection of its own; Terminal.app keeps it.
 -- os --
 macos
 -- size --
-80x74
+80x75
 -- input --
 hello
 world
@@ -14,6 +14,7 @@ Shift+Right Shift+Right Cmd+c
 -- screen --
 [he]llo
 world
+
 
 
 
@@ -98,6 +99,7 @@ h
   h                                       Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  W                                       Wrap at 80 cells / the screen's edge.
   R                                       Reload the file.
   O                                       Toggle reading through open_cmd.
  ------------------------------------------------------------------------------

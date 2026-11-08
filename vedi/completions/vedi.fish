@@ -3,6 +3,7 @@
 complete -c vedi -s S -l no-wrap -d 'Do not wrap long lines'
 complete -c vedi -l wrap -d 'Wrap long lines'
 complete -c vedi -l wrap-style -x -a 'char word' -d 'Wrap at the screen\'s edge or at words'
+complete -c vedi -l wrap-width -x -d 'Wrap rows at N cells when the screen is wider'
 complete -c vedi -s F -l quit-if-one-page -d 'Print the text and quit if it fits the screen'
 complete -c vedi -l no-quit-if-one-page -d 'Page text that fits the screen'
 complete -c vedi -l one-page-rows-below -x -d 'Rows -F leaves below the text, for the prompt'

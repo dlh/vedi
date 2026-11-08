@@ -13,7 +13,7 @@ line 1
 line 1
 
 
-:wr  wrap  wrap_style  write
+:wr  wrap  wrap_style  wrap_width  write
 -- keys --
 "_"
 -- screen --

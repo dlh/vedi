@@ -15,28 +15,35 @@ the quick brown fox jumps over the lazy dog and runs away home
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:wrap   [wrap]  wrap_style  write
+:wrap   [wrap]  wrap_style  wrap_width  write
 -- keys --
 Tab
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:wrap_style   wrap  [wrap_style]  write
+:wrap_style   wrap  [wrap_style]  wrap_width  write
 -- keys --
 Tab
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:write   wrap  wrap_style  [write]
+:wrap_width   wrap  wrap_style  [wrap_width]  write
 -- keys --
 Tab
 -- screen --
 the quick brown fox jumps over the lazy dog and runs away ho
 me
 
-:w  wrap  wrap_style  write
+:write   wrap  wrap_style  wrap_width  [write]
+-- keys --
+Tab
+-- screen --
+the quick brown fox jumps over the lazy dog and runs away ho
+me
+
+:w  wrap  wrap_style  wrap_width  write
 -- keys --
 Tab Tab Enter
 -- screen --

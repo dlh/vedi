@@ -909,7 +909,7 @@ open_cmd less %s
         let secs = default_keymap(false).help();
         let top = &secs[0];
         assert_eq!(top.name, "");
-        assert_eq!(top.rows.len(), 5);
+        assert_eq!(top.rows.len(), 6);
         assert_eq!(top.rows[0].doc, "Show the key bindings");
         assert_eq!(top.rows[0].keys, ["h"]);
         let moving = &secs[1];

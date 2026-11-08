@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x73
+80x74
 -- input --
 abc
 -- keys --
@@ -19,6 +19,7 @@ Alt+h
   ⌥H                                      Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  W                                       Wrap at 80 cells / the screen's edge.
   R                                       Reload the file.
   O                                       Toggle reading through open_cmd.
  ------------------------------------------------------------------------------

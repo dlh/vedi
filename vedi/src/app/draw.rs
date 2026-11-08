@@ -6,7 +6,7 @@ use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::view::layout::{self, Layout, Mode};
 use crate::view::screen::{Grid, Terminal};
-use crate::view::style::{CUR_MATCH, EDGE, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
+use crate::view::style::{CUR_MATCH, EDGE, GUIDE, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
 
 impl<T: Terminal> App<T> {
     /// Renders the text from `top`, the selection in reverse, search
@@ -45,8 +45,11 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
+    /// Every row but a separator's, the blank ones below the text too,
+    /// carries the wrap_width bar when there is one.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
         let rows = self.views.shown.rows();
+        let guide = self.views.shown.geometry().guide_col();
         let mut p = self.views.shown.top();
         let mut cur = None;
         let mut y = 0;
@@ -62,12 +65,21 @@ impl<T: Terminal> App<T> {
             if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
                 cur = Some((x, y));
             }
+            if let (Some(x), Some(_)) = (guide, p.col) {
+                g.put(x, y, "│", GUIDE, None);
+            }
             let next = self.views.shown.next_row(p);
             if next == p {
+                y += 1;
                 break;
             }
             p = next;
             y += 1;
+        }
+        if let Some(x) = guide {
+            for y in y..rows {
+                g.put(x, y, "│", GUIDE, None);
+            }
         }
         cur
     }
@@ -94,6 +106,9 @@ impl<T: Terminal> App<T> {
         }
         let w = g.width();
         let geom = self.views.shown.geometry();
+        // Text stops short of the wrap_width bar as it does of the
+        // screen's edge: a tab wider than the width would run under it.
+        let right = geom.wrap_cols();
         let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
         let pointed = self.focus == Focus::Prompting(Kind::Filter) && cursor.line == p.line;
         let cell = self.views.shown.cursor_on(p);
@@ -138,7 +153,7 @@ impl<T: Terminal> App<T> {
             let (_, j) = ln.glyph(i);
             let selected = sel.contains(&i);
             if i == n {
-                if selected {
+                if selected && x < right as isize {
                     put(g, x, y, " ", SELECTION, None);
                 }
                 break;
@@ -173,7 +188,15 @@ impl<T: Terminal> App<T> {
                 _ => None,
             };
             let text: String = line.text[i..j].iter().collect();
-            glyph(g, x, y, &text, xs[i + 1] - xs[i], st, link);
+            let width = xs[i + 1] - xs[i];
+            // A tab or ^X keeps the cells short of `right`; a wider
+            // glyph across it is left out, as the grid leaves one out
+            // at its edge.
+            let room = usize::try_from(right as isize - x).unwrap_or(0);
+            let cells = line.text[i] == '\t' || is_control(line.text[i]);
+            if room >= width || (cells && room > 0) {
+                glyph(g, x, y, &text, width.min(room), st, link);
+            }
             i = j;
         }
         // With edge markers on, text off either side of the screen is
@@ -199,7 +222,7 @@ impl<T: Terminal> App<T> {
         // In wrap mode a row whose line goes on below ends in a marker,
         // in the column the layout leaves free.
         if geom.wrap_marks() && seg.end < n {
-            put(g, w as isize - 1, y, "\\", EDGE, None);
+            put(g, geom.wrap_cols() as isize - 1, y, "\\", EDGE, None);
         }
         cell.filter(|c| c.shown).map(|c| c.x as usize)
     }
@@ -245,9 +268,10 @@ fn put(g: &mut Grid, x: isize, y: usize, s: &str, st: Style, link: Option<Link>)
     }
 }
 
-/// Draws the cluster `text` at (`x`, `y`): a tab as `width` spaces, a C0
-/// control as ^X (DEL as ^?), a C1 control as U+FFFD, anything else as
-/// itself with its marks.
+/// Draws the cluster `text` at (`x`, `y`) in `width` cells: a tab as
+/// that many spaces, a C0 control as ^X (DEL as ^?), the X only given a
+/// second cell, a C1 control as U+FFFD, anything else as itself with
+/// its marks.
 fn glyph(
     g: &mut Grid,
     x: isize,
@@ -266,12 +290,16 @@ fn glyph(
         }
         '\x7f' => {
             put(g, x, y, "^", st, link.clone());
-            put(g, x + 1, y, "?", st, link);
+            if width > 1 {
+                put(g, x + 1, y, "?", st, link);
+            }
         }
         c if c < ' ' => {
             put(g, x, y, "^", st, link.clone());
             let caret = char::from(c as u8 + 0x40);
-            put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
+            if width > 1 {
+                put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
+            }
         }
         // A name or title may carry C1, which some terminals take for
         // escapes; content drops it on the way in.

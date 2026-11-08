@@ -101,6 +101,9 @@ pub const EDGE: Style = PLAIN.reverse();
 pub const NOTE: Style = PLAIN.fg(Color::Palette(0)).bg(Color::Palette(3));
 /// What it says could not be done.
 pub const ERROR: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(1));
+/// The bar after wrap_width's last cell: dim, so it sits behind the
+/// text rather than among it.
+pub const GUIDE: Style = PLAIN.dim();
 pub const SEP_NAME: Style = PLAIN.bold();
 /// Cyan, which reads on light and dark palettes alike, so the row
 /// stands out from the text while the name stays as legible as it.

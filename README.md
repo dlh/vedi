@@ -37,6 +37,7 @@ zsh and fish; an archive holds them in `man/` and `completions/`. See
     vedi [flags] [file...]
       -S, --[no-]wrap              wrap long lines; -S is --no-wrap (default: on)
       --wrap-style STYLE           wrap at the screen's edge (char) or at words (word)
+      --wrap-width N               wrap rows at N cells when the screen is wider (default: off)
       -F, --[no-]quit-if-one-page  print the text and quit if it fits the screen (default: off)
       --one-page-rows-below N      rows -F leaves below the text, for the prompt (default: 1)
       --[no-]auto-reload           read a file again when it changes on disk (default: on)

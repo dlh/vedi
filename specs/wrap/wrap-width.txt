@@ -1,0 +1,33 @@
+wrap_width N wraps rows at N cells when the screen is wider, and a bar
+in the cell after them, on every text row, shows where. w still
+toggles wrap and nowrap, and :wrap_width 0 wraps at the screen's edge
+again; neither has the bar.
+
+-- size --
+40x5
+-- config --
+wrap_width 20
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox │
+jumps over the lazy │
+dog                 │
+                    │
+<stdin>  line 1/1  wrap           h help
+-- keys --
+w
+-- screen --
+the quick brown fox jumps over the lazy
+
+
+
+<stdin>  line 1/1  nowrap         h help
+-- keys --
+w : "wrap_width 0" Enter
+-- screen --
+the quick brown fox jumps over the lazy
+dog
+
+
+<stdin>  line 1/1  wrap           h help

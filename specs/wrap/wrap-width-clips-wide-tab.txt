@@ -1,0 +1,19 @@
+A tab wider than wrap_width stops at the bar, as it would at the
+screen's edge: selected, it shows only the cells within the width.
+This file holds a raw tab.
+
+-- size --
+30x4
+-- config --
+wrap_width 4
+-- input --
+	x
+-- keys --
+Shift+Right
+-- screen --
+[    ]│
+x   │
+    │
+<stdin>  line 1/1  wrap
+-- cursor --
+1 0

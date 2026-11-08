@@ -8,6 +8,7 @@ and the search keys search them. These are the defaults.
 | h | Show the key bindings |
 | q | Quit |
 | w | Toggle wrap / nowrap |
+| W | Wrap at 80 cells / the screen's edge |
 | R | Reload the file |
 | O | Toggle reading through open_cmd |
 | Up, Down, Left, Right, Home, End, j, k, 0, $, Enter, Cmd+Left, Cmd+Right | Move the cursor |

@@ -57,6 +57,6 @@ h
   h                                       Show the key bindings.
   q                                       Quit.
   w                                       Toggle wrap / nowrap.
+  W                                       Wrap at 80 cells / the screen's edge.
   ⌥W                                      Toggle the edge markers.
-  R                                       Reload the file.
 help  motion scrolls, / searches, any other key returns

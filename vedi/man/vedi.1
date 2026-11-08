@@ -42,6 +42,12 @@ or at words
 .Pq Cm word .
 Default:
 .Cm char .
+.It Fl \-wrap\-width Ar n
+Wrap rows at
+.Ar n
+cells when the screen is wider, a dim bar in the cell after; 0 wraps at
+its edge.
+Default: 0.
 .It Fl F , Fl \-quit\-if\-one\-page , Fl \-no\-quit\-if\-one\-page
 Print the text and quit if it fits the screen, as
 .Xr cat 1
@@ -194,6 +200,8 @@ Command prompt; see
 .Sx COMMANDS .
 .It Ic w
 Toggle wrap.
+.It Ic W
+Wrap at 80 cells, or at the screen's edge again.
 .It Ic R
 Reload the file.
 .It Ic O
@@ -279,8 +287,9 @@ A setting is its flag with
 .Ql _
 for
 .Ql \- :
-.Cm wrap , Cm wrap_style , Cm tab_width , Cm edge_markers , Cm file_separators ,
-.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select ,
+.Cm wrap , Cm wrap_style , Cm wrap_width , Cm tab_width , Cm edge_markers ,
+.Cm file_separators , Cm auto_reload , Cm status_line , Cm view_style ,
+.Cm copy_on_select ,
 .Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd ,

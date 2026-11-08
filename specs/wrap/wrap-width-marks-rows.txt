@@ -1,0 +1,17 @@
+With edge_markers yes and wrap_width N, the \ marker takes the Nth
+cell, not the screen's last, and text wraps a cell early for it. The
+bar follows in the cell after.
+
+-- size --
+40x5
+-- config --
+edge_markers yes
+wrap_width 20
+-- input --
+the quick brown fox jumps over the lazy dog
+-- screen --
+the quick brown fox[\]│
+ jumps over the laz[\]│
+y dog               │
+                    │
+<stdin>  line 1/1  wrap           h help

@@ -40,6 +40,7 @@ so far, defaults included.
 | `auto_reload` | `yes` | `--auto-reload`, `--no-auto-reload` | Reread a file that changes on disk. `R` reloads either way. |
 | `wrap` | `yes` | `--wrap`, `-S` | Start in wrap mode. `w` toggles. |
 | `wrap_style` | `char` | `--wrap-style` | `word` breaks rows at spaces and tabs. |
+| `wrap_width` | `0` | `--wrap-width` | Wrap rows at this many cells when the screen is wider; `0` wraps at its edge. |
 | `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
@@ -56,6 +57,9 @@ file, and the command line overrides `VEDI`; see [Pager](pager.md#vedi).
 **wrap_style word.** A word that does not fit moves to the next row, taking the
 space after it; one wider than the screen breaks at the edge. The status line
 shows `word wrap`.
+
+**wrap_width 80.** Rows wrap at 80 cells, a dim `│` in the 81st. With
+`edge_markers yes` the `\` takes the 80th. `W` switches between `0` and `80`.
 
 **edge_markers yes.** In nowrap mode a row that runs past the right edge ends in
 `>`, and one scrolled off the left edge starts with `<`, both in reverse video.
@@ -300,6 +304,9 @@ map : command
 
 # Toggle wrap / nowrap
 map w cycle wrap
+
+# Wrap at 80 cells / the screen's edge
+map W cycle wrap_width 0 80
 
 # Reload the file
 map R reload

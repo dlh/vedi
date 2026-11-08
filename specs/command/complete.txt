@@ -23,7 +23,7 @@ line 1
 
 
 
-:wr  wrap  wrap_style  write
+:wr  wrap  wrap_style  wrap_width  write
 -- keys --
 "ap_s" Tab "w" Tab Enter
 -- screen --
