@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.7.0 - 2026-11-08
+
+### Features
+
+- cycle a setting through given values
+- wrap_width wraps rows at a width on a wider screen
+- write saves plain text, as copy sends it
+- Tab completes write's file name
+
+### Fixes
+
+- a double-click's word spans joining punctuation
+
 ## v2.6.1 - 2026-11-06
 
 ### Fixes
