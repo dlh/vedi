@@ -5,7 +5,6 @@ use crate::app::complete::Completion;
 use crate::app::text_view::is_word;
 use crate::app::{App, Flow, Focus, Kind};
 use crate::input::key::{Key, KeyCode, Mods};
-use crate::input::setting::Settings;
 use crate::view::layout::Layout;
 use crate::view::screen::Terminal;
 
@@ -53,9 +52,9 @@ impl Prompt {
         self.start(prefix);
     }
 
-    /// `open`, with Tab completing against `settings`.
-    pub fn open_completing(&mut self, prefix: char, settings: &Settings) {
-        self.completion = Some(Completion::new(settings));
+    /// `open`, with Tab completing.
+    pub fn open_completing(&mut self, prefix: char, completion: Completion) {
+        self.completion = Some(completion);
         self.start(prefix);
     }
 

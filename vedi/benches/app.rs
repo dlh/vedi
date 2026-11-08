@@ -65,6 +65,7 @@ fn options() -> Options {
             open_cmd: None,
         },
         write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
+        list: std::rc::Rc::new(|_| Err(std::io::Error::other("no directory"))),
         home: None,
     }
 }

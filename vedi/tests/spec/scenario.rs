@@ -5,6 +5,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::io::{self, ErrorKind, Write};
+use std::path::{Component, Path};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver};
@@ -12,8 +13,8 @@ use std::time::Duration;
 use std::time::Instant;
 
 use vedi::app::{
-    App, Copier, Done, Event, Flow, Mouse, MouseKind, Opener, Options, Runtime, Sink, Verdict,
-    Wake, one_page,
+    App, Copier, Done, Entry, Event, Flow, Mouse, MouseKind, Opener, Options, Runtime, Sink,
+    Verdict, Wake, one_page,
 };
 use vedi::cli;
 use vedi::input::config::{self, Config};
@@ -622,7 +623,8 @@ impl Scenario<'_, '_> {
     /// a flag or the config, is run; without one the copy is recorded.
     /// An open_cmd is not: read through it, a file is its input
     /// sections again. A :write is recorded, ~ being /home/u; the files
-    /// in the args and the names written before exist.
+    /// in the args and the names written before exist, and the
+    /// directories on their paths, which Tab lists.
     fn options(&self) -> Result<Startup, String> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
@@ -668,6 +670,32 @@ impl Scenario<'_, '_> {
                 name: name.to_string(),
                 files: Rc::clone(&written),
             }))
+        });
+        let (written, existing) = (Rc::clone(&self.written), files.clone());
+        opts.list = Rc::new(move |dir| {
+            // The current directory, which the names are relative to.
+            let dir = if dir == Path::new(".") {
+                Path::new("")
+            } else {
+                dir
+            };
+            let written = written.borrow();
+            let mut entries = BTreeMap::new();
+            for name in existing.iter().chain(written.keys()) {
+                let Ok(rest) = Path::new(name).strip_prefix(dir) else {
+                    continue;
+                };
+                let mut parts = rest.components();
+                let Some(Component::Normal(first)) = parts.next() else {
+                    continue;
+                };
+                let first = first.to_string_lossy().into_owned();
+                entries.insert(first, parts.next().is_some());
+            }
+            Ok(entries
+                .into_iter()
+                .map(|(name, dir)| Entry { name, dir })
+                .collect())
         });
         opts.home = Some("/home/u".into());
         let rows_below = flags

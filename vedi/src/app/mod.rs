@@ -28,8 +28,8 @@ use std::time::{Duration, Instant};
 pub use event::{Event, Mouse, MouseKind};
 pub use onepage::{Verdict, one_page};
 pub use options::{
-    Clock, Copier, CopyResult, Done, OpenCmdFor, Opener, Options, Runtime, STDIN, Sink,
-    StartScreen, Wake, Writer,
+    Clock, Copier, CopyResult, Done, Entry, Lister, OpenCmdFor, Opener, Options, Runtime, STDIN,
+    Sink, StartScreen, Wake, Writer,
 };
 
 use crate::input::action::{Action, Command};
@@ -112,6 +112,8 @@ pub struct App<T: Terminal> {
     mouse: mouse::State,
     /// Opens the file :write saves to.
     write: Writer,
+    /// Lists a directory, for completing its name.
+    list: Lister,
     home: Option<PathBuf>,
 
     /// A line's chars, decoded into it rather than allocated per call.
@@ -153,6 +155,7 @@ impl<T: Terminal> App<T> {
             query: Prompt::default(),
             mouse: mouse::State::default(),
             write: opts.write,
+            list: opts.list,
             home: opts.home,
             scratch: Vec::new(),
             last_draw: None,

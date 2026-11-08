@@ -9,7 +9,7 @@ out; --color what the screen shows, encoded afresh, one SGR per
 change of style and links as OSC 8, the color a selection starts in
 written first so an excerpt stands on its own. Under view_style raw
 the escapes are text, and --color writes them as text, as plain does.
-Tab after write offers the flags. A file
+Tab after write and a - offers the flags. A file
 that exists is refused: write! overwrites it. The name is the rest of
 the line, spaces included; a leading ~ is the home directory, the
 status line keeping the name as typed. The input here holds the raw
@@ -174,7 +174,7 @@ two
 
 [write takes --color or --raw]      h help
 -- keys --
-: "write " Tab Tab
+: "write -" Tab Tab
 -- screen --
 red
 two

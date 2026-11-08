@@ -131,10 +131,11 @@ The selection is cleared.
 directory. A symlink of your own is written through; another user's is
 refused.
 
-**Editing.** Tab completes the command or setting, then its values, starting
-after the current one; Up and Down recall earlier commands; Esc, Ctrl+g and
-Ctrl+c cancel. [keys.md](keys.md) lists the rest of the prompt keys. A paste
-goes in as one line, its newlines dropped, here and at the search prompt.
+**Editing.** Tab completes the word: a command, a setting's value, starting
+after the current one, or write's file name. Up and Down recall earlier
+commands; Esc, Ctrl+g and Ctrl+c cancel. [keys.md](keys.md) lists the rest of
+the prompt keys. A paste goes in as one line, its newlines dropped, here and at
+the search prompt.
 
 ## Keys
 

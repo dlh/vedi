@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -53,6 +54,15 @@ pub trait Sink: Write {
 /// exists.
 pub type Writer = Box<dyn FnMut(&Path, bool) -> io::Result<Box<dyn Sink>>>;
 
+/// A name in a directory, and whether it is one itself.
+pub struct Entry {
+    pub name: String,
+    pub dir: bool,
+}
+
+/// Lists a directory, for completing a :write name.
+pub type Lister = Rc<dyn Fn(&Path) -> io::Result<Vec<Entry>>>;
+
 pub struct Options {
     /// What the status line calls each input, by its part in the buffer.
     pub names: Vec<String>,
@@ -66,6 +76,7 @@ pub struct Options {
     pub keys: Keymap,
     pub runtime: Runtime,
     pub write: Writer,
+    pub list: Lister,
     /// What a leading ~ in a :write name stands for; `None` when unknown.
     pub home: Option<PathBuf>,
 }

@@ -4,10 +4,12 @@ mod completion;
 mod parse;
 
 use std::ffi::OsString;
+use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::time::Instant;
 
-use crate::app::{self, STDIN, Sink, StartScreen};
+use crate::app::{self, Entry, STDIN, Sink, StartScreen};
 use crate::input::config::{self, Config};
 use crate::input::setting::Settings;
 use crate::sys::{save, words};
@@ -121,6 +123,21 @@ impl Options {
             runtime,
             write: Box::new(|name, overwrite| {
                 save::open(name, overwrite).map(|s| Box::new(s) as Box<dyn Sink>)
+            }),
+            list: Rc::new(|dir| {
+                let mut entries = Vec::new();
+                for e in fs::read_dir(dir)? {
+                    let e = e?;
+                    // The prompt holds chars: a name that is not UTF-8
+                    // cannot be typed as it is.
+                    let Ok(name) = e.file_name().into_string() else {
+                        continue;
+                    };
+                    // A link to a directory is one to go into.
+                    let dir = fs::metadata(e.path()).is_ok_and(|m| m.is_dir());
+                    entries.push(Entry { name, dir });
+                }
+                Ok(entries)
             }),
             home: std::env::var_os("HOME")
                 .filter(|h| !h.is_empty())

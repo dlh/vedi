@@ -2,7 +2,9 @@
 //! the run, or what a key does.
 
 use std::mem;
+use std::rc::Rc;
 
+use crate::app::complete::Completion;
 use crate::app::text_view::Motion;
 use crate::app::write::Form;
 use crate::app::{App, Flow, Focus, Kind, status};
@@ -29,7 +31,8 @@ impl<T: Terminal> App<T> {
     pub(super) fn open_command(&mut self) {
         self.focus(Focus::Prompting(Kind::Command));
         self.end_drag();
-        self.command.open_completing(':', &self.settings);
+        let c = Completion::new(&self.settings, Rc::clone(&self.list), self.home.clone());
+        self.command.open_completing(':', c);
     }
 
     /// Runs a : line; an error is what it says.

@@ -2,7 +2,7 @@
 //! colors, or as it came.
 
 use std::io::ErrorKind;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::app::filter::Blocks;
 use crate::app::{App, Flow};
@@ -31,6 +31,18 @@ impl Form {
     }
 }
 
+/// The path `name` means: a leading ~ is `home`, when known.
+pub(super) fn expand(home: Option<&Path>, name: &str) -> PathBuf {
+    match (home, name.strip_prefix('~')) {
+        (Some(home), Some(rest)) if rest.is_empty() || rest.starts_with('/') => {
+            let mut p = home.as_os_str().to_owned();
+            p.push(rest);
+            PathBuf::from(p)
+        }
+        _ => PathBuf::from(name),
+    }
+}
+
 impl<T: Terminal> App<T> {
     /// Writes the selection, or with none the whole text, to the file
     /// `name`, made new, or emptied first when `overwrite`; a file that
@@ -44,14 +56,7 @@ impl<T: Terminal> App<T> {
         overwrite: bool,
         form: Form,
     ) -> Result<Flow, String> {
-        let path = match (&self.home, name.strip_prefix('~')) {
-            (Some(home), Some(rest)) if rest.is_empty() || rest.starts_with('/') => {
-                let mut p = home.clone().into_os_string();
-                p.push(rest);
-                PathBuf::from(p)
-            }
-            _ => PathBuf::from(name),
-        };
+        let path = expand(self.home.as_deref(), name);
         let mut w = match (self.write)(&path, overwrite) {
             Ok(w) => w,
             Err(e) if e.kind() == ErrorKind::AlreadyExists => {

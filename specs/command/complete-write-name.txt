@@ -1,0 +1,108 @@
+Tab after write, or its flag, completes a file name: the names in the
+directory typed so far, the current one with none, that begin as the
+last part does. A directory is filled in with a / and no space, so Tab
+again goes into it. A name beginning with a dot comes only after one;
+a leading ~ is the home directory, kept as typed. The name is the rest
+of the line, so one with a space completes whole. A first word
+beginning with - is a flag, as write.txt shows, so a name here that
+begins with one is filled in after ./; after a flag, as it is.
+
+-- size --
+60x4
+-- args --
+f.txt
+-- input --
+line 1
+-- keys --
+: "write sub/a.txt" Enter : "write sub/b.txt" Enter
+: "write .hid" Enter : "write ~/h.txt" Enter : "write my file.txt" Enter
+: "write " Tab
+-- screen --
+line 1
+
+
+:write f.txt   [f.txt]  my file.txt  sub/
+-- keys --
+Tab Tab
+-- screen --
+line 1
+
+
+:write sub/  f.txt  my file.txt  [sub/]
+-- keys --
+Esc : "write s" Tab
+-- screen --
+line 1
+
+
+:write sub/
+-- keys --
+Tab
+-- screen --
+line 1
+
+
+:write sub/a.txt   [sub/a.txt]  sub/b.txt
+-- keys --
+Esc : "write my " Tab
+-- screen --
+line 1
+
+
+:write my file.txt
+-- keys --
+Esc : "write ." Tab
+-- screen --
+line 1
+
+
+:write .hid
+-- keys --
+Esc : "write ~" Tab
+-- screen --
+line 1
+
+
+:write ~/
+-- keys --
+Tab
+-- screen --
+line 1
+
+
+:write ~/h.txt
+-- keys --
+Esc : "write --raw sub/b" Tab Enter
+-- screen --
+line 1
+
+
+f.txt  line 1/1  wrap  [sub/b.txt exists; write! overwrites]
+-- keys --
+: "write nowhere/" Tab
+-- screen --
+line 1
+
+
+:write nowhere/
+-- keys --
+Esc : "write --raw --raw x" Enter : "write " Tab
+-- screen --
+line 1
+
+
+:write ./--raw x   [./--raw x]  f.txt  my file.txt  sub/
+-- keys --
+Enter
+-- screen --
+line 1
+
+
+f.txt  line 1/1  wrap  [wrote 1 line to ./--raw x]      h help
+-- keys --
+: "write --raw -" Tab
+-- screen --
+line 1
+
+
+:write --raw --raw x
