@@ -20,6 +20,8 @@ pub(super) struct Filter {
     state: State,
     /// The list, after Enter went to a line in the text.
     parked: Option<TextView>,
+    /// The pointer was moved at this prompt, so is drawn with no query.
+    moved: bool,
 }
 
 /// The query and what it found.
@@ -91,6 +93,12 @@ impl Filter {
     /// How many lines are listed.
     pub(super) fn listed(&self) -> usize {
         self.state.lines.len()
+    }
+
+    /// Whether the & prompt draws the pointed line: with no query the
+    /// list is the text, and a reverse line would read as a selection.
+    pub(super) fn pointer_shown(&self) -> bool {
+        self.moved || !self.query().is_empty()
     }
 
     /// The text's line listed line `i` is.
@@ -286,12 +294,14 @@ impl<T: Terminal> App<T> {
                         last: None,
                     },
                     parked: None,
+                    moved: false,
                 });
                 self.relist(Vec::new(), 0);
                 self.point(0);
                 query.unwrap_or_default()
             }
             Some(f) => {
+                f.moved = false;
                 if let Some(list) = f.parked.take() {
                     self.views.raise(Role::List, list);
                 }
@@ -366,6 +376,9 @@ impl<T: Terminal> App<T> {
         if let Some(by) = by {
             let line = self.views.shown.cursor().line.saturating_add_signed(by);
             self.point(line);
+            if let Some(f) = &mut self.filter {
+                f.moved = true;
+            }
             return Flow::Continue;
         }
         match self.query.key(key) {
@@ -383,7 +396,7 @@ impl<T: Terminal> App<T> {
     /// pointer back at the top. A query that grew around the last one
     /// narrows the lines listed rather than search the text again.
     pub(super) fn query_changed(&mut self) {
-        let Some(f) = &self.filter else {
+        let Some(f) = &mut self.filter else {
             return;
         };
         let q = self.query.text();
@@ -391,6 +404,7 @@ impl<T: Terminal> App<T> {
         if q == old.pattern() {
             return;
         }
+        f.moved = false;
         let style = self.settings.view_style;
         let Some((text, list, state)) = self.filter_parts() else {
             return;

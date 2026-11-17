@@ -58,7 +58,7 @@ a3
 -- keys --
 &
 -- screen --
-[a1]
+a1
 b2
 a3
 

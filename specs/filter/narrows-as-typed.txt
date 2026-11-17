@@ -1,5 +1,6 @@
 The list follows the query: each character typed narrows it, each
-deleted widens it, and the empty query lists every line. Matching is
+deleted widens it, and the empty query lists every line, none pointed
+until Ctrl+n or Ctrl+p moves the pointer at that prompt. Matching is
 the search's: a lowercase query ignores case, one with a capital does
 not.
 
@@ -10,7 +11,7 @@ bar
 -- keys --
 &
 -- screen --
-[Foo]
+Foo
 foo bar
 bar
 
@@ -46,7 +47,34 @@ Backspace Backspace "B"
 -- keys --
 Backspace Backspace Backspace Backspace
 -- screen --
-[Foo]
+Foo
+foo bar
+bar
+
+
+&                                    3/3
+-- keys --
+Ctrl+n
+-- screen --
+Foo
+[foo bar]
+bar
+
+
+&                                    3/3
+-- keys --
+"b" Backspace
+-- screen --
+Foo
+foo bar
+bar
+
+
+&                                    3/3
+-- keys --
+Ctrl+n Enter &
+-- screen --
+Foo
 foo bar
 bar
 

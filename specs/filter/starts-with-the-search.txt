@@ -32,7 +32,7 @@ Ctrl+u "ba"
 -- keys --
 Esc Esc &
 -- screen --
-[foo one]
+foo one
 bar
 foo two
 baz

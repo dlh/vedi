@@ -15,7 +15,8 @@ impl<T: Terminal> App<T> {
     /// known until then. While help is up the bindings are the text, and
     /// no cursor is shown; nor is one scrolled off the side. An open
     /// prompt has the cursor; at the & prompt the list's pointed line
-    /// is in reverse video instead.
+    /// is in reverse video instead, once there is a query or the pointer
+    /// has moved.
     pub fn draw(&mut self) {
         self.sync_view();
         let (w, h) = self.screen.size();
@@ -110,7 +111,9 @@ impl<T: Terminal> App<T> {
         // screen's edge: a tab wider than the width would run under it.
         let right = geom.wrap_cols();
         let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
-        let pointed = self.focus == Focus::Prompting(Kind::Filter) && cursor.line == p.line;
+        let pointed = self.focus == Focus::Prompting(Kind::Filter)
+            && self.filter.as_ref().is_some_and(|f| f.pointer_shown())
+            && cursor.line == p.line;
         let cell = self.views.shown.cursor_on(p);
         let ln = self.views.shown.line_layout(p.line);
         let line = self.views.shown.buf().line(p.line);
