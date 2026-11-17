@@ -1,0 +1,51 @@
+s labels each line shown, 1 to 9 then letters, in bold black on
+bright cyan over its first cells, a wrapped line on its first row only,
+and typing a label puts the cursor at the start of that line. A line
+that shows only spaces, as an empty one does or one scrolled past its
+end in nowrap, gets no label.
+
+-- size --
+20x7
+-- config --
+status_line no
+-- input --
+ab
+cdefghijklmnopqrstuvwxyz
+
+   
+op
+qr
+-- keys --
+s
+-- screen --
+<1>b
+<2>defghijklmnopqrstuv
+wxyz
+
+
+<3>p
+<4>r
+-- keys --
+3
+-- screen --
+ab
+cdefghijklmnopqrstuv
+wxyz
+
+
+op
+qr
+-- cursor --
+5 0
+-- keys --
+w k k k End s
+-- screen --
+
+<1>ijklmnopqrstuvwxyz
+
+
+
+
+
+-- cursor --
+1 19

@@ -70,7 +70,7 @@ impl TextView {
 
     /// Counts the matches, the cursor's place among them; on a match,
     /// n and N step from here.
-    pub(super) fn recount(&mut self) {
+    pub fn recount(&mut self) {
         let cur = self.cur;
         let (at, of) = search::position(&self.buf, &self.matcher, cur);
         self.buf.text(cur.line, &mut self.scratch);

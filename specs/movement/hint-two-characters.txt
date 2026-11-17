@@ -1,0 +1,133 @@
+Past 35 lines a label is two characters: the last single ones give way
+to z, and z followed by 1, 2 and so on. Typing z leaves only those
+labels, with what is left of them to type.
+
+-- size --
+10x37
+-- config --
+status_line no
+-- input --
+l1
+l2
+l3
+l4
+l5
+l6
+l7
+l8
+l9
+l10
+l11
+l12
+l13
+l14
+l15
+l16
+l17
+l18
+l19
+l20
+l21
+l22
+l23
+l24
+l25
+l26
+l27
+l28
+l29
+l30
+l31
+l32
+l33
+l34
+l35
+l36
+l37
+l38
+l39
+l40
+-- keys --
+s
+-- screen --
+<1>1
+<2>2
+<3>3
+<4>4
+<5>5
+<6>6
+<7>7
+<8>8
+<9>9
+<a>10
+<b>11
+<c>12
+<d>13
+<e>14
+<f>15
+<g>16
+<h>17
+<i>18
+<j>19
+<k>20
+<l>21
+<m>22
+<n>23
+<o>24
+<p>25
+<q>26
+<r>27
+<s>28
+<t>29
+<u>30
+<v>31
+<w>32
+<x>33
+<y>34
+<z1>5
+<z2>6
+<z3>7
+-- keys --
+z
+-- screen --
+l1
+l2
+l3
+l4
+l5
+l6
+l7
+l8
+l9
+l10
+l11
+l12
+l13
+l14
+l15
+l16
+l17
+l18
+l19
+l20
+l21
+l22
+l23
+l24
+l25
+l26
+l27
+l28
+l29
+l30
+l31
+l32
+l33
+l34
+<1>35
+<2>36
+<3>37
+-- keys --
+2
+-- cursor --
+35 0

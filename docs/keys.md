@@ -19,6 +19,7 @@ and the search keys search them. These are the defaults.
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
 | T, M, B | Top, middle, bottom of the shown text |
+| s | Label matches or lines to go to one |
 | [, ] | Previous, next input or title |
 | : | Command prompt; N goes to line N |
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Ctrl+Shift+Home, Ctrl+Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
@@ -78,6 +79,11 @@ after the line, `/foo  3/17`, with `?` for a backward search, until Esc clears
 the highlight. With `edge_markers yes` in the config, nowrap mode marks text
 off the screen with a `<` or `>` in reverse video at that edge of the row, and
 wrap mode ends a row that continues below with a `\`.
+
+`s` labels each search match shown, or with no search highlighted each line
+with text, 1 to 9 then letters, and typing a label puts the cursor there, so `n`
+goes on from a match; in the filter's list, it goes to that place in the text as
+Enter does. Any other key takes the labels down.
 
 `&` filters. As the query is typed, the text rows list only the lines that
 match, colors kept, the pointed line in reverse video once there is a query or

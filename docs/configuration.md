@@ -232,6 +232,9 @@ map T screen_top
 map M screen_middle
 map B screen_bottom
 
+# Label matches or lines to go to one
+map s hint
+
 # Previous, next input or title
 map [ prev_file
 map ] next_file

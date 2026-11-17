@@ -7,7 +7,7 @@
 use std::io::{self, BufRead, IsTerminal, Write};
 
 use vedi::view::screen::{Terminal, TestTerminal};
-use vedi::view::style::{Attrs, CUR_MATCH, ERROR, MATCH, NOTE};
+use vedi::view::style::{Attrs, CUR_MATCH, ERROR, HINT, MATCH, NOTE};
 
 use crate::spec::archive::Archive;
 use crate::spec::scenario::{ACTIONS, DRIVES};
@@ -130,8 +130,8 @@ impl<'a> Stepper<'a> {
     }
 }
 
-/// Draws the screen in a box, with reverse video, search matches and
-/// the status line's messages as a terminal shows them and the
+/// Draws the screen in a box, with reverse video, search matches,
+/// hints' labels and the status line's messages as a terminal shows them and the
 /// cursor's cell underlined.
 pub fn frame(term: &TestTerminal) -> String {
     let (w, h) = term.size();
@@ -152,6 +152,9 @@ pub fn frame(term: &TestTerminal) -> String {
             }
             if c.style == CUR_MATCH {
                 sgr.extend(["97", "45"]);
+            }
+            if c.style == HINT {
+                sgr.extend(["1", "30", "106"]);
             }
             if c.style == NOTE {
                 sgr.extend(["30", "43"]);

@@ -125,6 +125,7 @@ const SECTIONS: &[HelpSection] = {
                     &[Act(ScreenTop), Act(ScreenMiddle), Act(ScreenBottom)],
                     "Top, middle, bottom of the shown text",
                 ),
+                bound(&[Act(Hint)], "Label matches or lines to go to one"),
                 bound(
                     &[Act(PrevFile), Act(NextFile)],
                     "Previous, next input or title",

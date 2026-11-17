@@ -105,6 +105,9 @@ pub const ERROR: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(1));
 /// text rather than among it.
 pub const GUIDE: Style = PLAIN.dim();
 pub const SEP_NAME: Style = PLAIN.bold();
+/// A hint's label: bright cyan, far from a match's yellow and the
+/// current match's magenta, which it is drawn over.
+pub const HINT: Style = PLAIN.fg(Color::Palette(0)).bg(Color::Palette(14)).bold();
 /// Cyan, which reads on light and dark palettes alike, so the row
 /// stands out from the text while the name stays as legible as it.
 pub const SEP_RULE: Style = PLAIN.fg(Color::Palette(6));
@@ -154,6 +157,7 @@ mod tests {
         assert_eq!(NOTE, d.fg(Color::Palette(0)).bg(Color::Palette(3)));
         assert_eq!(ERROR, d.fg(Color::Palette(15)).bg(Color::Palette(1)));
         assert_eq!(SEP_NAME, d.bold());
+        assert_eq!(HINT, d.fg(Color::Palette(0)).bg(Color::Palette(14)).bold());
         assert_eq!(SEP_RULE, d.fg(Color::Palette(6)));
     }
 }

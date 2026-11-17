@@ -1,4 +1,4 @@
-.Dd November 8, 2026
+.Dd November 17, 2026
 .Dt VEDI 1
 .Os
 .Sh NAME
@@ -167,6 +167,9 @@ Ic Cmd+Down
 Start, end of the text.
 .It Ic T , Ic M , Ic B
 Top, middle, bottom of the shown text.
+.It Ic s
+Label the search's matches shown, or the lines with text while no
+search is highlighted; typing a label goes there.
 .It Ic \&[ , Ic \&]
 Previous, next input or title.
 .It Ic J , Ic K , Ic Shift+Up , Ic Shift+Down , Ic Shift+Left , \
@@ -228,7 +231,9 @@ Ctrl+n and Ctrl+p move the pointer, Up and Down recall earlier queries.
 Enter keeps the list and gives it the keys, so it scrolls, selects and copies
 as the text does, and
 .Cm write
-saves it; Enter there goes to the line in the text, and
+saves it; Enter there goes to the line in the text, as does a label of
+.Ic s ,
+and
 .Ic &
 brings the list back.
 Esc leaves it.

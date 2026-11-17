@@ -1,0 +1,31 @@
+A label that would run into the label before it on its row, or off
+the screen's edge, is left out, and the rest are labeled again: of 39
+matches in a row, the first 34 get 1 to 9 and a to y, and z1 to z3 go
+on every other match after, those between left out, which n still
+reaches.
+
+-- size --
+40x3
+-- input --
+top
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+-- keys --
+/ "a" Enter s
+-- screen --
+top
+<123456789abcdefghijklmnopqrstuvwxyz1z2z3>
+<stdin>  line 2/2  /a  1/39  wrap
+-- keys --
+y
+-- cursor --
+1 33
+-- keys --
+s z
+-- screen --
+top
+{aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}{{a}}<1>{a}<2>{a}<3>
+<stdin>  line 2/2  /a  34/39  wrap
+-- keys --
+3
+-- cursor --
+1 38

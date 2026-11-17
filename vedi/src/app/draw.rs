@@ -29,6 +29,7 @@ impl<T: Terminal> App<T> {
         let mut cur = None;
         if !self.views.shown.start_pending() {
             cur = self.draw_text(&mut g);
+            self.draw_hints(&mut g);
         }
         // A prompt has the cursor.
         if !self.views.shown.cursor_shown() || self.focus != Focus::Viewing {

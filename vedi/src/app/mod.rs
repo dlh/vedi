@@ -10,6 +10,7 @@ mod copy;
 mod draw;
 mod filter;
 mod help;
+mod hint;
 mod input;
 mod mouse;
 mod prompt;
@@ -87,6 +88,8 @@ pub struct App<T: Terminal> {
     views: Views,
     /// The & filter, while one is open.
     filter: Option<Filter>,
+    /// What was typed of a hint's label, while the labels are up.
+    hint: Option<String>,
     /// The readers: the text's, and a reload's.
     input: Input,
     copier: Box<dyn Copier>,
@@ -139,6 +142,7 @@ impl<T: Terminal> App<T> {
             frame: Grid::new(0, 0),
             views: Views::new(TextView::new(buffer, start, Geometry::default())),
             filter: None,
+            hint: None,
             input: Input::new(opts.runtime.open, opts.runtime.open_cmd, generation),
             copier: opts.runtime.copier,
             copying: None,
@@ -339,6 +343,7 @@ impl<T: Terminal> App<T> {
                         let cmd = self.keys.lookup(k);
                         self.help_key(cmd)
                     }
+                    Focus::Viewing if self.hint.is_some() => self.hint_key(k),
                     Focus::Viewing => {
                         if let Some(flow) = self.list_key(k) {
                             return flow;
@@ -423,6 +428,7 @@ impl<T: Terminal> App<T> {
                 return self.report(found);
             }
             Action::Filter => self.open_filter(),
+            Action::Hint => return self.open_hints(),
             Action::CommandPrompt => self.open_command(),
             Action::Cycle => return self.cycle(c.arg.as_deref().unwrap_or_default()),
             Action::Help => self.show_help(),

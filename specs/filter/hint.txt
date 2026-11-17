@@ -1,0 +1,52 @@
+s in the list labels each match of the query shown, 1 to 9 then
+letters, in bold black on bright cyan over its first cells, and typing
+a label goes to that match in the text, as Enter on it does. Any key
+that is no label takes the labels down and does nothing else: j does
+not move, Esc does not leave.
+
+-- input --
+foo one
+bar
+foo two foo
+baz
+foo three
+-- keys --
+& "foo" Enter s
+-- screen --
+<1>{{oo}} one
+<2>{oo} two <3>{oo}
+<4>{oo} three
+
+
+&foo  1/3  line 1/5  wrap         h help
+-- keys --
+3
+-- screen --
+{foo} one
+bar
+{foo} two {{foo}}
+baz
+{foo} three
+<stdin>  line 3/5  /foo  3/4  wrap
+-- cursor --
+2 8
+-- keys --
+& Enter s j
+-- screen --
+{foo} one
+{foo} two {{foo}}
+{foo} three
+
+
+&foo  2/3  line 3/5  wrap         h help
+-- cursor --
+1 8
+-- keys --
+s Esc
+-- screen --
+{foo} one
+{foo} two {{foo}}
+{foo} three
+
+
+&foo  2/3  line 3/5  wrap         h help

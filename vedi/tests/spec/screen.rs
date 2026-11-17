@@ -1,9 +1,10 @@
 use vedi::view::screen::{Terminal, TestTerminal};
-use vedi::view::style::{Attrs, CUR_MATCH, ERROR, MATCH, NOTE};
+use vedi::view::style::{Attrs, CUR_MATCH, ERROR, HINT, MATCH, NOTE};
 
 /// Renders the screen as a "-- screen --" section expects it:
 /// reverse-video runs in brackets, search matches in braces, doubled
-/// for the matches the cursor is in, the status row, when it is shown
+/// for the matches the cursor is in, hints' labels in angle brackets,
+/// the status row, when it is shown
 /// in reverse video, plain with its runs out of reverse video, a
 /// message among them, in brackets, a prompt's row as the text rows,
 /// trailing spaces trimmed, one line per row.
@@ -28,12 +29,13 @@ pub fn render(term: &TestTerminal, status_shown: bool) -> String {
                 (true, _) | (_, true) => "",
                 _ if c.style == MATCH => "{",
                 _ if c.style == CUR_MATCH => "{{",
+                _ if c.style == HINT => "<",
                 _ => "",
             };
             // A match closes before a bracket and opens after one, so
             // the runs nest: [bar ]{{foo}} and {{foo}}[ bar].
             if m != matched {
-                row.push_str(&"}".repeat(matched.len()));
+                row.push_str(close(matched));
             }
             if r && !rev {
                 row.push('[');
@@ -50,11 +52,21 @@ pub fn render(term: &TestTerminal, status_shown: bool) -> String {
         if rev {
             row.push(']');
         }
-        row.push_str(&"}".repeat(matched.len()));
+        row.push_str(close(matched));
         out.push_str(row.trim_end_matches(' '));
         out.push('\n');
     }
     out
+}
+
+/// The mark that ends a run `open` began.
+fn close(open: &str) -> &'static str {
+    match open {
+        "{" => "}",
+        "{{" => "}}",
+        "<" => ">",
+        _ => "",
+    }
 }
 
 /// Lists `want` and `got` rows, marking the ones that differ.

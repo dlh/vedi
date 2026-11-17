@@ -1,0 +1,19 @@
+A match that starts on a combining mark is labeled on the letter the
+mark is drawn on, which has the cell, and the screen's last cell counts:
+the third match of three, in three columns, is labeled and reached.
+
+-- size --
+3x2
+-- config --
+status_line no
+-- input --
+ááá
+-- keys --
+/ "́" Enter s
+-- screen --
+<123>
+
+-- keys --
+3
+-- cursor --
+0 2

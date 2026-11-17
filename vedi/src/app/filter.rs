@@ -325,7 +325,7 @@ impl<T: Terminal> App<T> {
     /// place in it, in the middle of the screen, and the query
     /// highlighted as a search that found it there; n and N go on from
     /// it.
-    fn jump(&mut self) {
+    pub(super) fn jump(&mut self) {
         let Some(f) = &self.filter else {
             return;
         };
