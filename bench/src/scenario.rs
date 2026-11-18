@@ -410,18 +410,21 @@ mod tests {
     /// vedi built in the test's profile, by a path relative to the
     /// test's directory, the package's, which is neither the binary's
     /// nor the input's. Not on PATH: changing the environment would
-    /// race the other tests.
+    /// race the other tests. Cargo names the path: where the test
+    /// binary sits under the target directory differs by version.
     fn build_vedi() -> PathBuf {
         let exe = std::env::current_exe().unwrap();
-        let profile = exe.parent().and_then(Path::parent).unwrap();
+        let release = OsStr::new("release");
         let mut build = std::process::Command::new(env!("CARGO"));
-        build.args(["build", "-q", "-p", "vedi"]);
-        if profile.file_name() == Some(OsStr::new("release")) {
+        build.args(["build", "-q", "-p", "vedi", "--message-format=json"]);
+        if exe.ancestors().any(|p| p.file_name() == Some(release)) {
             build.arg("--release");
         }
-        let status = build.status().unwrap();
-        assert!(status.success(), "build: {status}");
-        let vedi = profile.join("vedi");
+        let out = build.stderr(Stdio::inherit()).output().unwrap();
+        assert!(out.status.success(), "build: {}", out.status);
+        let json = String::from_utf8(out.stdout).unwrap();
+        let (_, path) = json.rsplit_once(r#""executable":""#).unwrap();
+        let vedi = PathBuf::from(&path[..path.find('"').unwrap()]);
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
         let root = root.canonicalize().unwrap();
         match vedi.canonicalize().unwrap().strip_prefix(&root) {
