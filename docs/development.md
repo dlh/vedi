@@ -73,8 +73,9 @@ Commit messages follow
 is built from their subjects at release time: a breaking change, `feat:`,
 `fix:` and `perf:` each get a section; `refactor:`, `test:`, `docs:`,
 `build:`, `ci:` and `chore:` are left out, since they change nothing a user
-sees. A subject is the changelog line, so it says what vedi does now, for the
-user.
+sees. A subject is the changelog line, linked to its commit, so it says what
+vedi does now, for the user; keys, flags, settings and commands go in
+backticks: "`&` starts with the search pattern".
 
 ## Keys
 

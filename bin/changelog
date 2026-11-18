@@ -2,16 +2,17 @@
 # Prints the CHANGELOG.md entry for TAG, from the subjects of the commits
 # since the tag before it: a breaking change, feat, fix and perf each get
 # a section, in that order; any other type is left out, since it changes
-# nothing a user sees. Without TAG, the entry for the next release, headed
-# by the tag bin/next-version prints and today's date. With -w, prepends
-# the entry to CHANGELOG.md instead of printing it.
+# nothing a user sees. Each line links its commit, and the entry ends with
+# a link to the diff from the tag before. Without TAG, the entry for the
+# next release, headed by the tag bin/next-version prints and today's
+# date. With -w, prepends the entry to CHANGELOG.md instead of printing it.
 # Usage: bin/changelog [-w] [TAG]
 set -eu
 
 # Prints the sections for the commits in $range. A breaking change is a
 # subject with a ! or a BREAKING CHANGE footer, which follows the subject.
 sections() {
-    git log --reverse --format='%s%x1f%b%x1e' "$range" | awk '
+    git log --reverse --format='%s%x1f%b%x1f%h%x1e' "$range" | awk -v url="$url" '
     BEGIN { RS = "\036"; FS = "\037" }
     {
         subject = $1
@@ -28,10 +29,12 @@ sections() {
                 note = substr(body, RSTART, RLENGTH)
                 sub(/^\nBREAKING[ -]CHANGE: /, "", note)
                 gsub(/\n/, " ", note)
+                sub(/\.$/, "", note)
                 subject = subject ": " note
             }
         }
-        entries[type] = entries[type] "- " subject "\n"
+        link = sprintf("[%s](%s/commit/%s)", $3, url, $3)
+        entries[type] = entries[type] "- " subject " (" link ")\n"
     }
     END {
         order[1] = "breaking"; title["breaking"] = "Breaking changes"
@@ -47,6 +50,10 @@ sections() {
 entry() {
     printf '## %s - %s\n\n' "$tag" "$date"
     sections
+    if [ -n "$prev" ]; then
+        printf 'Full diff: [%s...%s](%s/compare/%s...%s)\n' \
+            "$prev" "$tag" "$url" "$prev" "$tag"
+    fi
 }
 
 # Inserts $1 after the title line of CHANGELOG.md, which it creates.
@@ -75,6 +82,8 @@ main() {
     done
     shift $((OPTIND - 1))
     cd "$(git rev-parse --show-toplevel)"
+    # The GitHub page of origin, from its SSH or HTTPS URL.
+    url=$(git remote get-url origin | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##')
     if [ $# -gt 0 ]; then
         tag=$1
         git rev-parse -q --verify "refs/tags/$tag" >/dev/null
@@ -84,7 +93,8 @@ main() {
     else
         tag=$(bin/next-version)
         date=$(date +%F)
-        range=$(git describe --tags --abbrev=0 --match 'v*')..HEAD
+        prev=$(git describe --tags --abbrev=0 --match 'v*')
+        range=$prev..HEAD
     fi
     text=$(entry)
     if [ -n "$write" ]; then
