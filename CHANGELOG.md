@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.8.0 - 2026-11-17
+
+### Features
+
+- s labels the matches or lines shown to go to one ([d8210ca](https://github.com/dlh/vedi/commit/d8210ca))
+
+### Fixes
+
+- & highlights no line until a query is typed or the pointer moves ([b1d1c44](https://github.com/dlh/vedi/commit/b1d1c44))
+
+Full diff: [v2.7.0...v2.8.0](https://github.com/dlh/vedi/compare/v2.7.0...v2.8.0)
+
 ## v2.7.0 - 2026-11-08
 
 ### Features
