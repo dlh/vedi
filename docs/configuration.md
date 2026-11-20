@@ -101,14 +101,15 @@ a literal star:
     open_cmd *.json jq -C . %s
     open_cmd bat --color=always --paging=never %s
 
-The last matching pattern line wins; a line without a pattern is for the rest. A
-command without `%s` gets the file name as its last argument. A name starting
-with `-` is passed as `./-name`, so the command does not take it for an option.
-`--open-cmd` replaces every line for one run.
+A file is read through the last matching pattern line, else the last line
+without a pattern. A command without `%s` gets the file name as its last
+argument. A name starting with `-` is passed as `./-name`, so the command does
+not take it for an option. `--open-cmd` replaces every line for one run.
 
-`O`, `cycle open_cmd`, reads the files as they are, and again through their
-commands; the status line names the command for the file at the cursor, or `''`.
-The selection is cleared.
+`O`, `cycle open_cmd`, steps each file through every line that matches it, then
+reads it as it is: above, a `.md` file goes from mdcat to bat to as it is. The
+status line names the command for the file at the cursor, or `''`. The selection
+is cleared.
 
 ## Commands
 
@@ -316,7 +317,7 @@ map W cycle wrap_width 0 80
 # Reload the file
 map R reload
 
-# Toggle reading through open_cmd
+# Read through the next open_cmd
 map O cycle open_cmd
 
 # Quit

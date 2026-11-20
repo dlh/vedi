@@ -90,8 +90,8 @@ Assertions, checked at that point:
 | `-- quit --` | The app quit. Follows the section that quit it — keys, or input or eof for `-F`; assertions may follow it, unless `-F` printed the text and the pager never opened. |
 
 An `open_cmd` in `-- config --` runs no command: `-- input --` is what it
-printed, and a `-- file --` before the first key what the file holds. `O` reads
-the file; `O` again reads the input sections again.
+printed, by every command `O` steps to, and a `-- file --` before the first key
+what the file holds, which `O` reads past the file's last command.
 
 A clipboard command runs while the keys after it are handled; its result lands
 before the next assertion.

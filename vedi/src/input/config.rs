@@ -73,26 +73,25 @@ impl fmt::Display for LoadError {
 impl std::error::Error for LoadError {}
 
 impl Config {
-    /// The command `name` is read through: the last pattern line
-    /// matching its base name, ignoring case, else the last plain line,
-    /// else `None` to read it as it is.
-    pub fn open_cmd_for(&self, name: &str) -> Option<&[String]> {
+    /// The commands `name` can be read through, the one it is read
+    /// through first: the pattern lines matching its base name,
+    /// ignoring case, then the plain lines, each last line first.
+    pub fn open_cmds_for(&self, name: &str) -> Vec<&[String]> {
         // Both sides lowercased: the glob crate folds ASCII only.
         let base = Path::new(name)
             .file_name()
             .map_or(name.into(), |b| b.to_string_lossy())
             .to_lowercase();
-        let mut plain = None;
+        let (mut matched, mut plain) = (Vec::new(), Vec::new());
         for o in self.open_cmds.iter().rev() {
             match &o.pattern {
-                None => {
-                    plain.get_or_insert(&o.argv[..]);
-                }
-                Some(p) if p.matches(&base) => return Some(&o.argv),
+                None => plain.push(&o.argv[..]),
+                Some(p) if p.matches(&base) => matched.push(&o.argv[..]),
                 Some(_) => {}
             }
         }
-        plain
+        matched.append(&mut plain);
+        matched
     }
 
     /// The bindings in effect: the defaults, or none after
@@ -742,9 +741,10 @@ mod tests {
     }
 
     /// A file is read through the last pattern line matching its base
-    /// name, ignoring case, else the last plain line, else as it is.
+    /// name, ignoring case, else the last plain line, else as it is; O
+    /// steps on to the other matching lines, then the plain ones.
     #[test]
-    fn open_cmd_for() {
+    fn open_cmds_for() {
         let c = parse(
             "vedi.conf",
             "
@@ -757,15 +757,16 @@ open_cmd less %s
         )
         .unwrap();
         for (name, want) in [
-            ("notes.md", ["glow", "%s"]),
-            ("docs/README.MD", ["glow", "%s"]),
-            ("a.py", ["bat", "%s"]),
-            ("md/x.txt", ["less", "%s"]),
+            ("notes.md", &["glow", "mdcat", "less", "cat"][..]),
+            ("docs/README.MD", &["glow", "mdcat", "less", "cat"]),
+            ("a.py", &["bat", "less", "cat"]),
+            ("md/x.txt", &["less", "cat"]),
         ] {
-            assert_eq!(c.open_cmd_for(name), Some(&strings(&want)[..]), "{name}");
+            let got: Vec<&str> = c.open_cmds_for(name).iter().map(|a| &a[0][..]).collect();
+            assert_eq!(got, want, "{name}");
         }
         let c = parse("vedi.conf", "open_cmd *.md mdcat %s\n").unwrap();
-        assert_eq!(c.open_cmd_for("a.txt"), None);
+        assert!(c.open_cmds_for("a.txt").is_empty());
     }
 
     /// The pattern syntax open_cmd takes: *, ?, [a-c] and [!a-c], with
@@ -788,7 +789,7 @@ open_cmd less %s
             ("a*b*c", "axxbyyc", true),
         ] {
             let c = parse("vedi.conf", &format!("open_cmd {pattern} cat %s\n")).unwrap();
-            assert_eq!(c.open_cmd_for(name).is_some(), want, "{pattern} {name}");
+            assert_eq!(!c.open_cmds_for(name).is_empty(), want, "{pattern} {name}");
         }
         for pattern in ["[md", "x[!]"] {
             assert_eq!(

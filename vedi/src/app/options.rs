@@ -34,14 +34,15 @@ pub trait Copier {
 /// sender.
 pub type Wake = Arc<dyn Fn() + Send + Sync>;
 
-/// Reads the input again for a reload, through open_cmd or not: an
+/// Reads the input again for a reload, each file through its open_cmd
+/// of that index, or as it is for `None` or a file with fewer: an
 /// empty buffer whose reader, started, sends `Event::Progress` for the
 /// generation given on the loop's sender, which the opener holds.
-pub type Opener = Box<dyn FnMut(Gen, bool) -> io::Result<Buffer>>;
+pub type Opener = Box<dyn FnMut(Gen, Option<usize>) -> io::Result<Buffer>>;
 
-/// Reads a file through a command: its argv by file name, %s the
-/// name; `None` to read it as it is.
-pub type OpenCmdFor = Box<dyn Fn(&str) -> Option<Vec<String>>>;
+/// The commands a file can be read through, by name, the one it opens
+/// through first: each an argv, %s the name. None to read it as it is.
+pub type OpenCmdFor = Box<dyn Fn(&str) -> Vec<Vec<String>>>;
 
 /// Where :write goes: written, then `done`, which puts the file in
 /// place. One dropped before then leaves no file.

@@ -1,0 +1,40 @@
+O steps through each open_cmd line matching the file, the patterned
+ones and then the plain, each last line first, then reads it as it
+is.
+
+-- config --
+open_cmd bat %s
+open_cmd *.md mdcat %s
+-- args --
+f.md
+-- input --
+# Hi
+-- file --
+Hi
+-- keys --
+O
+-- screen --
+# Hi
+
+
+
+
+f.md  line 1/1  wrap  [open_cmd bat %s]
+-- keys --
+O
+-- screen --
+Hi
+
+
+
+
+f.md  line 1/1  wrap  [open_cmd '']
+-- keys --
+O
+-- screen --
+# Hi
+
+
+
+
+f.md  line 1/1  wrap  [open_cmd mdcat %s]

@@ -613,18 +613,19 @@ impl Scenario<'_, '_> {
         self.app = Some(app);
     }
 
-    /// `VEDI` and then the command line, over the config, as the app's
-    /// options, with the files named beside. A clipboard command, from
     /// The args as the command line carries them.
     fn os_args(&self) -> Vec<OsString> {
         self.args.iter().map(OsString::from).collect()
     }
 
+    /// `VEDI` and then the command line, over the config, as the app's
+    /// options, with the files named beside. A clipboard command, from
     /// a flag or the config, is run; without one the copy is recorded.
-    /// An open_cmd is not: read through it, a file is its input
-    /// sections again. A :write is recorded, ~ being /home/u; the files
-    /// in the args and the names written before exist, and the
-    /// directories on their paths, which Tab lists.
+    /// An open_cmd is not: read through one, a file is its input
+    /// sections again; without the one O is on, its disk text. A
+    /// :write is recorded, ~ being /home/u; the files in the args and
+    /// the names written before exist, and the directories on their
+    /// paths, which Tab lists.
     fn options(&self) -> Result<Startup, String> {
         let cfg = &self.config;
         let (flags, files) = cli::parse(&self.os_args(), &self.env)
@@ -633,7 +634,10 @@ impl Scenario<'_, '_> {
         // once.
         let (disks, rendered) = (Rc::clone(&self.disks), Rc::clone(&self.rendered));
         let open_cmd = flags.open_cmd(cfg)?;
-        let has_cmd = open_cmd.is_some();
+        let counts: Vec<usize> = names(&files)
+            .iter()
+            .map(|n| open_cmd.as_ref().map_or(0, |f| f(n).len()))
+            .collect();
         let file = !files.is_empty() && !files.iter().any(|f| f == "-");
         let runtime = Runtime {
             copier: match flags.clipboard_cmd(cfg) {
@@ -642,13 +646,15 @@ impl Scenario<'_, '_> {
             },
             wake: Arc::clone(&self.wake),
             open: file.then(|| {
-                Box::new(move |_, through| {
-                    let from = if through && has_cmd {
-                        &rendered
-                    } else {
-                        &disks
-                    };
-                    Ok(disk_buffer(&from.borrow()))
+                Box::new(move |_, cmd_index: Option<usize>| {
+                    let (disks, rendered) = (disks.borrow(), rendered.borrow());
+                    let parts: Vec<Disk> = (disks.iter().enumerate())
+                        .map(|(i, d)| match rendered.get(i) {
+                            Some(r) if cmd_index.is_some_and(|c| c < counts[i]) => r.clone(),
+                            _ => d.clone(),
+                        })
+                        .collect();
+                    Ok(disk_buffer(&parts))
                 }) as Opener
             }),
             open_cmd,

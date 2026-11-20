@@ -82,8 +82,8 @@ pub enum Cycle {
     No,
     /// Through these, which are also all the verb takes.
     Values(&'static [&'static str]),
-    /// Off and on: open_cmd, between its commands and none.
-    Toggle,
+    /// Through each file's commands, then none: open_cmd.
+    Commands,
 }
 
 /// A config verb, and what the flags, the : prompt and cycle need to
@@ -288,7 +288,7 @@ pub const VERBS: &[Verb] = &[
     },
     Verb {
         name: "open_cmd",
-        cycle: Cycle::Toggle,
+        cycle: Cycle::Commands,
         field: None,
         summarized: false,
         prompt: false,

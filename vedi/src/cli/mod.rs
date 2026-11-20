@@ -157,8 +157,9 @@ impl Options {
         c.settings
     }
 
-    /// The command each file is read through: the flag's for every
-    /// file, else the config's by name; `None` when no file has one.
+    /// The commands each file can be read through: the flag's for
+    /// every file, else the config's by name; `None` when no file has
+    /// one.
     /// The error is a flag that does not split.
     pub fn open_cmd(&self, cfg: &Config) -> Result<Option<OpenCmdFor>, String> {
         let flag = match &self.open_cmd {
@@ -169,7 +170,10 @@ impl Options {
                     ..Config::default()
                 };
                 return Ok(Some(Box::new(move |name| {
-                    cfg.open_cmd_for(name).map(<[String]>::to_vec)
+                    cfg.open_cmds_for(name)
+                        .into_iter()
+                        .map(<[String]>::to_vec)
+                        .collect()
                 })));
             }
             CmdFlag::Off => return Ok(None),
@@ -179,7 +183,7 @@ impl Options {
         if argv.is_empty() {
             return Ok(None);
         }
-        Ok(Some(Box::new(move |_| Some(argv.clone()))))
+        Ok(Some(Box::new(move |_| vec![argv.clone()])))
     }
 
     /// The command copied text is piped to; `None` for the terminal's
@@ -384,24 +388,35 @@ mod tests {
         }
     }
 
-    /// The flag decides the open command for every file, --no-open-cmd
-    /// included; without one the config does, by name; without either
-    /// there is none. A flag that cannot be split is an error.
+    /// The flag decides the one open command for every file,
+    /// --no-open-cmd included; without one the config does, by name,
+    /// each matching line; without either there is none. A flag that
+    /// cannot be split is an error.
     #[test]
     fn open_cmd() {
         let c = Config {
-            open_cmds: vec![OpenCmd {
-                pattern: Some(glob::Pattern::new("*.md").unwrap()),
-                argv: vec!["mdcat".into(), "%s".into()],
-            }],
+            open_cmds: vec![
+                OpenCmd {
+                    pattern: None,
+                    argv: vec!["cat".into()],
+                },
+                OpenCmd {
+                    pattern: Some(glob::Pattern::new("*.md").unwrap()),
+                    argv: vec!["mdcat".into(), "%s".into()],
+                },
+            ],
             ..Config::default()
         };
         let cmd = |s: &str| CmdFlag::Cmd(s.to_string());
         for (flag, c, want) in [
             (CmdFlag::Unset, cfg(""), None),
-            (CmdFlag::Unset, c.clone(), Some(vec!["mdcat", "%s"])),
-            (cmd("bat %s"), c.clone(), Some(vec!["bat", "%s"])),
-            (cmd("bat '%s'"), cfg(""), Some(vec!["bat", "%s"])),
+            (
+                CmdFlag::Unset,
+                c.clone(),
+                Some(vec![&["mdcat", "%s"][..], &["cat"]]),
+            ),
+            (cmd("bat %s"), c.clone(), Some(vec![&["bat", "%s"][..]])),
+            (cmd("bat '%s'"), cfg(""), Some(vec![&["bat", "%s"][..]])),
             (cmd(""), c.clone(), None),
             (CmdFlag::Off, c.clone(), None),
         ] {
@@ -410,8 +425,12 @@ mod tests {
                 ..none()
             };
             let open = o.open_cmd(&c).unwrap();
-            let got = open.and_then(|f| f("a.md"));
-            let want = want.map(|w| w.into_iter().map(String::from).collect::<Vec<_>>());
+            let got = open.map(|f| f("a.md"));
+            let want = want.map(|w| {
+                w.into_iter()
+                    .map(|a| a.iter().map(|s| s.to_string()).collect::<Vec<_>>())
+                    .collect::<Vec<_>>()
+            });
             assert_eq!(got, want, "{flag:?} {c:?}");
         }
         let o = Options {

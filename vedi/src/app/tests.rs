@@ -772,20 +772,20 @@ fn with_opener(open: Opener) -> Options {
 }
 
 /// A test opener: each call hands out an empty buffer and records the
-/// generation asked for, and whether through open_cmd, after failing
-/// `fail` times.
-type Gens = Rc<RefCell<Vec<(Gen, bool)>>>;
+/// generation asked for, and which open_cmd, after failing `fail`
+/// times.
+type Gens = Rc<RefCell<Vec<(Gen, Option<usize>)>>>;
 
 fn opener(fail: usize) -> (Opener, Gens) {
     let gens: Gens = Rc::default();
     let left = Rc::new(Cell::new(fail));
     let (g, l) = (Rc::clone(&gens), left);
-    let open = Box::new(move |generation, through| {
+    let open = Box::new(move |generation, cmd_index| {
         if l.get() > 0 {
             l.set(l.get() - 1);
             return Err(io::Error::other("boom"));
         }
-        g.borrow_mut().push((generation, through));
+        g.borrow_mut().push((generation, cmd_index));
         Ok(Buffer::new(Storage::Memory(Vec::new()), false))
     });
     (open, gens)
@@ -818,14 +818,38 @@ fn open_cmd_options(open: Opener) -> Options {
     let mut opts = with_opener(open);
     opts.names = vec!["a.md".into()];
     opts.runtime.open_cmd = Some(Box::new(|name: &str| {
-        let cmd = match name.rsplit('.').next() {
-            Some("md") => "mdcat",
-            Some("txt") => "cat",
-            _ => return None,
+        let cmds: &[&str] = match name.rsplit('.').next() {
+            Some("md") => &["mdcat", "bat"],
+            Some("txt") => &["cat"],
+            _ => &[],
         };
-        Some(vec![cmd.into(), name.into()])
+        cmds.iter()
+            .map(|c| vec![c.to_string(), name.into()])
+            .collect()
     }));
     opts
+}
+
+/// O steps every file at once: one with fewer commands is read as it
+/// is until the cycle comes round.
+#[test]
+fn open_cmd_cycle_outruns_shorter_file() {
+    let (open, gens) = opener(0);
+    let opts = Options {
+        names: vec!["a.md".into(), "b.txt".into()],
+        ..open_cmd_options(open)
+    };
+    let mut a = App::new(TestTerminal::new(40, 4), two_parts(), GEN, opts);
+    a.draw();
+    press(&mut a, "O");
+    assert_eq!(gens.borrow()[0].1, Some(1));
+    assert_eq!(a.open_cmd_status(), "open_cmd bat a.md");
+    press(&mut a, "Down");
+    assert_eq!(a.open_cmd_status(), "open_cmd ''");
+    press(&mut a, "O");
+    press(&mut a, "O");
+    assert_eq!(gens.borrow()[2].1, Some(0));
+    assert_eq!(a.open_cmd_status(), "open_cmd cat b.txt");
 }
 
 /// The message names the input the cursor is in when the text lands,
@@ -839,10 +863,11 @@ fn open_cmd_status_follows_cursor() {
     };
     let mut a = App::new(TestTerminal::new(40, 4), two_parts(), GEN, opts);
     a.draw();
-    press(&mut a, "O");
-    press(&mut a, "O");
+    for _ in 0..3 {
+        press(&mut a, "O");
+    }
     press(&mut a, "Down");
-    let g = gens.borrow()[1].0;
+    let g = gens.borrow()[2].0;
     let mut ix = Indexer::new();
     let chunk = |s: &str| Some(Arc::from(s.as_bytes()));
     a.handle(Event::Progress(g, Progress::Part { offset: 0 }));
@@ -882,17 +907,24 @@ fn open_cmd_status_follows_cursor() {
 }
 
 /// O's message waits for the text it describes, and a read error
-/// takes its place.
+/// takes its place. O steps through a file's commands, then none.
 #[test]
 fn open_cmd_status_lands_with_text() {
     let (open, gens) = opener(0);
     let mut a = app(40, 4, "old\n", open_cmd_options(open));
     press(&mut a, "O");
     assert!(row(&a, 3).contains("reloading…"), "{:?}", row(&a, 3));
-    finish_reload(&mut a, &gens, 0, "raw\n");
+    finish_reload(&mut a, &gens, 0, "bat\n");
+    assert!(
+        row(&a, 3).ends_with("  open_cmd bat a.md"),
+        "{:?}",
+        row(&a, 3)
+    );
+    press(&mut a, "O");
+    finish_reload(&mut a, &gens, 1, "raw\n");
     assert!(row(&a, 3).ends_with("  open_cmd ''"), "{:?}", row(&a, 3));
     press(&mut a, "O");
-    end_reload(&mut a, &gens, 1, "", Some("exit 1"));
+    end_reload(&mut a, &gens, 2, "", Some("exit 1"));
     assert!(
         row(&a, 3).starts_with("read error: exit 1"),
         "{:?}",
@@ -908,15 +940,11 @@ fn open_cmd_toggle_replaces_pending_reload() {
     let mut a = app(40, 4, "old\n", open_cmd_options(open));
     press(&mut a, "O");
     press(&mut a, "O");
-    let through: Vec<bool> = gens.borrow().iter().map(|g| g.1).collect();
-    assert_eq!(through, [false, true]);
+    let cmd_indexes: Vec<_> = gens.borrow().iter().map(|g| g.1).collect();
+    assert_eq!(cmd_indexes, [Some(1), None]);
     finish_reload(&mut a, &gens, 1, "new\n");
     assert_eq!(row(&a, 0), "new");
-    assert!(
-        row(&a, 3).starts_with("open_cmd mdcat a.md"),
-        "{:?}",
-        row(&a, 3)
-    );
+    assert!(row(&a, 3).ends_with("  open_cmd ''"), "{:?}", row(&a, 3));
     finish_reload(&mut a, &gens, 0, "stale\n");
     assert_eq!(row(&a, 0), "new");
 }

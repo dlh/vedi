@@ -137,7 +137,7 @@ impl<T: Terminal> App<T> {
         let next = if values.is_empty() {
             match s.cycle {
                 Cycle::No => return Flow::Continue,
-                Cycle::Toggle => return self.toggle(name),
+                Cycle::Commands => return self.cycle_commands(name),
                 Cycle::Values(_) => s.next(&cur),
             }
         } else {
@@ -150,10 +150,10 @@ impl<T: Terminal> App<T> {
         }
     }
 
-    /// Switches a toggle verb off, then on again.
-    fn toggle(&mut self, name: &str) -> Flow {
+    /// Steps a verb through its commands, then none.
+    fn cycle_commands(&mut self, name: &str) -> Flow {
         if name == "open_cmd" {
-            return self.toggle_open_cmd();
+            return self.cycle_open_cmd();
         }
         Flow::Continue
     }

@@ -18,7 +18,7 @@ h
   q                                       Quit.
   W                                       Wrap at 80 cells / the screen's edge.
   R                                       Reload the file.
-  O                                       Toggle reading through open_cmd.
+  O                                       Read through the next open_cmd.
  ------------------------------------------------------------------------------
 
                                      MOVING

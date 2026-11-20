@@ -1,5 +1,5 @@
 //! The input: read again on the key or when a file changes on disk,
-//! through open_cmd or as it is.
+//! through one of its open_cmds or as it is.
 
 use std::fmt;
 use std::io;
@@ -18,8 +18,9 @@ pub(super) struct Input {
     /// `None` when the input cannot be read again, as a pipe cannot.
     open: Option<Opener>,
     open_cmd: Option<OpenCmdFor>,
-    /// Off, a reload reads the files as they are, not through open_cmd.
-    through_open_cmd: bool,
+    /// Which of its open_cmds a reload reads each file through; `None`
+    /// as it is.
+    cmd_index: Option<usize>,
     /// The text's reader's generation.
     generation: Gen,
     /// The last generation handed out: a dropped reload's is never
@@ -75,7 +76,7 @@ impl Input {
         Input {
             open,
             open_cmd,
-            through_open_cmd: true,
+            cmd_index: Some(0),
             generation,
             last_gen: generation,
             next: None,
@@ -100,7 +101,7 @@ impl Input {
         }
         let generation = self.last_gen.wrapping_add(1);
         self.last_gen = generation;
-        let buf = open(generation, self.through_open_cmd).map_err(Refused::Open)?;
+        let buf = open(generation, self.cmd_index).map_err(Refused::Open)?;
         self.next = Some(Pending {
             generation,
             buf,
@@ -109,14 +110,20 @@ impl Input {
         Ok(())
     }
 
-    /// Reads the files through open_cmd, or as they are. A reload
-    /// still being read is dropped: it may be waiting on a command
-    /// that never ends.
-    pub(super) fn toggle_open_cmd(&mut self) -> Result<(), Refused> {
+    /// Reads the files `names` through their next open_cmd, as they
+    /// are after the last any has, and through the first after that. A
+    /// reload still being read is dropped: it may be waiting on a
+    /// command that never ends.
+    pub(super) fn cycle_open_cmd(&mut self, names: &[String]) -> Result<(), Refused> {
         if self.open.is_none() {
             return Err(Refused::NotAFile);
         }
-        self.through_open_cmd = !self.through_open_cmd;
+        let count = names.iter().map(|n| self.commands(n).len()).max();
+        self.cmd_index = match self.cmd_index {
+            Some(i) if i + 1 < count.unwrap_or(0) => Some(i + 1),
+            Some(_) => None,
+            None => Some(0),
+        };
         self.next = None;
         self.dirty = false;
         self.reload_then(true)
@@ -165,10 +172,11 @@ impl Input {
 
     /// The command the file `name` is read through; `None` as it is.
     pub(super) fn command_for(&self, name: &str) -> Option<Vec<String>> {
-        match &self.open_cmd {
-            Some(f) if self.through_open_cmd => f(name),
-            _ => None,
-        }
+        self.commands(name).into_iter().nth(self.cmd_index?)
+    }
+
+    fn commands(&self, name: &str) -> Vec<Vec<String>> {
+        self.open_cmd.as_ref().map_or_else(Vec::new, |f| f(name))
     }
 }
 
@@ -179,11 +187,12 @@ impl<T: Terminal> App<T> {
         self.started(started, by_key)
     }
 
-    /// Reads the files through open_cmd, or as they are. The selection
-    /// goes once the mode has turned: the lines it covered are not the
-    /// text the next reload brings, even when this one fails to open.
-    pub(super) fn toggle_open_cmd(&mut self) -> Flow {
-        let started = self.input.toggle_open_cmd();
+    /// Reads the files through their next open_cmd, or as they are.
+    /// The selection goes once the mode has turned: the lines it
+    /// covered are not the text the next reload brings, even when this
+    /// one fails to open.
+    pub(super) fn cycle_open_cmd(&mut self) -> Flow {
+        let started = self.input.cycle_open_cmd(&self.names);
         if !matches!(started, Err(Refused::NotAFile)) {
             self.views.shown.deselect();
         }

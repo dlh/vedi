@@ -101,7 +101,7 @@ fn run() -> Result<(), Fail> {
     let readers = Readers::default();
     let copies = Killers::default();
     let _kill = KillOnExit(vec![readers.0.clone(), copies.clone()]);
-    let input = open_input(&files, open_cmd.as_deref()).map_err(|msg| Fail {
+    let input = open_input(&files, open_cmd.as_deref().map(|f| (f, 0))).map_err(|msg| Fail {
         msg,
         usage: files.is_empty(),
     })?;
@@ -154,8 +154,8 @@ fn run() -> Result<(), Fail> {
             .map(|f| Box::new(move |name: &str| f(name)) as OpenCmdFor),
         open: on_disk.then(|| {
             let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
-            Box::new(move |generation, through| {
-                let cmd = open_cmd.as_deref().filter(|_| through);
+            Box::new(move |generation, cmd_index: Option<usize>| {
+                let cmd = open_cmd.as_deref().zip(cmd_index);
                 let input = open_input(&files, cmd).map_err(io::Error::other)?;
                 Ok(readers.start(input, view, generation, &tx))
             }) as Opener
@@ -198,12 +198,12 @@ fn stdin_is_char_device() -> bool {
 }
 
 /// Opens the files, each a part, or stdin when there are none; "-"
-/// names stdin. A file `open_cmd` names a command for is read through
-/// it and left for the command to open: a named pipe opened twice
-/// waits for a second writer. The text is paged from disk only when
+/// names stdin. A file with an `open_cmd` of the index given is read
+/// through it and left for the command to open: a named pipe opened
+/// twice waits for a second writer. The text is paged from disk only when
 /// every input is a regular file read as it is; a command's output
 /// and a pipe can be read only once.
-fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input, String> {
+fn open_input(files: &[OsString], open_cmd: Option<(&OpenCmdFor, usize)>) -> Result<Input, String> {
     let stdin = [OsString::from("-")];
     let names = if files.is_empty() {
         if stdin_is_char_device() {
@@ -224,7 +224,7 @@ fn open_input(files: &[OsString], open_cmd: Option<&OpenCmdFor>) -> Result<Input
             continue;
         }
         let shown = Path::new(name).display();
-        match open_cmd.and_then(|f| f(&name.to_string_lossy())) {
+        match open_cmd.and_then(|(f, i)| f(&name.to_string_lossy()).into_iter().nth(i)) {
             Some(argv) => {
                 let md = fs::metadata(name).map_err(|e| format!("stat {shown}: {e}"))?;
                 on_disk &= md.is_file();
