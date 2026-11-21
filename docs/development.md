@@ -87,7 +87,9 @@ that text: Shift+Space is a space, and Option+key on macOS is the composed
 character unless the terminal is set to send Alt. Such a chord cannot be a
 default binding: a default works in terminals as shipped, and a setting the user
 applies belongs in `docs/terminals.md`. Shift+Space as page up was tried and
-dropped for this.
+dropped for this. Terminal.app is the exception: it lacks mappings for many
+modified keys, such as ⇧↑ and ⌥↑, so those are bound and its Send Text fixes
+are listed.
 
 The protocol's report-all-keys flag would deliver the key, but the composed text
 then comes only in the associated-text field, which crossterm 0.29 drops;
