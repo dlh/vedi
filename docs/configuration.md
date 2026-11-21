@@ -98,18 +98,19 @@ limits it to files whose name matches, case ignored; `[!a-c]` excludes, `[*]` is
 a literal star:
 
     open_cmd *.md mdcat --ansi
-    open_cmd *.json jq -C . %s
+    open_cmd --no-fallback *.json jq -C . %s
     open_cmd bat --color=always --paging=never %s
 
-A file is read through the last matching pattern line, else the last line
-without a pattern. A command without `%s` gets the file name as its last
-argument. A name starting with `-` is passed as `./-name`, so the command does
-not take it for an option. `--open-cmd` replaces every line for one run.
+A file is read through the last matching pattern line, else the last fallback
+line, one without a pattern. A command without `%s` gets the file name as its
+last argument. A name starting with `-` is passed as `./-name`, so the command
+does not take it for an option. `--open-cmd` replaces every line for one run.
 
 `O`, `cycle open_cmd`, steps each file through every line that matches it, then
-reads it as it is: above, a `.md` file goes from mdcat to bat to as it is. The
-status line names the command for the file at the cursor, or `''`. The selection
-is cleared.
+reads it as it is: above, a `.md` file goes from mdcat to bat to as it is.
+`--no-fallback` before a pattern keeps the fallback lines from the files it
+matches: a `.json` file goes from jq to as it is. The status line names the
+command for the file at the cursor, or `''`. The selection is cleared.
 
 ## Commands
 

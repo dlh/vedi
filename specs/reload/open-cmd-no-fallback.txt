@@ -1,0 +1,30 @@
+O steps a file a --no-fallback line matches through the pattern lines
+alone, skipping the fallback.
+
+-- config --
+open_cmd --no-fallback *.json jq %s
+open_cmd bat %s
+-- args --
+f.json
+-- input --
+{ "a": 1 }
+-- file --
+{"a":1}
+-- keys --
+O
+-- screen --
+{"a":1}
+
+
+
+
+f.json  line 1/1  wrap  [open_cmd '']
+-- keys --
+O
+-- screen --
+{ "a": 1 }
+
+
+
+
+f.json  line 1/1  wrap  [open_cmd jq %s]

@@ -29,13 +29,23 @@ pub struct Config {
     pub settings: Settings,
 }
 
-/// An open_cmd line: files whose base name matches `pattern`, both
-/// lowercased, are read by running `argv`, %s the name; `None` is for
-/// the files no pattern matches.
+/// An open_cmd line: the files `names` takes are read by running
+/// `argv`, %s the name.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct OpenCmd {
-    pub pattern: Option<Pattern>,
+    pub names: Names,
     pub argv: Vec<String>,
+}
+
+/// The files an open_cmd line is for, by base name, both sides
+/// lowercased.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Names {
+    /// The fallback: every file, after the pattern lines matching it.
+    Rest,
+    Matching(Pattern),
+    /// `--no-fallback`: a file it matches skips the `Rest` lines.
+    NoFallback(Pattern),
 }
 
 /// A bad line of a file named `name`.
@@ -75,22 +85,29 @@ impl std::error::Error for LoadError {}
 impl Config {
     /// The commands `name` can be read through, the one it is read
     /// through first: the pattern lines matching its base name,
-    /// ignoring case, then the plain lines, each last line first.
+    /// ignoring case, then the plain lines unless a `--no-fallback` line
+    /// matched, each last line first.
     pub fn open_cmds_for(&self, name: &str) -> Vec<&[String]> {
         // Both sides lowercased: the glob crate folds ASCII only.
         let base = Path::new(name)
             .file_name()
             .map_or(name.into(), |b| b.to_string_lossy())
             .to_lowercase();
-        let (mut matched, mut plain) = (Vec::new(), Vec::new());
+        let (mut matched, mut plain, mut fallback) = (Vec::new(), Vec::new(), true);
         for o in self.open_cmds.iter().rev() {
-            match &o.pattern {
-                None => plain.push(&o.argv[..]),
-                Some(p) if p.matches(&base) => matched.push(&o.argv[..]),
-                Some(_) => {}
+            match &o.names {
+                Names::Rest => plain.push(&o.argv[..]),
+                Names::Matching(p) if p.matches(&base) => matched.push(&o.argv[..]),
+                Names::NoFallback(p) if p.matches(&base) => {
+                    matched.push(&o.argv[..]);
+                    fallback = false;
+                }
+                Names::Matching(_) | Names::NoFallback(_) => {}
             }
         }
-        matched.append(&mut plain);
+        if fallback {
+            matched.append(&mut plain);
+        }
         matched
     }
 
@@ -179,21 +196,31 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
     Ok(Some(verb))
 }
 
-/// What follows open_cmd: a pattern, when the first word has a glob
-/// character, then the command.
+/// What follows open_cmd: `--no-fallback` and a pattern, or a pattern, when
+/// the first word has a glob character, then the command.
 fn parse_open_cmd(s: &str) -> Result<OpenCmd, String> {
     let mut argv = words::split(s).map_err(|e| format!("open_cmd: {e}"))?;
-    let mut pattern = None;
+    let no_fallback = argv.first().is_some_and(|w| w == "--no-fallback");
+    if no_fallback {
+        argv.remove(0);
+    }
+    let mut names = Names::Rest;
     if argv.first().is_some_and(|w| w.contains(['*', '?', '['])) {
         let first = argv.remove(0);
         let p = Pattern::new(&first.to_lowercase())
             .map_err(|_| format!("open_cmd: bad pattern {first}"))?;
-        pattern = Some(p);
+        names = if no_fallback {
+            Names::NoFallback(p)
+        } else {
+            Names::Matching(p)
+        };
+    } else if no_fallback {
+        return Err("open_cmd: --no-fallback takes a pattern".to_string());
     }
     if argv.is_empty() {
         return Err("open_cmd takes a command".to_string());
     }
-    Ok(OpenCmd { pattern, argv })
+    Ok(OpenCmd { names, argv })
 }
 
 /// Where the file is looked for: $XDG_CONFIG_HOME/vedi/vedi.conf, else
@@ -692,7 +719,7 @@ mod tests {
     #[test]
     fn open_cmd() {
         let o = |pattern: Option<&str>, argv: &[&str]| OpenCmd {
-            pattern: pattern.map(|p| Pattern::new(p).unwrap()),
+            names: pattern.map_or(Names::Rest, |p| Names::Matching(Pattern::new(p).unwrap())),
             argv: strings(argv),
         };
         let tests = [
@@ -719,6 +746,13 @@ mod tests {
                 "open_cmd \"my *.md\" cat %s\n",
                 vec![o(Some("my *.md"), &["cat", "%s"])],
             ),
+            (
+                "open_cmd --no-fallback *.json jq %s\n",
+                vec![OpenCmd {
+                    names: Names::NoFallback(Pattern::new("*.json").unwrap()),
+                    argv: strings(&["jq", "%s"]),
+                }],
+            ),
         ];
         for (src, want) in tests {
             assert_eq!(
@@ -735,6 +769,14 @@ mod tests {
                 "vedi.conf:1: open_cmd: bad pattern [md",
             ),
             ("open_cmd cat '%s\n", "vedi.conf:1: open_cmd: unclosed '"),
+            (
+                "open_cmd --no-fallback jq %s\n",
+                "vedi.conf:1: open_cmd: --no-fallback takes a pattern",
+            ),
+            (
+                "open_cmd --no-fallback *.json\n",
+                "vedi.conf:1: open_cmd takes a command",
+            ),
         ] {
             assert_eq!(parse_err(src), want, "{src:?}");
         }
@@ -742,7 +784,8 @@ mod tests {
 
     /// A file is read through the last pattern line matching its base
     /// name, ignoring case, else the last plain line, else as it is; O
-    /// steps on to the other matching lines, then the plain ones.
+    /// steps on to the other matching lines, then the plain ones unless
+    /// a --no-fallback line matched.
     #[test]
     fn open_cmds_for() {
         let c = parse(
@@ -767,6 +810,19 @@ open_cmd less %s
         }
         let c = parse("vedi.conf", "open_cmd *.md mdcat %s\n").unwrap();
         assert!(c.open_cmds_for("a.txt").is_empty());
+        let c = parse(
+            "vedi.conf",
+            "
+open_cmd *.json bat %s
+open_cmd --no-fallback *.json jq %s
+open_cmd cat %s
+",
+        )
+        .unwrap();
+        for (name, want) in [("a.json", &["jq", "bat"][..]), ("a.md", &["cat"])] {
+            let got: Vec<&str> = c.open_cmds_for(name).iter().map(|a| &a[0][..]).collect();
+            assert_eq!(got, want, "{name}");
+        }
     }
 
     /// The pattern syntax open_cmd takes: *, ?, [a-c] and [!a-c], with

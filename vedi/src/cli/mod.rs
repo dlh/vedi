@@ -204,7 +204,7 @@ mod tests {
 
     use super::*;
     use crate::app::{Copier, Done};
-    use crate::input::config::OpenCmd;
+    use crate::input::config::{Names, OpenCmd};
     use crate::input::setting;
     use crate::sys::proc::Killer;
     use crate::text::ansi::ViewStyle;
@@ -397,11 +397,11 @@ mod tests {
         let c = Config {
             open_cmds: vec![
                 OpenCmd {
-                    pattern: None,
+                    names: Names::Rest,
                     argv: vec!["cat".into()],
                 },
                 OpenCmd {
-                    pattern: Some(glob::Pattern::new("*.md").unwrap()),
+                    names: Names::Matching(glob::Pattern::new("*.md").unwrap()),
                     argv: vec!["mdcat".into(), "%s".into()],
                 },
             ],

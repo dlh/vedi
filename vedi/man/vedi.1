@@ -309,7 +309,9 @@ for
 .Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd ,
-which a glob before the command limits to the files it matches.
+which a glob before the command limits to the files it matches;
+.Fl \-no\-fallback
+before the glob keeps the lines without one from those files.
 .Cm map Ar key action
 binds a key, later lines winning, and the action
 .Cm none
