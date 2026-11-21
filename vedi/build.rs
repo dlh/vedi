@@ -21,7 +21,7 @@ fn main() {
         .ok()
         .filter(|v| !v.is_empty())
         .or_else(|| git.exists().then(describe).flatten())
-        .unwrap_or_else(|| env::var("CARGO_PKG_VERSION").unwrap());
+        .unwrap_or_else(|| "unknown".into());
     println!("cargo:rustc-env=VEDI_VERSION={version}");
 }
 

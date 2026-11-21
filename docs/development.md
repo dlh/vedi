@@ -137,7 +137,7 @@ archives. Both install `LICENSE-THIRD-PARTY` under `/usr/share/licenses`; the
 GPL is in Arch's `licenses` package.
 
 `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds from a checkout print
-`git describe`.
+`git describe`, and others `unknown`.
 
 Darwin binaries are signed with a Developer ID Application certificate and
 notarized (bare binaries can't be stapled; Gatekeeper checks the ticket online).
