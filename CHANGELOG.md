@@ -1,5 +1,19 @@
 # Changelog
 
+## v2.10.0 - 2026-11-21
+
+### Features
+
+- a `~` starts each row below the text ([b8c2ee0](https://github.com/dlh/vedi/commit/b8c2ee0))
+- `Alt+Up` and `Alt+Down` move by paragraph ([930ed84](https://github.com/dlh/vedi/commit/930ed84))
+- `color` and `include` set a theme ([9c3c42d](https://github.com/dlh/vedi/commit/9c3c42d))
+
+### Fixes
+
+- a file separator stops at `wrap_width` ([20c43d6](https://github.com/dlh/vedi/commit/20c43d6))
+
+Full diff: [v2.9.0...v2.10.0](https://github.com/dlh/vedi/compare/v2.9.0...v2.10.0)
+
 ## v2.9.0 - 2026-11-21
 
 ### Features
