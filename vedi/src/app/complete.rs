@@ -4,9 +4,11 @@ use std::path::PathBuf;
 
 use crate::app::command::{commands, is_command};
 use crate::app::options::Lister;
-use crate::app::write::{self, Form};
+use crate::app::write::Form;
 use crate::input::action::Command;
 use crate::input::setting::{self, Settings};
+use crate::sys::words;
+use crate::view::style::{self, Element};
 
 pub(super) struct Completion {
     /// The settings as the prompt opened: a setting's values are
@@ -174,6 +176,8 @@ impl Completion {
                 })
                 .collect(),
             ["write" | "write!", _] => self.paths(word),
+            ["color"] => Element::ALL.map(|e| e.name().to_string()).into(),
+            ["color", _, ..] => style::style_words(),
             [s] => {
                 return setting::lookup(s).map_or_else(Vec::new, |s| {
                     let values = s.values();
@@ -201,7 +205,7 @@ impl Completion {
         let (dir, part) = word.split_at(word.rfind('/').map_or(0, |i| i + 1));
         let path = match dir {
             "" => PathBuf::from("."),
-            _ => write::expand(self.home.as_deref(), dir),
+            _ => words::expand(self.home.as_deref(), dir),
         };
         let Ok(entries) = (self.list)(&path) else {
             return Vec::new();

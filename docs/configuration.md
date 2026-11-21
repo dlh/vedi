@@ -2,6 +2,7 @@
 
 - [The file](#the-file)
 - [Settings](#settings)
+- [Colors](#colors)
 - [Commands](#commands)
 - [Keys](#keys)
 - [Actions](#actions)
@@ -32,6 +33,10 @@ One directive per line. Blank lines and `#` comments are skipped.
 `map <key> <action>` binds a key. Later lines win over earlier ones and over the
 defaults; the action `none` unbinds. `clear_all_shortcuts` drops every binding
 so far, defaults included.
+
+`include FILE` reads another file there, as if its lines were in this one. A
+leading `~` is the home directory; a relative name is from this file's
+directory.
 
 ## Settings
 
@@ -118,6 +123,47 @@ matches, so a `.json` file goes from jq to as it is. The status line names the
 command for the file at the cursor, or `''` for none, and the selection is
 cleared.
 
+## Colors
+
+`color <element> <style>` sets how vedi draws one of its own elements. A theme
+is a file of `color` lines: `include themes/NAME.conf`.
+
+Homebrew installs example themes in `$(brew --prefix)/share/vedi/themes/`, the
+AUR packages in `/usr/share/vedi/themes/`, and a release archive holds them in
+`themes/`. Include one from there, or copy it to `~/.config/vedi/themes/` to
+change it.
+
+    color selection      on #3a3d4a
+    color match          black on #e5c07b
+    color current_match  black on #e06c75 bold
+    color status         white on 238
+
+| Element | Default | Draws |
+| --- | --- | --- |
+| `selection` | `reverse` | The selection. |
+| `match` | `black on bright_yellow` | Search matches. |
+| `current_match` | `bright_white on magenta` | The match the cursor is in. |
+| `hint` | `black on bright_cyan bold` | `s`'s labels. |
+| `note` | `black on yellow` | A message saying what was done. |
+| `error` | `bright_white on red` | One saying what could not be. |
+| `status` | `reverse` | The status line, and a completion Tab fills in. |
+| `edge_marker` | `reverse` | `<`, `>` and `\` with `edge_markers yes`. |
+| `control` | `reverse` | A control character, drawn as `^X`. |
+| `guide` | `dim` | The `wrap_width` bar and the `~` below the text. |
+| `separator` | `cyan` | The row naming each input. |
+| `separator_name` | `bold` | The name on it. |
+
+A style is `[color] [on color] [attribute...]`: the foreground, the background,
+then any of `bold`, `dim`, `italic`, `underline`, `reverse` and `strike`. A
+color is `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` or
+`white`, a `bright_` one, a number from `0` to `255`, `#rrggbb`, or `default`,
+the terminal's own. The named colors and numbers are the terminal's palette, so
+they follow its theme; `#rrggbb` does not.
+
+A line replaces the element's whole style: `color match on blue` is the default
+foreground on blue, not bold. A `control` style is drawn over the text's own,
+which shows where it sets no color.
+
 ## Commands
 
 `:` opens a prompt on the status line. A bad command is an error there.
@@ -126,6 +172,7 @@ cleared.
 | --- | --- |
 | `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
 | `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
+| `:color <element> <style>` | Set a [color](#colors), as in the file. |
 | `:22`, `:goto 22` | Go to line 22. |
 | `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `end_markers`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |

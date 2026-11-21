@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use crate::text::ansi::ViewStyle;
 use crate::view::layout::{DEFAULT_TAB, Mode, WrapStyle};
+use crate::view::style::Theme;
 
 /// What a config line, a flag or the : prompt sets, as the pager holds
 /// it. `Default` is the value with none of them.
@@ -30,6 +31,8 @@ pub struct Settings {
     pub hint_order: HintOrder,
     /// Rows -F leaves below the text.
     pub one_page_rows_below: usize,
+    /// color lines.
+    pub theme: Theme,
 }
 
 impl Default for Settings {
@@ -48,6 +51,7 @@ impl Default for Settings {
             copy_on_select: true,
             hint_order: HintOrder::TopDown,
             one_page_rows_below: 1,
+            theme: Theme::default(),
         }
     }
 }
@@ -337,6 +341,14 @@ pub const VERBS: &[Verb] = &[
     },
     Verb {
         name: "map",
+        cycle: Cycle::No,
+        field: None,
+        summarized: false,
+        prompt: true,
+        flag: false,
+    },
+    Verb {
+        name: "color",
         cycle: Cycle::No,
         field: None,
         summarized: false,

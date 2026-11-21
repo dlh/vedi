@@ -6,11 +6,11 @@ use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::view::layout::{self, Layout, Mode};
 use crate::view::screen::{Grid, Terminal};
-use crate::view::style::{CUR_MATCH, EDGE, GUIDE, MATCH, SELECTION, SEP_NAME, SEP_RULE, Style};
+use crate::view::style::{Element, Style};
 
 impl<T: Terminal> App<T> {
-    /// Renders the text from `top`, the selection in reverse, search
-    /// matches in `MATCH`, and the status line. While a `StartScreen`
+    /// Renders the text from `top`, the selection and search matches in
+    /// the theme's styles, and the status line. While a `StartScreen`
     /// waits for EOF only the status line is drawn: the view is not
     /// known until then. While help is up the bindings are the text, and
     /// no cursor is shown; nor is one scrolled off the side. An open
@@ -53,6 +53,7 @@ impl<T: Terminal> App<T> {
         let rows = self.views.shown.rows();
         let geom = self.views.shown.geometry();
         let guide = geom.guide_col();
+        let guide_st = self.settings.theme[Element::Guide];
         let mut p = self.views.shown.top();
         let mut cur = None;
         let mut y = 0;
@@ -69,7 +70,7 @@ impl<T: Terminal> App<T> {
                 cur = Some((x, y));
             }
             if let Some(x) = guide {
-                g.put(x, y, "│", GUIDE, None);
+                g.put(x, y, "│", guide_st, None);
             }
             let next = self.views.shown.next_row(p);
             if next == p {
@@ -81,10 +82,10 @@ impl<T: Terminal> App<T> {
         }
         for y in y..rows {
             if geom.end_markers {
-                g.put(0, y, "~", GUIDE, None);
+                g.put(0, y, "~", guide_st, None);
             }
             if let Some(x) = guide {
-                g.put(x, y, "│", GUIDE, None);
+                g.put(x, y, "│", guide_st, None);
             }
         }
         cur
@@ -154,6 +155,7 @@ impl<T: Terminal> App<T> {
         // cell when selected.
         let end = seg.end + usize::from(segi + 1 == ln.rows());
         let colored = self.settings.view_style == ViewStyle::Color;
+        let theme = &self.settings.theme;
         let mut ri = 0;
         let mut i = seg.start;
         while i < end {
@@ -162,7 +164,7 @@ impl<T: Terminal> App<T> {
             let selected = sel.contains(&i);
             if i == n {
                 if selected && x < right as isize {
-                    put(g, x, y, " ", SELECTION, None);
+                    put(g, x, y, " ", theme[Element::Selection], None);
                 }
                 break;
             }
@@ -174,18 +176,20 @@ impl<T: Terminal> App<T> {
                 mi += 1;
             }
             let st = if selected {
-                SELECTION
+                theme[Element::Selection]
             } else if i < cur_hi && cur_lo < j {
-                CUR_MATCH
+                theme[Element::CurrentMatch]
             } else if mi < matches.len() && matches[mi] < j {
-                MATCH
+                theme[Element::Match]
             } else {
                 let st = if colored {
                     style_at(&line.runs, ri, i)
                 } else {
                     Style::default()
                 };
-                if pointed || is_control(line.text[i]) {
+                if is_control(line.text[i]) {
+                    theme[Element::Control].over(st)
+                } else if pointed {
                     st.reverse()
                 } else {
                     st
@@ -214,7 +218,7 @@ impl<T: Terminal> App<T> {
         let width = xs[n];
         if geom.edge_markers && geom.mode == Mode::NoWrap {
             if xoff > 0 && width > 0 {
-                put(g, 0, y, "<", EDGE, None);
+                put(g, 0, y, "<", theme[Element::EdgeMarker], None);
             }
             if width > xoff + w && w > 0 {
                 if w >= 2 {
@@ -224,13 +228,20 @@ impl<T: Terminal> App<T> {
                         g.put(w - 2, y, " ", st, link);
                     }
                 }
-                put(g, w as isize - 1, y, ">", EDGE, None);
+                put(g, w as isize - 1, y, ">", theme[Element::EdgeMarker], None);
             }
         }
         // In wrap mode a row whose line goes on below ends in a marker,
         // in the column the layout leaves free.
         if geom.wrap_marks() && seg.end < n {
-            put(g, geom.wrap_cols() as isize - 1, y, "\\", EDGE, None);
+            put(
+                g,
+                geom.wrap_cols() as isize - 1,
+                y,
+                "\\",
+                theme[Element::EdgeMarker],
+                None,
+            );
         }
         cell.filter(|c| c.shown).map(|c| c.x as usize)
     }
@@ -245,13 +256,17 @@ impl<T: Terminal> App<T> {
             .map_or(STDIN, String::as_str)
             .chars()
             .collect();
-        let mut x = runes(g, 0, y, &['━', '━', ' '], SEP_RULE);
-        x += runes(g, x, y, &name, SEP_NAME);
-        g.put(x, y, " ", SEP_RULE, None);
+        let (rule, name_st) = (
+            self.settings.theme[Element::Separator],
+            self.settings.theme[Element::SeparatorName],
+        );
+        let mut x = runes(g, 0, y, &['━', '━', ' '], rule);
+        x += runes(g, x, y, &name, name_st);
+        g.put(x, y, " ", rule, None);
         x += 1;
         let right = self.views.shown.geometry().wrap_cols();
         while x < right {
-            g.put(x, y, "━", SEP_RULE, None);
+            g.put(x, y, "━", rule, None);
             x += 1;
         }
         for x in right..g.width() {

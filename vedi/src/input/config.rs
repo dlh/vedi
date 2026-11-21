@@ -13,6 +13,7 @@ use crate::input::key::Key;
 use crate::input::keymap::{Binding, DEFAULTS, Keymap};
 use crate::input::setting::{self, Settings};
 use crate::sys::words;
+use crate::view::style::Element;
 
 /// What a file sets.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -133,14 +134,76 @@ pub fn default_keymap() -> Keymap {
 /// Applies `src` line by line.
 pub fn parse(name: &str, src: &str) -> Result<Config, ConfigError> {
     let mut c = Config::default();
+    apply(name, src, None, &mut c, &mut Includes::default())?;
+    Ok(c)
+}
+
+/// What include lines need beyond the line.
+#[derive(Default)]
+struct Includes {
+    /// What a leading ~ stands for.
+    home: Option<PathBuf>,
+    /// The files being applied, which an include of one would loop
+    /// through.
+    open: Vec<PathBuf>,
+}
+
+/// Applies `src`, the file `name`, to `c` line by line. An include line
+/// applies the file it names, after a leading ~ or relative to `dir`;
+/// with no `dir` there is no file to be relative to, and it is refused.
+fn apply(
+    name: &str,
+    src: &str,
+    dir: Option<&Path>,
+    c: &mut Config,
+    inc: &mut Includes,
+) -> Result<(), ConfigError> {
     for (i, line) in src.split('\n').enumerate() {
-        parse_line(line, &mut c).map_err(|msg| ConfigError {
+        let at = |msg| ConfigError {
             name: name.to_string(),
             line: i + 1,
             msg,
-        })?;
+        };
+        let line = line.trim();
+        let Some(file) = line
+            .strip_prefix("include")
+            .filter(|r| r.is_empty() || r.starts_with(char::is_whitespace))
+        else {
+            parse_line(line, c).map_err(at)?;
+            continue;
+        };
+        let file = file.trim();
+        if file.is_empty() {
+            return Err(at("include takes a file name".into()));
+        }
+        let Some(dir) = dir else {
+            return Err(at("include needs a config file to be relative to".into()));
+        };
+        let path = dir.join(words::expand(inc.home.as_deref(), file));
+        let real = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
+        if inc.open.contains(&real) {
+            return Err(at(format!("include {file}: includes itself")));
+        }
+        let src = fs::read(&path).map_err(|e| at(format!("include {file}: {e}")))?;
+        apply_file(&path, &src, c, inc)?;
     }
-    Ok(c)
+    Ok(())
+}
+
+/// Applies the file at `path`, which holds `src`.
+fn apply_file(
+    path: &Path,
+    src: &[u8],
+    c: &mut Config,
+    inc: &mut Includes,
+) -> Result<(), ConfigError> {
+    inc.open
+        .push(fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf()));
+    let name = path.display().to_string();
+    let dir = path.parent().unwrap_or(Path::new(""));
+    apply(&name, &String::from_utf8_lossy(src), Some(dir), c, inc)?;
+    inc.open.pop();
+    Ok(())
 }
 
 /// Applies one line to `c` and names its verb: `None` for a blank line
@@ -174,6 +237,15 @@ pub fn parse_line<'a>(line: &'a str, c: &mut Config) -> Result<Option<&'a str>, 
             let key: Key = f[1].parse().map_err(|e| format!("{e}"))?;
             let cmd = Command::parse_binding(&f[2..].join(" ")).map_err(|e| format!("{e}"))?;
             c.keys.push(Binding { key, cmd });
+        }
+        "color" => {
+            let [_, name, _, ..] = f[..] else {
+                return Err("color takes an element and a style".to_string());
+            };
+            let e: Element = name
+                .parse()
+                .map_err(|()| format!("unknown element {name:?}"))?;
+            c.settings.theme[e] = f[2..].join(" ").parse()?;
         }
         "clear_all_shortcuts" => {
             if f.len() != 1 {
@@ -242,6 +314,12 @@ fn path_in(xdg: Option<OsString>, home: Option<OsString>) -> PathBuf {
 /// Reads and parses the file at `path`; an empty path is an empty
 /// config.
 pub fn load(path: &Path) -> Result<Config, LoadError> {
+    let home = std::env::var_os("HOME").filter(|h| !h.is_empty());
+    load_in(path, home.map(PathBuf::from))
+}
+
+/// `load`, with `home` for a leading ~.
+fn load_in(path: &Path, home: Option<PathBuf>) -> Result<Config, LoadError> {
     if path.as_os_str().is_empty() {
         return Ok(Config::default());
     }
@@ -249,7 +327,13 @@ pub fn load(path: &Path) -> Result<Config, LoadError> {
         io::ErrorKind::NotFound => LoadError::NotFound(e),
         _ => LoadError::Io(e),
     })?;
-    parse(&path.display().to_string(), &String::from_utf8_lossy(&src)).map_err(LoadError::Parse)
+    let mut c = Config::default();
+    let mut inc = Includes {
+        home,
+        open: Vec::new(),
+    };
+    apply_file(path, &src, &mut c, &mut inc).map_err(LoadError::Parse)?;
+    Ok(c)
 }
 
 #[cfg(test)]
@@ -259,6 +343,7 @@ mod tests {
     use crate::input::key::{KeyCode, Mods};
     use crate::text::ansi::ViewStyle;
     use crate::view::layout::{Mode, WrapStyle};
+    use crate::view::style::{Color, Style, Theme};
 
     fn key(name: &str) -> Key {
         name.parse().unwrap()
@@ -535,6 +620,84 @@ mod tests {
             matches!(load(&dir.0), Err(LoadError::Io(_))),
             "a directory reads"
         );
+    }
+
+    #[test]
+    fn include() {
+        let dir =
+            TempDir(std::env::temp_dir().join(format!("vedi-include-{}", std::process::id())));
+        fs::create_dir_all(dir.0.join("themes")).unwrap();
+        let path = dir.0.join("vedi.conf");
+        let theme = dir.0.join("themes/t.conf");
+        fs::write(&theme, "color match red\ncolor hint blue\n").unwrap();
+        fs::write(
+            &path,
+            "map h left\ninclude themes/t.conf\ncolor hint green\n",
+        )
+        .unwrap();
+        let c = load(&path).unwrap();
+        let t = c.settings.theme;
+        assert_eq!(t[Element::Match], "red".parse().unwrap());
+        assert_eq!(
+            t[Element::Hint],
+            "green".parse().unwrap(),
+            "later lines win"
+        );
+        assert_eq!(c.keys.len(), 1);
+        fs::write(&path, "include ~/themes/t.conf\n").unwrap();
+        let c = load_in(&path, Some(dir.0.clone())).unwrap();
+        let blue = "blue".parse().unwrap();
+        assert_eq!(c.settings.theme[Element::Hint], blue, "~ is home");
+
+        let err = |src: &str| {
+            fs::write(&path, src).unwrap();
+            load(&path).unwrap_err().to_string()
+        };
+        let (conf, t) = (path.display(), theme.display());
+        fs::write(&theme, "color match purple\n").unwrap();
+        assert_eq!(
+            err("include themes/t.conf\n"),
+            format!(r#"{t}:1: unknown color "purple""#),
+            "an included line's error names its file"
+        );
+        fs::write(&theme, "include ../vedi.conf\n").unwrap();
+        assert_eq!(
+            err("\ninclude themes/t.conf\n"),
+            format!("{t}:1: include ../vedi.conf: includes itself"),
+        );
+        assert_eq!(
+            err("include\n"),
+            format!("{conf}:1: include takes a file name")
+        );
+        assert!(err("include none.conf\n").starts_with(&format!("{conf}:1: include none.conf: ")));
+        assert_eq!(
+            parse("config", "include t.conf").unwrap_err().to_string(),
+            "config:1: include needs a config file to be relative to"
+        );
+    }
+
+    #[test]
+    fn color() {
+        let c = parse(
+            "vedi.conf",
+            "color match on blue bold\ncolor guide default\n",
+        )
+        .unwrap();
+        let t = c.settings.theme;
+        assert_eq!(
+            t[Element::Match],
+            Style::default().bg(Color::Palette(4)).bold()
+        );
+        assert_eq!(t[Element::Guide], Style::default());
+        assert_eq!(t[Element::Selection], Theme::default()[Element::Selection]);
+        for (src, msg) in [
+            ("color", "color takes an element and a style"),
+            ("color match", "color takes an element and a style"),
+            ("color matches red", r#"unknown element "matches""#),
+            ("color match on", "on takes a color"),
+        ] {
+            assert_eq!(parse_err(src), format!("vedi.conf:1: {msg}"), "{src}");
+        }
     }
 
     /// Each yes-or-no setting: its default without a line, the last
@@ -913,6 +1076,44 @@ open_cmd cat %s
             let c = parse(name, block(name)).unwrap_or_else(|e| panic!("{name} example: {e}"));
             assert!(!c.keys.is_empty(), "{name} example binds nothing");
         }
+    }
+
+    /// The Colors table names each element, with its default.
+    #[test]
+    fn colors_doc() {
+        let md = doc("configuration.md");
+        let mut named = Vec::new();
+        for line in md.lines().filter(|l| l.starts_with("| `")) {
+            let cells: Vec<&str> = line
+                .split('|')
+                .map(|c| c.trim().trim_matches('`'))
+                .collect();
+            let Ok(e) = cells[1].parse::<Element>() else {
+                continue;
+            };
+            let style: Style = cells[2].parse().unwrap_or_else(|m| panic!("{line}: {m}"));
+            assert_eq!(style, Theme::default()[e], "{line}");
+            named.push(e);
+        }
+        assert_eq!(named, Element::ALL);
+    }
+
+    /// Each theme shipped loads, and names every element.
+    #[test]
+    fn themes() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("themes");
+        let mut n = 0;
+        for entry in fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            load(&path).unwrap_or_else(|e| panic!("{e}"));
+            let src = fs::read_to_string(&path).unwrap();
+            for e in Element::ALL {
+                let line = format!("color {} ", e.name());
+                assert!(src.contains(&line), "{}: no {}", path.display(), e.name());
+            }
+            n += 1;
+        }
+        assert!(n > 0, "no themes in {}", dir.display());
     }
 
     fn rows(secs: &[Section]) -> Vec<&Row> {

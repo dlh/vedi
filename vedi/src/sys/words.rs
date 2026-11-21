@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 /// Splits `s` into words as a shell would: on blanks, with '...' taken
 /// as written, "..." too but for \" and \\, and a \ outside quotes
 /// standing for the character after it.
@@ -47,6 +49,18 @@ pub fn split(s: &str) -> Result<Vec<String>, String> {
         words.push(w);
     }
     Ok(words)
+}
+
+/// The path `name` means: a leading ~ is `home`, when known.
+pub fn expand(home: Option<&Path>, name: &str) -> PathBuf {
+    match (home, name.strip_prefix('~')) {
+        (Some(home), Some(rest)) if rest.is_empty() || rest.starts_with('/') => {
+            let mut p = home.as_os_str().to_owned();
+            p.push(rest);
+            PathBuf::from(p)
+        }
+        _ => PathBuf::from(name),
+    }
 }
 
 #[cfg(test)]

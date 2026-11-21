@@ -288,6 +288,8 @@ Any setting the prompt takes accepts two or more different values:
 .Ql cycle tab_width 4 8 .
 .It Cm map Ar key action
 Bind a key, as in the config file.
+.It Cm color Ar element style
+Set an element's style, as in the config file.
 .It Cm help , Cm reload , Cm quit
 What
 .Ic h ,
@@ -350,6 +352,36 @@ binds a key; later lines win, and the action
 unbinds.
 .Cm clear_all_shortcuts
 drops every binding so far, the defaults included.
+.Pp
+.Cm include Ar file
+reads another file there.
+A leading
+.Ql ~
+is the home directory; a relative name is from this file's directory.
+.Pp
+.Cm color Ar element style
+sets how vedi draws an element:
+.Cm selection , Cm match , Cm current_match , Cm hint , Cm note , Cm error ,
+.Cm status , Cm edge_marker , Cm control , Cm guide , Cm separator
+or
+.Cm separator_name .
+A style is
+.Oo Ar color Oc Oo Cm on Ar color Oc Op Ar attribute ... ,
+replacing the element's default.
+A color is
+.Cm black , red , green , yellow , blue , magenta , cyan
+or
+.Cm white ,
+one with
+.Ql bright_
+before it, a number from 0 to 255,
+.Ar #rrggbb ,
+or
+.Cm default .
+An attribute is
+.Cm bold , dim , italic , underline , reverse
+or
+.Cm strike .
 .El
 .Sh EXIT STATUS
 .Ex -std

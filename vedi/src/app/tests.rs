@@ -20,7 +20,8 @@ use crate::text::buffer::{Progress, ReadError, Storage};
 use crate::text::index::{BLOCK_LINES, Indexer};
 use crate::view::screen::TestTerminal;
 use crate::view::style::{
-    Attrs, CUR_MATCH, Color, ERROR, GUIDE, MATCH, NOTE, SELECTION, SEP_NAME, SEP_RULE, Style,
+    Attrs, CUR_MATCH, Color, ERROR, Element, GUIDE, MATCH, NOTE, SELECTION, SEP_NAME, SEP_RULE,
+    Style, Theme,
 };
 
 const GEN: Gen = 1;
@@ -722,6 +723,107 @@ fn match_style_is_constant() {
     // A selected match is drawn as selected.
     press(&mut a, "Shift+Right");
     assert_eq!(style(&a, 0, 0), SELECTION);
+}
+
+/// A theme with element `i` of `Element::ALL` in palette color 100 + i.
+fn numbered_theme() -> Theme {
+    let mut t = Theme::default();
+    for (i, e) in Element::ALL.into_iter().enumerate() {
+        t[e] = Style::default().fg(Color::Palette(100 + i as u8));
+    }
+    t
+}
+
+fn themed() -> Options {
+    Options {
+        settings: Settings {
+            theme: numbered_theme(),
+            ..Settings::default()
+        },
+        ..options()
+    }
+}
+
+/// Each element is drawn in the theme's style for it.
+#[test]
+fn theme_styles_each_element() {
+    let t = numbered_theme();
+    let mut a = app(20, 5, "ab\rc\nab", themed());
+    assert_eq!(style(&a, 2, 0), t[Element::Control]);
+    assert_eq!(style(&a, 0, 2), t[Element::Guide], "~");
+    assert_eq!(style(&a, 0, 4), t[Element::Status]);
+    press(&mut a, "/ a Enter");
+    assert_eq!(style(&a, 0, 0), t[Element::CurrentMatch]);
+    assert_eq!(style(&a, 0, 1), t[Element::Match]);
+    press(&mut a, "n n");
+    assert_eq!(style(&a, 0, 4), t[Element::Note], "search wrapped");
+    press(&mut a, "x");
+    assert_eq!(style(&a, 0, 4), t[Element::Error], "not bound");
+    press(&mut a, "Shift+Right");
+    assert_eq!(style(&a, 0, 0), t[Element::Selection]);
+    press(&mut a, "Esc s");
+    let hint = (0..20).any(|x| (0..2).any(|y| style(&a, x, y) == t[Element::Hint]));
+    assert!(hint, "a hint label");
+    press(&mut a, "Esc");
+    // The prompt row is plain; the value Tab fills in is in the status
+    // style.
+    press(&mut a, ": w r a p Space Tab");
+    assert_eq!(row(&a, 4), ":wrap no   no  yes");
+    assert_eq!(style(&a, 0, 4), Style::default(), "the prompt row");
+    assert_eq!(style(&a, 11, 4), t[Element::Status], "the filled value");
+    assert_eq!(style(&a, 15, 4), Style::default(), "the others");
+
+    let mut opts = themed();
+    opts.settings.mode = crate::view::layout::Mode::NoWrap;
+    opts.settings.edge_markers = true;
+    let a = app(4, 3, "abcdef", opts);
+    assert_eq!(style(&a, 3, 0), t[Element::EdgeMarker]);
+}
+
+/// A control character's style is drawn over the text's: its colors
+/// where it sets them, and both attributes.
+#[test]
+fn control_style_over_the_text() {
+    let mut a = app(20, 5, "\x1b[31;1m\rc", options());
+    let red = Style::default().fg(Color::Palette(1)).bold();
+    assert_eq!(style(&a, 0, 0), red.reverse());
+    a.run_command("color control underline on blue");
+    a.draw();
+    let want = red.bg(Color::Palette(4)).with(Attrs::UNDERLINE);
+    assert_eq!(style(&a, 0, 0), want);
+}
+
+#[test]
+fn theme_styles_separators() {
+    let t = numbered_theme();
+    let mut f = Fill::memory(false);
+    f.part();
+    f.write(b"a\n");
+    f.part();
+    f.write(b"b\n");
+    f.finish(None);
+    let opts = Options {
+        names: vec!["a.txt".into(), "b.txt".into()],
+        ..themed()
+    };
+    let mut a = App::new(TestTerminal::new(20, 4), f.buf, GEN, opts);
+    a.draw();
+    assert_eq!(style(&a, 0, 0), t[Element::Separator]);
+    assert_eq!(style(&a, 3, 0), t[Element::SeparatorName]);
+}
+
+/// :color changes an element's style for the rest of the run.
+#[test]
+fn color_at_the_prompt() {
+    let mut a = app(20, 5, "ab", options());
+    press(&mut a, "Shift+Right");
+    assert_eq!(style(&a, 0, 0), SELECTION);
+    a.run_command("color selection on #102030");
+    a.draw();
+    assert_eq!(style(&a, 0, 0), Style::default().bg(Color::Rgb(16, 32, 48)));
+    let flow = a.run_command("color selection on 300");
+    a.say(flow);
+    assert_eq!(a.status, error("unknown color \"300\""));
 }
 
 fn mouse(a: &mut App<TestTerminal>, kind: MouseKind, x: usize, y: usize) {

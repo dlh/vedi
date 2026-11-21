@@ -14,7 +14,7 @@ use crate::input::setting::HintOrder;
 use crate::text::buffer::Pos;
 use crate::view::layout::Segment;
 use crate::view::screen::{Grid, Terminal};
-use crate::view::style::HINT;
+use crate::view::style::Element;
 
 /// What a label goes to, and the cell it is drawn from.
 #[derive(Copy, Clone)]
@@ -236,9 +236,10 @@ impl<T: Terminal> App<T> {
 
     /// Draws the labels over the start of what they go to.
     pub(super) fn draw_hints(&mut self, g: &mut Grid) {
+        let st = self.settings.theme[Element::Hint];
         for (label, t) in self.hints() {
             for (i, c) in label.chars().enumerate() {
-                g.put(t.x + i, t.y, c.encode_utf8(&mut [0; 4]), HINT, None);
+                g.put(t.x + i, t.y, c.encode_utf8(&mut [0; 4]), st, None);
             }
         }
     }

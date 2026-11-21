@@ -12,7 +12,7 @@ use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
 use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
 use crate::view::screen::{Grid, Terminal};
-use crate::view::style::{ERROR, NOTE, Style};
+use crate::view::style::{Element, Style};
 
 /// What a message tells of: something done, or something that could
 /// not be.
@@ -90,7 +90,7 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the row on the bottom row, which needs two rows to exist,
-    /// unless the line is hidden: in reverse video, or plain while a
+    /// unless the line is hidden: in the status style, or plain while a
     /// prompt is open, so the terminal's cursor shows on it, where on
     /// a reverse row it is the row's own color. A message follows the
     /// summary, its words in its tone's colors, and a read error's are
@@ -99,7 +99,7 @@ impl<T: Terminal> App<T> {
     /// naming whatever key shows help, is at the right edge unless help
     /// is unbound or up, a prompt is open, or it would come within two
     /// spaces of the text. The : prompt's completions follow it, the one
-    /// filled in in the other video and on screen; the & prompt has the
+    /// filled in in the status style and on screen; the & prompt has the
     /// lines listed of the text's at the right edge, as the hint is, and the
     /// / prompt which match of how many the line lands on, 0/0 with
     /// none, while the line is not empty. A prompt wider than the screen scrolls to keep the cursor on it, at
@@ -115,9 +115,9 @@ impl<T: Terminal> App<T> {
             _ => None,
         };
         let (st, mark) = if prompt.is_some() {
-            (Style::default(), Style::default().reverse())
+            (Style::default(), self.settings.theme[Element::Status])
         } else {
-            (Style::default().reverse(), Style::default())
+            (self.settings.theme[Element::Status], Style::default())
         };
         g.fill_row(h - 1, st);
         let (text, said) = self.status_text(&row, w, at);
@@ -136,8 +136,8 @@ impl<T: Terminal> App<T> {
         let cur = cur.map(|c| (c - off, h - 1));
         if let Some((tone, m)) = said {
             let st = match tone {
-                Tone::Note => NOTE,
-                Tone::Error => ERROR,
+                Tone::Note => self.settings.theme[Element::Note],
+                Tone::Error => self.settings.theme[Element::Error],
             };
             let m: Vec<char> = m.chars().collect();
             width += runes(g, width, h - 1, &m, st);

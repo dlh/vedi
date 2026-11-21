@@ -85,6 +85,9 @@ selection, as plain text; `:write --raw` saves the input itself, and
 
 A file that changes on disk is read again, so a log that grows is followed.
 
+Each color vedi draws itself, from the selection to the status line, can be
+set in the config file; a theme is a file of them, included.
+
 `-F` gets the pager out of the way: text that fits on one screen is printed as
 if by `cat`, and the pager opens only for more. To make vedi your pager:
 
@@ -96,7 +99,8 @@ however it is started.
 ## Documentation
 
 - [Keys](docs/keys.md): every key, for moving, selecting, copying and searching
-- [Configuration](docs/configuration.md): `vedi.conf`, settings and rebinding
+- [Configuration](docs/configuration.md): `vedi.conf`, settings, colors and
+  rebinding
 - [Pager](docs/pager.md): vedi as the pager for the shell, git, man, bat and
   delta
 - [Terminals](docs/terminals.md): the clipboard, Terminal.app's Shift keys,

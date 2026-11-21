@@ -1,0 +1,71 @@
+color at the : prompt sets an element's style for the rest of the run,
+as in the file: the selection underlined is no longer in reverse video.
+A bad element or color is an error. Tab completes the element, then
+each word of the style.
+
+-- input --
+line 1
+line 2
+-- keys --
+Shift+Right
+-- screen --
+[l]ine 1
+line 2
+~
+~
+~
+<stdin>  line 1/2  wrap           h help
+-- keys --
+: "color selection underline" Enter Shift+Right
+-- screen --
+line 1
+line 2
+~
+~
+~
+<stdin>  line 1/2  wrap           h help
+-- keys --
+: "color selections red" Enter
+-- screen --
+line 1
+line 2
+~
+~
+~
+[unknown element "selections"]      h help
+-- keys --
+: "color match purple" Enter
+-- screen --
+line 1
+line 2
+~
+~
+~
+[unknown color "purple"]            h help
+-- keys --
+: "color match" Enter
+-- screen --
+line 1
+line 2
+~
+~
+~
+[color takes an element and a style]
+-- keys --
+: "color s" Tab
+-- screen --
+line 1
+line 2
+~
+~
+~
+:color selection   [selection]  separator
+-- keys --
+Esc : "color guide bright_y" Tab "o" Tab "blu" Tab
+-- screen --
+line 1
+line 2
+~
+~
+~
+:color guide bright_yellow on blue

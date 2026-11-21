@@ -34,7 +34,7 @@ Esc : Tab
 line 1
 ~
 ~
-:auto_reload   [auto_reload]  copy_on_select  cycle  edge_mark
+:auto_reload   [auto_reload]  color  copy_on_select  cycle  ed
 -- keys --
 Esc : "map x select_h" Tab
 -- screen --

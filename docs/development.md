@@ -126,6 +126,7 @@ the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
 - `LICENSE-THIRD-PARTY`, which `make licenses` writes before the build
 - the completion scripts of `vedi/completions/`, in `completions/`
 - the man page `vedi/man/vedi.1`, in `man/`
+- the themes of `vedi/themes/`, in `themes/`
 - the Markdown of `docs/`, in `docs/`
 
 The source archive holds the tree and `LICENSE-THIRD-PARTY`.
@@ -136,7 +137,8 @@ goreleaser then pushes a cask to
 [vedi](https://aur.archlinux.org/packages/vedi) builds the source archive, and
 [vedi-bin](https://aur.archlinux.org/packages/vedi-bin) installs the linux
 archives. Both install `LICENSE-THIRD-PARTY` under `/usr/share/licenses`; the
-GPL is in Arch's `licenses` package.
+GPL is in Arch's `licenses` package. They install the themes in
+`/usr/share/vedi/themes`, and the cask in `$(brew --prefix)/share/vedi/themes`.
 
 `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds from a checkout print
 `git describe`, and others `unknown`.
