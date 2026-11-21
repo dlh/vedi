@@ -1,0 +1,21 @@
+With wrap_width N, a file separator stops at the Nth cell, cutting a
+wider name there, and the bar goes on through it.
+
+-- size --
+30x6
+-- config --
+wrap_width 12
+-- args --
+a.txt averyverylongname.txt
+-- input --
+a1
+-- next-file --
+-- input --
+b1
+-- screen --
+━━ a.txt ━━━│
+a1          │
+━━ averyvery│
+b1          │
+~           │
+a.txt 1/2  line 1/1  wrap

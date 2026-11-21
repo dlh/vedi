@@ -48,8 +48,7 @@ impl<T: Terminal> App<T> {
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
     /// A row below the text starts with a ~, as in less, unless end_markers
-    /// is off. Every row but a separator's carries the wrap_width bar
-    /// when there is one.
+    /// is off. Every row carries the wrap_width bar when there is one.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
         let rows = self.views.shown.rows();
         let geom = self.views.shown.geometry();
@@ -69,7 +68,7 @@ impl<T: Terminal> App<T> {
             if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
                 cur = Some((x, y));
             }
-            if let (Some(x), Some(_)) = (guide, p.col) {
+            if let Some(x) = guide {
                 g.put(x, y, "│", GUIDE, None);
             }
             let next = self.views.shown.next_row(p);
@@ -237,7 +236,8 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the row naming line `i`'s input: two dashes, the name as
-    /// given, and dashes to the right edge, which cuts a wider name.
+    /// given, and dashes to the right edge, or wrap_width's, which cuts a
+    /// wider name.
     fn draw_separator(&self, g: &mut Grid, y: usize, i: usize) {
         let name: Vec<char> = self
             .names
@@ -249,9 +249,13 @@ impl<T: Terminal> App<T> {
         x += runes(g, x, y, &name, SEP_NAME);
         g.put(x, y, " ", SEP_RULE, None);
         x += 1;
-        while x < g.width() {
+        let right = self.views.shown.geometry().wrap_cols();
+        while x < right {
             g.put(x, y, "━", SEP_RULE, None);
             x += 1;
+        }
+        for x in right..g.width() {
+            g.put(x, y, " ", Style::default(), None);
         }
     }
 }
