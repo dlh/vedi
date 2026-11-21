@@ -12,6 +12,13 @@ with the keyboard or mouse, and copy it to the clipboard.
 
 </details>
 
+<details>
+<summary>The hints feature</summary>
+
+![vedi jumping to a paragraph by hint and selecting it](docs/media/hint.gif)
+
+</details>
+
 ## Install
 
 With [Homebrew](https://brew.sh):

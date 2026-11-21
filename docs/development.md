@@ -62,10 +62,10 @@ The table in `docs/comparison.md` comes from a run with the defaults and the
 plugin. neovim, with [baleia.nvim](https://github.com/m00qek/baleia.nvim), was
 benchmarked until vedi 1.9.0 and then dropped.
 
-`media` runs `docs/media/demo.tape` and `filter.tape` with
-[vhs](https://github.com/charmbracelet/vhs): the first over the checked-in
+`media` runs `docs/media/demo.tape`, `hint.tape` and `filter.tape` with
+[vhs](https://github.com/charmbracelet/vhs): the first two over the checked-in
 `docs/media/sample.txt`, lorem ipsum with SGR colors and an OSC 8 link, the
-second over `vedi/src/app/status.rs`, read through bat as the `open_cmd`. vedi
+third over `vedi/src/app/status.rs`, read through bat as the `open_cmd`. vedi
 runs with its defaults otherwise: the config home is `docs/media`, which holds
 no config. Run it after a change to the drawing, and commit the gifs it
 rewrites.
