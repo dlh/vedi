@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.9.0 - 2026-11-21
+
+### Features
+
+- `O` steps through each matching `open_cmd` ([d211771](https://github.com/dlh/vedi/commit/d211771))
+- `open_cmd --no-fallback` keeps the fallback lines from a pattern's files ([7d76833](https://github.com/dlh/vedi/commit/7d76833))
+- `hint_order bottom_up` numbers hints from the bottom ([1e15586](https://github.com/dlh/vedi/commit/1e15586))
+- `Cmd+` keys are bound on every OS ([fee2603](https://github.com/dlh/vedi/commit/fee2603))
+
+Full diff: [v2.8.0...v2.9.0](https://github.com/dlh/vedi/compare/v2.8.0...v2.9.0)
+
 ## v2.8.0 - 2026-11-17
 
 ### Features
