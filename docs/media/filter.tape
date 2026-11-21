@@ -33,7 +33,7 @@ Sleep 1.2s
 # file.
 Enter
 Sleep 600ms
-Type@200ms "0jjjjjj"
+Type@200ms "0jjjjjjjjj"
 Sleep 600ms
 Enter
 Sleep 1.5s
