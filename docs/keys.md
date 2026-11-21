@@ -81,9 +81,10 @@ off the screen with a `<` or `>` in reverse video at that edge of the row, and
 wrap mode ends a row that continues below with a `\`.
 
 `s` puts a hint on each search match shown, or with no search highlighted each
-line with text, 1 to 9 then letters, and typing a hint puts the cursor there, so
-`n` goes on from a match; in the filter's list, it goes to that place in the
-text as Enter does. Any other key takes the hints down.
+line with text, 1 to 9 then letters from the top, or from the bottom with
+`hint_order bottom_up`, and typing a hint puts the cursor there, so `n` goes on
+from a match; in the filter's list, it goes to that place in the text as Enter
+does. Any other key takes the hints down.
 
 `&` filters. As the query is typed, the text rows list only the lines that
 match, colors kept, the pointed line in reverse video once there is a query or

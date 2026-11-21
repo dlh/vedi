@@ -1,3 +1,6 @@
+use std::fmt;
+use std::str::FromStr;
+
 use crate::text::ansi::ViewStyle;
 use crate::view::layout::{DEFAULT_TAB, Mode, WrapStyle};
 
@@ -22,6 +25,7 @@ pub struct Settings {
     pub view_style: ViewStyle,
     /// Releasing the mouse button copies the selection it made.
     pub copy_on_select: bool,
+    pub hint_order: HintOrder,
     /// Rows -F leaves below the text.
     pub one_page_rows_below: usize,
 }
@@ -39,8 +43,38 @@ impl Default for Settings {
             status_line: true,
             view_style: ViewStyle::Color,
             copy_on_select: true,
+            hint_order: HintOrder::TopDown,
             one_page_rows_below: 1,
         }
+    }
+}
+
+/// Where hint labels start: the top line or match shown is 1, or the
+/// bottom one.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum HintOrder {
+    TopDown,
+    BottomUp,
+}
+
+impl FromStr for HintOrder {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "top_down" => Ok(HintOrder::TopDown),
+            "bottom_up" => Ok(HintOrder::BottomUp),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for HintOrder {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            HintOrder::TopDown => "top_down",
+            HintOrder::BottomUp => "bottom_up",
+        })
     }
 }
 
@@ -263,6 +297,20 @@ pub const VERBS: &[Verb] = &[
         flag: true,
     },
     Verb {
+        name: "hint_order",
+        cycle: Cycle::Values(&["top_down", "bottom_up"]),
+        field: Some(Field {
+            get: |s| s.hint_order.to_string(),
+            set: |s, a| {
+                s.hint_order = a.parse().expect("checked");
+                Ok(())
+            },
+        }),
+        summarized: false,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
         name: "clipboard_cmd",
         cycle: Cycle::No,
         field: None,
@@ -458,6 +506,7 @@ mod tests {
                 "status_line",
                 "view_style",
                 "copy_on_select",
+                "hint_order",
                 "one_page_rows_below",
             ]
         );
@@ -529,6 +578,7 @@ mod tests {
                 "status_line",
                 "view_style",
                 "copy_on_select",
+                "hint_order",
             ]
         );
         let mut want = lists;
@@ -570,6 +620,7 @@ mod tests {
                 "status_line",
                 "view_style",
                 "copy_on_select",
+                "hint_order",
                 "one_page_rows_below",
             ]
         );

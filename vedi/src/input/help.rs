@@ -127,6 +127,10 @@ const SECTIONS: &[HelpSection] = {
                 ),
                 bound(&[Act(Hint)], "Jump to a match or line by hint"),
                 bound(
+                    &[Cyc("hint_order")],
+                    "Cycle the hint order: top_down, bottom_up",
+                ),
+                bound(
                     &[Act(PrevFile), Act(NextFile)],
                     "Previous, next input or title",
                 ),

@@ -46,6 +46,7 @@ so far, defaults included.
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
+| `hint_order` | `top_down` | `--hint-order` | `bottom_up` numbers `s`'s hints from the bottom of the screen. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `copy_on_select` | `yes` | `--copy-on-select`, `--no-copy-on-select` | Copy what the mouse selects when the button comes up. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
@@ -121,7 +122,7 @@ command for the file at the cursor, or `''`. The selection is cleared.
 | `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
 | `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
 | `:22`, `:goto 22` | Go to line 22. |
-| `:cycle <setting>` | Step a setting to its next value, the first after the last. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select` and `open_cmd`. |
+| `:cycle <setting>` | Step a setting to its next value, the first after the last. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
 | `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
 | `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |

@@ -1,0 +1,40 @@
+hint_order bottom_up numbers the hints from the bottom: the last line
+shown is 1, and the last match shown, the one furthest right on its
+row.
+
+-- size --
+20x6
+-- config --
+status_line no
+hint_order bottom_up
+-- input --
+top
+foo bar foo
+baz
+a foo
+-- keys --
+s
+-- screen --
+<4>op
+<3>oo bar foo
+<2>az
+<1> foo
+
+
+-- keys --
+2
+-- cursor --
+2 0
+-- keys --
+"/foo" Enter s
+-- screen --
+top
+<3>{oo} bar <2>{oo}
+baz
+a <1>{{oo}}
+
+
+-- keys --
+2
+-- cursor --
+1 8

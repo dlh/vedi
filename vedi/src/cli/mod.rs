@@ -40,6 +40,7 @@ pub const USAGE: &str = r#"usage: vedi [flags] [file...]
   --[no-]file-separators       with several inputs, draw a row naming each (default: on)
   --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
   --view-style STYLE           draw the text in color, without (plain) or with its escapes as text (raw)
+  --hint-order ORDER           number hints from the top (top_down) or the bottom (bottom_up)
   --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
   --completion SHELL           print the completion script for bash, zsh or fish
   -h, --help                   show this help

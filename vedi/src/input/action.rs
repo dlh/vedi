@@ -419,6 +419,7 @@ mod tests {
             "status_line",
             "view_style",
             "copy_on_select",
+            "hint_order",
             "open_cmd",
         ];
         assert_eq!(setting::names().collect::<Vec<_>>(), want);
@@ -437,7 +438,7 @@ mod tests {
             let err = text.parse::<Command>().unwrap_err();
             assert_eq!(
                 err.to_string(),
-                "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select or open_cmd",
+                "cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select, hint_order or open_cmd",
                 "{text}"
             );
         }

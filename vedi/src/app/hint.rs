@@ -2,6 +2,7 @@
 //! while no search is highlighted, typed to go there; in the filter's
 //! list, to that place in the text, as Enter goes.
 
+use std::iter;
 use std::mem;
 use std::ops::Range;
 
@@ -9,6 +10,7 @@ use crate::app::text_view::Motion;
 use crate::app::views::Role;
 use crate::app::{App, Flow};
 use crate::input::key::{Key, KeyCode, Mods};
+use crate::input::setting::HintOrder;
 use crate::text::buffer::Pos;
 use crate::view::layout::Segment;
 use crate::view::screen::{Grid, Terminal};
@@ -49,6 +51,17 @@ fn labels(n: usize) -> Vec<String> {
     out
 }
 
+/// The label of each of `n` targets, in screen order, `labels` given
+/// from the end `order` names; `None` past the last.
+fn ordered(n: usize, order: HintOrder) -> Vec<Option<String>> {
+    let ls = labels(n);
+    let none = iter::repeat_n(None, n - ls.len());
+    match order {
+        HintOrder::TopDown => ls.into_iter().map(Some).chain(none).collect(),
+        HintOrder::BottomUp => none.chain(ls.into_iter().rev().map(Some)).collect(),
+    }
+}
+
 /// Whether a line's `text`, from row `seg` on, draws more than spaces:
 /// on that row within the cells `shown`, nowrap's scroll being one
 /// way to leave none there, or on any row below. A control but tab is
@@ -63,22 +76,23 @@ fn shows_text(text: &[char], xs: &[usize], seg: Segment, shown: Range<usize>) ->
 
 /// The targets whose labels fit, left to right, after the last label
 /// kept on their row and before the edge at `right`. Fewer targets
-/// never take longer labels, so those kept still fit when labeled
-/// again; shorter ones may let more in, so they are fitted again
-/// until none is dropped.
-fn fit(mut targets: Vec<Target>, right: usize) -> Vec<Target> {
+/// never take longer labels, in either order, so those kept still fit
+/// when labeled again; shorter ones may let more in, so they are
+/// fitted again until none is dropped.
+fn fit(mut targets: Vec<Target>, right: usize, order: HintOrder) -> Vec<Target> {
     loop {
-        let ls = labels(targets.len());
+        let ls = ordered(targets.len(), order);
         let n = targets.len();
         let mut end: Option<(usize, usize)> = None;
         let mut i = 0;
         targets.retain(|t| {
-            let keep = ls.get(i).is_some_and(|l| {
+            let label = ls[i].as_ref().filter(|l| {
                 let free = end.is_none_or(|(y, e)| y != t.y || t.x >= e);
                 free && t.x + l.len() <= right
             });
-            if keep {
-                end = Some((t.y, t.x + ls[i].len()));
+            let keep = label.is_some();
+            if let Some(l) = label {
+                end = Some((t.y, t.x + l.len()));
             }
             i += 1;
             keep
@@ -162,7 +176,8 @@ impl<T: Terminal> App<T> {
             p = next;
         }
         self.scratch = scratch;
-        fit(if matches.is_empty() { lines } else { matches }, right)
+        let targets = if matches.is_empty() { lines } else { matches };
+        fit(targets, right, self.settings.hint_order)
     }
 
     /// The labels left for what was typed: the part still to type, and
@@ -173,10 +188,10 @@ impl<T: Terminal> App<T> {
         }
         let targets = self.hint_targets();
         let typed = self.hint.as_deref().unwrap_or_default();
-        labels(targets.len())
+        ordered(targets.len(), self.settings.hint_order)
             .into_iter()
             .zip(targets)
-            .filter_map(|(l, t)| Some((l.strip_prefix(typed)?.to_string(), t)))
+            .filter_map(|(l, t)| Some((l?.strip_prefix(typed)?.to_string(), t)))
             .collect()
     }
 

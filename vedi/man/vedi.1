@@ -126,6 +126,15 @@ or with its escapes as text
 .Pq Cm raw .
 Default:
 .Cm color .
+.It Fl \-hint\-order Ar order
+Number the hints of
+.Ic s
+from the top
+.Pq Cm top_down
+or the bottom
+.Pq Cm bottom_up .
+Default:
+.Cm top_down .
 .It Fl \-config Ar file
 Read the config from
 .Ar file .
@@ -254,7 +263,8 @@ Go to line
 .It Cm cycle Ar setting Op Ar value ...
 Step a setting to its next value, the first after the last:
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
-.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select
+.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select ,
+.Cm hint_order
 or
 .Cm open_cmd .
 With values, step through those instead, to the one after the current
@@ -305,7 +315,7 @@ for
 .Ql \- :
 .Cm wrap , Cm wrap_style , Cm wrap_width , Cm tab_width , Cm edge_markers ,
 .Cm file_separators , Cm auto_reload , Cm status_line , Cm view_style ,
-.Cm copy_on_select ,
+.Cm copy_on_select , Cm hint_order ,
 .Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd ,

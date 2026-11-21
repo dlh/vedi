@@ -18,7 +18,7 @@ Tab
 line 1
 
 
-:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  open_cmd  status_line  tab_wi
+:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  hint_order  open_cmd  status_
 -- keys --
 Esc : "cycle view_style " Tab
 -- screen --
