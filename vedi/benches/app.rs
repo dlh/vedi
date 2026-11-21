@@ -57,7 +57,7 @@ fn options() -> Options {
         follow: false,
         screen: None,
         clock: Box::new(Instant::now),
-        keys: config::default_keymap(false),
+        keys: config::default_keymap(),
         runtime: Runtime {
             copier: Box::new(NoClip),
             wake: Arc::new(|| {}),

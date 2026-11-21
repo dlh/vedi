@@ -154,7 +154,7 @@ single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in front: `q`,
 - A shifted character is just that character: `G`, not `Shift+g`. Only `Cmd+`
   takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`. `Shift+Space` is
   not a key a terminal can send.
-- `Cmd+` keys reach vedi only on macOS, and only where the terminal passes them
+- `Cmd+` is Super off macOS. It reaches vedi only where the terminal passes it
   on.
 - Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,
   as `Alt+<`, is read as on a US layout.
@@ -177,7 +177,7 @@ The [defaults](#defaults) below name every action but these:
 
 ```
 # vedi's default bindings: "map <key> <action>", later lines winning.
-# Cmd+ lines are macOS only. See docs/configuration.md.
+# Cmd+ is Super off macOS. See docs/configuration.md.
 
 # Move the cursor
 map Up up

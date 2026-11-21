@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use glob::Pattern;
 
 use crate::input::action::Command;
-use crate::input::key::{Key, Mods};
+use crate::input::key::Key;
 use crate::input::keymap::{Binding, DEFAULTS, Keymap};
 use crate::input::setting::{self, Settings};
 use crate::sys::words;
@@ -113,22 +113,20 @@ impl Config {
 
     /// The bindings in effect: the defaults, or none after
     /// clear_all_shortcuts, with the map lines laid over.
-    pub fn keymap(&self, macos: bool) -> Keymap {
+    pub fn keymap(&self) -> Keymap {
         if self.clear {
             return Keymap::new(self.keys.clone());
         }
-        default_keymap(macos).apply(&self.keys)
+        default_keymap().apply(&self.keys)
     }
 }
 
-/// The built-in key map; off macOS the Cmd lines are left out.
-pub fn default_keymap(macos: bool) -> Keymap {
-    let c = parse("defaults.conf", DEFAULTS).expect("defaults.conf parses");
+/// The built-in key map.
+pub fn default_keymap() -> Keymap {
     Keymap::new(
-        c.keys
-            .into_iter()
-            .filter(|b| macos || !b.key.mods.contains(Mods::CMD))
-            .collect(),
+        parse("defaults.conf", DEFAULTS)
+            .expect("defaults.conf parses")
+            .keys,
     )
 }
 
@@ -258,7 +256,7 @@ pub fn load(path: &Path) -> Result<Config, LoadError> {
 mod tests {
     use super::*;
     use crate::input::help::{Row, Section};
-    use crate::input::key::KeyCode;
+    use crate::input::key::{KeyCode, Mods};
     use crate::text::ansi::ViewStyle;
     use crate::view::layout::{Mode, WrapStyle};
 
@@ -405,28 +403,15 @@ mod tests {
         let want = vec![bind("x", "quit")];
         assert!(c.clear);
         assert_eq!(c.keys, want);
-        assert_eq!(c.keymap(true), Keymap::new(want));
+        assert_eq!(c.keymap(), Keymap::new(want));
         let c = parse("vedi.conf", "clear_all_shortcuts\n").unwrap();
-        assert_eq!(c.keymap(true).bindings(), []);
+        assert_eq!(c.keymap().bindings(), []);
         let c = parse("vedi.conf", "map x quit\n").unwrap();
-        assert_eq!(c.keymap(false), default_keymap(false).apply(&c.keys));
+        assert_eq!(c.keymap(), default_keymap().apply(&c.keys));
     }
 
     #[test]
-    fn default_os() {
-        let mac = default_keymap(true);
-        let other = default_keymap(false);
-        let stripped: Vec<&Binding> = mac
-            .bindings()
-            .iter()
-            .filter(|b| !b.key.mods.contains(Mods::CMD))
-            .collect();
-        assert_ne!(
-            stripped.len(),
-            mac.bindings().len(),
-            "macOS map has no Cmd keys"
-        );
-        assert_eq!(stripped, other.bindings().iter().collect::<Vec<_>>());
+    fn defaults_bind_each_key_once() {
         // The map keeps one binding per key; the file must too.
         let keys = parse("defaults.conf", DEFAULTS).unwrap().keys;
         for (i, b) in keys.iter().enumerate() {
@@ -444,86 +429,54 @@ mod tests {
         use KeyCode::*;
         let ch = KeyCode::Char;
         let tests = [
-            ("up", false, Key::new(Up, Mods::NONE), "up"),
-            (
-                "shift up extends",
-                false,
-                Key::new(Up, Mods::SHIFT),
-                "select_up",
-            ),
+            ("up", Key::new(Up, Mods::NONE), "up"),
+            ("shift up extends", Key::new(Up, Mods::SHIFT), "select_up"),
             (
                 "ctrl on a named key",
-                false,
                 Key::new(Left, Mods::CTRL),
                 "word_left",
             ),
-            (
-                "alt on a rune",
-                false,
-                Key::new(ch('b'), Mods::ALT),
-                "word_left",
-            ),
-            ("ctrl f", false, Key::new(ch('f'), Mods::CTRL), "page_down"),
+            ("alt on a rune", Key::new(ch('b'), Mods::ALT), "word_left"),
+            ("ctrl f", Key::new(ch('f'), Mods::CTRL), "page_down"),
             (
                 "ctrl f as a control character",
-                false,
                 Key::new(ch('\x06'), Mods::NONE),
                 "page_down",
             ),
             (
                 "shift on a character",
-                false,
                 Key::new(ch('<'), Mods::SHIFT),
                 "first",
             ),
-            (
-                "G never extends",
-                false,
-                Key::new(ch('G'), Mods::SHIFT),
-                "last",
-            ),
-            ("enter", false, Key::new(Enter, Mods::NONE), "down"),
-            ("unbound rune", false, Key::new(ch('z'), Mods::NONE), "none"),
+            ("G never extends", Key::new(ch('G'), Mods::SHIFT), "last"),
+            ("enter", Key::new(Enter, Mods::NONE), "down"),
+            ("unbound rune", Key::new(ch('z'), Mods::NONE), "none"),
             (
                 "unlisted modifier is unbound",
-                false,
                 Key::new(Home, Mods::ALT),
                 "none",
             ),
-            ("cmd c", true, Key::new(ch('c'), Mods::CMD), "copy"),
+            ("cmd c", Key::new(ch('c'), Mods::CMD), "copy"),
             (
                 "cmd shift G as a capital",
-                true,
                 Key::new(ch('G'), Mods::CMD | Mods::SHIFT),
                 "search_prev",
             ),
             (
                 "cmd shift up extends",
-                true,
                 Key::new(Up, Mods::CMD | Mods::SHIFT),
                 "select_first",
             ),
-            (
-                "cmd q is unbound",
-                true,
-                Key::new(ch('q'), Mods::CMD),
-                "none",
-            ),
-            (
-                "cmd c elsewhere",
-                false,
-                Key::new(ch('c'), Mods::CMD),
-                "none",
-            ),
+            ("cmd q is unbound", Key::new(ch('q'), Mods::CMD), "none"),
         ];
-        for (name, macos, k, want) in tests {
-            assert_eq!(default_keymap(macos).lookup(k), cmd(want), "{name}");
+        for (name, k, want) in tests {
+            assert_eq!(default_keymap().lookup(k), cmd(want), "{name}");
         }
     }
 
     #[test]
     fn lookup_applied() {
-        let m = default_keymap(false).apply(&[
+        let m = default_keymap().apply(&[
             bind("h", "left"),
             bind("L", "select_right"),
             bind("Alt+<", "first"),
@@ -568,7 +521,7 @@ mod tests {
         fs::write(&path, "map h left\n").unwrap();
         let c = load(&path).unwrap();
         assert_eq!(
-            default_keymap(false).apply(&c.keys).lookup(key("h")),
+            default_keymap().apply(&c.keys).lookup(key("h")),
             cmd("left")
         );
         fs::write(&path, "map h left\n\nmap x foo\n").unwrap();
@@ -963,7 +916,7 @@ open_cmd cat %s
 
     #[test]
     fn help_default() {
-        let secs = default_keymap(false).help();
+        let secs = default_keymap().help();
         let top = &secs[0];
         assert_eq!(top.name, "");
         assert_eq!(top.rows.len(), 6);
@@ -974,7 +927,19 @@ open_cmd cat %s
         let want = [
             (
                 &[
-                    "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "Enter",
+                    "Up",
+                    "Down",
+                    "Left",
+                    "Right",
+                    "Home",
+                    "End",
+                    "j",
+                    "k",
+                    "0",
+                    "$",
+                    "Enter",
+                    "Cmd+Left",
+                    "Cmd+Right",
                 ][..],
                 "Move the cursor",
             ),
@@ -1010,9 +975,15 @@ open_cmd cat %s
         let last = all.last().unwrap();
         assert_eq!(last.keys, ["Esc", "Ctrl+g", "Ctrl+c"]);
         assert_eq!(last.doc, "Cancel");
-        let mac = default_keymap(true).help();
+    }
+
+    #[test]
+    fn help_applied() {
+        let m =
+            default_keymap().apply(&[bind("h", "left"), bind("Alt+h", "help"), bind("w", "none")]);
+        let secs = m.help();
         assert_eq!(
-            mac[1].rows[0].keys,
+            secs[1].rows[0].keys,
             [
                 "Up",
                 "Down",
@@ -1026,23 +997,8 @@ open_cmd cat %s
                 "$",
                 "Enter",
                 "Cmd+Left",
-                "Cmd+Right"
-            ]
-        );
-    }
-
-    #[test]
-    fn help_applied() {
-        let m = default_keymap(false).apply(&[
-            bind("h", "left"),
-            bind("Alt+h", "help"),
-            bind("w", "none"),
-        ]);
-        let secs = m.help();
-        assert_eq!(
-            secs[1].rows[0].keys,
-            [
-                "Up", "Down", "Left", "Right", "Home", "End", "j", "k", "0", "$", "Enter", "h"
+                "Cmd+Right",
+                "h"
             ]
         );
         assert!(
@@ -1055,7 +1011,11 @@ open_cmd cat %s
     /// A section none of whose rows has a key is left out.
     #[test]
     fn help_empty_section() {
-        let m = default_keymap(false).apply(&[bind("Ctrl+c", "none"), bind("y", "none")]);
+        let m = default_keymap().apply(&[
+            bind("Ctrl+c", "none"),
+            bind("Cmd+c", "none"),
+            bind("y", "none"),
+        ]);
         assert!(
             m.help().iter().all(|s| s.name != "Copying"),
             "Copying is shown with nothing in it"
@@ -1063,10 +1023,10 @@ open_cmd cat %s
     }
 
     /// The table in docs/keys.md and the help screen are the same list:
-    /// each row of the table is a row, in order, with the macOS keys.
+    /// each row of the table is a row, in order.
     #[test]
     fn help_matches_keys_doc() {
-        let secs = default_keymap(true).help();
+        let secs = default_keymap().help();
         let all = rows(&secs);
         let mut got = Vec::new();
         let mut in_keys = false;

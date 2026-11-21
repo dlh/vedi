@@ -25,8 +25,6 @@ use vedi::text::buffer::{Buffer, PagedPart, Progress, Storage};
 use vedi::text::reader::{self, Gen};
 use vedi::text::source::{Concat, Source};
 
-const MACOS: bool = cfg!(target_os = "macos");
-
 /// Why vedi stops early; printed once the terminal is put back.
 struct Fail {
     msg: String,
@@ -161,7 +159,7 @@ fn run() -> Result<(), Fail> {
             }) as Opener
         }),
     };
-    let mut app = App::new(term, buf, 0, opts.app(&files, &cfg, MACOS, runtime));
+    let mut app = App::new(term, buf, 0, opts.app(&files, &cfg, runtime));
     term::spawn_events(tx.clone());
     // Declared after the app, so dropped before the terminal is put back.
     let _watch = on_disk.then(|| {

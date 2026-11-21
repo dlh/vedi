@@ -79,7 +79,6 @@ struct Scenario<'s, 'a> {
     args: Vec<String>,
     /// $VEDI.
     env: String,
-    macos: bool,
     config: Config,
     /// The buffer, until the app takes it.
     buf: Option<Buffer>,
@@ -140,7 +139,6 @@ pub fn run(a: &Archive, step: Option<&mut Stepper>) -> Result<(), String> {
         h: 6,
         args: Vec::new(),
         env: String::new(),
-        macos: false,
         config: Config::default(),
         buf: Some(buf),
         ix: Indexer::new(),
@@ -216,14 +214,6 @@ impl Scenario<'_, '_> {
             "env" => {
                 setup(self.started)?;
                 self.env = sec.body.trim().to_string();
-            }
-            "os" => {
-                setup(self.started)?;
-                self.macos = match sec.body.trim() {
-                    "macos" => true,
-                    "linux" => false,
-                    os => return Err(fail(format!("want macos or linux, got {os:?}"))),
-                };
             }
             "config" => {
                 setup(self.started)?;
@@ -659,7 +649,7 @@ impl Scenario<'_, '_> {
             }),
             open_cmd,
         };
-        let mut opts = flags.app(&files, cfg, self.macos, runtime);
+        let mut opts = flags.app(&files, cfg, runtime);
         let files = names(&files);
         let now = Rc::clone(&self.now);
         opts.clock = Box::new(move || now.get());
@@ -851,16 +841,6 @@ mod tests {
                 "unknown section",
                 "T\n-- input --\nhi\n-- screeen --\nho\n",
                 "line 4, -- screeen --: unknown section",
-            ),
-            (
-                "bad os",
-                "T\n-- os --\nwindows\n-- input --\nhi\n",
-                "line 2, -- os --: want macos or linux, got \"windows\"",
-            ),
-            (
-                "os after start",
-                "T\n-- input --\nhi\n-- keys --\nDown\n-- os --\nmacos\n",
-                "line 6, -- os --: must come before the app starts",
             ),
             (
                 "config after start",

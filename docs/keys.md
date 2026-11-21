@@ -45,9 +45,9 @@ search them. These are the defaults.
 | Tab | Complete; again, the next match |
 | Esc, Ctrl+g, Ctrl+c | Cancel |
 
-The Cmd+ keys are macOS only, and reach vedi only where the terminal passes them
-on. Some terminals keep or change other keys too; [terminals.md](terminals.md)
-has the fixes.
+The Cmd+ keys reach vedi only where the terminal passes them on, over ssh too;
+off macOS Cmd is Super. Some terminals keep or change other keys too;
+[terminals.md](terminals.md) has the fixes.
 
 ## The cursor
 

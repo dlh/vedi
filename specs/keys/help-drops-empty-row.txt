@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x74
+80x75
 -- input --
 abc
 -- keys --
@@ -24,13 +24,13 @@ h
                                      MOVING
 
   Up  Down  Left  Right  Home  End  j  k  Move the cursor.
-  0  $  Enter
+  0  $  Enter  ⌘Left  ⌘Right
   PgDn  Space  f  ⌃F  ⌃V                  Down a page.
   PgUp  b  ⌃B  ⌥V                         Up a page.
   d  ⌃D                                   Down half a page.
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
-  g  G  <  >  ⌃Home  ⌃End                 Start, end of the text.
+  g  G  <  >  ⌃Home  ⌃End  ⌘Up  ⌘Down     Start, end of the text.
   T  M  B                                 Top, middle, bottom of the shown text.
   s                                       Jump to a match or line by hint.
   [  ]                                    Previous, next input or title.
@@ -41,11 +41,12 @@ h
 
   J  K  Shift+Up  Shift+Down  Shift+Left  Extend the selection.
   Shift+Right  Shift+Home  Shift+End
-  ⌃Shift+Home  ⌃Shift+End
+  ⌃Shift+Home  ⌃Shift+End  ⌘Shift+Left
+  ⌘Shift+Right  ⌘Shift+Up  ⌘Shift+Down
   Shift+PgUp  Shift+PgDn                  Extend by a page.
   ⌃Shift+Left  ⌃Shift+Right  ⌥Shift+Left  Extend by word.
   ⌥Shift+Right
-  ⌃A                                      Select all.
+  ⌃A  ⌘A                                  Select all.
   Esc                                     Clear the selection, then the search
                                           highlight.
  ------------------------------------------------------------------------------
@@ -60,7 +61,7 @@ h
 
                                     COPYING
 
-  ⌃C  y                                   Copy the selection as plain text.
+  ⌃C  ⌘C  y                               Copy the selection as plain text.
  ------------------------------------------------------------------------------
 
                                    SEARCHING
@@ -68,7 +69,7 @@ h
   /                                       Search as typed; ignores case if
                                           lowercase; empty repeats.
   ?                                       Search backward.
-  n  N                                    Next and previous match; ? swaps them.
+  n  N  ⌘G  ⌘Shift+G                      Next and previous match; ? swaps them.
   &                                       Filter: list the lines that match;
                                           Enter goes to one.
  ------------------------------------------------------------------------------
@@ -77,10 +78,10 @@ h
 
   Up  Down                                Recall earlier lines at this prompt.
   ⌃N  ⌃P  PgDn  PgUp                      Move the pointer at the & prompt.
-  Left  Right  Home  End                  Move in the line.
+  Left  Right  Home  End  ⌘Left  ⌘Right   Move in the line.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Backspace  ⌃Backspace  ⌃W              Delete the word before the cursor.
-  ⌃U                                      Delete to the start of the line.
+  ⌘Backspace  ⌃U                          Delete to the start of the line.
   Tab                                     Complete; again, the next match.
   Esc  ⌃G  ⌃C                             Cancel.
 help  motion scrolls, / searches, any other key returns

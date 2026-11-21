@@ -260,9 +260,9 @@ const SECTIONS: &[HelpSection] = {
 impl Keymap {
     /// The help screen for the map: a row none of whose actions has a
     /// key is left out, and a section with no rows left. A fixed Cmd+
-    /// key is listed where the map binds any, that is on macOS. A key
-    /// that cycles a setting through its own values gets a row naming
-    /// them, at the end of the first section, one row per list.
+    /// key is listed where the map binds any. A key that cycles a
+    /// setting through its own values gets a row naming them, at the
+    /// end of the first section, one row per list.
     pub fn help(&self) -> Vec<Section> {
         let cmd = self
             .bindings()

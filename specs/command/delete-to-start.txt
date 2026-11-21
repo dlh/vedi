@@ -2,8 +2,6 @@ Cmd+Backspace and Ctrl+u delete from the start of the line to the
 cursor, and leave what follows it. With the cursor at the start,
 nothing goes. The search prompt deletes the same way.
 
--- os --
-macos
 -- input --
 line 1
 -- keys --

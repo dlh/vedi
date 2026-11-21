@@ -1,7 +1,5 @@
-On macOS Cmd+a selects everything, like Ctrl+a.
+Cmd+a selects everything, like Ctrl+a.
 
--- os --
-macos
 -- size --
 40x5
 -- input --

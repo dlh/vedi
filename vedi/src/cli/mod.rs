@@ -92,13 +92,7 @@ impl Options {
     /// The app's options: each setting the flag's, else the config's,
     /// else the default. Inputs are named after `files` as given; `-`
     /// and no files are stdin.
-    pub fn app(
-        &self,
-        files: &[OsString],
-        cfg: &Config,
-        macos: bool,
-        runtime: app::Runtime,
-    ) -> app::Options {
+    pub fn app(&self, files: &[OsString], cfg: &Config, runtime: app::Runtime) -> app::Options {
         let names = if files.is_empty() {
             vec![STDIN.to_string()]
         } else {
@@ -120,7 +114,7 @@ impl Options {
             follow: self.follow,
             screen: self.screen,
             clock: Box::new(Instant::now),
-            keys: cfg.keymap(macos),
+            keys: cfg.keymap(),
             runtime,
             write: Box::new(|name, overwrite| {
                 save::open(name, overwrite).map(|s| Box::new(s) as Box<dyn Sink>)
@@ -282,7 +276,7 @@ mod tests {
             screen: Some(screen),
             ..flags("wrap no")
         };
-        let got = o.app(&[], &cfg(""), false, runtime());
+        let got = o.app(&[], &cfg(""), runtime());
         assert_eq!(got.settings.mode, Mode::NoWrap);
         assert_eq!(got.start_line, Some(3));
         assert_eq!(got.screen, Some(screen));
@@ -348,7 +342,7 @@ mod tests {
             ("wrap yes", "wrap_style word", Mode::Wrap, WrapStyle::Word),
             ("wrap no", "wrap_style word", Mode::NoWrap, WrapStyle::Word),
         ] {
-            let got = flags(f).app(&[], &cfg(c), false, runtime());
+            let got = flags(f).app(&[], &cfg(c), runtime());
             assert_eq!(
                 (got.settings.mode, got.settings.wrap_style),
                 (mode, want),
@@ -508,7 +502,7 @@ mod tests {
     fn app_names() {
         let names = |files: &[&str]| {
             let files: Vec<OsString> = files.iter().map(OsString::from).collect();
-            none().app(&files, &cfg(""), false, runtime()).names
+            none().app(&files, &cfg(""), runtime()).names
         };
         assert_eq!(names(&[]), [STDIN]);
         assert_eq!(names(&["a", "-", "b"]), ["a", STDIN, "b"]);

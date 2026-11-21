@@ -5,8 +5,6 @@ of the line, as in the text. Typing, Backspace and a paste act at it; a
 recalled entry, like a completion, puts it at the end. The search prompt
 is edited the same way.
 
--- os --
-macos
 -- input --
 line 1
 line 2

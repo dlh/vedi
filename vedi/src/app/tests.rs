@@ -53,7 +53,7 @@ fn options() -> Options {
         follow: false,
         screen: None,
         clock: Box::new(Instant::now),
-        keys: config::default_keymap(false),
+        keys: config::default_keymap(),
         runtime: runtime(),
         write: Box::new(|_, _| Err(std::io::Error::other("no file"))),
         list: Rc::new(|_| Err(std::io::Error::other("no directory"))),
