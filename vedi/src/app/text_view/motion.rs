@@ -94,6 +94,8 @@ pub enum Motion {
     HalfPageDown,
     WordLeft,
     WordRight,
+    ParagraphUp,
+    ParagraphDown,
     First,
     Last,
     ScreenTop,
@@ -147,6 +149,8 @@ impl TextView {
             Motion::HalfPageDown => left = self.move_rows(half),
             Motion::WordLeft => self.word_left(),
             Motion::WordRight => self.word_right(),
+            Motion::ParagraphUp => self.paragraph_up(),
+            Motion::ParagraphDown => self.paragraph_down(),
             Motion::First => self.cur = Pos::default(),
             Motion::Last => self.cur = self.end_pos(),
             Motion::ScreenTop => self.screen_row(0),
@@ -305,6 +309,47 @@ impl TextView {
             i -= 1;
         }
         self.cur.col = i;
+    }
+
+    /// To the blank line after the cursor's run of lines with text, or
+    /// from a blank line the next run's; past the last, the end of the
+    /// text. A blank line is only whitespace.
+    fn paragraph_down(&mut self) {
+        let n = self.buf.len();
+        let mut i = self.cur.line;
+        while i < n && self.blank(i) {
+            i += 1;
+        }
+        while i < n && !self.blank(i) {
+            i += 1;
+        }
+        self.cur = if i < n {
+            Pos { line: i, col: 0 }
+        } else {
+            self.end_pos()
+        };
+    }
+
+    /// To the blank line before the cursor's run of lines with text, or
+    /// from a blank line or the end row the previous run's; past the
+    /// first, the start of the text.
+    fn paragraph_up(&mut self) {
+        let mut i = self.cur.line + 1;
+        while i > 0 && self.blank(i - 1) {
+            i -= 1;
+        }
+        while i > 0 && !self.blank(i - 1) {
+            i -= 1;
+        }
+        self.cur = Pos {
+            line: i.saturating_sub(1),
+            col: 0,
+        };
+    }
+
+    fn blank(&mut self, i: usize) -> bool {
+        self.buf.text(i, &mut self.scratch);
+        self.scratch.iter().all(|c| c.is_whitespace())
     }
 
     /// To the next stop after the cursor's line; past the last,
@@ -579,6 +624,8 @@ impl TextView {
             Motion::ScreenTop
             | Motion::ScreenMiddle
             | Motion::ScreenBottom
+            | Motion::ParagraphUp
+            | Motion::ParagraphDown
             | Motion::PrevInput
             | Motion::NextInput
             | Motion::To(_) => {}

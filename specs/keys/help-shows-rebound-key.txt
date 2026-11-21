@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x76
+80x78
 -- input --
 abc
 -- keys --
@@ -33,6 +33,7 @@ Alt+h
   d  ⌃D                                   Down half a page.
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
+  ⌥Up  ⌥Down                              Move by paragraph.
   g  G  <  >  ⌃Home  ⌃End  ⌘Up  ⌘Down     Start, end of the text.
   T  M  B                                 Top, middle, bottom of the shown text.
   s                                       Jump to a match or line by hint.
@@ -49,6 +50,7 @@ Alt+h
   Shift+PgUp  Shift+PgDn                  Extend by a page.
   ⌃Shift+Left  ⌃Shift+Right  ⌥Shift+Left  Extend by word.
   ⌥Shift+Right
+  ⌥Shift+Up  ⌥Shift+Down                  Extend by paragraph.
   ⌃A  ⌘A                                  Select all.
   Esc                                     Clear the selection, then the search
                                           highlight.

@@ -224,6 +224,10 @@ map Alt+Right word_right
 map Alt+b word_left
 map Alt+f word_right
 
+# Move by paragraph
+map Alt+Up paragraph_up
+map Alt+Down paragraph_down
+
 # Start, end of the text
 map g first
 map G last
@@ -280,6 +284,10 @@ map Ctrl+Shift+Left select_word_left
 map Ctrl+Shift+Right select_word_right
 map Alt+Shift+Left select_word_left
 map Alt+Shift+Right select_word_right
+
+# Extend by paragraph
+map Alt+Shift+Up select_paragraph_up
+map Alt+Shift+Down select_paragraph_down
 
 # Select all
 map Ctrl+a select_all
@@ -349,6 +357,9 @@ map H select_left
 map L select_right
 map W select_word_right
 map B select_word_left
+# { and } move by paragraph
+map { paragraph_up
+map } paragraph_down
 # v starts a selection that motions extend, and ends it
 map v set_mark
 ```

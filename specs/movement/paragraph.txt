@@ -1,0 +1,67 @@
+Alt+Down moves to the blank line after the cursor's paragraph, a run of
+lines with text, or from a blank line after the next one; Alt+Up to the
+blank line before it, or the previous one's. A line of spaces is blank.
+With no blank line left, they go to the ends of the text. With Shift,
+each extends the selection.
+
+-- size --
+40x9
+-- input --
+one
+two
+
+  
+three
+
+four
+
+-- keys --
+Alt+Down
+-- cursor --
+2 0
+-- keys --
+Up Alt+Down
+-- cursor --
+2 0
+-- keys --
+Alt+Down
+-- cursor --
+5 0
+-- keys --
+Alt+Down
+-- cursor --
+7 0
+-- keys --
+Up Alt+Up
+-- cursor --
+5 0
+-- keys --
+Alt+Up
+-- cursor --
+3 0
+-- keys --
+Down Alt+Up
+-- cursor --
+3 0
+-- keys --
+Alt+Up
+-- cursor --
+0 0
+-- keys --
+Alt+Shift+Down y
+-- screen --
+[one ]
+[two ]
+
+
+three
+
+four
+
+<stdin>  line 3/7  wrap  [copied 2 lines]
+-- cursor --
+2 0
+-- clipboard --
+one
+two
+

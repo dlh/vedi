@@ -45,8 +45,9 @@ Option then no longer types symbols in that terminal.
 ## macOS Terminal.app
 
 Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞, ⇧⇟, ⌃Home, ⌃End,
-⌃⇧Home or ⌃⇧End, so the program sees them unmodified. To use them, add these
-under Settings → Profiles → Keyboard, action Send Text:
+⌃⇧Home, ⌃⇧End, ⌥↑, ⌥↓, ⌥⇧↑ or ⌥⇧↓, so the program sees them unmodified or as
+other keys. To use them, add these under Settings → Profiles → Keyboard, action
+Send Text:
 
 | Key | Text |
 |-----|------|
@@ -60,6 +61,10 @@ under Settings → Profiles → Keyboard, action Send Text:
 | ⌃End | `\033[1;5F` |
 | ⌃⇧Home | `\033[1;6H` |
 | ⌃⇧End | `\033[1;6F` |
+| ⌥↑ | `\033[1;3A` |
+| ⌥↓ | `\033[1;3B` |
+| ⌥⇧↑ | `\033[1;4A` |
+| ⌥⇧↓ | `\033[1;4B` |
 
 It does not support OSC 52, so copy uses `pbcopy`.
 

@@ -18,6 +18,8 @@ pub enum Action {
     HalfPageDown,
     WordLeft,
     WordRight,
+    ParagraphUp,
+    ParagraphDown,
     First,
     Last,
     ScreenTop,
@@ -44,7 +46,7 @@ pub enum Action {
 }
 
 /// In declaration order: `name` indexes it.
-const NAMES: [(Action, &str); 35] = [
+const NAMES: [(Action, &str); 37] = [
     (Action::Up, "up"),
     (Action::Down, "down"),
     (Action::Left, "left"),
@@ -57,6 +59,8 @@ const NAMES: [(Action, &str); 35] = [
     (Action::HalfPageDown, "half_page_down"),
     (Action::WordLeft, "word_left"),
     (Action::WordRight, "word_right"),
+    (Action::ParagraphUp, "paragraph_up"),
+    (Action::ParagraphDown, "paragraph_down"),
     (Action::First, "first"),
     (Action::Last, "last"),
     (Action::ScreenTop, "screen_top"),

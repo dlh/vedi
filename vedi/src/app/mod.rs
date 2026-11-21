@@ -402,6 +402,8 @@ impl<T: Terminal> App<T> {
             Action::HalfPageDown => v.go(Motion::HalfPageDown, e),
             Action::WordLeft => v.go(Motion::WordLeft, e),
             Action::WordRight => v.go(Motion::WordRight, e),
+            Action::ParagraphUp => v.go(Motion::ParagraphUp, e),
+            Action::ParagraphDown => v.go(Motion::ParagraphDown, e),
             Action::First => v.go(Motion::First, e),
             Action::Last => v.go(Motion::Last, e),
             Action::ScreenTop => v.go(Motion::ScreenTop, e),

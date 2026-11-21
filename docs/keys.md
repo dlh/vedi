@@ -18,6 +18,7 @@ search them. These are the defaults.
 | d, Ctrl+d | Down half a page |
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
+| Alt+Up, Alt+Down | Move by paragraph |
 | g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
 | T, M, B | Top, middle, bottom of the shown text |
 | s | Jump to a match or line by hint |
@@ -26,6 +27,7 @@ search them. These are the defaults.
 | J, K, Shift+Up, Shift+Down, Shift+Left, Shift+Right, Shift+Home, Shift+End, Ctrl+Shift+Home, Ctrl+Shift+End, Cmd+Shift+Left, Cmd+Shift+Right, Cmd+Shift+Up, Cmd+Shift+Down | Extend the selection |
 | Shift+PgUp, Shift+PgDn | Extend by a page |
 | Ctrl+Shift+Left, Ctrl+Shift+Right, Alt+Shift+Left, Alt+Shift+Right | Extend by word |
+| Alt+Shift+Up, Alt+Shift+Down | Extend by paragraph |
 | Ctrl+a, Cmd+a | Select all |
 | Esc | Clear the selection, then the search highlight |
 | Click, drag | Move the cursor, select; with Shift, extend; held at an edge, scroll |
@@ -64,6 +66,11 @@ cursor can rest. It is not a line: the count stays what `wc -l` says, and the
 status line shows the cursor there as one past the last, `line 5+1/5`. Rows
 below the text start with a `~`; `end_markers no` in the config leaves them
 blank.
+
+A paragraph is a run of lines with text. Alt+Down goes to the blank line after
+the cursor's, Alt+Up to the one before it; from a blank line, after the next or
+before the previous. With no blank line left, they go to the ends of the text. A
+line of only spaces counts as blank.
 
 A double-click selects a word, which spans the punctuation between it and the
 next: a path or a link, `https://example.net/a`, is one word. Brackets and
