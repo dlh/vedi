@@ -1,9 +1,9 @@
 # vedi as the pager
 
-Programs that page their output, git, man and psql among them, run the command
-named by `PAGER`. `-F` suits a pager that should get out of the way: text that
-fits on one screen is printed as if by `cat`, and the pager opens only for more.
-In `~/.bashrc`, `~/.zshrc` or the shell's equivalent:
+Programs that page their output, such as git, man and psql, run the command
+named by `PAGER`. With `-F`, text that fits on one screen is printed as if by
+`cat`, and the pager opens only for more. In `~/.bashrc`, `~/.zshrc` or the
+shell's equivalent:
 
     export PAGER="vedi -F"
 
@@ -12,7 +12,7 @@ links. Any other escape sequence or control character is left out, and a
 carriage return inside a line is printed as `^M`, so the text cannot move the
 cursor or write to the clipboard.
 
-`-F` leaves one row below the text for the shell's prompt. Under a taller prompt
+`-F` leaves one row below the text for the shell's prompt. With a taller prompt
 the first lines may scroll off; say how many rows it takes:
 
     export PAGER="vedi -F --one-page-rows-below 2"
@@ -46,18 +46,19 @@ The value is split into words as a shell would: quote with `'` or `"`, or put
 
 ## The input's name
 
-The status line starts with the input's name: the file, or `<stdin>`. With
-several files, the name is the file the cursor is in and its number among them,
-`b.txt 2/3`; lines are numbered within it, and `:N` goes to its line N. A name
+The status line starts with the input's name: the file, or `<stdin>`. A name
 too long for the line keeps its first directory and its end, `vedi/…/status.rs`.
-A row above each file names it; `file_separators no` in the config, or
-`--no-file-separators`, leaves the rows out.
+
+With several files, the name is the file the cursor is in and its number among
+them, `b.txt 2/3`. Lines are numbered within each file, and `:N` goes to line N
+of the cursor's. A row above each file names it; `file_separators no` in the
+config, or `--no-file-separators`, leaves those rows out.
 
 A program can set the terminal's window title as it writes, with the escape
-sequence OSC 0 or 2: `ESC ] 2 ; title BEL`. vedi does not pass it to the
-terminal, nor print it when `-F` prints the text: the title in effect at the
-cursor's line replaces `<stdin>` in the status line, and `[` and `]` stop at
-each line that sets one, to the same title or to none included.
+sequence OSC 0 or 2: `ESC ] 2 ; title BEL`. vedi neither passes it to the
+terminal nor prints it under `-F`. Instead, the title in effect at the cursor's
+line replaces `<stdin>` in the status line, and `[` and `]` stop at each line
+that sets one, even to the same title or to none.
 
 ## git
 

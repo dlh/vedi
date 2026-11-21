@@ -48,6 +48,7 @@ zsh and fish; an archive holds them in `man/` and `completions/`. See
       --cursor-col N               put the cursor in column N of the last screenful
       --clipboard-cmd CMD          pipe copied text to CMD instead of OSC 52
       --no-clipboard-cmd           copy with OSC 52, or pbcopy in Terminal.app
+      --[no-]copy-on-select        copy what the mouse selects when the button comes up (default: on)
       --open-cmd CMD               read each file by running CMD, %s the file
       --no-open-cmd                read each file as it is
       --tab-width N                draw a tab as N cells (default: 8)
@@ -55,28 +56,29 @@ zsh and fish; an archive holds them in `man/` and `completions/`. See
       --[no-]file-separators       with several inputs, draw a row naming each (default: on)
       --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
       --view-style STYLE           draw the text in color, without (plain) or with its escapes as text (raw)
+      --hint-order ORDER           number hints from the top (top_down) or the bottom (bottom_up)
       --config FILE                read the config from FILE, not ~/.config/vedi/vedi.conf
       --completion SHELL           print the completion script for bash, zsh or fish
+      -h, --help                   show this help
       -v, --version                print the version
 
-With no files, `vedi` reads stdin. `h` shows the keys and `q` quits; Shift with
-the arrows selects, and Ctrl+c or Cmd+c copies; the mouse selects and copies as
-the button comes up. `/` searches, and `&` lists only the lines that match, to
-copy as one or to pick one and go to it.
+With no files, `vedi` reads stdin. `h` shows the keys and `q` quits. Shift with
+the arrows selects, and Ctrl+c or Cmd+c copies; the mouse selects, and copies
+when the button comes up. `/` searches, and `&` lists only the lines that match,
+to copy them all or to pick one and go to it.
 
 SGR colors and attributes, including 24-bit color, and OSC 8 hyperlinks are
 drawn as the terminal would. Copy sends plain text.
 
-`:` opens a command prompt, where any setting from the config file can be
+`:` opens a command prompt. There any setting from the config file can be
 changed for the rest of the run, and `:write FILE` saves the text, or the
-selection, to a file as plain text; `--raw` saves the input itself, `--color`
-what the screen shows, colors and all.
+selection, as plain text; `:write --raw` saves the input itself, and
+`:write --color` what the screen shows, colors and all.
 
 A file that changes on disk is read again, so a log that grows is followed.
 
-`-F` is for a pager that should get out of the way: text that fits on one screen
-is printed as if by `cat`, and the pager opens only for more. To make vedi your
-pager:
+`-F` gets the pager out of the way: text that fits on one screen is printed as
+if by `cat`, and the pager opens only for more. To make vedi your pager:
 
     export PAGER="vedi -F"
 

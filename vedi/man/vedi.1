@@ -1,4 +1,4 @@
-.Dd November 20, 2026
+.Dd November 21, 2026
 .Dt VEDI 1
 .Os
 .Sh NAME
@@ -15,8 +15,8 @@
 pages terminal output.
 SGR colors and attributes, 24-bit color included, and OSC 8 hyperlinks are
 drawn as the terminal would.
-Shift with the arrows, or the mouse, selects text, and Ctrl+c copies it as
-plain text.
+Shift with the arrows, or the mouse, selects text; Ctrl+c copies it as plain
+text.
 With no
 .Ar file
 it reads standard input.
@@ -198,7 +198,7 @@ Clear the selection, then the search highlight.
 .It Ic Ctrl+c , Ic Cmd+c , Ic y
 Copy the selection as plain text.
 .It Ic /
-Search as typed; ignores case unless capitalized; empty repeats.
+Search as typed; ignores case if lowercase; empty repeats.
 .It Ic \&?
 Search backward.
 .It Ic n , Ic N , Ic Cmd+g , Ic Cmd+Shift+g
@@ -226,50 +226,57 @@ Quit.
 Show the key bindings.
 .El
 .Pp
-Click and drag select; a double-click the word, a triple-click the line.
+Click and drag to select; a double-click selects the word, a triple-click the
+line.
 A word spans the punctuation between it and the next, so a path or a link,
 .Lk https://example.net/a ,
 is one word.
-The release copies the selection, unless
+Releasing the button copies the selection, unless
 .Cm copy_on_select
 is off.
 .Pp
 .Ic &
-lists the lines that match a query as it is typed; a search whose highlight
-is on starts the query, and Ctrl+u clears it.
-Ctrl+n and Ctrl+p move the pointer, Up and Down recall earlier queries.
-Enter keeps the list and gives it the keys, so it scrolls, selects and copies
+lists the lines that match a query as it is typed.
+A search whose highlight is on starts the query; Ctrl+u clears it.
+Ctrl+n and Ctrl+p move the pointer; Up and Down recall earlier queries.
+.Pp
+Enter keeps the list and gives it the keys: it scrolls, selects and copies
 as the text does, and
 .Cm write
-saves it; Enter there goes to the line in the text, as does a hint of
+saves it.
+Enter on the list, or a hint of
 .Ic s ,
-and
+goes to the line in the text;
 .Ic &
 brings the list back.
 Esc leaves it.
 .Sh COMMANDS
 .Ic \&:
 opens a prompt on the status line.
-It takes any setting of the config file but
+There
+.Ar setting value
+changes any setting of the config file for the rest of the run, except
 .Cm clipboard_cmd ,
 .Cm open_cmd
 and
-.Cm one_page_rows_below ,
-for the rest of the run, and these:
+.Cm one_page_rows_below .
+The prompt also takes:
 .Bl -tag -width Ds
 .It Ar n , Cm goto Ar n
 Go to line
 .Ar n .
 .It Cm cycle Ar setting Op Ar value ...
-Step a setting to its next value, the first after the last:
+Step a setting to its next value, wrapping to the first.
+Takes
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
 .Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select ,
 .Cm hint_order
 or
 .Cm open_cmd .
-With values, step through those instead, to the one after the current
-or the first when the current is not among them; any setting the
-prompt takes may be given two or more, none twice:
+.Pp
+Given values, step through those instead: to the one after the current, or to
+the first when the current is not among them.
+Any setting the prompt takes accepts two or more different values:
 .Ql cycle tab_width 4 8 .
 .It Cm map Ar key action
 Bind a key, as in the config file.
@@ -281,20 +288,23 @@ and
 .Ic q
 do.
 .It Cm write Oo Fl \-color | Fl \-raw Oc Ar file
-Save the text as plain text, or the selection, to a new file;
+Save the text, or the selection, to a new file as plain text.
 .Cm write!
-replaces one that exists.
+replaces a file that exists.
+.Pp
 .Fl \-raw
-saves the input itself, byte for byte, a selection's lines whole;
+saves the input itself, byte for byte; a selection saves its lines whole.
 .Fl \-color
-saves what the screen shows, encoded afresh as SGR and OSC 8, the
-color a selection starts in written first.
-A symlink of the user's own is written through; another's is refused.
+saves what the screen shows, re-encoded as SGR and OSC 8; a selection starts
+with the color in effect where it begins.
+.Pp
+A symlink the user owns is written through; another user's is refused.
 .El
 .Pp
-Tab completes the word, after
+Tab completes the word, or after
 .Cm write
-a file name; Up and Down recall earlier commands.
+a file name.
+Up and Down recall earlier commands.
 .Sh ENVIRONMENT
 .Bl -tag -width XDG_CONFIG_HOME
 .It Ev VEDI
@@ -309,7 +319,8 @@ Where the config file is looked for, instead of
 One directive per line; blank lines and
 .Ql #
 comments are skipped.
-A setting is its flag with
+.Pp
+A setting is named as its flag, with
 .Ql _
 for
 .Ql \- :
@@ -318,14 +329,17 @@ for
 .Cm copy_on_select , Cm hint_order ,
 .Cm one_page_rows_below , Cm clipboard_cmd
 and
-.Cm open_cmd ,
-which a glob before the command limits to the files it matches;
+.Cm open_cmd .
+A glob before an
+.Cm open_cmd
+command limits it to the files it matches;
 .Fl \-no\-fallback
-before the glob keeps the lines without one from those files.
+before the glob keeps the lines without a glob from those files.
+.Pp
 .Cm map Ar key action
-binds a key, later lines winning, and the action
+binds a key; later lines win, and the action
 .Cm none
-unbinds;
+unbinds.
 .Cm clear_all_shortcuts
 drops every binding so far, the defaults included.
 .El

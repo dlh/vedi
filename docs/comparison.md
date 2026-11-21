@@ -10,8 +10,8 @@
 vedi has a cursor. The arrows move it through the text, Shift extends a
 selection from it, and copy sends the selected text, plain, to the clipboard. A
 selection can run past the screen, and a wrapped line copies as one line. That
-is the reason vedi exists; for paging, selecting and searching colored text.
-Each tool below does part of that, in its own way, and has strengths of its own.
+is why vedi exists: to page, select and search colored text. Each tool below
+does part of that in its own way, and has strengths of its own.
 
 vedi also stops there. It draws the colors it is given and adds none. Syntax
 highlighting, diff formatting, column layout and the like are not its job; tools
@@ -52,19 +52,25 @@ at each row. vedi selects the text's own lines, in any terminal.
 
 `vim -R`, or `view`, has most of what vedi has: a cursor, a selection that `v`
 starts and every motion extends, and `"+y` to copy it to the clipboard, wrapped
-lines whole. Two things are missing. vim shows escape sequences as text, so
-`git log --color | vim -` reads `^[[33m` where a pager shows yellow. A plugin
-can color them. AnsiEsc conceals them in vim with syntax rules, which vim
-applies only to the lines it draws, after one pass over the file. neovim no
-longer runs AnsiEsc, and its own plugins, baleia.nvim among them, mark up the
-whole buffer before the first screen; a past run, below, has the time and memory
-for that. And vim reads its input to the end before it draws, so a pipe shows
-nothing until the command feeding it exits, and a command that never exits shows
-nothing at all. The copy also needs a vim built with clipboard support, or a
-neovim with a provider such as `pbcopy`, and over ssh a plugin for OSC 52, which
-neovim 0.10 turns on by itself. emacs in view-mode is the same shape, with the
-region and the kill ring, and its ansi-color library can color a buffer after
-the fact.
+lines whole. Two things are missing.
+
+First, vim shows escape sequences as text, so `git log --color | vim -` reads
+`^[[33m` where a pager shows yellow. A plugin can color them. AnsiEsc conceals
+them in vim with syntax rules, which vim applies only to the lines it draws,
+after one pass over the file. neovim no longer runs AnsiEsc, and its own
+plugins, baleia.nvim among them, mark up the whole buffer before the first
+screen; a past run, below, has the time and memory for that.
+
+Second, vim reads its input to the end before it draws, so a pipe shows nothing
+until the command feeding it exits, and a command that never exits shows
+nothing at all.
+
+The copy also needs a vim built with clipboard support, or a neovim with a
+provider such as `pbcopy`, and over ssh a plugin for OSC 52, which neovim 0.10
+turns on by itself.
+
+emacs in view-mode is the same shape, with the region and the kill ring, and its
+ansi-color library can color a buffer after the fact.
 
 ## Speed and memory
 

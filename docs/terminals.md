@@ -22,6 +22,11 @@ grant unless configured not to. kitty does not; unmap its shifted presses in
 
 Each removes a kitty default.
 
+## Cmd keys
+
+kitty passes Cmd+ keys on to vedi, Cmd+c only when it has no selection of its
+own. Terminal.app keeps them.
+
 ## Option as Alt
 
 On macOS the Option key composes a character unless the terminal is told to send

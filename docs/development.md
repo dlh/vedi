@@ -50,15 +50,17 @@ end and back, and for a failed search on each, with peak RSS. To the end is the
 rest of the index for vedi and a seek for less. The pty answers a device
 attributes query, as a terminal would, and the harness reads the screen, since a
 pager may redraw only the cells that changed. Each pager runs with its defaults:
-the config home is a directory without one. `BENCHFLAGS='--lines N --runs R'`
-changes the input and the repetitions. vim runs with `--plugins DIR`, a
-directory holding a checkout of
+the config home is a directory without one.
+
+`BENCHFLAGS='--lines N --runs R'` changes the input and the repetitions. The
+file is read through before each pager, so none reads it from disk. vim runs
+with `--plugins DIR`, a directory holding a checkout of
 [vim-plugin-AnsiEsc](https://github.com/powerman/vim-plugin-AnsiEsc) under that
-name, which colors the escapes, and is left out without it. The file is read
-through before each pager, so none reads it from disk. The table in
-`docs/comparison.md` comes from a run with the defaults and the plugin. neovim,
-with [baleia.nvim](https://github.com/m00qek/baleia.nvim), was benchmarked until
-vedi 1.9.0 and then dropped.
+name, which colors the escapes; without it, vim is left out.
+
+The table in `docs/comparison.md` comes from a run with the defaults and the
+plugin. neovim, with [baleia.nvim](https://github.com/m00qek/baleia.nvim), was
+benchmarked until vedi 1.9.0 and then dropped.
 
 `media` runs `docs/media/demo.tape` and `filter.tape` with
 [vhs](https://github.com/charmbracelet/vhs): the first over the checked-in
@@ -116,17 +118,24 @@ its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
 builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
 publishes a GitHub release with archives, a source archive, `checksums.txt` and
-the tag's `CHANGELOG.md` entry as its notes. Each archive holds `CHANGELOG.md`,
-`LICENSE-THIRD-PARTY`, which `make licenses` writes before the build,
-the completion scripts of `vedi/completions/` in `completions/`, the man page
-`vedi/man/vedi.1` in `man/` and the Markdown of `docs/` in `docs/`. The source
-archive holds the tree and `LICENSE-THIRD-PARTY`. It then pushes a cask to
+the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
+
+- `CHANGELOG.md`
+- `LICENSE-THIRD-PARTY`, which `make licenses` writes before the build
+- the completion scripts of `vedi/completions/`, in `completions/`
+- the man page `vedi/man/vedi.1`, in `man/`
+- the Markdown of `docs/`, in `docs/`
+
+The source archive holds the tree and `LICENSE-THIRD-PARTY`.
+
+goreleaser then pushes a cask to
 [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
 `HOMEBREW_TAP_TOKEN`, and two packages to the AUR, skipped without `AUR_KEY`:
-[vedi](https://aur.archlinux.org/packages/vedi) builds the source archive,
+[vedi](https://aur.archlinux.org/packages/vedi) builds the source archive, and
 [vedi-bin](https://aur.archlinux.org/packages/vedi-bin) installs the linux
 archives. Both install `LICENSE-THIRD-PARTY` under `/usr/share/licenses`; the
 GPL is in Arch's `licenses` package.
+
 `vedi -v` prints the tag, passed as `VEDI_VERSION`; builds from a checkout print
 `git describe`.
 

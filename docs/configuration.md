@@ -43,7 +43,7 @@ so far, defaults included.
 | `wrap_width` | `0` | `--wrap-width` | Wrap rows at this many cells when the screen is wider; `0` wraps at its edge. |
 | `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
-| `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given. |
+| `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given; see [the input's name](pager.md#the-inputs-name). |
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `hint_order` | `top_down` | `--hint-order` | `bottom_up` numbers `s`'s hints from the bottom of the screen. |
@@ -85,33 +85,37 @@ column. `-F` prints the escapes spelled out. The status line shows `raw`.
 selected; the copy keys do. By default it does, as a terminal copies what the
 mouse selects when no program has taken the mouse.
 
-**clipboard_cmd** and **open_cmd** take the rest of the line as the command, so
-`clipboard_cmd xclip -selection clipboard` and
-`open_cmd bat --color=always --paging=never %s` work; a pipeline needs a script.
-`open_cmd` leaves stdin as it is. A command that fails ends the text with a read
-error naming its exit status and stderr; `R` and auto-reload run it again. See
-[Pager](pager.md#the-inputs-name). `clipboard_cmd` runs in the background: the
-status line says `copying` until it is done, and `copy_and_quit` waits for it.
-A copy started before then ends it; so does quitting.
+**clipboard_cmd** and **open_cmd** take the rest of the line as the command:
+`clipboard_cmd xclip -selection clipboard`,
+`open_cmd bat --color=always --paging=never %s`. A pipeline needs a script.
 
-**open_cmd by file type.** A glob before the command, one with `*`, `?` or `[`,
-limits it to files whose name matches, case ignored; `[!a-c]` excludes, `[*]` is
-a literal star:
+**clipboard_cmd** runs in the background. The status line says `copying` until
+it is done, and `copy_and_quit` waits for it. A second copy before then ends it,
+as does quitting.
+
+**open_cmd** leaves stdin as it is. A command that fails ends the text with a
+read error naming its exit status and stderr; `R` and auto-reload run it again.
+
+**open_cmd by file type.** A glob before the command limits it to files whose
+name matches, case ignored. A glob is a word with `*`, `?` or `[`; `[!a-c]`
+excludes, and `[*]` is a literal star:
 
     open_cmd *.md mdcat --ansi
     open_cmd --no-fallback *.json jq -C . %s
     open_cmd bat --color=always --paging=never %s
 
-A file is read through the last matching pattern line, else the last fallback
-line, one without a pattern. A command without `%s` gets the file name as its
-last argument. A name starting with `-` is passed as `./-name`, so the command
-does not take it for an option. `--open-cmd` replaces every line for one run.
+A file is read through the last line whose pattern matches it, else the last
+fallback line, one without a pattern. A command without `%s` gets the file name
+as its last argument; a name starting with `-` is passed as `./-name`, so the
+command does not take it for an option. `--open-cmd` replaces every line for
+one run.
 
-`O`, `cycle open_cmd`, steps each file through every line that matches it, then
-reads it as it is: above, a `.md` file goes from mdcat to bat to as it is.
+`O` (`cycle open_cmd`) steps each file through every line that matches it, then
+reads it as it is. Above, a `.md` file goes from mdcat to bat to as it is.
 `--no-fallback` before a pattern keeps the fallback lines from the files it
-matches: a `.json` file goes from jq to as it is. The status line names the
-command for the file at the cursor, or `''`. The selection is cleared.
+matches, so a `.json` file goes from jq to as it is. The status line names the
+command for the file at the cursor, or `''` for none, and the selection is
+cleared.
 
 ## Commands
 
@@ -122,7 +126,7 @@ command for the file at the cursor, or `''`. The selection is cleared.
 | `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
 | `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
 | `:22`, `:goto 22` | Go to line 22. |
-| `:cycle <setting>` | Step a setting to its next value, the first after the last. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
+| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
 | `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
 | `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |
@@ -130,12 +134,11 @@ command for the file at the cursor, or `''`. The selection is cleared.
 | `:write --color FILE` | Save what the screen shows, with its colors and links as SGR and OSC 8. |
 | `:write! FILE` | The same, replacing a FILE that exists, the file being viewed included. |
 
-**write.** The name is the rest of the line; a leading `~` is the home
-directory. A symlink of your own is written through; another user's is
-refused.
+**write.** The file name is the rest of the line; a leading `~` is the home
+directory. A symlink you own is written through; another user's is refused.
 
-**Editing.** Tab completes the word: a command, a setting's value, starting
-after the current one, or write's file name. Up and Down recall earlier
+**Editing.** Tab completes the word: a command, a setting's value (starting
+after the current one) or `write`'s file name. Up and Down recall earlier
 commands; Esc, Ctrl+g and Ctrl+c cancel. [keys.md](keys.md) lists the rest of
 the prompt keys. A paste goes in as one line, its newlines dropped, here and at
 the search prompt.
@@ -161,7 +164,7 @@ values is on a row naming them.
 
 ## Actions
 
-The [defaults](#defaults) below name every action, with three exceptions:
+The [defaults](#defaults) below name every action but these:
 
 - Each movement has a `select_` twin that extends the selection instead of
   clearing it: `left` and `select_left`, `page_down` and `select_page_down`.
@@ -292,7 +295,7 @@ map y copy
 # Copy the selection and quit; with none, down a line: copy_and_quit;
 # unbound by default
 
-# Search as typed; ignores case unless capitalized; empty repeats
+# Search as typed; ignores case if lowercase; empty repeats
 map / search
 
 # Search backward
