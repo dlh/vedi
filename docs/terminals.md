@@ -69,9 +69,9 @@ The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its scrollback
 to a pager. This binding in `kitty.conf` opens it in vedi, scrolled to the rows
 you were looking at, with the cursor where it was:
 
-    map <shortcut> launch --type overlay --stdin-source=@screen_scrollback --stdin-add-formatting vedi --scrolled-by @scrolled-by --cursor-row @cursor-y --cursor-col @cursor-x
+    map <shortcut> launch --type overlay --stdin-source=@screen_scrollback --stdin-add-formatting vedi --hint-order bottom_up --scrolled-by @scrolled-by --cursor-row @cursor-y --cursor-col @cursor-x
 
 Or set vedi as the `scrollback_pager`. That gets one line per screen row — `-S`
 keeps them so, but a wrapped line then copies with a newline at each wrap:
 
-    scrollback_pager vedi -S +INPUT_LINE_NUMBER
+    scrollback_pager vedi --hint-order bottom_up -S +INPUT_LINE_NUMBER
