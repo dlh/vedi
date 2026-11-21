@@ -17,9 +17,9 @@ line 2
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 :wrap_style word
 -- cursor --
 5 14
@@ -28,9 +28,9 @@ Alt+Left "no"
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 :wrap_style noword
 -- cursor --
 5 14
@@ -39,9 +39,9 @@ Backspace Backspace Ctrl+Right
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 :wrap_style word
 -- cursor --
 5 16
@@ -70,9 +70,9 @@ no
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 :wrap_style noword
 -- cursor --
 5 14
@@ -81,9 +81,9 @@ Backspace Backspace Enter
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 <stdin>  line 1/2  word wrap      h help
 -- cursor --
 0 0
@@ -92,9 +92,9 @@ line 2
 -- screen --
 line 1
 line 2
-
-
-
+~
+~
+~
 :wrap_style word
 -- cursor --
 5 16
@@ -103,9 +103,9 @@ Esc / "ine" Home "l" Enter
 -- screen --
 {{line}} 1
 {line} 2
-
-
-
+~
+~
+~
 <stdin>  line 1/2  /line  1/2  word wrap
 -- cursor --
 0 0

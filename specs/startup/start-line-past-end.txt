@@ -12,8 +12,8 @@ line 4
 line 5
 -- screen --
 line 5
-
-
+~
+~
 <stdin>  line 5/5  wrap           h help
 -- cursor --
 0 0

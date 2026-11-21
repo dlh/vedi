@@ -14,8 +14,8 @@ Shift+Right y Down
 -- screen --
 hello
 world
-
-
+~
+~
 <stdin>  line 2/2  wrap  [copied 1 char]
 -- cursor --
 1 1

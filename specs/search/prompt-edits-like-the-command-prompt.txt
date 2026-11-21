@@ -15,9 +15,9 @@ Alt+Backspace
 -- screen --
 foo {{bar}}
 baz
-
-
-
+~
+~
+~
 /bar                                 1/1
 -- cursor --
 5 1
@@ -26,9 +26,9 @@ End Left Left "z"
 -- screen --
 foo bar
 baz
-
-
-
+~
+~
+~
 /bzar                                0/0
 -- cursor --
 5 3
@@ -37,9 +37,9 @@ Ctrl+u
 -- screen --
 foo b{{ar}}
 baz
-
-
-
+~
+~
+~
 /ar                                  1/1
 -- cursor --
 5 1
@@ -48,9 +48,9 @@ baz
 -- screen --
 foo {{bar}}
 baz
-
-
-
+~
+~
+~
 <stdin>  line 1/2  /bar  1/1  wrap
 -- cursor --
 0 4
@@ -59,9 +59,9 @@ baz
 -- screen --
 foo {{bar}}
 baz
-
-
-
+~
+~
+~
 ?bar                                 1/1
 -- cursor --
 5 4

@@ -12,6 +12,6 @@ abcd	c
 -- screen --
 a b
 abcd  c
-
-
+~
+~
 <stdin>  line 1/2  wrap           h help

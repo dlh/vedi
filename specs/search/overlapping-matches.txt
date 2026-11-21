@@ -9,7 +9,7 @@ banana
 / "ana" Enter
 -- screen --
 b{{ana}}{na}
-
+~
 <stdin>  line 1/1  /ana  1/2  wrap
 -- cursor --
 0 1
@@ -17,7 +17,7 @@ b{{ana}}{na}
 n
 -- screen --
 b{{anana}}
-
+~
 <stdin>  line 1/1  /ana  2/2  wrap
 -- cursor --
 0 3

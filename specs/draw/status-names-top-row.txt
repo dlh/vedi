@@ -26,7 +26,7 @@ PgDn
 ━━ b.txt ━━━━━━━━━━━━━━━━━━━
 b1
 b2
-
+~
 b.txt 2/2  line 1/2  wrap
 -- cursor --
 hidden

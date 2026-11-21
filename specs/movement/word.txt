@@ -52,8 +52,8 @@ Alt+Right Alt+Shift+Left y
 -- screen --
 foo bar_1  [baz]
 next
-
-
+~
+~
 <stdin>  line 1/2  wrap  [copied 3 chars]
 -- cursor --
 0 11
@@ -64,8 +64,8 @@ Esc Ctrl+Shift+Right y
 -- screen --
 foo bar_1  [baz]
 next
-
-
+~
+~
 <stdin>  line 1/2  wrap  [copied 3 chars]
 -- cursor --
 0 14
@@ -76,8 +76,8 @@ Esc Ctrl+Shift+Left y
 -- screen --
 foo bar_1  [baz]
 next
-
-
+~
+~
 <stdin>  line 1/2  wrap  [copied 3 chars]
 -- cursor --
 0 11

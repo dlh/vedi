@@ -1,0 +1,16 @@
+Rows below the text start with a ~, as in less, so the end shows. The
+empty row after a trailing newline is the text's, and has none.
+
+-- size --
+40x6
+-- input --
+hello
+world
+
+-- screen --
+hello
+world
+
+~
+~
+<stdin>  line 1/2  wrap           h help

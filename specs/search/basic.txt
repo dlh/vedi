@@ -16,8 +16,8 @@ foo
 foo
 bar foo
 foo
-
-
+~
+~
 /fox                                 0/0
 -- keys --
 Backspace "o" Enter
@@ -25,8 +25,8 @@ Backspace "o" Enter
 {{foo}}
 bar {foo}
 {foo}
-
-
+~
+~
 <stdin>  line 1/3  /foo  1/3  wrap
 -- cursor --
 0 0
@@ -40,8 +40,8 @@ n n
 {{foo}}
 bar {foo}
 {foo}
-
-
+~
+~
 [search wrapped]                    h help
 -- cursor --
 0 0
@@ -51,8 +51,8 @@ N
 {foo}
 bar {foo}
 {{foo}}
-
-
+~
+~
 [search wrapped]                    h help
 -- cursor --
 2 0
@@ -62,8 +62,8 @@ Shift+Right Shift+Right y
 {foo}
 bar {foo}
 [fo]{{o}}
-
-
+~
+~
 [copied 2 chars]                    h help
 -- clipboard --
 fo
@@ -73,8 +73,8 @@ Esc
 {foo}
 bar {foo}
 {{foo}}
-
-
+~
+~
 <stdin>  line 3/3  /foo  3/3  wrap
 -- keys --
 Esc
@@ -82,6 +82,6 @@ Esc
 foo
 bar foo
 foo
-
-
+~
+~
 <stdin>  line 3/3  wrap           h help

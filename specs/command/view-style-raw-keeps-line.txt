@@ -14,7 +14,7 @@ Down End
 -- screen --
 one
 [^[][31mred[^[][0m
-
+~
 <stdin>  line 2/2  wrap  raw      h help
 -- cursor --
 1 14
@@ -23,7 +23,7 @@ one
 -- screen --
 one
 red
-
+~
 <stdin>  line 2/2  wrap           h help
 -- cursor --
 1 3

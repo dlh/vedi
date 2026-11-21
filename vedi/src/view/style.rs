@@ -101,8 +101,8 @@ pub const EDGE: Style = PLAIN.reverse();
 pub const NOTE: Style = PLAIN.fg(Color::Palette(0)).bg(Color::Palette(3));
 /// What it says could not be done.
 pub const ERROR: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(1));
-/// The bar after wrap_width's last cell: dim, so it sits behind the
-/// text rather than among it.
+/// The bar after wrap_width's last cell and the ~ below the text: dim,
+/// so they sit behind the text rather than among it.
 pub const GUIDE: Style = PLAIN.dim();
 pub const SEP_NAME: Style = PLAIN.bold();
 /// A hint's label: bright cyan, far from a match's yellow and the

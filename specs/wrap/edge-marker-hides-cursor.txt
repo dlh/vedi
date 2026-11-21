@@ -14,7 +14,7 @@ Right Right Right Right
 wheel right
 -- screen --
 [<]fghij
-
+~
 <stdin
 -- cursor --
 hidden
@@ -22,7 +22,7 @@ hidden
 Left
 -- screen --
 [<]defg[>]
-
+~
 <stdin
 -- cursor --
 0 1

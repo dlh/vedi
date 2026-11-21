@@ -11,8 +11,8 @@ xy
 -- screen --
 abcdef
 xy
-
-
+~
+~
 <stdin
 -- keys --
 End
@@ -20,7 +20,7 @@ End
 abcdef
 
 xy
-
+~
 <stdin
 -- cursor --
 1 0
@@ -29,8 +29,8 @@ Left
 -- screen --
 abcdef
 xy
-
-
+~
+~
 <stdin
 -- cursor --
 0 5
@@ -47,8 +47,8 @@ End Shift+Down Shift+End
 -- screen --
 abcdef
 [xy]
-
-
+~
+~
 <stdin
 -- cursor --
 1 2

@@ -9,8 +9,8 @@ is highlighted whole: it has no cells of its own to mark.
 / "👩" Enter
 -- screen --
 {{👨‍👩‍👧}}x
-
-
+~
+~
 <stdin>  line 1/1  /👩  1/1  wrap
 -- cursor --
 0 0

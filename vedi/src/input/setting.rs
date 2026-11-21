@@ -18,6 +18,8 @@ pub struct Settings {
     pub edge_markers: bool,
     /// A row names each input, when there are several.
     pub file_separators: bool,
+    /// A row below the text starts with a ~.
+    pub end_markers: bool,
     /// A `Changed` event reads the file again.
     pub auto_reload: bool,
     /// Off, the status line shows only when it has something to say.
@@ -39,6 +41,7 @@ impl Default for Settings {
             tab_width: 0,
             edge_markers: false,
             file_separators: true,
+            end_markers: true,
             auto_reload: true,
             status_line: true,
             view_style: ViewStyle::Color,
@@ -233,6 +236,20 @@ pub const VERBS: &[Verb] = &[
             get: |s| yes_no(s.file_separators),
             set: |s, a| {
                 s.file_separators = a == "yes";
+                Ok(())
+            },
+        }),
+        summarized: false,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
+        name: "end_markers",
+        cycle: YES_NO,
+        field: Some(Field {
+            get: |s| yes_no(s.end_markers),
+            set: |s, a| {
+                s.end_markers = a == "yes";
                 Ok(())
             },
         }),
@@ -502,6 +519,7 @@ mod tests {
                 "tab_width",
                 "edge_markers",
                 "file_separators",
+                "end_markers",
                 "auto_reload",
                 "status_line",
                 "view_style",
@@ -574,6 +592,7 @@ mod tests {
                 "tab_width",
                 "edge_markers",
                 "file_separators",
+                "end_markers",
                 "auto_reload",
                 "status_line",
                 "view_style",
@@ -616,6 +635,7 @@ mod tests {
                 "tab_width",
                 "edge_markers",
                 "file_separators",
+                "end_markers",
                 "auto_reload",
                 "status_line",
                 "view_style",

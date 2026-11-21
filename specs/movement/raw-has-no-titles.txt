@@ -14,7 +14,7 @@ intro
 -- screen --
 intro
 [^[]]2;t[^G]a2
-
+~
 <stdin>  line 1/2  wrap  raw      h help
 -- cursor --
 0 0

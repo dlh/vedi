@@ -11,9 +11,9 @@ a raw tab.
 Right : "tab_width 4" Enter
 -- screen --
     x
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap           h help
 -- cursor --
 0 4
@@ -21,15 +21,15 @@ Right : "tab_width 4" Enter
 : "tab_width 0" Enter
 -- screen --
     x
-
-
-
+~
+~
+~
 [tab_width takes a number from 1 to 65535]
 -- keys --
 : "tab_width 65536" Enter
 -- screen --
     x
-
-
-
+~
+~
+~
 [tab_width takes a number from 1 to 65535]

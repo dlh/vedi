@@ -11,5 +11,5 @@ aaa bbb ccc ddd
 -- screen --
 aaa bbb    [\]
 ccc ddd
-
+~
 <stdin>  lin

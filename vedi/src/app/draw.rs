@@ -47,11 +47,13 @@ impl<T: Terminal> App<T> {
     }
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
-    /// Every row but a separator's, the blank ones below the text too,
-    /// carries the wrap_width bar when there is one.
+    /// A row below the text starts with a ~, as in less, unless end_markers
+    /// is off. Every row but a separator's carries the wrap_width bar
+    /// when there is one.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
         let rows = self.views.shown.rows();
-        let guide = self.views.shown.geometry().guide_col();
+        let geom = self.views.shown.geometry();
+        let guide = geom.guide_col();
         let mut p = self.views.shown.top();
         let mut cur = None;
         let mut y = 0;
@@ -78,8 +80,11 @@ impl<T: Terminal> App<T> {
             p = next;
             y += 1;
         }
-        if let Some(x) = guide {
-            for y in y..rows {
+        for y in y..rows {
+            if geom.end_markers {
+                g.put(0, y, "~", GUIDE, None);
+            }
+            if let Some(x) = guide {
                 g.put(x, y, "│", GUIDE, None);
             }
         }

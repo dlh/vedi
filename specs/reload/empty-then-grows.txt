@@ -11,9 +11,9 @@ one
 two
 -- reload --
 -- screen --
-
-
-
+~
+~
+~
 f.txt  line 1/0  wrap             h help
 -- cursor --
 hidden

@@ -17,6 +17,6 @@ Left
 -- screen --
 ab
 cd
-
-
+~
+~
 <stdin>  line 1/2  wrap           h help

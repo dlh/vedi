@@ -14,8 +14,8 @@ bar
 Foo
 foo bar
 bar
-
-
+~
+~
 &                                    3/3
 -- keys --
 "f"
@@ -23,26 +23,26 @@ bar
 {{F}}[oo]
 {f}oo bar
 
-
-
+~
+~
 &f                                   2/3
 -- keys --
 "oo b"
 -- screen --
 {{foo b}}[ar]
 
-
-
-
+~
+~
+~
 &foo b                               1/3
 -- keys --
 Backspace Backspace "B"
 -- screen --
-
-
-
-
-
+~
+~
+~
+~
+~
 &fooB                                0/3
 -- keys --
 Backspace Backspace Backspace Backspace
@@ -50,8 +50,8 @@ Backspace Backspace Backspace Backspace
 Foo
 foo bar
 bar
-
-
+~
+~
 &                                    3/3
 -- keys --
 Ctrl+n
@@ -59,8 +59,8 @@ Ctrl+n
 Foo
 [foo bar]
 bar
-
-
+~
+~
 &                                    3/3
 -- keys --
 "b" Backspace
@@ -68,8 +68,8 @@ bar
 Foo
 foo bar
 bar
-
-
+~
+~
 &                                    3/3
 -- keys --
 Ctrl+n Enter &
@@ -77,6 +77,6 @@ Ctrl+n Enter &
 Foo
 foo bar
 bar
-
-
+~
+~
 &                                    3/3

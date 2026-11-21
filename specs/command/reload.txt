@@ -11,17 +11,17 @@ new
 : "reload now" Enter
 -- screen --
 old
-
-
-
-
+~
+~
+~
+~
 [reload takes no argument]          h help
 -- keys --
 : "reload" Enter
 -- screen --
 new
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help

@@ -27,8 +27,8 @@ two[0m
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to out.txt]          h help
 -- written out.txt --
 red
@@ -40,8 +40,8 @@ two
 red
 two
 
-
-
+~
+~
 [out.txt exists; write! overwrites]
 -- keys --
 : "write f.txt" Enter
@@ -49,8 +49,8 @@ two
 red
 two
 
-
-
+~
+~
 [f.txt exists; write! overwrites]   h help
 -- keys --
 : "write! out.txt" Enter
@@ -58,8 +58,8 @@ two
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to out.txt]          h help
 -- keys --
 : "write ~/out.txt" Enter
@@ -67,8 +67,8 @@ two
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to ~/out.txt]        h help
 -- written /home/u/out.txt --
 red
@@ -80,8 +80,8 @@ two
 red
 two
 
-
-
+~
+~
 [write takes a file name]           h help
 -- keys --
 Down Shift+Right Shift+Right : "write my sel.txt" Enter
@@ -89,8 +89,8 @@ Down Shift+Right Shift+Right : "write my sel.txt" Enter
 red
 [tw]o
 
-
-
+~
+~
 [wrote 1 line to my sel.txt]        h help
 -- written my sel.txt --
 tw
@@ -100,8 +100,8 @@ tw
 red
 [tw]o
 
-
-
+~
+~
 [wrote 1 line to cs.txt]            h help
 -- written cs.txt --
 [0;31mtw[0m
@@ -111,8 +111,8 @@ red
 red
 [tw]o
 
-
-
+~
+~
 [wrote 1 line to l.txt]             h help
 -- written l.txt --
 two[0m
@@ -123,8 +123,8 @@ Esc Up Home Shift+Down : "write --raw one.txt" Enter
 [red ]
 two
 
-
-
+~
+~
 [wrote 1 line to one.txt]           h help
 -- written one.txt --
 [31mred
@@ -135,8 +135,8 @@ Esc : "write --color c.txt" Enter
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to c.txt]            h help
 -- written c.txt --
 [0;31mred
@@ -148,8 +148,8 @@ two[0m
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to b.txt]            h help
 -- written b.txt --
 [31mred
@@ -161,8 +161,8 @@ two[0m
 red
 two
 
-
-
+~
+~
 [write takes a file name]           h help
 -- keys --
 : "write --bold x.txt" Enter
@@ -170,8 +170,8 @@ two
 red
 two
 
-
-
+~
+~
 [write takes --color or --raw]      h help
 -- keys --
 : "write -" Tab Tab
@@ -179,8 +179,8 @@ two
 red
 two
 
-
-
+~
+~
 :write --color   [--color]  --raw
 -- keys --
 Esc : "view_style plain" Enter : "write p.txt" Enter
@@ -188,8 +188,8 @@ Esc : "view_style plain" Enter : "write p.txt" Enter
 red
 two
 
-
-
+~
+~
 [wrote 2 lines to p.txt]            h help
 -- written p.txt --
 red
@@ -201,8 +201,8 @@ two
 [^[][31mred
 two[^[][0m
 
-
-
+~
+~
 [wrote 2 lines to r.txt]            h help
 -- written r.txt --
 [31mred
@@ -214,8 +214,8 @@ two[0m
 [^[][31mred
 two[^[][0m
 
-
-
+~
+~
 [wrote 2 lines to rc.txt]           h help
 -- written rc.txt --
 [31mred
@@ -227,8 +227,8 @@ Up Home Shift+End : "write rs.txt" Enter
 [^[[31mred]
 two[^[][0m
 
-
-
+~
+~
 [wrote 1 line to rs.txt]            h help
 -- written rs.txt --
 [31mred
@@ -238,8 +238,8 @@ Esc G Ctrl+Shift+Home : "write end.txt" Enter
 [^[[31mred ]
 [two^[[0m ]
 
-
-
+~
+~
 [wrote 2 lines to end.txt]          h help
 -- written end.txt --
 [31mred

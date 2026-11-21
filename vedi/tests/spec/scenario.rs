@@ -804,7 +804,7 @@ mod tests {
     /// assertions ran.
     #[test]
     fn run_rejects() {
-        let ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n\n\n\n\n<stdin>  line 1/1  wrap           h help\n";
+        let ok = "Text.\n-- input --\nhi\n-- screen --\nhi\n~\n~\n~\n~\n<stdin>  line 1/1  wrap           h help\n";
         assert!(run(&parse(ok), None).is_ok(), "control scenario failed");
         let cases = [
             (

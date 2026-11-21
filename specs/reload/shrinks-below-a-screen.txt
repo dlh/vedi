@@ -1,5 +1,5 @@
 When the text read again is shorter than the screen, the view fills
-from the top: not the last line over blank rows.
+from the top: not the last line over rows past the end.
 
 -- size --
 40x4

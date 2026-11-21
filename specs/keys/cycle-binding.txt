@@ -12,40 +12,40 @@ map Alt+w cycle edge_markers
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij
 -- screen --
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab
-
-
-
-
-
-
-
-
+~
+~
+~
+~
+~
+~
+~
+~
 <stdin>  line 1/1  nowrap                                                 h help
 -- keys --
 Alt+w
 -- screen --
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyza[>]
-
-
-
-
-
-
-
-
+~
+~
+~
+~
+~
+~
+~
+~
 <stdin>  line 1/1  nowrap  [edge_markers yes]                               h help
 -- keys --
 Alt+w
 -- screen --
 abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzab
-
-
-
-
-
-
-
-
+~
+~
+~
+~
+~
+~
+~
+~
 <stdin>  line 1/1  nowrap  [edge_markers no]                                h help
 -- keys --
 h

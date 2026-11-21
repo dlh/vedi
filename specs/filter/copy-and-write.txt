@@ -13,8 +13,8 @@ ok
 [err one ]
 {{err}} two
 
-
-
+~
+~
 &err  2/2  line 3/4  wrap  [copied 1 line]
 -- clipboard --
 err one
@@ -25,8 +25,8 @@ Esc : "write out.txt" Enter
 {err} one
 {{err}} two
 
-
-
+~
+~
 [wrote 2 lines to out.txt]          h help
 -- written out.txt --
 err one

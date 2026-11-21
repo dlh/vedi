@@ -13,7 +13,7 @@ J J y
 [line 1 ]
 [line 2 ]
 line 3
-
+~
 <stdin>  line 3/3  wrap  [copied 2 lines]
 -- cursor --
 2 0
@@ -23,7 +23,7 @@ K y
 [line 1 ]
 line 2
 line 3
-
+~
 <stdin>  line 2/3  wrap  [copied 1 line]
 -- cursor --
 1 0

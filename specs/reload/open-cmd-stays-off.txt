@@ -15,8 +15,8 @@ O
 hello again
 -- screen --
 hello again
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap  [open_cmd '']

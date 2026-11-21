@@ -27,10 +27,10 @@ line 10
 line 8
 line 9
 line 10
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 10/10  wrap         h help
 -- cursor --
 2 7

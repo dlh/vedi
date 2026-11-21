@@ -11,10 +11,10 @@ old
 new
 -- screen --
 new
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help
 -- keys --
 : "auto_reload no" Enter
@@ -22,17 +22,17 @@ f.txt  line 1/1  wrap             h help
 newer
 -- screen --
 new
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help
 -- keys --
 R
 -- screen --
 newer
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help

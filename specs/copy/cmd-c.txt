@@ -12,8 +12,8 @@ Shift+Right Shift+Right Cmd+c
 -- screen --
 [he]llo
 world
-
-
+~
+~
 <stdin>  line 1/2  wrap  [copied 2 chars]
 -- clipboard --
 he

@@ -9,5 +9,5 @@ marks on the character before them.
 / "日本語 café"
 -- screen --
 {{日本語 café}}
-
+~
 /日本語 café     1/1

@@ -11,9 +11,9 @@ v Down Esc Right
 -- screen --
 abc
 def
-
-
-
+~
+~
+~
 <stdin>  line 2/2  wrap           h help
 -- cursor --
 1 1

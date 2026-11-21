@@ -18,7 +18,7 @@ Left
 "x"
 -- screen --
 café
-
+~
 /cafxé           0/0
 -- cursor --
 2 5
@@ -30,7 +30,7 @@ Right
 Backspace
 -- screen --
 café
-
+~
 /cafx            0/0
 -- cursor --
 2 5

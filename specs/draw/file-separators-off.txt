@@ -15,14 +15,14 @@ b1
 -- screen --
 a1
 b1
-
+~
 a.txt 1/2  line 1/1  wrap
 -- keys --
 Down
 -- screen --
 a1
 b1
-
+~
 b.txt 2/2  line 1/1  wrap
 -- cursor --
 1 0

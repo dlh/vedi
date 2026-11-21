@@ -19,8 +19,8 @@ foo three
 {{foo}}[ one]
 {foo} two
 {foo} three
-
-
+~
+~
 &foo                                 3/5
 -- cursor --
 5 4
@@ -30,8 +30,8 @@ Ctrl+n
 {foo} one
 {{foo}}[ two]
 {foo} three
-
-
+~
+~
 &foo                                 3/5
 -- keys --
 Enter
@@ -39,8 +39,8 @@ Enter
 {foo} one
 {{foo}} two
 {foo} three
-
-
+~
+~
 &foo  2/3  line 3/5  wrap         h help
 -- cursor --
 1 0

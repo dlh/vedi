@@ -10,7 +10,7 @@ wheel right wheel Shift+down
 -- screen --
 abcdef
 ghijkl
-
+~
 <stdin
 -- cursor --
 0 0

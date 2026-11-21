@@ -13,7 +13,7 @@ click 0 1 Shift+drag 1 1 2 2
 o[ne ]
 [two ]
 [thr]ee
-
+~
 <stdin>  line 3/3  wrap  [copied 3 lines]
 -- cursor --
 2 3

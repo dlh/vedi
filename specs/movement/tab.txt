@@ -9,9 +9,9 @@ over it moves the cursor eight cells. This file holds a raw tab.
 Right
 -- screen --
         x
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap           h help
 -- cursor --
 0 8

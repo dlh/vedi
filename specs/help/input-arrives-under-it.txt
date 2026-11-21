@@ -25,7 +25,7 @@ Esc
 -- screen --
 one
 two
-
+~
 <stdin>  line 1/2  wrap                                                   h help
 -- cursor --
 0 0

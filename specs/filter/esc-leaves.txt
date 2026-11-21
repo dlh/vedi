@@ -13,8 +13,8 @@ Down & "a" Esc
 a1
 b2
 a3
-
-
+~
+~
 <stdin>  line 2/3  wrap           h help
 -- cursor --
 1 0
@@ -31,18 +31,18 @@ a3
 -- screen --
 [a]1
 {a}3
-
-
-
+~
+~
+~
 &a  1/2  line 1/3  wrap           h help
 -- keys --
 Esc
 -- screen --
 {a}1
 {a}3
-
-
-
+~
+~
+~
 &a  1/2  line 1/3  wrap           h help
 -- keys --
 Esc
@@ -50,8 +50,8 @@ Esc
 a1
 b2
 a3
-
-
+~
+~
 <stdin>  line 2/3  wrap           h help
 -- cursor --
 1 0
@@ -61,6 +61,6 @@ a3
 a1
 b2
 a3
-
-
+~
+~
 &                                    3/3

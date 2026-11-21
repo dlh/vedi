@@ -11,43 +11,43 @@ line 1
 : "view_style " Tab
 -- screen --
 line 1
-
-
+~
+~
 :view_style plain   [plain]  raw  color
 -- keys --
 Esc : "view_style raw" Tab
 -- screen --
 line 1
-
-
+~
+~
 :view_style color   plain  raw  [color]
 -- keys --
 Esc : "view_style plain" Tab
 -- screen --
 line 1
-
-
+~
+~
 :view_style raw   plain  [raw]  color
 -- keys --
 Esc : "map x cycle" Tab
 -- screen --
 line 1
-
-
+~
+~
 :map x cycle
 -- keys --
 "wrap_style" Enter x
 -- screen --
 line 1
-
-
+~
+~
 <stdin>  line 1/1  word wrap                          h help
 -- keys --
 : "quit" Tab
 -- screen --
 line 1
-
-
+~
+~
 :quit
 -- keys --
 Enter

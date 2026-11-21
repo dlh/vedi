@@ -17,7 +17,7 @@ Down End Shift+Left
 10x3
 -- screen --
 onl[y]
-
+~
 <stdin>  l
 -- cursor --
 0 3

@@ -17,9 +17,9 @@ Down Shift+Right O
 -- screen --
 hello
 world
-
-
-
+~
+~
+~
 f.txt  line 2/2  wrap  [open_cmd '']
 -- cursor --
 1 1
@@ -28,9 +28,9 @@ O
 -- screen --
 heLLo
 worLd
-
-
-
+~
+~
+~
 [open_cmd sed s/l/L/g %s]           h help
 -- cursor --
 1 1

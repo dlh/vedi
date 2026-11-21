@@ -8,7 +8,7 @@ wrap no
 abcdefghijklmnopqrstuvwxyz0123
 -- screen --
 abcdefghijklmnopqrstuvwxyz
-
-
-
+~
+~
+~
 <stdin>  line 1/1  nowrap

@@ -21,8 +21,8 @@ Esc
 [l1 ]
 {l}2
 
-
-
+~
+~
 f.txt  line 1/2  /l  1/2  wrap    h help
 -- cursor --
 0 0

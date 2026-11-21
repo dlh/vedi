@@ -9,10 +9,10 @@ abc
 L L y
 -- screen --
 [ab]c
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 2 chars]
 -- clipboard --
 ab

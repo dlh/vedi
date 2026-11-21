@@ -14,15 +14,15 @@ the quick brown fox jumps over the lazy dog
 w
 -- screen --
 the quick brown fox jumps
-
-
-
+~
+~
+~
 fox  line 1/1  nowrap
 -- keys --
 w
 -- screen --
 the quick brown fox
 jumps over the lazy dog
-
-
+~
+~
 fox  line 1/1  word wrap

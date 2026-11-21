@@ -6,9 +6,9 @@ and the cursor is hidden because there is no rune to rest on.
 -- keys --
 Down End G
 -- screen --
-
-
-
+~
+~
+~
 <stdin>  line 1/0  wrap           h help
 -- cursor --
 hidden

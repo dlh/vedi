@@ -12,7 +12,7 @@ re[31md 31m
 / "31m" Enter
 -- screen --
 re[^[][{{31m}}d {31m}
-
+~
 <stdin>  line 1/1  /31m  1/2  wrap  raw
 -- cursor --
 0 5
@@ -20,7 +20,7 @@ re[^[][{{31m}}d {31m}
 / "red" Enter
 -- screen --
 re[^[][31md 31m
-
+~
 [not found: red]                    h help
 -- cursor --
 0 5

@@ -13,6 +13,6 @@ a	bcdefghijklmnopqrstuvwxyz0123
 -- screen --
 a bcdefghijklmnopqrstuvwxy
 z0123
-
-
+~
+~
 <stdin>  line 1/1  wrap

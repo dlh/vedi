@@ -11,5 +11,5 @@ abcd日efghijklmnop
 wheel right
 -- screen --
 [<] efghijk[>]
-
+~
 <stdin>  l

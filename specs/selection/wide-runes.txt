@@ -9,9 +9,9 @@ East Asian text select two characters that span four cells.
 Shift+Right Shift+Right y
 -- screen --
 [日本]語 x
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 2 chars]
 -- cursor --
 0 4

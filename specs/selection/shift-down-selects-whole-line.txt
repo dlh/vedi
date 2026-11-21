@@ -13,8 +13,8 @@ Shift+Down y
 -- screen --
 [hello world ]
 second
-
-
+~
+~
 <stdin>  line 2/2  wrap  [copied 1 line]
 -- cursor --
 1 0

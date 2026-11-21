@@ -9,34 +9,34 @@ line 1
 : "cy" Tab
 -- screen --
 line 1
-
-
+~
+~
 :cycle
 -- keys --
 Tab
 -- screen --
 line 1
-
-
-:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  file_separators  hint_order  open_cmd  status_
+~
+~
+:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  end_markers  file_separators  hint_order  open
 -- keys --
 Esc : "cycle view_style " Tab
 -- screen --
 line 1
-
-
+~
+~
 :cycle view_style color   [color]  plain  raw
 -- keys --
 Esc : "cycle wrap_" Tab Enter
 -- screen --
 line 1
-
-
+~
+~
 <stdin>  line 1/1  word wrap                                                                            h help
 -- keys --
-: "map x cycle e" Tab
+: "map x cycle ed" Tab
 -- screen --
 line 1
-
-
+~
+~
 :map x cycle edge_markers

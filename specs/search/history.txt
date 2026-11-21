@@ -11,61 +11,61 @@ bar
 -- screen --
 foo
 {{bar}}
-
-
-
+~
+~
+~
 /bar                                 1/1
 -- keys --
 Up
 -- screen --
 {{foo}}
 bar
-
-
-
+~
+~
+~
 /foo                                 1/1
 -- keys --
 Up
 -- screen --
 {{foo}}
 bar
-
-
-
+~
+~
+~
 /foo                                 1/1
 -- keys --
 Down Down "ba"
 -- screen --
 foo
 {{ba}}r
-
-
-
+~
+~
+~
 /ba                                  1/1
 -- keys --
 Up Backspace "z"
 -- screen --
 foo
 bar
-
-
-
+~
+~
+~
 /baz                                 0/0
 -- keys --
 Down
 -- screen --
 foo
 {{ba}}r
-
-
-
+~
+~
+~
 /ba                                  1/1
 -- keys --
 Esc / "baz" Enter / "baz" Enter / Up Up
 -- screen --
 foo
 {{bar}}
-
-
-
+~
+~
+~
 /bar                                 1/1

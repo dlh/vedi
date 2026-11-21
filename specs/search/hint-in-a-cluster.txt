@@ -12,7 +12,7 @@ ááá
 / "́" Enter s
 -- screen --
 <123>
-
+~
 -- keys --
 3
 -- cursor --

@@ -12,8 +12,8 @@ Ctrl+A y
 -- screen --
 [hello world ]
 [second]
-
-
+~
+~
 <stdin>  line 2/2  wrap  [copied 2 lines]
 -- cursor --
 1 6
@@ -25,14 +25,14 @@ Esc
 -- screen --
 hello world
 second
-
-
+~
+~
 <stdin>  line 2/2  wrap           h help
 -- keys --
 y
 -- screen --
 hello world
 second
-
-
+~
+~
 [nothing selected]                  h help

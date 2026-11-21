@@ -11,9 +11,9 @@ foo
 -- screen --
 Foo
 foo
-
-
-
+~
+~
+~
 [not found: FOO]                    h help
 -- cursor --
 0 0
@@ -22,18 +22,18 @@ foo
 -- screen --
 Foo
 foo
-
-
-
+~
+~
+~
 [not found: FOO]                    h help
 -- keys --
 / "foo" Enter n
 -- screen --
 {Foo}
 {{foo}}
-
-
-
+~
+~
+~
 <stdin>  line 2/2  /foo  2/2  wrap
 -- cursor --
 1 0

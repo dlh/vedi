@@ -9,25 +9,25 @@ abcdefghijklmnopqrstuvwxyz0123
 : "wrap no" Enter
 -- screen --
 abcdefghijklmnopqrstuvwxyz
-
-
-
+~
+~
+~
 <stdin>  line 1/1  nowrap
 -- keys --
 : "wrap no" Enter
 -- screen --
 abcdefghijklmnopqrstuvwxyz
-
-
-
+~
+~
+~
 <stdin>  line 1/1  nowrap
 -- keys --
 End : "wrap yes" Enter
 -- screen --
 abcdefghijklmnopqrstuvwxyz
 0123
-
-
+~
+~
 <stdin>  line 1/1  wrap
 -- cursor --
 1 4

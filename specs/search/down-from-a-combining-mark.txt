@@ -12,7 +12,7 @@ defgh
 -- screen --
 {áb}c
 defgh
-
+~
 <stdin>  line 2/2  /́b  1/1  wrap  h help
 -- cursor --
 1 0

@@ -8,17 +8,17 @@ old
 new
 -- screen --
 old
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help
 -- keys --
 R
 -- screen --
 new
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help

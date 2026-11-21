@@ -12,9 +12,9 @@ hello
 drag 0 0 0 1
 -- screen --
 [he]llo
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 2 chars]
 -- clipboard --
 he

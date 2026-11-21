@@ -15,7 +15,7 @@ abc
 abcde[\]
 fghij
 abc
-
+~
 <stdin
 -- keys --
 End
@@ -23,7 +23,7 @@ End
 abcde[\]
 fghij
 abc
-
+~
 <stdin
 -- cursor --
 1 5

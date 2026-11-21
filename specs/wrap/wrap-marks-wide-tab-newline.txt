@@ -15,7 +15,7 @@ End
 
 
 x
-
+~
 <stdin
 -- cursor --
 1 0

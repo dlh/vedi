@@ -14,9 +14,9 @@ lines
 -- screen --
 [short ]
 [lines]
-
-
-
+~
+~
+~
 f.txt  line 2/2  wrap             h help
 -- cursor --
 1 5

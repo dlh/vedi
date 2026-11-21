@@ -8,5 +8,5 @@
 abcdefghij
 -- screen --
 abcde[>]
-
+~
 <stdin

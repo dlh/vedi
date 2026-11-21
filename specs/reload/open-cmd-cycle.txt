@@ -15,26 +15,26 @@ Hi
 O
 -- screen --
 # Hi
-
-
-
-
+~
+~
+~
+~
 f.md  line 1/1  wrap  [open_cmd bat %s]
 -- keys --
 O
 -- screen --
 Hi
-
-
-
-
+~
+~
+~
+~
 f.md  line 1/1  wrap  [open_cmd '']
 -- keys --
 O
 -- screen --
 # Hi
-
-
-
-
+~
+~
+~
+~
 f.md  line 1/1  wrap  [open_cmd mdcat %s]

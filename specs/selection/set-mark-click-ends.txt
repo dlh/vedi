@@ -14,9 +14,9 @@ Right
 -- screen --
 abc
 def
-
-
-
+~
+~
+~
 <stdin>  line 1/2  wrap           h help
 -- cursor --
 0 2

@@ -15,9 +15,9 @@ Right
 -- screen --
 a[bc ]
 [def]
-
-
-
+~
+~
+~
 <stdin>  line 2/2  wrap           h help
 -- cursor --
 1 3

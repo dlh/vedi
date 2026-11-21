@@ -61,7 +61,9 @@ off screen.
 
 Text that ends in a newline has an empty row after its last line, where the
 cursor can rest. It is not a line: the count stays what `wc -l` says, and the
-status line shows the cursor there as one past the last, `line 5+1/5`.
+status line shows the cursor there as one past the last, `line 5+1/5`. Rows
+below the text start with a `~`; `end_markers no` in the config leaves them
+blank.
 
 A double-click selects a word, which spans the punctuation between it and the
 next: a path or a link, `https://example.net/a`, is one word. Brackets and

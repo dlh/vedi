@@ -44,6 +44,7 @@ so far, defaults included.
 | `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
 | `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
 | `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given; see [the input's name](pager.md#the-inputs-name). |
+| `end_markers` | `yes` | `--end-markers`, `--no-end-markers` | Start each row below the text with `~`. |
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `hint_order` | `top_down` | `--hint-order` | `bottom_up` numbers `s`'s hints from the bottom of the screen. |
@@ -126,7 +127,7 @@ cleared.
 | `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
 | `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
 | `:22`, `:goto 22` | Go to line 22. |
-| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
+| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `end_markers`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
 | `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
 | `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |

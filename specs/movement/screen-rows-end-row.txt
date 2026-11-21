@@ -16,7 +16,7 @@ l1
 l2
 l3
 
-
+~
 <stdin>  line 3/3  wrap           h help
 -- cursor --
 2 0

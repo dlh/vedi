@@ -7,17 +7,17 @@ abc
 z
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap  [not bound: z]
 -- keys --
 Right
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap           h help

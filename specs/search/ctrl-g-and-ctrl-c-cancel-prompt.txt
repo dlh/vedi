@@ -8,10 +8,10 @@ abc
 / "b" Ctrl+g n
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 [no search pattern]                 h help
 -- cursor --
 0 0
@@ -19,10 +19,10 @@ abc
 ? "c" Ctrl+c n
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 [no search pattern]                 h help
 -- cursor --
 0 0

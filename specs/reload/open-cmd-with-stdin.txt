@@ -7,8 +7,8 @@ text
 O
 -- screen --
 text
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap  [not a file]

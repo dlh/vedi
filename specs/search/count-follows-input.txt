@@ -43,8 +43,8 @@ fo
 {fo}
 {{fo}}
 
-
-
+~
+~
 f.txt  line 2/2  /fo  2/2  wrap             h help
 -- cursor --
 1 0

@@ -10,80 +10,80 @@ line 1
 : "g" Tab "7"
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :goto 7
 -- keys --
 Esc : "w" Tab
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :wr  wrap  wrap_style  wrap_width  write
 -- keys --
 "ap_s" Tab "w" Tab Enter
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  word wrap      h help
 -- keys --
 : "edge_markers y" Tab Enter
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  word wrap      h help
 -- keys --
 : "map x sel" Tab
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :map x select_  select_all  select_down
 -- keys --
 "page_d" Tab Enter
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  word wrap      h help
 -- keys --
 : "zz" Tab "goto 1" Tab
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :zzgoto 1
 -- keys --
 Esc : "map x " Tab Tab
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :map x command   [command]  copy  copy_and
 -- keys --
 Tab
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :map x copy   command  [copy]  copy_and_qu

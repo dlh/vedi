@@ -13,7 +13,7 @@ hello
 Shift+Right y
 -- screen --
 [h]ello
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 1 char]

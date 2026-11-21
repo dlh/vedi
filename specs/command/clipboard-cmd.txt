@@ -9,17 +9,17 @@ hello
 : "clipboard_cmd sh -c false" Enter
 -- screen --
 hello
-
-
-
+~
+~
+~
 [unknown command "clipboard_cmd"]   h help
 -- keys --
 Shift+Right y
 -- screen --
 [h]ello
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 1 char]
 -- clipboard --
 h

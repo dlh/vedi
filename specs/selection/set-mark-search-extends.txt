@@ -11,9 +11,9 @@ Right v / "foo" Enter
 -- screen --
 {f}[oo ]
 [bar ]{{foo}}
-
-
-
+~
+~
+~
 <stdin>  line 2/2  /foo  2/2  wrap
 -- cursor --
 1 4

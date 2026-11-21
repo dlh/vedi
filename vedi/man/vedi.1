@@ -114,6 +114,10 @@ Default: off.
 .It Fl \-file\-separators , Fl \-no\-file\-separators
 With several inputs, draw a row naming each.
 Default: on.
+.It Fl \-end\-markers , Fl \-no\-end\-markers
+Start each row below the text with
+.Ql ~ .
+Default: on.
 .It Fl \-status\-line , Fl \-no\-status\-line
 Draw the status line; off, only for a prompt or a message.
 Default: on.
@@ -269,8 +273,8 @@ Go to line
 Step a setting to its next value, wrapping to the first.
 Takes
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
-.Cm auto_reload , Cm status_line , Cm view_style , Cm copy_on_select ,
-.Cm hint_order
+.Cm end_markers , Cm auto_reload , Cm status_line , Cm view_style ,
+.Cm copy_on_select , Cm hint_order
 or
 .Cm open_cmd .
 .Pp
@@ -325,8 +329,8 @@ A setting is named as its flag, with
 for
 .Ql \- :
 .Cm wrap , Cm wrap_style , Cm wrap_width , Cm tab_width , Cm edge_markers ,
-.Cm file_separators , Cm auto_reload , Cm status_line , Cm view_style ,
-.Cm copy_on_select , Cm hint_order ,
+.Cm file_separators , Cm end_markers , Cm auto_reload , Cm status_line ,
+.Cm view_style , Cm copy_on_select , Cm hint_order ,
 .Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd .

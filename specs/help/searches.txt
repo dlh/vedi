@@ -53,7 +53,7 @@ q
 -- screen --
 {{page}} 1
 {page} 2
-
+~
 <stdin>  line 1/2  /page  1/2  wrap                   h help
 -- cursor --
 0 0

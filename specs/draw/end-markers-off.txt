@@ -1,0 +1,14 @@
+end_markers no in the config leaves the rows below the text blank.
+
+-- size --
+40x5
+-- config --
+end_markers no
+-- input --
+hello
+-- screen --
+hello
+
+
+
+<stdin>  line 1/1  wrap           h help

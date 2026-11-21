@@ -11,8 +11,8 @@ old
 new
 -- screen --
 new
-
-
-
-
+~
+~
+~
+~
 f.txt  line 1/1  wrap             h help

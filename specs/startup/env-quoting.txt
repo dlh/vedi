@@ -11,7 +11,7 @@ hello
 Shift+Right y
 -- screen --
 [h]ello
-
-
-
+~
+~
+~
 [copy failed: exit status: 1]       h help

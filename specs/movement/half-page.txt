@@ -22,7 +22,7 @@ line 5
 line 6
 line 7
 line 8
-
+~
 <stdin>  line 5/8  wrap           h help
 -- cursor --
 hidden
@@ -31,9 +31,9 @@ d
 -- screen --
 line 7
 line 8
-
-
-
+~
+~
+~
 <stdin>  line 7/8  wrap           h help
 -- cursor --
 hidden
@@ -44,7 +44,7 @@ line 5
 line 6
 line 7
 line 8
-
+~
 <stdin>  line 5/8  wrap           h help
 -- keys --
 Ctrl+U

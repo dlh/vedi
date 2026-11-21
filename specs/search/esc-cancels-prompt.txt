@@ -7,10 +7,10 @@ abc
 / "b" Esc
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap           h help
 -- cursor --
 0 0
@@ -18,8 +18,8 @@ abc
 n
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 [no search pattern]                 h help

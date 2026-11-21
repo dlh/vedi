@@ -16,7 +16,7 @@ Down
 -- screen --
 line 1
 line 2
-
+~
 <stdin>  line 2/2  nowrap         h help
 -- cursor --
 1 0

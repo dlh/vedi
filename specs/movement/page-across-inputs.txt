@@ -36,8 +36,8 @@ PgDn
 -- screen --
 ━━ e.txt ━━━━━━━━━━━━━━━━━━━
 e1
-
-
+~
+~
 e.txt 5/5  line 1/1  wrap
 -- cursor --
 hidden

@@ -17,8 +17,8 @@ beta three
 beta one
 beta two
 beta three
-
-
+~
+~
 f.txt  line 2/3  wrap             h help
 -- cursor --
 1 2

@@ -10,8 +10,8 @@ takes all of its runes.
 Shift+Right Shift+Right y
 -- screen --
 [👨‍👩‍👧x]
-
-
+~
+~
 <stdin>  line 1/1  wrap  [copied 2 chars]
 -- cursor --
 0 3

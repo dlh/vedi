@@ -13,7 +13,7 @@ y
 {{x}}2
 {x}3
 y
-
+~
 <stdin>  line 2/4  /x  2/3  wrap  h help
 -- keys --
 &
@@ -22,7 +22,7 @@ y
 {{x}}[2]
 {x}3
 
-
+~
 &x                                   3/4
 -- keys --
 Ctrl+n Enter Enter
@@ -31,7 +31,7 @@ Ctrl+n Enter Enter
 {x}2
 {{x}}3
 y
-
+~
 <stdin>  line 3/4  /x  3/3  wrap  h help
 -- cursor --
 2 0

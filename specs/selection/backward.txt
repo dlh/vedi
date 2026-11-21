@@ -9,9 +9,9 @@ abcdef
 End Shift+Left Shift+Left y
 -- screen --
 abcd[ef]
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap  [copied 2 chars]
 -- cursor --
 0 4

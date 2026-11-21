@@ -9,17 +9,17 @@ the rest of the run.
 abcdefghij
 -- screen --
 abcdef
-
+~
 <stdin
 -- keys --
 : "edge_markers yes" Enter
 -- screen --
 abcde[>]
-
+~
 <stdin
 -- keys --
 : "edge_markers no" Enter
 -- screen --
 abcdef
-
+~
 <stdin

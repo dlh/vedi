@@ -8,7 +8,7 @@ carriage return and a raw tab in its input.
 ab	c
 -- screen --
 a[^M]b    c
-
-
-
+~
+~
+~
 <stdin>  line 1/1  wrap           h help

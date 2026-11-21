@@ -13,7 +13,7 @@ Right Shift+Down Shift+Down Shift+Right Ctrl+C
 o[ne ]
 [two ]
 [th]ree
-
+~
 <stdin>  line 3/3  wrap  [copied 3 lines]
 -- cursor --
 2 2
@@ -27,7 +27,7 @@ Left
 one
 two
 three
-
+~
 <stdin>  line 3/3  wrap           h help
 -- cursor --
 2 1

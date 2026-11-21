@@ -14,8 +14,8 @@ Right v Down Right
 a[bc ]
 [de]f
 ghi
-
-
+~
+~
 <stdin>  line 2/3  wrap           h help
 -- cursor --
 1 2
@@ -25,8 +25,8 @@ v
 abc
 def
 ghi
-
-
+~
+~
 <stdin>  line 2/3  wrap           h help
 -- cursor --
 1 2
@@ -36,8 +36,8 @@ Down
 abc
 def
 ghi
-
-
+~
+~
 <stdin>  line 3/3  wrap           h help
 -- cursor --
 2 2

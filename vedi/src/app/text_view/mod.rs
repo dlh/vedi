@@ -39,6 +39,8 @@ pub struct Geometry {
     pub separators: bool,
     /// Text off the sides is marked with < and >, a wrapped row with \.
     pub edge_markers: bool,
+    /// A row below the text starts with a ~.
+    pub end_markers: bool,
 }
 
 impl Geometry {

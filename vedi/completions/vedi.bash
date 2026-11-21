@@ -60,6 +60,7 @@ _vedi() {
             --tab-width
             --edge-markers --no-edge-markers
             --file-separators --no-file-separators
+            --end-markers --no-end-markers
             --status-line --no-status-line
             --view-style --hint-order
             --config --completion

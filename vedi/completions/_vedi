@@ -24,6 +24,8 @@ _arguments -S \
     '(--edge-markers --no-edge-markers)--no-edge-markers[do not mark text off the sides or wrapped rows]' \
     '(--file-separators --no-file-separators)--file-separators[with several inputs, draw a row naming each]' \
     '(--file-separators --no-file-separators)--no-file-separators[draw no row naming each input]' \
+    '(--end-markers --no-end-markers)--end-markers[start each row below the text with ~]' \
+    '(--end-markers --no-end-markers)--no-end-markers[leave the rows below the text blank]' \
     '(--status-line --no-status-line)--status-line[draw the status line]' \
     '(--status-line --no-status-line)--no-status-line[draw the status line only for a prompt or a message]' \
     '--view-style=[draw the text in color, plain or with its escapes as text]:style:(color plain raw)' \

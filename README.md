@@ -61,6 +61,7 @@ zsh and fish; an archive holds them in `man/` and `completions/`. See
       --tab-width N                draw a tab as N cells (default: 8)
       --[no-]edge-markers          mark text off the sides with < and >, a wrapped row with \ (default: off)
       --[no-]file-separators       with several inputs, draw a row naming each (default: on)
+      --[no-]end-markers          start each row below the text with ~ (default: on)
       --[no-]status-line           draw the status line; off, only for a prompt or a message (default: on)
       --view-style STYLE           draw the text in color, without (plain) or with its escapes as text (raw)
       --hint-order ORDER           number hints from the top (top_down) or the bottom (bottom_up)

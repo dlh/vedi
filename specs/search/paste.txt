@@ -12,18 +12,18 @@ bar
 -- screen --
 foo {{bar}}
 {bar}
-
-
-
+~
+~
+~
 /bar                                 1/2
 -- keys --
 Enter
 -- screen --
 foo {{bar}}
 {bar}
-
-
-
+~
+~
+~
 <stdin>  line 1/2  /bar  1/2  wrap
 -- cursor --
 0 4

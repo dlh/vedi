@@ -11,7 +11,7 @@ abcde日f
 Right Right Right Right Right
 -- screen --
 bcde日
-
+~
 <stdin
 -- cursor --
 0 4

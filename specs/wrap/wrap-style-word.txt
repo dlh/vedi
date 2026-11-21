@@ -14,8 +14,8 @@ the quick brown fox jumps over the lazy dog
 -- screen --
 the quick brown fox
 jumps over the lazy dog
-
-
+~
+~
 fox  line 1/1  word wrap
 -- keys --
 Down

@@ -7,7 +7,7 @@ terminals draw it: the text after it and the cursor line up.
 1️⃣x
 -- screen --
 1️⃣x
-
+~
 <stdin>  line 1/1  w
 -- keys --
 Right

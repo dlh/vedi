@@ -10,5 +10,5 @@ would otherwise skip the marker as the character's second half.
 abcd界gh
 -- screen --
 abcd [>]
-
+~
 <stdin

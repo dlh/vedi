@@ -8,5 +8,5 @@ ESC ] 2 ; ~/src BEL.
 ]2;~/srctext
 -- screen --
 text
-
+~
 ~/src  line 1/1  wrap   h help

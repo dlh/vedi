@@ -16,9 +16,9 @@ cd
 -- screen --
 ab
 cd
-
-
-
+~
+~
+~
 f.txt  line 2/2  wrap             h help
 -- cursor --
 1 2

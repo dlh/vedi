@@ -15,8 +15,8 @@ foo three
 {{foo}}[ one]
 {foo} two
 {foo} three
-
-
+~
+~
 &foo                                 3/5
 -- cursor --
 5 4
@@ -26,8 +26,8 @@ Ctrl+u "ba"
 {{ba}}[r]
 {ba}z
 
-
-
+~
+~
 &ba                                  2/5
 -- keys --
 Esc Esc &
@@ -44,6 +44,6 @@ Esc & "ba" Enter Enter / "foo" Enter &
 {{ba}}[r]
 {ba}z
 
-
-
+~
+~
 &ba                                  2/5

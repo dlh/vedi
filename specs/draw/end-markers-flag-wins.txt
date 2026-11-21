@@ -1,0 +1,16 @@
+--no-end-markers leaves the rows below the text blank over a config that
+draws them.
+
+-- size --
+40x4
+-- config --
+end_markers yes
+-- args --
+--no-end-markers
+-- input --
+hello
+-- screen --
+hello
+
+
+<stdin>  line 1/1  wrap           h help

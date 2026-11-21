@@ -11,5 +11,5 @@ view_style raw
 [31mred[0m end
 -- screen --
 [^[][31mred[^[][0m end
-
+~
 <stdin>  line 1/1  wrap  raw      h help

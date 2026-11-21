@@ -195,7 +195,7 @@ fn view_style_plain() {
     assert_eq!(style(&a, 0, 0).fg, Color::Palette(1));
 }
 
-/// The wrap_width bar is dim, on text rows and the blank ones below.
+/// The wrap_width bar is dim, on text rows and the ~ ones below.
 #[test]
 fn wrap_width_guide_style() {
     let mut opts = options();
@@ -267,10 +267,10 @@ fn draw_blanks_what_it_leaves() {
     );
     a.handle(Event::Changed);
     finish_reload(&mut a, &gens, 0, "x\n");
-    for (y, want) in ["x", "", ""].into_iter().enumerate() {
+    for (y, want) in ["x", "~", "~"].into_iter().enumerate() {
         assert_eq!(row(&a, y), want, "row {y}");
     }
-    for x in 0..20 {
+    for x in 1..20 {
         let c = a.terminal().cell(x, 1);
         assert_eq!((c.style, c.width), (Style::default(), 1), "cell {x}");
     }

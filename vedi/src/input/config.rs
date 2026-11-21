@@ -313,7 +313,7 @@ mod tests {
             ]
         );
         assert_eq!(parse("empty", ""), Ok(Config::default()));
-        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, auto_reload, status_line, view_style, copy_on_select, hint_order or open_cmd";
+        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, end_markers, auto_reload, status_line, view_style, copy_on_select, hint_order or open_cmd";
         let bad = [
             (
                 "map h left\nbind j down\n",
@@ -578,6 +578,11 @@ mod tests {
     #[test]
     fn file_separators() {
         check_yes_no("file_separators", |s| s.file_separators);
+    }
+
+    #[test]
+    fn end_markers() {
+        check_yes_no("end_markers", |s| s.end_markers);
     }
 
     #[test]

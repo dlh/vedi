@@ -9,35 +9,35 @@ bar
 & "foo" Enter Esc & "bar" Enter Esc & "baz" Esc & Up
 -- screen --
 {{bar}}
-
-
-
-
+~
+~
+~
+~
 &bar                                 1/2
 -- keys --
 Up
 -- screen --
 {{foo}}
 
-
-
-
+~
+~
+~
 &foo                                 1/2
 -- keys --
 Down Down
 -- screen --
 foo
 bar
-
-
-
+~
+~
+~
 &                                    2/2
 -- keys --
 "ba"
 -- screen --
 {{ba}}[r]
-
-
-
-
+~
+~
+~
+~
 &ba                                  1/2

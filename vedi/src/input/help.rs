@@ -91,6 +91,7 @@ const SECTIONS: &[HelpSection] = {
                     &[Cyc("file_separators")],
                     "Toggle the rows naming the inputs",
                 ),
+                bound(&[Cyc("end_markers")], "Toggle the end markers"),
                 bound(&[Cyc("auto_reload")], "Toggle reloading a changed file"),
                 bound(&[Cyc("status_line")], "Toggle the status line"),
                 bound(

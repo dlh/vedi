@@ -13,21 +13,21 @@ the quick brown fox jumps over the lazy dog
 the quick brown fox │
 jumps over the lazy │
 dog                 │
-                    │
+~                   │
 <stdin>  line 1/1  wrap           h help
 -- keys --
 w
 -- screen --
 the quick brown fox jumps over the lazy
-
-
-
+~
+~
+~
 <stdin>  line 1/1  nowrap         h help
 -- keys --
 w : "wrap_width 0" Enter
 -- screen --
 the quick brown fox jumps over the lazy
 dog
-
-
+~
+~
 <stdin>  line 1/1  wrap           h help

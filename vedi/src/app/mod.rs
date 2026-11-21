@@ -322,6 +322,7 @@ impl<T: Terminal> App<T> {
             wrap_style: self.settings.wrap_style,
             separators: self.settings.file_separators && self.names.len() > 1,
             edge_markers: self.settings.edge_markers,
+            end_markers: self.settings.end_markers,
         }
     }
 

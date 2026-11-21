@@ -8,10 +8,10 @@ line 1
 : "cycle wrap_style" Left Left Left Left Left Cmd+Backspace
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :style
 -- cursor --
 5 1
@@ -19,10 +19,10 @@ line 1
 Cmd+Backspace
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :style
 -- cursor --
 5 1
@@ -30,10 +30,10 @@ line 1
 End Ctrl+u
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 :
 -- cursor --
 5 1
@@ -41,10 +41,10 @@ line 1
 Esc / "line 1" Ctrl+u
 -- screen --
 line 1
-
-
-
-
+~
+~
+~
+~
 /
 -- cursor --
 5 1

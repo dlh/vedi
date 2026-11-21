@@ -9,10 +9,10 @@ abc
 Ctrl+Space Right Right
 -- screen --
 [ab]c
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 1/1  wrap           h help
 -- cursor --
 0 2

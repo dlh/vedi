@@ -1,7 +1,7 @@
 A search, n or N that lands on a row off the screen scrolls that row to
 the top, not just into view, so the text after the match shows. A match
 already on screen does not scroll, and one in the last screenful shows
-the last screenful, not blank rows, from either side. The count names
+the last screenful, not rows past the end, from either side. The count names
 the last match visited until the next lands.
 
 -- input --
@@ -75,10 +75,10 @@ G
 wheel down 2
 -- screen --
 line 20
-
-
-
-
+~
+~
+~
+~
 <stdin>  line 20/20  /foo  2/3  wrap
 -- keys --
 N

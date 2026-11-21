@@ -12,14 +12,14 @@ Shift+Right
 -- screen --
 [o]ne two
 three four
-
+~
 <stdin>  line 1/2  wrap           h help
 -- mouse --
 click 1 6
 -- screen --
 one two
 three four
-
+~
 <stdin>  line 2/2  wrap           h help
 -- cursor --
 1 6

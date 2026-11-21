@@ -7,10 +7,10 @@ abc
 : "quit 1" Enter
 -- screen --
 abc
-
-
-
-
+~
+~
+~
+~
 [quit takes no argument]            h help
 -- keys --
 : "quit" Enter

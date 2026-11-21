@@ -18,12 +18,12 @@ q
 -- screen --
 {{a}}
 
-
+~
 &a  1/1  line 1/2  wrap                               h help
 -- keys --
 w
 -- screen --
 {{a}}
 
-
+~
 &a  1/1  line 1/2  nowrap                             h help

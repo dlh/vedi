@@ -9,24 +9,24 @@ abcdefghijklmnopqrstuvwxyz0123
 -- screen --
 abcdefghijklmnopqrstuvwxyz
 0123
-
-
+~
+~
 <stdin>  line 1/1  wrap
 -- keys --
 w
 -- screen --
 abcdefghijklmnopqrstuvwxyz
-
-
-
+~
+~
+~
 <stdin>  line 1/1  nowrap
 -- keys --
 End w
 -- screen --
 abcdefghijklmnopqrstuvwxyz
 0123
-
-
+~
+~
 <stdin>  line 1/1  wrap
 -- cursor --
 1 4

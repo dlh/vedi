@@ -8,13 +8,13 @@ when fewer than two spaces would separate it from the text.
 abc
 -- screen --
 abc
-
+~
 <stdin>  line 1/1  wrap   h help
 -- resize --
 30x3
 -- screen --
 abc
-
+~
 <stdin>  line 1/1  wrap
 -- resize --
 40x3
@@ -22,5 +22,5 @@ abc
 y
 -- screen --
 abc
-
+~
 [nothing selected]                  h help

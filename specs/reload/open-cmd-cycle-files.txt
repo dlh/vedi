@@ -25,7 +25,7 @@ O
 # A
 ━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 B
-
+~
 [open_cmd mdcat %s]                 h help
 -- keys --
 O
@@ -34,7 +34,7 @@ O
 A
 ━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 B
-
+~
 a.md 1/2  line 1/1  wrap  [open_cmd '']
 -- keys --
 O
@@ -43,5 +43,5 @@ O
 # A
 ━━ b.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 *B*
-
+~
 [open_cmd bat %s]                   h help

@@ -11,7 +11,7 @@ line 1
 -- screen --
 line 1
 
-
+~
 <stdin>  line 1/1  wrap  reading…
 -- cursor --
 0 0
@@ -21,7 +21,7 @@ line 3
 -- screen --
 line 3
 
-
+~
 <stdin>  line 3/3  wrap  reading…
 -- cursor --
 0 0

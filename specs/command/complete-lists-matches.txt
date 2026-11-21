@@ -11,34 +11,34 @@ line 1
 : "w" Tab
 -- screen --
 line 1
-
-
+~
+~
 :wr  wrap  wrap_style  wrap_width  write
 -- keys --
 "_"
 -- screen --
 line 1
-
-
+~
+~
 :wr_
 -- keys --
 Esc : "wrap_style " Tab
 -- screen --
 line 1
-
-
+~
+~
 :wrap_style word   [word]  char
 -- keys --
 Esc : Tab
 -- screen --
 line 1
-
-
+~
+~
 :auto_reload   [auto_reload]  copy_on_select  cycle  edge_mark
 -- keys --
 Esc : "map x select_h" Tab
 -- screen --
 line 1
-
-
+~
+~
 :map x select_half_page_down   [select_half_page_down]  select

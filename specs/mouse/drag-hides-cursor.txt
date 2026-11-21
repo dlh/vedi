@@ -18,7 +18,7 @@ move 2 2
 o[ne ]
 [two ]
 [thr]ee
-
+~
 <stdin>  line 3/3  wrap           h help
 -- cursor --
 hidden

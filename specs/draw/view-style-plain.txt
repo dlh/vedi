@@ -9,5 +9,5 @@ view_style plain
 line 1
 -- screen --
 line 1
-
+~
 <stdin>  line 1/1  wrap  plain    h help

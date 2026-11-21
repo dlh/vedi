@@ -19,8 +19,8 @@ s
 <3>oo bar foo
 <2>az
 <1> foo
-
-
+~
+~
 -- keys --
 2
 -- cursor --
@@ -32,8 +32,8 @@ top
 <3>{oo} bar <2>{oo}
 baz
 a <1>{{oo}}
-
-
+~
+~
 -- keys --
 2
 -- cursor --

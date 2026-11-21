@@ -13,7 +13,7 @@ Shift+Right
 -- screen --
 [    ]│
 x   │
-    │
+~   │
 <stdin>  line 1/1  wrap
 -- cursor --
 1 0

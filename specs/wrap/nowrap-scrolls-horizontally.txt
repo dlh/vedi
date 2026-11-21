@@ -9,17 +9,17 @@ least amount that keeps the cursor on screen.
 abcdefghij
 -- screen --
 abcd
-
-
-
+~
+~
+~
 <std
 -- keys --
 End
 -- screen --
 hij
-
-
-
+~
+~
+~
 <std
 -- cursor --
 0 3
@@ -27,9 +27,9 @@ hij
 Home
 -- screen --
 abcd
-
-
-
+~
+~
+~
 <std
 -- cursor --
 0 0

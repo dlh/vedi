@@ -14,17 +14,17 @@ f.json
 O
 -- screen --
 {"a":1}
-
-
-
-
+~
+~
+~
+~
 f.json  line 1/1  wrap  [open_cmd '']
 -- keys --
 O
 -- screen --
 { "a": 1 }
-
-
-
-
+~
+~
+~
+~
 f.json  line 1/1  wrap  [open_cmd jq %s]

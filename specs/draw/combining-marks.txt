@@ -10,8 +10,8 @@ éx
 Shift+Right
 -- screen --
 [é]x
-
-
+~
+~
 <stdin>  line 1/1  wrap           h help
 -- cursor --
 0 1

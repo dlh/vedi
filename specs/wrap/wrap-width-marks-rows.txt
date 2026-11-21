@@ -13,5 +13,5 @@ the quick brown fox jumps over the lazy dog
 the quick brown fox[\]│
  jumps over the laz[\]│
 y dog               │
-                    │
+~                   │
 <stdin>  line 1/1  wrap           h help

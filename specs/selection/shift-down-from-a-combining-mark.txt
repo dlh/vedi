@@ -11,8 +11,8 @@ ábc
 -- screen --
 first
 {á}[bc]
-
-
+~
+~
 [copied 3 chars]                    h help
 -- cursor --
 1 3
