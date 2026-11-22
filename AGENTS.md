@@ -28,6 +28,7 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
   one `make -s next-version` prints, without the `v`; when it fails, the last
   tag's.
 - Docs, comments and commit messages are terse: say it once, in as few words as
-  read clearly. No preamble, no restating the code.
+  read clearly. No preamble, no restating the code. A commit message says what
+  the commit does, not what it leaves out.
 - A comment says why, or what the code cannot show: a constraint, a case it
   guards against. Never what the code does; delete one that only repeats it.
