@@ -131,7 +131,7 @@ is a file of `color` lines: `include themes/NAME.conf`.
 Homebrew installs example themes in `$(brew --prefix)/share/vedi/themes/`, the
 AUR packages in `/usr/share/vedi/themes/`, and a release archive holds them in
 `themes/`. Include one from there, or copy it to `~/.config/vedi/themes/` to
-change it.
+change it. [themes.md](themes.md) shows each.
 
     color selection      on #3a3d4a
     color match          black on #e5c07b

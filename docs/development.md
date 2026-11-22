@@ -69,7 +69,10 @@ benchmarked until vedi 1.9.0 and then dropped.
 `docs/media/sample.txt`, lorem ipsum with SGR colors and an OSC 8 link, the
 third over `vedi/src/app/status.rs`, read through bat as the `open_cmd`. vedi
 runs with its defaults otherwise: the config home is `docs/media`, which holds
-no config. Run it after a change to the drawing, and commit the gifs it
+no config. It then runs `bin/theme-previews`, which fills in
+`docs/media/theme.tape` for each theme in `vedi/themes/` and writes a screenshot
+to `docs/media/themes/`; a new theme needs its terminal colors added to the
+script. Run it after a change to the drawing or a theme, and commit what it
 rewrites.
 
 Commit messages follow

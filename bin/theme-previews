@@ -1,0 +1,41 @@
+#!/bin/sh
+# Writes docs/media/themes/NAME.png for each theme in vedi/themes, from
+# docs/media/theme.tape, with the terminal colors the theme is for.
+# Needs vedi and vhs on PATH; run from `make media`.
+set -eu
+
+# The vhs theme, by name or as JSON, whose background a vedi theme names
+# in its header.
+terminal() {
+    case $1 in
+        catppuccin-latte) echo '"Catppuccin Latte"' ;;
+        catppuccin-mocha) echo '"Catppuccin Mocha"' ;;
+        # vhs's Dracula is an older one, on #1e1f29.
+        dracula) echo '{"name":"Dracula","background":"#282a36","foreground":"#f8f8f2","selection":"#44475a","cursor":"#f8f8f2","black":"#21222c","red":"#ff5555","green":"#50fa7b","yellow":"#f1fa8c","blue":"#bd93f9","magenta":"#ff79c6","cyan":"#8be9fd","white":"#f8f8f2","brightBlack":"#6272a4","brightRed":"#ff6e6e","brightGreen":"#69ff94","brightYellow":"#ffffa5","brightBlue":"#d6acff","brightMagenta":"#ff92df","brightCyan":"#a4ffff","brightWhite":"#ffffff"}' ;;
+        gruvbox-dark) echo '"GruvboxDark"' ;;
+        mono) echo '"Builtin Dark"' ;;
+        nord) echo '"nord"' ;;
+        solarized-dark) echo '"Builtin Solarized Dark"' ;;
+        solarized-light) echo '"Builtin Solarized Light"' ;;
+        *)
+            echo "no terminal theme for $1" >&2
+            exit 1
+            ;;
+    esac
+}
+
+main() {
+    cd "$(git rev-parse --show-toplevel)"
+    # vhs takes only a name ending in .tape.
+    dir=$(mktemp -d)
+    trap 'rm -rf "$dir"' EXIT
+    for conf in vedi/themes/*.conf; do
+        name=$(basename "$conf" .conf)
+        term=$(terminal "$name")
+        sed "s/@NAME@/$name/g; s/@TERMINAL@/$term/g" docs/media/theme.tape \
+            >"$dir/$name.tape"
+        vhs -q -o "$dir/$name.gif" "$dir/$name.tape"
+    done
+}
+
+main "$@"
