@@ -1,4 +1,5 @@
 use std::fmt;
+use std::num::NonZeroU16;
 
 /// What a terminal would show. A pager that draws with tcell sends only
 /// the cells that changed, so a wait must look at the screen, not the
@@ -7,7 +8,8 @@ pub struct Screen(vt100::Parser);
 
 impl Screen {
     pub fn new(rows: u16, cols: u16) -> Self {
-        Screen(vt100::Parser::new(rows, cols, 0))
+        let size = |n| NonZeroU16::new(n).expect("screen size is not zero");
+        Screen(vt100::Parser::new(size(rows), size(cols), 0))
     }
 
     pub fn write(&mut self, bytes: &[u8]) {
@@ -17,7 +19,10 @@ impl Screen {
     /// Whether a row shows text.
     pub fn contains(&self, text: &str) -> bool {
         let (_, cols) = self.0.screen().size();
-        self.0.screen().rows(0, cols).any(|row| row.contains(text))
+        self.0
+            .screen()
+            .rows(0, cols.get())
+            .any(|row| row.contains(text))
     }
 }
 
@@ -25,7 +30,7 @@ impl Screen {
 impl fmt::Display for Screen {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (_, cols) = self.0.screen().size();
-        for row in self.0.screen().rows(0, cols) {
+        for row in self.0.screen().rows(0, cols.get()) {
             writeln!(f, "{}", row.trim_end())?;
         }
         Ok(())
