@@ -1,4 +1,4 @@
-.PHONY: build install test licenses bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
+.PHONY: build install test licenses audit outdated bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
 
 build:
 	cargo build --release -p vedi
@@ -46,6 +46,13 @@ fmt:
 tidy:
 	cargo metadata --locked --format-version 1 >/dev/null
 
+# Needs cargo-audit (mise install).
+audit:
+	cargo audit
+
+outdated:
+	cargo update --dry-run --verbose
+
 # Needs goreleaser (mise install) and a git remote.
 release-check:
 	goreleaser check
@@ -70,7 +77,7 @@ aur:
 
 # Writes and commits the CHANGELOG.md entry unless it is there, then tags
 # HEAD with the next version; pushing the tag releases it.
-release-tag:
+release-tag: audit
 	@bin/release-tag
 
 clean:

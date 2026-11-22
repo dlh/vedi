@@ -3,6 +3,7 @@
 goreleaser = "2.19.0"
 vhs = "0.12.1"
 bat = "0.26.1"
+"github:rustsec/rustsec" = { version = "0.23.0", version_prefix = "cargo-audit/v" }
 
 [settings]
 lockfile = true

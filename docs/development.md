@@ -13,6 +13,8 @@ the secrets script need [gh](https://cli.github.com), at any version.
     make fmt            show what rustfmt would change (fails if any)
     make tidy           fail if Cargo.lock is out of date
     make licenses       write target/LICENSE-THIRD-PARTY; fail on a license .config/about.toml does not accept
+    make audit          fail on a RustSec vulnerability in Cargo.lock
+    make outdated       list dependency updates
     make bench          criterion benchmarks
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) as a baseline, then here against it, BENCH_COUNT (10) samples each
     make install        cargo install --path vedi --locked
@@ -113,6 +115,7 @@ subjects, commits it, tags HEAD and prints the push that releases it:
 
 To edit the entry first, `make changelog` writes it without committing
 (`bin/changelog` prints it instead); commit it, and `release-tag` only tags.
+`release-tag` stops when `make audit` fails.
 
 CI builds and tests linux amd64 and arm64 and darwin arm64, each on a runner of
 its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
