@@ -1,0 +1,3 @@
+# Two weeks for a compromised release to be caught and yanked. Cargo 1.100+.
+[registry]
+global-min-publish-age = "14 days"

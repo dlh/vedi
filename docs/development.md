@@ -14,7 +14,7 @@ the secrets script need [gh](https://cli.github.com), at any version.
     make tidy           fail if Cargo.lock is out of date
     make licenses       write target/LICENSE-THIRD-PARTY; fail on a license .config/about.toml does not accept
     make audit          fail on a RustSec vulnerability in Cargo.lock
-    make outdated       list dependency updates
+    make outdated       list dependency updates published at least two weeks ago
     make bench          criterion benchmarks
     make bench-compare  benchmarks at BENCH_GIT_BRANCH (main) as a baseline, then here against it, BENCH_COUNT (10) samples each
     make install        cargo install --path vedi --locked
