@@ -1,0 +1,30 @@
+A reload keeps the cursor on its line of its input: a file above it
+that shrank does not move it down the file it is in.
+
+-- size --
+28x7
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+b3
+-- keys --
+Down Down Down Down
+-- reload a.txt --
+a1
+-- screen --
+a1
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
+b1
+b2
+b3
+~
+b.txt 2/2  line 2/3  wrap
+-- cursor --
+3 0

@@ -1,0 +1,33 @@
+A file emptied on disk empties the list, and the pointer is back in
+its place when the text is: a save may truncate the file, then write
+it.
+
+-- args --
+f.txt
+-- input --
+a1
+a2
+a3
+b
+-- keys --
+& "a" Ctrl+n Enter
+-- reload --
+-- screen --
+~
+~
+~
+~
+~
+&a  0/0  wrap                     h help
+-- reload --
+a1
+a2
+a3
+b
+-- screen --
+{a}1
+{{a}}2
+{a}3
+
+~
+&a  2/3  line 2/4  wrap           h help

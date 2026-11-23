@@ -1,0 +1,48 @@
+One of several files emptied on disk hands the cursor to the next, and
+takes it back, where it was, with the text that comes back. After a
+key the cursor stays where it is, though the key brought it back.
+
+-- size --
+28x6
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+-- keys --
+Down
+-- reload a.txt --
+-- reload a.txt --
+a1
+a2
+a3
+-- screen --
+━━ a.txt ━━━━━━━━━━━━━━━━━━━
+a1
+a2
+a3
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
+a.txt 1/2  line 2/3  wrap
+-- cursor --
+2 0
+-- reload a.txt --
+-- keys --
+Down Up
+-- reload a.txt --
+a1
+a2
+a3
+-- screen --
+a1
+a2
+a3
+━━ b.txt ━━━━━━━━━━━━━━━━━━━
+b1
+b.txt 2/2  line 1/2  wrap
+-- cursor --
+4 0

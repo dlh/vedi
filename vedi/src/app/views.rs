@@ -67,6 +67,15 @@ impl Views {
         }
     }
 
+    /// `TextView::release`, for each view: a key in one may move
+    /// another.
+    pub(super) fn release(&mut self) {
+        self.shown.release();
+        for (_, v) in &mut self.under {
+            v.release();
+        }
+    }
+
     /// Shows `view` over the shown one, which it sets aside.
     pub(super) fn raise(&mut self, role: Role, view: TextView) {
         debug_assert!(role > self.role);

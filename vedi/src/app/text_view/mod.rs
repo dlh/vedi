@@ -122,6 +122,10 @@ pub struct TextView {
     count: Option<Count>,
     /// Times the text was changed under the view, as by a reload.
     edition: usize,
+    /// Where the cursor and the top were in the cursor's input, since
+    /// emptied; where the anchor was in its own.
+    held: Option<Held<(Pos, Row)>>,
+    held_anchor: Option<Held<Pos>>,
     laid: LaidCache,
     /// A line's chars, decoded into it rather than allocated per call.
     scratch: Vec<char>,
@@ -148,6 +152,8 @@ impl TextView {
             highlight: false,
             count: None,
             edition: 0,
+            held: None,
+            held_anchor: None,
             laid: LaidCache::new(geom.layout()),
             scratch: Vec::new(),
         }
@@ -288,6 +294,12 @@ impl TextView {
         if self.cur == cur && self.geom.mode == Mode::NoWrap {
             self.xoff = xoff;
         }
+    }
+
+    /// The user did something: a place held for an emptied input is
+    /// no longer where the view goes back to.
+    pub fn release(&mut self) {
+        (self.held, self.held_anchor) = (None, None);
     }
 
     /// The user placed the view: startup positioning stops.
@@ -478,19 +490,54 @@ impl TextView {
     /// cursor that was on the last line goes to the new last line, one
     /// past the text stays past it, and every position is clamped, the
     /// line to the last and the column to the line's end. The cursor
-    /// and the anchor each stay in the
-    /// input they were in: a file above that shrank would otherwise
-    /// hand them to the next. A top past the new end starts over from
-    /// the first row, so a text shorter than the screen fills it from
-    /// the top; a separator top stays one, which `snap` drops if the
-    /// line no longer starts an input. The view scrolls only to a
-    /// cursor that moved: new text is not a motion.
+    /// and the anchor each keep their line of the input they were in:
+    /// a file above that shrank would otherwise move them, or hand
+    /// them to the next. An input that empties holds the place each
+    /// had in it for the text that comes back, until `release`: a save
+    /// may truncate the file, then write it. A top
+    /// past the new end starts over from the first row, so a text
+    /// shorter than the screen fills it from the top; a separator top
+    /// stays one, which `snap` drops if the line no longer starts an
+    /// input. The view scrolls only to a cursor that moved: new text
+    /// is not a motion.
     pub fn change_text(&mut self, f: impl FnOnce(&mut Buffer)) {
-        let place = self.place();
+        let mut place = self.place();
+        let had_text = !self.buf.is_empty();
+        let before = (self.cur, self.top);
         f(&mut self.buf);
         self.edition += 1;
-        let was = self.cur;
         let n = self.buf.len();
+        let buf = &self.buf;
+        let mut held = self.held.take();
+        match held {
+            Some(h) if !part_is_empty(buf, h.place.cur.part) => {
+                place = Place {
+                    anchor: place.anchor,
+                    anchor_past: place.anchor_past,
+                    ..h.place
+                };
+                (self.cur, self.top) = h.was;
+                held = None;
+            }
+            None if had_text && part_is_empty(buf, place.cur.part) => {
+                held = Some(Held { place, was: before });
+            }
+            _ => {}
+        }
+        let mut held_anchor = self.held_anchor.take().filter(|_| self.anchor.is_some());
+        match (held_anchor, self.anchor, place.anchor) {
+            (Some(h), _, _) if h.place.anchor.is_some_and(|s| !part_is_empty(buf, s.part)) => {
+                place.anchor = h.place.anchor;
+                place.anchor_past = h.place.anchor_past;
+                self.anchor = Some(h.was);
+                held_anchor = None;
+            }
+            (None, Some(a), Some(s)) if had_text && part_is_empty(buf, s.part) => {
+                held_anchor = Some(Held { place, was: a });
+            }
+            _ => {}
+        }
+        let was = self.cur;
         let (buf, scratch) = (&self.buf, &mut self.scratch);
         let clamp = |p: Pos, scratch: &mut Vec<char>| {
             if n == 0 {
@@ -506,11 +553,11 @@ impl TextView {
         let line = if place.at_end {
             n.saturating_sub(1)
         } else {
-            self.cur.line
+            place.cur.line(buf)
         };
         self.cur = clamp(
             Pos {
-                line: within(buf, place.cur, line),
+                line: within(buf, place.cur.part, line),
                 col: self.cur.col,
             },
             scratch,
@@ -526,8 +573,8 @@ impl TextView {
                 scratch,
             ));
         }
-        if let (Some(a), Some(part)) = (&mut self.anchor, place.anchor) {
-            a.line = within(buf, part, a.line);
+        if let (Some(a), Some(spot)) = (&mut self.anchor, place.anchor) {
+            a.line = within(buf, spot.part, spot.line(buf));
             *a = clamp(*a, scratch);
         }
         self.laid.clear();
@@ -544,6 +591,7 @@ impl TextView {
         if self.count.is_some() {
             self.recount();
         }
+        (self.held, self.held_anchor) = (held, held_anchor);
     }
 
     fn place(&mut self) -> Place {
@@ -552,8 +600,16 @@ impl TextView {
             at_end: self.cur.line + 1 >= self.buf.len(),
             past: self.at_end_row(),
             anchor_past: anchor.is_some_and(|a| self.is_end_row(Row::text(a))),
-            cur: self.buf.part_at(self.cur.line),
-            anchor: anchor.map(|a| self.buf.part_at(a.line)),
+            cur: self.spot(self.cur.line),
+            anchor: anchor.map(|a| self.spot(a.line)),
+        }
+    }
+
+    fn spot(&self, line: usize) -> Spot {
+        let (part, lines) = self.buf.part(line);
+        Spot {
+            part,
+            off: line.saturating_sub(lines.start),
         }
     }
 }
@@ -571,6 +627,36 @@ pub(super) fn within(buf: &Buffer, part: usize, line: usize) -> usize {
     line.clamp(lo, hi)
 }
 
+/// Whether input `part` of `buf` has no lines.
+fn part_is_empty(buf: &Buffer, part: usize) -> bool {
+    let n = buf.len();
+    let parts = buf.parts();
+    parts.get(part).map_or(n == 0, |&start| {
+        parts.get(part + 1).map_or(n, |&e| e.min(n)) <= start
+    })
+}
+
+/// A place in an input since emptied: the cursor's, with the top, or
+/// the anchor's.
+#[derive(Copy, Clone, Debug)]
+struct Held<T> {
+    place: Place,
+    was: T,
+}
+
+/// A line, as one of its input's.
+#[derive(Copy, Clone, Debug)]
+struct Spot {
+    part: usize,
+    off: usize,
+}
+
+impl Spot {
+    fn line(self, buf: &Buffer) -> usize {
+        buf.parts().get(self.part).copied().unwrap_or(0) + self.off
+    }
+}
+
 /// Where a view was before its text changed.
 #[derive(Copy, Clone, Debug)]
 struct Place {
@@ -579,7 +665,7 @@ struct Place {
     /// The cursor was on the end row, past the text; the anchor was.
     past: bool,
     anchor_past: bool,
-    /// The cursor's input, and the anchor's.
-    cur: usize,
-    anchor: Option<usize>,
+    /// The cursor's line, and the anchor's.
+    cur: Spot,
+    anchor: Option<Spot>,
 }

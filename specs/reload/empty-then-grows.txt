@@ -1,6 +1,6 @@
-A file emptied on disk draws nothing, and counts as the cursor being
-on the last line: when text comes back the cursor is on its last
-line.
+A file emptied on disk draws nothing, and the view keeps its place for
+the text that comes back: a save may truncate the file, then write it.
+A cursor that was on the last line is on the new last line.
 
 -- size --
 40x4
@@ -9,6 +9,9 @@ f.txt
 -- input --
 one
 two
+three
+-- keys --
+Down
 -- reload --
 -- screen --
 ~
@@ -23,9 +26,25 @@ b
 c
 d
 -- screen --
+a
+b
+c
+f.txt  line 2/4  wrap             h help
+-- cursor --
+1 0
+-- keys --
+G
+-- reload --
+-- reload --
+a
 b
 c
 d
-f.txt  line 4/4  wrap             h help
+e
+-- screen --
+c
+d
+e
+f.txt  line 5/5  wrap             h help
 -- cursor --
-2 0
+2 1

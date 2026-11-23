@@ -358,6 +358,7 @@ impl<T: Terminal> App<T> {
                 };
             }
             Event::Paste(text) => {
+                self.views.release();
                 if let Some(p) = self.prompt_mut() {
                     p.paste(&text);
                 }
@@ -367,7 +368,10 @@ impl<T: Terminal> App<T> {
                     _ => {}
                 }
             }
-            Event::Mouse(m) => return self.handle_mouse(m),
+            Event::Mouse(m) => {
+                self.views.release();
+                return self.handle_mouse(m);
+            }
             Event::Tick => self.tick(),
             Event::Copied => return self.copy_done(),
             Event::Changed => {
@@ -379,10 +383,11 @@ impl<T: Terminal> App<T> {
         Flow::Continue
     }
 
-    /// Records that the user did something: startup positioning stops
-    /// and the one-shot status clears.
+    /// Records that the user did something: startup positioning stops,
+    /// held places go and the one-shot status clears.
     fn act(&mut self) {
         self.views.shown.end_startup();
+        self.views.release();
         self.status = None;
         self.sync_view();
     }

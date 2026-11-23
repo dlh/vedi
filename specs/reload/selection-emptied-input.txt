@@ -1,0 +1,44 @@
+A selection's anchor in a file emptied on disk is back in its place
+with the text that comes back, as the cursor is, though the cursor is
+in another file. A selection made since is kept as made.
+
+-- size --
+28x8
+-- args --
+a.txt b.txt
+-- input --
+a1
+a2
+a3
+-- next-file --
+-- input --
+b1
+b2
+-- keys --
+Down Shift+Down Shift+Down Shift+End
+-- reload a.txt --
+-- reload a.txt --
+a1
+a2
+a3
+-- cursor --
+5 2
+-- keys --
+y
+-- clipboard --
+a2
+a3
+b1
+-- keys --
+Esc Home Up Up Shift+Down Shift+Down Shift+End
+-- reload a.txt --
+-- keys --
+Esc Shift+Home
+-- reload a.txt --
+a1
+a2
+a3
+-- keys --
+y
+-- clipboard --
+b1
