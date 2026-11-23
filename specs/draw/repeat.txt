@@ -1,0 +1,27 @@
+A repeat, ESC [ n b, draws the character before it n more times. ESC
+[ b is once more. At the start of a line or after a cursor forward
+there is nothing to repeat, and it draws nothing. Search matches the
+repeated characters. The input holds raw escapes.
+
+-- size --
+40x5
+-- input --
++-[8b+
+[3bab[bc
+a[C[3bz
+-- screen --
++---------+
+abbc
+a z
+~
+<stdin>  line 1/3  wrap           h help
+-- keys --
+/ "bb" Enter
+-- screen --
++---------+
+a{{bb}}c
+a z
+~
+<stdin>  line 2/3  /bb  1/1  wrap
+-- cursor --
+1 1

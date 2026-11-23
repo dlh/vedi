@@ -102,6 +102,10 @@ impl Matcher {
         if fold && a.is_ascii_lowercase() {
             anchor.push(a.to_ascii_uppercase());
         }
+        // A cursor forward, ESC [ C, draws spaces the bytes do not hold.
+        if a == b' ' {
+            anchor.push(0x1b);
+        }
         m.bytes = Some(Prefilter { raw, anchor, loose });
         m
     }
@@ -606,6 +610,13 @@ mod tests {
             ("É", "CAFÉ", true),
             ("\u{FFFD}", "plain", true),
             ("kiki", "plain", true),
+            // A cursor forward draws spaces, a repeat its char again.
+            ("e t", "once\x1b[1Cthe", true),
+            ("  ", "a\x1b[2Cb", true),
+            ("  ", "a\x1b[31mb", false),
+            ("abbb", "ab\x1b[2b", true),
+            ("abbb", "ab\x1b[1b", false),
+            ("a  a", "a\x1b[2Ca\x1b[b", true),
         ] {
             let mut scratch = Vec::new();
             assert_eq!(
@@ -694,6 +705,7 @@ mod tests {
             "ab \x1b]0;foo",
             "\x1b]0;foo\x07bar",
             "",
+            "end\x1b[2Cfo\x1b[bk\x1b[3b",
         ];
         let mut lines: Vec<Vec<u8>> = (0..2 * BLOCK_LINES + 9)
             .map(|i| {
@@ -716,7 +728,7 @@ mod tests {
     }
 
     /// Patterns that exercise folding, the byte filter and U+FFFD.
-    const ODD_PATS: [&str; 18] = [
+    const ODD_PATS: [&str; 21] = [
         "foo",
         "Foo",
         "FOO",
@@ -735,6 +747,9 @@ mod tests {
         "x",
         "zzz",
         "end",
+        "end  foo",
+        "  ",
+        "kkkk",
     ];
 
     /// From every position, `next` and `prev` find what decoding every

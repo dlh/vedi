@@ -1,0 +1,27 @@
+A cursor forward, ESC [ n C, is drawn as n spaces: a terminal leaves
+the cells it moves past blank. ESC [ C is one. Search matches across
+the spaces and copy sends them. The input holds raw escapes.
+
+-- size --
+40x4
+-- input --
+once[Cthe[3Clast
+[2Cindented
+-- screen --
+once the   last
+  indented
+~
+<stdin>  line 1/2  wrap           h help
+-- keys --
+/ "e t" Enter
+-- screen --
+onc{{e t}}he   last
+  indented
+~
+<stdin>  line 1/2  /e t  1/1  wrap
+-- cursor --
+0 3
+-- keys --
+Home Shift+End y
+-- clipboard --
+once the   last

@@ -1,12 +1,19 @@
 //! Raw terminal output into text plus style runs.
 
 use std::fmt;
+use std::iter::repeat_n;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::view::render::{osc8, sgr};
 use crate::view::style::{Attrs, Color, Style};
 
 const ESC: u8 = 0x1b;
+
+/// The most chars a cursor forward or a repeat adds: wider than any
+/// screen, so a capture loses nothing, and bounded so a few bytes cannot
+/// grow a line without limit.
+const MAX_COUNT: usize = 4096;
 
 /// An OSC 8 hyperlink. An empty `url` is no link, though it may carry
 /// an `id`.
@@ -51,9 +58,11 @@ impl Parser {
 
     /// Replaces `text` and `runs` with one line's visible chars and the
     /// runs covering them. A line is given without its ending. SGR changes
-    /// the style and OSC 8 the link; every other escape is skipped whole,
-    /// as is one cut off by the end of the line. C0 controls other than
-    /// `\t` and `\r` are dropped.
+    /// the style and OSC 8 the link. A cursor forward, CSI n C, is n spaces
+    /// in no style or link, since the cells it passes were never written; a
+    /// repeat, CSI n b, is n more of the char before it. Every other escape
+    /// is skipped whole, as is one cut off by the end of the line. C0
+    /// controls other than `\t` and `\r` are dropped.
     pub fn parse(&mut self, line: &[u8], text: &mut Vec<char>, runs: &mut Vec<Run>) {
         runs.clear();
         self.parse_into(line, text, Some(runs));
@@ -115,6 +124,9 @@ impl Parser {
         text.reserve(line.len());
         let mut start = 0;
         let (mut style, mut link) = (self.style, self.link.clone());
+        // Where the last cursor forward's spaces end: a repeat there has
+        // no char to repeat.
+        let mut gap_end = 0;
         let mut i = 0;
         while i < line.len() {
             match line[i] {
@@ -122,7 +134,31 @@ impl Parser {
                     let Some((n, esc)) = escape(&line[i..]) else {
                         break;
                     };
-                    self.apply(esc);
+                    match esc {
+                        Escape::Other => match fill(&line[i..i + n]) {
+                            Some(Fill::Forward(k)) => {
+                                if style != Style::default() || link.is_some() {
+                                    close_run(&mut runs, &mut start, text.len(), style, &link);
+                                    (style, link) = (Style::default(), None);
+                                }
+                                text.extend(repeat_n(' ', k));
+                                gap_end = text.len();
+                            }
+                            Some(Fill::Repeat(k)) => {
+                                if let Some(&c) = text.last()
+                                    && text.len() != gap_end
+                                    && c != '\t'
+                                    && c != '\r'
+                                {
+                                    text.extend(repeat_n(c, k));
+                                }
+                            }
+                            None => {}
+                        },
+                        esc => {
+                            self.apply(esc);
+                        }
+                    }
                     if self.style != style || self.link != link {
                         close_run(&mut runs, &mut start, text.len(), style, &link);
                         (style, link) = (self.style, self.link.clone());
@@ -169,18 +205,46 @@ fn close_run(
     *start = end;
 }
 
-/// Replaces `dst` with the line's bytes outside its escapes: what `parse`
+/// Replaces `dst` with the line's bytes outside its escapes, a cursor
+/// forward's spaces and a repeat's chars among them: what `parse`
 /// decodes, before it drops controls.
 pub fn strip(mut line: &[u8], dst: &mut Vec<u8>) {
     dst.clear();
+    let mut gap_end = 0;
     while let Some(i) = line.iter().position(|&c| c == ESC) {
         dst.extend_from_slice(&line[..i]);
         let Some((n, _)) = escape(&line[i..]) else {
             return;
         };
+        match fill(&line[i..i + n]) {
+            Some(Fill::Forward(k)) => {
+                dst.resize(dst.len() + k, b' ');
+                gap_end = dst.len();
+            }
+            Some(Fill::Repeat(k)) if dst.len() != gap_end => {
+                let end = dst.len();
+                let from = last_char(dst);
+                if !matches!(dst[from], b'\t' | b'\r') {
+                    for _ in 0..k {
+                        dst.extend_from_within(from..end);
+                    }
+                }
+            }
+            _ => {}
+        }
         line = &line[i + n..];
     }
     dst.extend_from_slice(line);
+}
+
+/// Where the last char of `b`, which is not empty, starts. A byte that
+/// ends no valid char is one of its own, as `decode` reads it: a run of
+/// stray continuation bytes must not repeat whole.
+fn last_char(b: &[u8]) -> usize {
+    let n = b.len();
+    (n.saturating_sub(4)..n)
+        .find(|&s| std::str::from_utf8(&b[s..]).is_ok_and(|t| t.chars().count() == 1))
+        .unwrap_or(n - 1)
 }
 
 /// Replaces `dst` with the line's bytes as chars, escapes and controls
@@ -244,6 +308,9 @@ pub struct Printer {
     view: ViewStyle,
     styled: bool,
     linked: bool,
+    /// The style and link in effect, to restore after a cursor forward's
+    /// spaces, which go out in neither.
+    state: Parser,
 }
 
 impl Printer {
@@ -252,6 +319,7 @@ impl Printer {
             view,
             styled: false,
             linked: false,
+            state: Parser::default(),
         }
     }
 
@@ -260,6 +328,8 @@ impl Printer {
     /// cover earlier.
     pub fn line(&mut self, line: &[u8], out: &mut Vec<u8>) {
         out.clear();
+        // The bytes in `out` of the char a repeat repeats.
+        let mut last: Option<std::ops::Range<usize>> = None;
         let mut i = 0;
         while i < line.len() {
             match line[i] {
@@ -269,12 +339,14 @@ impl Printer {
                     };
                     match esc {
                         Escape::Sgr(params) => {
+                            self.state.apply(esc);
                             if self.view == ViewStyle::Color {
                                 out.extend_from_slice(&line[i..i + n]);
                                 self.styled = !params.is_empty() && params != b"0";
                             }
                         }
                         Escape::Osc(osc) => {
+                            self.state.apply(esc);
                             if let Some((url, _)) = link(osc)
                                 && std::str::from_utf8(osc)
                                     .is_ok_and(|s| !s.chars().any(char::is_control))
@@ -283,12 +355,41 @@ impl Printer {
                                 self.linked = !url.is_empty();
                             }
                         }
-                        _ => {}
+                        Escape::Other => match fill(&line[i..i + n]) {
+                            Some(Fill::Forward(k)) => {
+                                let (style, link) = self.state.state();
+                                let styled =
+                                    self.view == ViewStyle::Color && style != Style::default();
+                                if styled {
+                                    out.extend_from_slice(b"\x1b[m");
+                                }
+                                if self.linked {
+                                    out.extend_from_slice(b"\x1b]8;;\x1b\\");
+                                }
+                                out.resize(out.len() + k, b' ');
+                                if styled {
+                                    sgr(out, style);
+                                }
+                                if self.linked {
+                                    osc8(out, None, link.as_ref());
+                                }
+                                last = None;
+                            }
+                            Some(Fill::Repeat(k)) => {
+                                if let Some(r) = last.clone() {
+                                    for _ in 0..k {
+                                        out.extend_from_within(r.clone());
+                                    }
+                                }
+                            }
+                            None => {}
+                        },
                     }
                     i += n;
                 }
                 b'\r' => {
                     out.extend_from_slice(b"^M");
+                    last = None;
                     i += 1;
                 }
                 c @ (0..0x20 | 0x7f) if c != b'\t' => {
@@ -298,13 +399,16 @@ impl Printer {
                     i += 1;
                 }
                 c @ 0..0x80 => {
+                    last = (c != b'\t').then(|| out.len()..out.len() + 1);
                     out.push(c);
                     i += 1;
                 }
                 _ => {
                     let (c, n) = decode(&line[i..]);
                     if !c.is_control() {
+                        let at = out.len();
                         out.extend_from_slice(c.encode_utf8(&mut [0; 4]).as_bytes());
+                        last = Some(at..out.len());
                     }
                     i += n;
                 }
@@ -341,6 +445,47 @@ enum Escape<'a> {
     /// The body between `ESC ]` and its terminator, possibly empty.
     Osc(&'a [u8]),
     Other,
+}
+
+/// A CSI that stands for text.
+enum Fill {
+    /// CSI n C, cursor forward: n blank cells.
+    Forward(usize),
+    /// CSI n b: the char before it n more times.
+    Repeat(usize),
+}
+
+/// The fill `esc`, a whole escape `escape` read as `Other`, stands for.
+/// Kept out of `escape`, which the index runs on every escape: there it
+/// cost 5 to 10% though the index never reads a fill. The final byte is
+/// checked inline, since search strips every escape of every line.
+#[inline]
+fn fill(esc: &[u8]) -> Option<Fill> {
+    match esc.last() {
+        Some(b'C' | b'b') => counted_fill(esc),
+        _ => None,
+    }
+}
+
+#[inline(never)]
+fn counted_fill(esc: &[u8]) -> Option<Fill> {
+    let [ESC, b'[', params @ .., last] = esc else {
+        return None;
+    };
+    let kind = match last {
+        b'C' => Fill::Forward,
+        b'b' => Fill::Repeat,
+        _ => return None,
+    };
+    // A count of anything but digits a terminal ignores.
+    if !params.iter().all(u8::is_ascii_digit) {
+        return None;
+    }
+    let n = params.iter().fold(0usize, |n, &c| {
+        n.saturating_mul(10).saturating_add((c - b'0').into())
+    });
+    // None or 0 is 1.
+    Some(kind(n.clamp(1, MAX_COUNT)))
 }
 
 /// Scans the sequence at `b[0] == ESC` into its length and kind; `None`
@@ -622,6 +767,17 @@ mod tests {
             ("truncated charset", b"abc\x1b(", "abc"),
             ("invalid utf8", b"a\xffb", "a\u{fffd}b"),
             ("empty", b"", ""),
+            ("forward", b"a\x1b[Cb\x1b[0Cc\x1b[3Cd", "a b c   d"),
+            (
+                "forward with more than a count",
+                b"a\x1b[1;2Cb\x1b[?2Cc",
+                "abc",
+            ),
+            ("repeat", "ab\x1b[3bé\x1b[b".as_bytes(), "abbbbéé"),
+            ("repeat at start", b"\x1b[3ba", "a"),
+            ("repeat after forward", b"a\x1b[C\x1b[2b", "a "),
+            ("repeat after tab", b"a\t\x1b[2b", "a\t"),
+            ("repeat across a dropped escape", b"a\x1b[2K\x1b[2b", "aaa"),
         ];
         for &(name, input, want) in tests {
             let (text, runs) = parse(&mut Parser::default(), input);
@@ -633,6 +789,57 @@ mod tests {
                 vec![run(0, n, Style::default())]
             };
             assert_eq!(runs, want_runs, "{name}: runs");
+        }
+    }
+
+    // A huge count stops at MAX_COUNT.
+    #[test]
+    fn counts_are_bounded() {
+        for (esc, want) in [
+            (&b"\x1b[99999999999999999999C"[..], MAX_COUNT),
+            (b"a\x1b[99999b", MAX_COUNT + 1),
+        ] {
+            let (text, _) = parse(&mut Parser::default(), esc);
+            assert_eq!(text.chars().count(), want, "{esc:?}");
+        }
+    }
+
+    // A cursor forward's spaces are in no style or link, as cells it
+    // passed were never written; the text after it is back in them. A
+    // repeat's chars are in the style in effect.
+    #[test]
+    fn forward_and_repeat_styles() {
+        let d = Style::default();
+        let bg = Style::default().bg(Color::Palette(1));
+        let tests: &[(&str, &[u8], Vec<Run>)] = &[
+            (
+                "forward unstyled",
+                b"\x1b[41ma\x1b[2Cb",
+                vec![run(0, 1, bg), run(1, 3, d), run(3, 4, bg)],
+            ),
+            (
+                "forward at end",
+                b"\x1b[41ma\x1b[C",
+                vec![run(0, 1, bg), run(1, 2, d)],
+            ),
+            ("forward plain", b"a\x1b[2Cb", vec![run(0, 4, d)]),
+            (
+                "repeat in style",
+                b"a\x1b[41m\x1b[2b",
+                vec![run(0, 1, d), run(1, 3, bg)],
+            ),
+            (
+                "forward unlinked",
+                b"\x1b]8;;u\x07a\x1b[Cb",
+                vec![
+                    linked(0, 1, d, "u", ""),
+                    run(1, 2, d),
+                    linked(2, 3, d, "u", ""),
+                ],
+            ),
+        ];
+        for (name, input, want) in tests {
+            assert_eq!(&runs_of(input), want, "{name}");
         }
     }
 
@@ -997,11 +1204,42 @@ mod tests {
             (b"caf\xc3\xa9 \xff", b"caf\xc3\xa9 \xff"),
             (b"ab\x1b[3", b"ab"),
             (b"ab\x1b]0;foo", b"ab"),
+            (b"a\x1b[2Cb", b"a  b"),
+            (b"\x1b[31ma\x1b[Cb", b"a b"),
+            ("é\x1b[2b".as_bytes(), "ééé".as_bytes()),
+            (b"a\x1b[C\x1b[2b", b"a "),
+            (b"\t\x1b[2b", b"\t"),
+            (b"\x1b[2b", b""),
         ];
         let mut dst = b"stale".to_vec();
         for &(input, want) in tests {
             strip(input, &mut dst);
             assert_eq!(dst, want, "{:?}", String::from_utf8_lossy(input));
+        }
+    }
+
+    // A repeat after invalid bytes repeats one, as parse repeats one
+    // U+FFFD, so repeats grow the line by their counts and no more.
+    #[test]
+    fn strip_repeats_one_invalid_byte() {
+        let input = b"a\x80\x80\x1b[100b\x1b[100b\x1b[100bz";
+        let mut dst = Vec::new();
+        strip(input, &mut dst);
+        let mut want = b"a".to_vec();
+        want.extend([0x80; 302]);
+        want.push(b'z');
+        assert_eq!(dst, want);
+        let (text, _) = parse(&mut Parser::default(), input);
+        assert_eq!(text.chars().count(), dst.len());
+        for (input, want) in [
+            (
+                "\u{20ac}\x1b[2b".as_bytes(),
+                "\u{20ac}\u{20ac}\u{20ac}".as_bytes(),
+            ),
+            (b"\xe2\x82\x1b[2b", b"\xe2\x82\x82\x82"),
+        ] {
+            strip(input, &mut dst);
+            assert_eq!(dst, want, "{input:?}");
         }
     }
 
@@ -1050,6 +1288,17 @@ mod tests {
             (b"a\x9b2Jb", "a\u{fffd}2Jb".as_bytes()),
             ("\x1b]8;;http://x\u{9c}\x07a".as_bytes(), b"a"),
             (b"\x1b]8;;http://\xffx\x07a", b"a"),
+            (b"a\x1b[2Cb", b"a  b"),
+            (b"\x1b[41ma\x1b[2Cb", b"\x1b[41ma\x1b[m  \x1b[0;41mb"),
+            (
+                b"\x1b]8;;http://x\x07a\x1b[Cb",
+                b"\x1b]8;;http://x\x07a\x1b]8;;\x1b\\ \x1b]8;;http://x\x1b\\b",
+            ),
+            (b"ab\x1b[2b", b"abbb"),
+            ("é\x1b[b".as_bytes(), "éé".as_bytes()),
+            (b"\x1b[31ma\x1b[2b", b"\x1b[31maaa"),
+            (b"a\t\x1b[2b", b"a\t"),
+            (b"a\x1b[C\x1b[2b", b"a "),
         ];
         for &(input, want) in tests {
             let got = printed(&mut Printer::new(ViewStyle::Color), input);
@@ -1096,6 +1345,8 @@ mod tests {
         let line = printed(&mut p, b"\x1b[1;31mred\x1b[0m \x1b]8;;http://x\x07link");
         assert_eq!(line, b"red \x1b]8;;http://x\x07link");
         assert_eq!(ended(&mut p), b"\x1b]8;;\x1b\\");
+        let line = printed(&mut p, b"\x1b[41ma\x1b[2Cb\x1b[b");
+        assert_eq!(line, b"a  bb");
     }
 
     // Literal decodes every byte as text: an escape's, a control's, and an

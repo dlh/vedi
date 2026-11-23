@@ -75,8 +75,9 @@ the arrows selects, and Ctrl+c or Cmd+c copies; the mouse selects, and copies
 when the button comes up. `/` searches, and `&` lists only the lines that match,
 to copy them all or to pick one and go to it.
 
-SGR colors and attributes, including 24-bit color, and OSC 8 hyperlinks are
-drawn as the terminal would. Copy sends plain text.
+SGR colors and attributes, including 24-bit color, OSC 8 hyperlinks, and CSI
+cursor forward and repeat are drawn as the terminal would. Copy sends plain
+text.
 
 `:` opens a command prompt. There any setting from the config file can be
 changed for the rest of the run, and `:write FILE` saves the text, or the

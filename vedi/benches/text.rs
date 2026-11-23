@@ -27,6 +27,22 @@ fn input(n: usize) -> Vec<u8> {
     out
 }
 
+/// `input`'s lines as a terminal capture writes them: blank cells as
+/// cursor forwards, ESC [ n C, and a rule as one char and a repeat,
+/// ESC [ n b.
+fn captured(n: usize) -> Vec<u8> {
+    let mut out = Vec::new();
+    for i in 1..=n {
+        out.extend_from_slice(
+            format!(
+                "{i:08}:\x1b[2C\x1b[32msome\x1b[1Cplain\x1b[1Ctext\x1b[1Cabout\x1b[0m\x1b[1Csixty\x1b[1C\x1b[1mbold\x1b[0m\x1b[1Ccolumns\x1b[1Cwide\x1b[1C─\x1b[9b\n"
+            )
+            .as_bytes(),
+        );
+    }
+    out
+}
+
 fn buffer(input: &[u8]) -> Buffer {
     let mut ix = Indexer::new();
     let mut b = Buffer::new(Storage::Memory(Vec::new()), false);
@@ -49,6 +65,16 @@ fn parse(c: &mut Criterion) {
     // A fresh parser each time, so every iteration parses from the same
     // state.
     c.bench_function("ansi/parse", |b| {
+        b.iter(|| Parser::default().parse(black_box(line), &mut text, &mut runs))
+    });
+    let line = &captured(1)[..];
+    let line = &line[..line.len() - 1];
+    Parser::default().parse(line, &mut text, &mut runs);
+    assert_eq!(
+        text.iter().collect::<String>(),
+        "00000001:  some plain text about sixty bold columns wide ──────────"
+    );
+    c.bench_function("ansi/parse_captured", |b| {
         b.iter(|| Parser::default().parse(black_box(line), &mut text, &mut runs))
     });
 }
@@ -94,6 +120,13 @@ fn search(c: &mut Criterion) {
             b.iter(|| assert!(search::next(&buf, &m, Pos::default(), false).is_none()))
         });
     }
+    // As miss_every_line, with each space a cursor forward, which every
+    // line's strip turns back into one.
+    let buf = buffer(&captured(LINES));
+    let m = Matcher::new("some texts");
+    g.bench_function("miss_every_line_captured", |b| {
+        b.iter(|| assert!(search::next(&buf, &m, Pos::default(), false).is_none()))
+    });
     g.finish();
 }
 

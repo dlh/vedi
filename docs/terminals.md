@@ -68,6 +68,13 @@ Send Text:
 
 It does not support OSC 52, so copy uses `pbcopy`.
 
+## Scrollback
+
+A terminal that hands its screen to a pager with its escape sequences may write
+a run of blank cells as a cursor forward, CSI `n C`, and a run of one character
+as a repeat, CSI `n b`. vedi draws them as the spaces and characters they stand
+for; search and copy see them too. Any other cursor movement is dropped.
+
 ## kitty
 
 The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its scrollback

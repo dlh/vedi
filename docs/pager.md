@@ -70,7 +70,7 @@ pages. To set the pager for git alone:
 ## man
 
 man reads `MANPAGER`, then `PAGER`. Its output marks bold and underline with
-backspaces, which vedi does not read; `col -bx` strips them:
+backspaces (overstrike), which vedi does not read; `col -bx` strips them:
 
     export MANPAGER="sh -c 'col -bx | vedi -F'"
 
