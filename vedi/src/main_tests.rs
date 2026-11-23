@@ -63,7 +63,7 @@ fn storage(i: &Input) -> &'static str {
 fn open_input_file_is_paged() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let i = open_input(&[f], None).unwrap();
+    let i = open_input(&[f], None, Opening::First).unwrap();
     assert_eq!((storage(&i), i.on_disk), ("paged", true));
 }
 
@@ -81,10 +81,49 @@ fn open_input_fifo_is_in_memory() {
     );
     let w = p.clone();
     let writer = thread::spawn(move || fs::write(w, "hello\n"));
-    let mut i = open_input(&[p.into_os_string()], None).unwrap();
+    let mut i = open_input(&[p.into_os_string()], None, Opening::First).unwrap();
     assert_eq!((storage(&i), i.on_disk), ("memory", false));
     assert_eq!(read_all(&mut i), "hello\n");
     writer.join().unwrap().unwrap();
+}
+
+// Reopened, a file swapped for a FIFO or a device is refused, at once:
+// the FIFO has no writer, and the device never ends. On a thread, so a
+// blocking open fails the test rather than hang it.
+#[test]
+fn open_input_again_refuses_non_files() {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || {
+        refuses_non_files();
+        let _ = tx.send(());
+    });
+    match rx.recv_timeout(Duration::from_secs(5)) {
+        Err(mpsc::RecvTimeoutError::Timeout) => panic!("open blocked"),
+        r => r.expect("refuses_non_files panicked"),
+    }
+}
+
+fn refuses_non_files() {
+    let d = TempDir::new();
+    let fifo = d.0.join("fifo");
+    assert!(
+        std::process::Command::new("mkfifo")
+            .arg(&fifo)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let zero = d.0.join("zero");
+    std::os::unix::fs::symlink("/dev/zero", &zero).unwrap();
+    let cat = always(&["cat", "%s"]);
+    for p in [fifo, zero] {
+        let shown = p.display().to_string();
+        let f = [p.into_os_string()];
+        for cmd in [None, Some((&cat, 0))] {
+            let err = open_input(&f, cmd, Opening::Again).err();
+            assert_eq!(err, Some(format!("{shown}: not a regular file")));
+        }
+    }
 }
 
 // Read through a command, a file's text is kept in memory, but it is
@@ -93,7 +132,12 @@ fn open_input_fifo_is_in_memory() {
 fn open_input_cmd_is_in_memory_on_disk() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let mut i = open_input(&[f], Some((&always(&["sed", "s/l/L/g", "%s"]), 0))).unwrap();
+    let mut i = open_input(
+        &[f],
+        Some((&always(&["sed", "s/l/L/g", "%s"]), 0)),
+        Opening::First,
+    )
+    .unwrap();
     assert_eq!(
         (storage(&i), i.on_disk, i.killers.len()),
         ("memory", true, 1)
@@ -115,7 +159,7 @@ fn open_input_cmd_by_name() {
     });
     let files = [a, b];
     for (cmd_index, killers, want) in [(0, 2, "heLLo\nhellO\n"), (1, 1, "Hello\nhello\n")] {
-        let mut i = open_input(&files, Some((&by_name, cmd_index))).unwrap();
+        let mut i = open_input(&files, Some((&by_name, cmd_index)), Opening::First).unwrap();
         assert_eq!(
             (storage(&i), i.on_disk, i.killers.len()),
             ("memory", true, killers)
@@ -218,11 +262,11 @@ fn reload_prunes_reaped_commands() {
     let (tx, rx) = mpsc::channel();
     let cat = always(&["cat", "%s"]);
     for g in 0..3 {
-        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0))).unwrap();
+        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
-    let input = open_input(std::slice::from_ref(&f), Some((&cat, 0))).unwrap();
+    let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
     let _buf = readers.start(input, ViewStyle::Color, 3, &tx);
     assert_eq!(readers.0.kept(), 1);
 }
@@ -241,7 +285,7 @@ fn reload_spares_a_clipboard_command() {
     let (tx, rx) = mpsc::channel();
     let cat = always(&["cat", "%s"]);
     for g in 0..2 {
-        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0))).unwrap();
+        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
@@ -258,7 +302,7 @@ fn reload_kills_old_commands_at_its_end() {
     let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
     let slow = always(&["sh", "-c", "cat \"$0\"; exec sleep 30", "%s"]);
-    let input = open_input(&[f], Some((&slow, 0))).unwrap();
+    let input = open_input(&[f], Some((&slow, 0)), Opening::First).unwrap();
     let _old = readers.start(input, ViewStyle::Color, 0, &tx);
     while !matches!(
         next_from(&rx, 0),

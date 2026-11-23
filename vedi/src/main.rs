@@ -2,8 +2,9 @@
 
 use std::env;
 use std::ffi::OsString;
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
+use std::os::unix::fs::OpenOptionsExt;
 use std::panic;
 use std::path::Path;
 use std::process::ExitCode;
@@ -99,10 +100,13 @@ fn run() -> Result<(), Fail> {
     let readers = Readers::default();
     let copies = Killers::default();
     let _kill = KillOnExit(vec![readers.0.clone(), copies.clone()]);
-    let input = open_input(&files, open_cmd.as_deref().map(|f| (f, 0))).map_err(|msg| Fail {
-        msg,
-        usage: files.is_empty(),
-    })?;
+    let input =
+        open_input(&files, open_cmd.as_deref().map(|f| (f, 0)), Opening::First).map_err(|msg| {
+            Fail {
+                msg,
+                usage: files.is_empty(),
+            }
+        })?;
     let on_disk = input.on_disk;
     let mut buf = readers.start(input, view, 0, &tx);
     if opts.quit_if_one_page {
@@ -154,7 +158,7 @@ fn run() -> Result<(), Fail> {
             let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
             Box::new(move |generation, cmd_index: Option<usize>| {
                 let cmd = open_cmd.as_deref().zip(cmd_index);
-                let input = open_input(&files, cmd).map_err(io::Error::other)?;
+                let input = open_input(&files, cmd, Opening::Again).map_err(io::Error::other)?;
                 Ok(readers.start(input, view, generation, &tx))
             }) as Opener
         }),
@@ -195,13 +199,26 @@ fn stdin_is_char_device() -> bool {
         .is_ok_and(|md| md.file_type().is_char_device())
 }
 
+/// Whether the files were opened before. Reopened, each must still be a
+/// regular file: one swapped for a FIFO or a device would block the
+/// open on the UI thread or never end.
+#[derive(Clone, Copy, PartialEq)]
+enum Opening {
+    First,
+    Again,
+}
+
 /// Opens the files, each a part, or stdin when there are none; "-"
 /// names stdin. A file with an `open_cmd` of the index given is read
 /// through it and left for the command to open: a named pipe opened
 /// twice waits for a second writer. The text is paged from disk only when
 /// every input is a regular file read as it is; a command's output
 /// and a pipe can be read only once.
-fn open_input(files: &[OsString], open_cmd: Option<(&OpenCmdFor, usize)>) -> Result<Input, String> {
+fn open_input(
+    files: &[OsString],
+    open_cmd: Option<(&OpenCmdFor, usize)>,
+    opening: Opening,
+) -> Result<Input, String> {
     let stdin = [OsString::from("-")];
     let names = if files.is_empty() {
         if stdin_is_char_device() {
@@ -225,6 +242,9 @@ fn open_input(files: &[OsString], open_cmd: Option<(&OpenCmdFor, usize)>) -> Res
         match open_cmd.and_then(|(f, i)| f(&name.to_string_lossy()).into_iter().nth(i)) {
             Some(argv) => {
                 let md = fs::metadata(name).map_err(|e| format!("stat {shown}: {e}"))?;
+                if opening == Opening::Again && !md.is_file() {
+                    return Err(format!("{shown}: not a regular file"));
+                }
                 on_disk &= md.is_file();
                 let c = opencmd::open(&argv, name).map_err(|e| format!("exec {}: {e}", argv[0]))?;
                 killers.push(c.killer());
@@ -232,8 +252,19 @@ fn open_input(files: &[OsString], open_cmd: Option<(&OpenCmdFor, usize)>) -> Res
                 paged = None;
             }
             None => {
-                let f = File::open(name).map_err(|e| format!("open {shown}: {e}"))?;
-                on_disk &= f.metadata().is_ok_and(|m| m.is_file());
+                let mut how = OpenOptions::new();
+                how.read(true);
+                if opening == Opening::Again {
+                    // Lest a FIFO wait for a writer; a regular file
+                    // reads the same.
+                    how.custom_flags(libc::O_NONBLOCK);
+                }
+                let f = how.open(name).map_err(|e| format!("open {shown}: {e}"))?;
+                let regular = f.metadata().is_ok_and(|m| m.is_file());
+                if opening == Opening::Again && !regular {
+                    return Err(format!("{shown}: not a regular file"));
+                }
+                on_disk &= regular;
                 if let Some(p) = &mut paged {
                     let file = f.try_clone().map_err(|e| format!("open {shown}: {e}"))?;
                     p.push(PagedPart { file, start: 0 });
