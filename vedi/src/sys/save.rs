@@ -2,9 +2,9 @@
 
 #![allow(unsafe_code)]
 
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, ErrorKind, Write};
-use std::os::unix::fs::MetadataExt;
+use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 
 use crate::app::Sink;
@@ -39,12 +39,19 @@ pub fn open(dest: &Path, overwrite: bool) -> io::Result<Saving> {
         .file_name()
         .map_or(String::new(), |n| n.to_string_lossy().into_owned());
     let at = dest.with_file_name(format!(".{base}.vedi-{}", std::process::id()));
-    let file = File::create_new(&at)?;
     // Only a file of the user's own lends its mode: another's was set
-    // by whoever put it there. On the handle: by path, a symlink
-    // swapped in for the file would carry the permissions to whatever
-    // it points at.
-    if old.uid() == me {
+    // by whoever put it there. Made with it, as the umask allows: given
+    // after, a reader could open the file in between and keep it.
+    let mine = old.uid() == me;
+    let file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(if mine { old.mode() & 0o777 } else { 0o666 })
+        .open(&at)?;
+    // The rest of the mode, on the handle: by path, a symlink swapped
+    // in for the file would carry the permissions to whatever it points
+    // at.
+    if mine {
         let _ = file.set_permissions(old.permissions());
     }
     Ok(Saving {
