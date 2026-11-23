@@ -138,8 +138,8 @@ the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
 The source archive holds the tree and `LICENSE-THIRD-PARTY`.
 
 goreleaser then pushes a cask to
-[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap), skipped without
-`HOMEBREW_TAP_TOKEN`, and two packages to the AUR, skipped without `AUR_KEY`:
+[dlh/homebrew-tap](https://github.com/dlh/homebrew-tap) and two packages to the
+AUR:
 [vedi](https://aur.archlinux.org/packages/vedi) builds the source archive, and
 [vedi-bin](https://aur.archlinux.org/packages/vedi-bin) installs the linux
 archives. Both install `LICENSE-THIRD-PARTY` under `/usr/share/licenses`; the
@@ -151,10 +151,11 @@ GPL is in Arch's `licenses` package. They install the themes in
 
 Darwin binaries are signed with a Developer ID Application certificate and
 notarized (bare binaries can't be stapled; Gatekeeper checks the ticket online).
-Both steps are skipped when the secrets are absent. The secrets live in the
-GitHub `release` environment, which only the release workflow on a `v*` tag can
-use. The API key comes from App Store Connect: Users and Access → Integrations →
-Team Keys, Developer role.
+A tag release fails when a secret below is absent; elsewhere goreleaser skips
+the steps that need it. The secrets live in the GitHub `release` environment,
+which only the release workflow on a pushed `v*` tag can use. The API key comes
+from App Store Connect: Users and Access → Integrations → Team Keys, Developer
+role.
 
     APPLE_CERTIFICATE_P12_BASE64   the certificate, base64
     APPLE_CERTIFICATE_PASSWORD     its password

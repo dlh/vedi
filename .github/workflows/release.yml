@@ -18,12 +18,14 @@ jobs:
   goreleaser:
     needs: build
     runs-on: ubuntu-24.04
-    # The environment admits only v* tags; a snapshot needs none of its secrets.
-    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+    # The environment admits only v* tags; a snapshot, even one run from a
+    # tag, needs none of its secrets.
+    environment: ${{ github.event_name == 'push' && 'release' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - run: rustup toolchain install
       - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
@@ -34,12 +36,21 @@ jobs:
           pattern: vedi-*
           path: ${{ runner.temp }}/prebuilt
       # The release notes are the tag's CHANGELOG.md entry.
-      - if: github.ref_type == 'tag'
+      - if: github.event_name == 'push'
         run: bin/release-notes "$GITHUB_REF_NAME" >"$RUNNER_TEMP/notes.md"
       - run: |
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
               goreleaser release --snapshot --clean --skip=notarize,publish
           else
+              # goreleaser skips signing and publishing without their secrets.
+              for name in APPLE_CERTIFICATE_P12_BASE64 APPLE_CERTIFICATE_PASSWORD \
+                  APPLE_API_ISSUER_ID APPLE_API_KEY_ID APPLE_API_KEY_P8_BASE64 \
+                  HOMEBREW_TAP_TOKEN AUR_KEY; do
+                  if [ -z "${!name}" ]; then
+                      echo "release: $name is not set" >&2
+                      exit 1
+                  fi
+              done
               goreleaser release --clean --release-notes="$RUNNER_TEMP/notes.md"
           fi
         env:
