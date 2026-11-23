@@ -2,11 +2,13 @@
 #![allow(unsafe_code)]
 
 use std::fs::File;
-use std::io::{self, Read, Write};
-use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd};
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::io::{self, Write};
+use std::os::fd::{AsFd, AsRawFd};
 use std::sync::mpsc::Sender;
 use std::thread;
+
+use signal_hook::consts::SIGWINCH;
+use signal_hook::iterator::{Handle, Signals};
 
 use crate::app::Event;
 
@@ -57,83 +59,18 @@ fn fallback(got: (usize, usize), cols: Option<String>, lines: Option<String>) ->
     (or(got.0, cols, 80), or(got.1, lines, 25))
 }
 
-/// The write end of the self-pipe, for the handler.
-static PIPE: AtomicI32 = AtomicI32::new(-1);
-
-extern "C" fn on_sigwinch(_: libc::c_int) {
-    let fd = PIPE.load(Ordering::Relaxed);
-    let b = 0u8;
-    // The interrupted code may be about to read errno.
-    let errno = errno();
-    // SAFETY: errno is thread-local; the pointer is live for the
-    // thread. write is async-signal-safe and reads one byte from a
-    // live local; a full pipe already holds word of a resize.
-    unsafe {
-        let saved = *errno;
-        libc::write(fd, (&raw const b).cast(), 1);
-        *errno = saved;
-    }
-}
-
-#[cfg(any(target_os = "macos", target_os = "ios", target_os = "freebsd"))]
-fn errno() -> *mut libc::c_int {
-    // SAFETY: returns the calling thread's errno; no arguments.
-    unsafe { libc::__error() }
-}
-
-#[cfg(any(target_os = "linux", target_os = "android"))]
-fn errno() -> *mut libc::c_int {
-    // SAFETY: returns the calling thread's errno; no arguments.
-    unsafe { libc::__errno_location() }
-}
-
-#[cfg(not(any(
-    target_os = "macos",
-    target_os = "ios",
-    target_os = "freebsd",
-    target_os = "linux",
-    target_os = "android"
-)))]
-compile_error!("errno access is not implemented for this target");
-
 /// An `Event::Resize` on `tx` per SIGWINCH, sized from `tty`, until
-/// the guard drops. Called once: a second call takes the signal from
-/// the first.
+/// the guard drops.
 pub fn sigwinch(tx: Sender<Event>, tty: File) -> Sigwinch {
-    let mut fds = [0; 2];
-    // SAFETY: pipe writes two descriptors into the array.
-    if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
+    let Ok(mut signals) = Signals::new([SIGWINCH]) else {
         // No resize is ever reported.
         return Sigwinch(None);
-    }
-    for fd in fds {
-        // SAFETY: fcntl on a descriptor just made; no pointers.
-        unsafe { libc::fcntl(fd, libc::F_SETFD, libc::FD_CLOEXEC) };
-    }
-    // SAFETY: as above.
-    unsafe { libc::fcntl(fds[1], libc::F_SETFL, libc::O_NONBLOCK) };
-    PIPE.store(fds[1], Ordering::Relaxed);
-    // SAFETY: the handler only calls write, which is async-signal-safe.
-    unsafe {
-        libc::signal(
-            libc::SIGWINCH,
-            on_sigwinch as extern "C" fn(libc::c_int) as libc::sighandler_t,
-        )
     };
-    // SAFETY: both ends are ours alone from here.
-    let (mut pipe, write_end) =
-        unsafe { (File::from_raw_fd(fds[0]), OwnedFd::from_raw_fd(fds[1])) };
+    let handle = signals.handle();
     thread::Builder::new()
         .name("vedi-sigwinch".into())
         .spawn(move || {
-            let mut buf = [0; 64];
-            loop {
-                match pipe.read(&mut buf) {
-                    Ok(0) => return,
-                    Ok(_) => {}
-                    Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                    Err(_) => return,
-                }
+            for _ in signals.forever() {
                 let (w, h) = size(&tty);
                 if tx.send(Event::Resize(w, h)).is_err() {
                     return;
@@ -141,21 +78,17 @@ pub fn sigwinch(tx: Sender<Event>, tty: File) -> Sigwinch {
             }
         })
         .expect("spawn sigwinch thread");
-    Sigwinch(Some(write_end))
+    Sigwinch(Some(handle))
 }
 
-/// Holds the pipe's write end; dropping it puts the signal back to its
-/// default and ends the thread.
-pub struct Sigwinch(Option<OwnedFd>);
+/// Dropping it ends the thread.
+pub struct Sigwinch(Option<Handle>);
 
 impl Drop for Sigwinch {
     fn drop(&mut self) {
-        if self.0.is_none() {
-            return;
+        if let Some(handle) = &self.0 {
+            handle.close();
         }
-        // SAFETY: restores the default disposition; no pointers.
-        unsafe { libc::signal(libc::SIGWINCH, libc::SIG_DFL) };
-        PIPE.store(-1, Ordering::Relaxed);
     }
 }
 

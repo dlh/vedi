@@ -17,7 +17,7 @@ use vedi::app::{App, Event, Opener, Runtime, Verdict, one_page};
 use vedi::cli::{self, OpenCmdFor, USAGE};
 use vedi::input::config::{self, Config, LoadError};
 use vedi::sys::opencmd;
-use vedi::sys::proc::{Killer, Killers};
+use vedi::sys::proc::{self, Killer, Killers};
 use vedi::sys::term::{self, Crossterm};
 use vedi::sys::watch::Watch;
 use vedi::sys::{clipboard, tty};
@@ -100,13 +100,16 @@ fn run() -> Result<(), Fail> {
     let readers = Readers::default();
     let copies = Killers::default();
     let _kill = KillOnExit(vec![readers.0.clone(), copies.clone()]);
-    let input =
-        open_input(&files, open_cmd.as_deref().map(|f| (f, 0)), Opening::First).map_err(|msg| {
-            Fail {
-                msg,
-                usage: files.is_empty(),
-            }
-        })?;
+    let signal_killers = [readers.0.clone(), copies.clone()];
+    proc::on_ending_signal(move || {
+        term::restore_after_panic();
+        signal_killers.iter().for_each(Killers::kill_all);
+    });
+    let first = open_cmd.as_deref().map(|f| (f, 0));
+    let input = open_input(&files, first, Opening::First, &readers.0).map_err(|msg| Fail {
+        msg,
+        usage: files.is_empty(),
+    })?;
     let on_disk = input.on_disk;
     let mut buf = readers.start(input, view, 0, &tx);
     if opts.quit_if_one_page {
@@ -158,7 +161,8 @@ fn run() -> Result<(), Fail> {
             let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
             Box::new(move |generation, cmd_index: Option<usize>| {
                 let cmd = open_cmd.as_deref().zip(cmd_index);
-                let input = open_input(&files, cmd, Opening::Again).map_err(io::Error::other)?;
+                let input = open_input(&files, cmd, Opening::Again, &readers.0)
+                    .map_err(io::Error::other)?;
                 Ok(readers.start(input, view, generation, &tx))
             }) as Opener
         }),
@@ -211,13 +215,16 @@ enum Opening {
 /// Opens the files, each a part, or stdin when there are none; "-"
 /// names stdin. A file with an `open_cmd` of the index given is read
 /// through it and left for the command to open: a named pipe opened
-/// twice waits for a second writer. The text is paged from disk only when
+/// twice waits for a second writer. Each command joins `running` as it
+/// starts: a later open may block, and a signal must still reach it.
+/// The text is paged from disk only when
 /// every input is a regular file read as it is; a command's output
 /// and a pipe can be read only once.
 fn open_input(
     files: &[OsString],
     open_cmd: Option<(&OpenCmdFor, usize)>,
     opening: Opening,
+    running: &Killers,
 ) -> Result<Input, String> {
     let stdin = [OsString::from("-")];
     let names = if files.is_empty() {
@@ -247,6 +254,7 @@ fn open_input(
                 }
                 on_disk &= md.is_file();
                 let c = opencmd::open(&argv, name).map_err(|e| format!("exec {}: {e}", argv[0]))?;
+                running.add(c.killer());
                 killers.push(c.killer());
                 parts.push(Box::new(c));
                 paged = None;
@@ -298,7 +306,7 @@ impl Readers {
     /// once it ends, as the app then swaps it in: until then the old
     /// text is still read and shown.
     fn start(&self, input: Input, view: ViewStyle, generation: Gen, tx: &Sender<Event>) -> Buffer {
-        let mut old = self.0.supersede(input.killers);
+        let mut old = self.0.others(&input.killers);
         let paged = matches!(input.storage, Storage::Paged(_));
         let buf = Buffer::new(input.storage, view == ViewStyle::Raw);
         let tx = tx.clone();

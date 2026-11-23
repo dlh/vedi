@@ -63,7 +63,7 @@ fn storage(i: &Input) -> &'static str {
 fn open_input_file_is_paged() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let i = open_input(&[f], None, Opening::First).unwrap();
+    let i = open_input(&[f], None, Opening::First, &Killers::default()).unwrap();
     assert_eq!((storage(&i), i.on_disk), ("paged", true));
 }
 
@@ -81,7 +81,13 @@ fn open_input_fifo_is_in_memory() {
     );
     let w = p.clone();
     let writer = thread::spawn(move || fs::write(w, "hello\n"));
-    let mut i = open_input(&[p.into_os_string()], None, Opening::First).unwrap();
+    let mut i = open_input(
+        &[p.into_os_string()],
+        None,
+        Opening::First,
+        &Killers::default(),
+    )
+    .unwrap();
     assert_eq!((storage(&i), i.on_disk), ("memory", false));
     assert_eq!(read_all(&mut i), "hello\n");
     writer.join().unwrap().unwrap();
@@ -120,7 +126,7 @@ fn refuses_non_files() {
         let shown = p.display().to_string();
         let f = [p.into_os_string()];
         for cmd in [None, Some((&cat, 0))] {
-            let err = open_input(&f, cmd, Opening::Again).err();
+            let err = open_input(&f, cmd, Opening::Again, &Killers::default()).err();
             assert_eq!(err, Some(format!("{shown}: not a regular file")));
         }
     }
@@ -136,6 +142,7 @@ fn open_input_cmd_is_in_memory_on_disk() {
         &[f],
         Some((&always(&["sed", "s/l/L/g", "%s"]), 0)),
         Opening::First,
+        &Killers::default(),
     )
     .unwrap();
     assert_eq!(
@@ -159,7 +166,13 @@ fn open_input_cmd_by_name() {
     });
     let files = [a, b];
     for (cmd_index, killers, want) in [(0, 2, "heLLo\nhellO\n"), (1, 1, "Hello\nhello\n")] {
-        let mut i = open_input(&files, Some((&by_name, cmd_index)), Opening::First).unwrap();
+        let mut i = open_input(
+            &files,
+            Some((&by_name, cmd_index)),
+            Opening::First,
+            &Killers::default(),
+        )
+        .unwrap();
         assert_eq!(
             (storage(&i), i.on_disk, i.killers.len()),
             ("memory", true, killers)
@@ -262,11 +275,23 @@ fn reload_prunes_reaped_commands() {
     let (tx, rx) = mpsc::channel();
     let cat = always(&["cat", "%s"]);
     for g in 0..3 {
-        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
+        let input = open_input(
+            std::slice::from_ref(&f),
+            Some((&cat, 0)),
+            Opening::First,
+            &readers.0,
+        )
+        .unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
-    let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
+    let input = open_input(
+        std::slice::from_ref(&f),
+        Some((&cat, 0)),
+        Opening::First,
+        &readers.0,
+    )
+    .unwrap();
     let _buf = readers.start(input, ViewStyle::Color, 3, &tx);
     assert_eq!(readers.0.kept(), 1);
 }
@@ -285,7 +310,13 @@ fn reload_spares_a_clipboard_command() {
     let (tx, rx) = mpsc::channel();
     let cat = always(&["cat", "%s"]);
     for g in 0..2 {
-        let input = open_input(std::slice::from_ref(&f), Some((&cat, 0)), Opening::First).unwrap();
+        let input = open_input(
+            std::slice::from_ref(&f),
+            Some((&cat, 0)),
+            Opening::First,
+            &readers.0,
+        )
+        .unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
@@ -302,7 +333,7 @@ fn reload_kills_old_commands_at_its_end() {
     let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
     let slow = always(&["sh", "-c", "cat \"$0\"; exec sleep 30", "%s"]);
-    let input = open_input(&[f], Some((&slow, 0)), Opening::First).unwrap();
+    let input = open_input(&[f], Some((&slow, 0)), Opening::First, &readers.0).unwrap();
     let _old = readers.start(input, ViewStyle::Color, 0, &tx);
     while !matches!(
         next_from(&rx, 0),

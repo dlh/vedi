@@ -12,6 +12,10 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::thread;
 use std::time::{Duration, Instant};
 
+use signal_hook::consts::{SIGHUP, SIGINT, SIGTERM};
+use signal_hook::iterator::Signals;
+use signal_hook::low_level::emulate_default_handler;
+
 /// How long Drop waits for a killed command to be reaped: SIGKILL
 /// takes effect at once unless the command is stuck in the kernel,
 /// and then no wait would do.
@@ -175,14 +179,13 @@ impl Killers {
         self.kept_mut().push(k);
     }
 
-    /// Adds `new`, handing back the commands before them: a reload
-    /// kills those once its text is read. They stay in the set until
-    /// reaped, so exit reaches them when the reload never ends.
-    pub fn supersede(&self, new: Vec<Killer>) -> Vec<Killer> {
-        let mut all = self.kept_mut();
-        let old = all.clone();
-        all.extend(new);
-        old
+    /// The commands kept other than `new`: a reload kills those once
+    /// its text is read. They stay in the set until reaped, so exit
+    /// reaches them when the reload never ends.
+    pub fn others(&self, new: &[Killer]) -> Vec<Killer> {
+        let is_new = |k: &Killer| new.iter().any(|n| Arc::ptr_eq(&n.reaped, &k.reaped));
+        let all = self.kept_mut();
+        all.iter().filter(|k| !is_new(k)).cloned().collect()
     }
 
     pub fn kill_all(&self) {
@@ -208,6 +211,39 @@ impl Killers {
     fn lock(&self) -> MutexGuard<'_, Vec<Killer>> {
         // A panic while held left the list whole.
         self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Runs `cleanup` on SIGHUP, SIGINT or SIGTERM, then dies of the
+/// signal: the commands are in groups of their own, so the terminal's
+/// Ctrl+C never reaches them and a default death would leave them
+/// running. On a thread, as the main one may be blocked. A signal
+/// ignored at startup stays ignored, as under nohup.
+pub fn on_ending_signal(cleanup: impl FnOnce() + Send + 'static) {
+    let heeded = [SIGHUP, SIGINT, SIGTERM]
+        .into_iter()
+        .filter(|&sig| !ignored(sig));
+    let Ok(mut signals) = Signals::new(heeded) else {
+        return;
+    };
+    thread::Builder::new()
+        .name("vedi-signal".into())
+        .spawn(move || {
+            if let Some(sig) = signals.forever().next() {
+                cleanup();
+                // Whoever waits for vedi sees what it died of.
+                let _ = emulate_default_handler(sig);
+            }
+        })
+        .expect("spawn signal thread");
+}
+
+fn ignored(sig: libc::c_int) -> bool {
+    // SAFETY: sigaction is plain data, zeroed is valid; with no new
+    // action given, the call only writes the current one to it.
+    unsafe {
+        let mut now: libc::sigaction = std::mem::zeroed();
+        libc::sigaction(sig, std::ptr::null(), &mut now) == 0 && now.sa_sigaction == libc::SIG_IGN
     }
 }
 
@@ -362,9 +398,9 @@ mod tests {
     }
 
     // The set lets the reaped go as commands are added, and hands back
-    // those before the ones superseding them.
+    // those other than the new.
     #[test]
-    fn killers_supersede() {
+    fn killers_others() {
         let killers = Killers::default();
         let mut done = sh("exit 0");
         done.wait().unwrap();
@@ -374,8 +410,10 @@ mod tests {
         killers.add(running.killer());
         assert_eq!(killers.kept(), 1, "the reaped one let go");
         let newer = sh("exec sleep 3");
-        let old = killers.supersede(vec![newer.killer()]);
+        killers.add(newer.killer());
+        let old = killers.others(&[newer.killer()]);
         assert_eq!(old.len(), 1);
+        assert!(Arc::ptr_eq(&old[0].reaped, &running.killer().reaped));
         assert_eq!(killers.kept(), 2);
         assert!(!killers.all_reaped());
         killers.kill_all();

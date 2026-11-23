@@ -157,8 +157,8 @@ impl Drop for Crossterm {
     }
 }
 
-/// Puts the terminal back after a panic, before the panic is printed.
-/// Does nothing unless the terminal is up, and Drop then does nothing.
+/// Puts the terminal back after a panic, before the panic is printed,
+/// or on a signal that ends vedi. Does nothing unless the terminal is up, and Drop then does nothing.
 pub fn restore_after_panic() {
     if let Ok(mut tty) = File::options().write(true).open("/dev/tty") {
         // The renderer's state is out of reach: close a link and reset

@@ -5,7 +5,8 @@
 
 use std::fs;
 use std::io::{Read, Write};
-use std::os::unix::process::CommandExt;
+use std::os::unix::fs::PermissionsExt;
+use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -67,6 +68,8 @@ fn vedi(home: &Path, args: &[&str]) -> Command {
 
 struct Out {
     code: i32,
+    /// The signal vedi died of.
+    signal: Option<i32>,
     stdout: String,
     stderr: String,
 }
@@ -100,6 +103,7 @@ fn wait(mut child: Child, stdin: Option<ChildStdin>) -> Out {
     drop(stdin);
     Out {
         code: status.code().unwrap_or(-1),
+        signal: status.signal(),
         stdout: out.join().unwrap(),
         stderr: err.join().unwrap(),
     }
@@ -495,4 +499,74 @@ fn open_cmd_not_found() {
         out.stderr,
         "vedi: exec vedi-no-such-command: No such file or directory (os error 2)\n"
     );
+}
+
+/// Polls `f` until it holds, failing after 5 s.
+fn eventually(what: &str, mut f: impl FnMut() -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !f() {
+        assert!(Instant::now() < deadline, "{what}");
+        thread::sleep(Duration::from_millis(10));
+    }
+}
+
+/// Whether `pid` still runs. A zombie does not: an orphan stays one
+/// where pid 1 reaps nothing, as in a container.
+fn running(pid: libc::pid_t) -> bool {
+    // SAFETY: signal 0 only checks that the process exists.
+    if unsafe { libc::kill(pid, 0) } != 0 {
+        return false;
+    }
+    // The state follows the name, which may itself hold a ')'.
+    #[cfg(target_os = "linux")]
+    if let Ok(stat) = fs::read_to_string(format!("/proc/{pid}/stat")) {
+        return !stat.rsplit(')').next().unwrap_or("").starts_with(" Z");
+    }
+    true
+}
+
+// A signal that ends vedi ends the command too, in a group of its own
+// though it is, and vedi dies of the signal: while the text is awaited,
+// and while a later file, a named pipe with no writer, is still opening.
+#[test]
+fn signal_kills_open_cmd() {
+    for sig in [libc::SIGHUP, libc::SIGINT, libc::SIGTERM] {
+        for blocked in [false, true] {
+            let d = TempDir::new();
+            let f = d.file("f.cmd", "");
+            let pid_file = d.path("pid");
+            let script = d.file(
+                "cmd",
+                &format!(
+                    "#!/bin/sh\necho $$ > {pid_file}.tmp\nmv {pid_file}.tmp {pid_file}\nexec sleep 30\n"
+                ),
+            );
+            fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+            let conf = d.file("vedi.conf", &format!("open_cmd *.cmd {script}\n"));
+            let mut args = vec!["--config", &conf, "-F", &f];
+            let pipe = d.path("pipe");
+            if blocked {
+                assert!(
+                    Command::new("mkfifo")
+                        .arg(&pipe)
+                        .status()
+                        .unwrap()
+                        .success()
+                );
+                args.push(&pipe);
+            }
+            let child = vedi(&d.0, &args).spawn().unwrap();
+            eventually("the command never ran", || Path::new(&pid_file).exists());
+            let cmd: libc::pid_t = fs::read_to_string(&pid_file)
+                .unwrap()
+                .trim()
+                .parse()
+                .unwrap();
+            // SAFETY: kill takes no pointers; the child is unreaped.
+            assert_eq!(unsafe { libc::kill(child.id() as libc::pid_t, sig) }, 0);
+            let out = wait(child, None);
+            assert_eq!(out.signal, Some(sig), "{}", out.stderr);
+            eventually("the command outlived vedi", || !running(cmd));
+        }
+    }
 }
