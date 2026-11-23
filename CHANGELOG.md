@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.10.1 - 2026-11-23
+
+### Fixes
+
+- `:write!` makes its temp file with the old file's mode ([fa8e621](https://github.com/dlh/vedi/commit/fa8e621))
+- a reload refuses a file swapped for a FIFO or device ([9e18a25](https://github.com/dlh/vedi/commit/9e18a25))
+- a signal that ends vedi kills its commands ([978d033](https://github.com/dlh/vedi/commit/978d033))
+- a file truncated, then written, keeps the cursor's place ([4c9f4a9](https://github.com/dlh/vedi/commit/4c9f4a9))
+
+Full diff: [v2.10.0...v2.10.1](https://github.com/dlh/vedi/compare/v2.10.0...v2.10.1)
+
 ## v2.10.0 - 2026-11-21
 
 ### Features
