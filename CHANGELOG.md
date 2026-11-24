@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.10.2 - 2026-11-23
+
+### Fixes
+
+- draw CSI cursor forward as spaces and repeat as its character ([0108b82](https://github.com/dlh/vedi/commit/0108b82))
+
+Full diff: [v2.10.1...v2.10.2](https://github.com/dlh/vedi/compare/v2.10.1...v2.10.2)
+
 ## v2.10.1 - 2026-11-23
 
 ### Fixes
