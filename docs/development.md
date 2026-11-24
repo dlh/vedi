@@ -125,8 +125,8 @@ its kind (`.github/workflows/build.yml`). The linux builds run in an Ubuntu
 22.04 container, so those binaries need glibc 2.34 or newer. A tag runs the same
 builds, then goreleaser packages them: its Rust builder calls
 `bin/cargo-prebuilt`, which puts each binary where cargo would have. It
-publishes a GitHub release with archives, a source archive, `checksums.txt` and
-the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
+publishes a GitHub release with archives, a source archive, `checksums.txt`, its
+signature and the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
 
 - `CHANGELOG.md`
 - `LICENSE-THIRD-PARTY`, which `make licenses` writes before the build
@@ -136,6 +136,13 @@ the tag's `CHANGELOG.md` entry as its notes. Each archive holds:
 - the Markdown of `docs/`, in `docs/`
 
 The source archive holds the tree and `LICENSE-THIRD-PARTY`.
+
+cosign signs `checksums.txt` as the workflow, without a key, before anything is
+published. The `attest` job then takes `checksums.txt` from the release, checks
+that signature and attests each file it lists. It runs even when goreleaser
+fails after publishing; if it fails itself, re-run that job alone. Releases are
+immutable: a published one cannot be fixed, only followed by the next version.
+`SECURITY.md` shows how to verify a download.
 
 goreleaser then pushes a cask to
 [dlh/homebrew-tap](https://github.com/dlh/homebrew-tap) and two packages to the
@@ -186,8 +193,8 @@ To try a release locally without tagging:
     goreleaser build --snapshot --clean --single-target
 
 Output lands in `dist/`, which is ignored. Only this platform's binary builds
-here; the whole pipeline, short of notarizing and publishing, runs from the
-Actions tab: release, Run workflow.
+here; the whole pipeline, short of notarizing, publishing and attesting, runs
+from the Actions tab: release, Run workflow.
 
 `make aur` writes the AUR packages to `dist/aur/vedi/` and `dist/aur/vedi-bin/`:
 each `PKGBUILD`, its `.SRCINFO` and its sources, named as the `PKGBUILD` looks

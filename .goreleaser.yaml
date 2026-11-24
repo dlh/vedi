@@ -40,6 +40,14 @@ archives:
 checksum:
   name_template: checksums.txt
 
+# Keyless: signed as the release workflow.
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: '${artifact}.sigstore.json'
+    args: [sign-blob, --yes, '--bundle=${signature}', '${artifact}']
+    output: true
+
 # The AUR package builds from this archive.
 source:
   enabled: true

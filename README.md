@@ -31,7 +31,8 @@ On Arch Linux, from the [AUR](https://aur.archlinux.org/packages/vedi), or as
     git clone https://aur.archlinux.org/vedi.git && cd vedi && makepkg -si
 
 Or download a binary for linux or macOS from the
-[releases page](https://github.com/dlh/vedi/releases), or build from source:
+[releases page](https://github.com/dlh/vedi/releases) and
+[verify it](SECURITY.md#verifying-a-download), or build from source:
 
     cargo install --git https://github.com/dlh/vedi vedi
 

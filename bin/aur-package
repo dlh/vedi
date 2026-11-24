@@ -39,7 +39,7 @@ main() {
 	git checkout -q --detach "$ref"
 	git tag -f "$tag" >/dev/null
 	if ! log=$(VEDI_PREBUILT=$prebuilt goreleaser release \
-		--skip=homebrew,notarize,publish,announce,validate 2>&1); then
+		--skip=homebrew,notarize,sign,publish,announce,validate 2>&1); then
 		echo "$log" >&2
 		exit 1
 	fi

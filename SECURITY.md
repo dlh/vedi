@@ -10,4 +10,19 @@ reproduce, and what it lets an attacker do.
 You will hear back within a week. Please keep the report private until a fix is
 released.
 
-Verify a downloaded release against its `checksums.txt`.
+## Verifying a download
+
+Releases after 2.10.2 cannot change once published. Their `checksums.txt` is
+signed and each archive has a build attestation. With
+[gh](https://cli.github.com):
+
+    gh release verify-asset v1.2.3 vedi_1.2.3_linux_amd64.tar.gz --repo dlh/vedi
+    gh attestation verify vedi_1.2.3_linux_amd64.tar.gz --repo dlh/vedi \
+        --signer-workflow dlh/vedi/.github/workflows/release.yml
+
+Or with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
+
+    cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
+        --certificate-identity https://github.com/dlh/vedi/.github/workflows/release.yml@refs/tags/v1.2.3 \
+        --certificate-oidc-issuer https://token.actions.githubusercontent.com
+    sha256sum --check --ignore-missing checksums.txt
