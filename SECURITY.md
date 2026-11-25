@@ -26,3 +26,7 @@ Or with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
         --certificate-identity https://github.com/dlh/vedi/.github/workflows/release.yml@refs/tags/v1.2.3 \
         --certificate-oidc-issuer https://token.actions.githubusercontent.com
     sha256sum --check --ignore-missing checksums.txt
+
+The macOS binary is also notarized by Apple:
+
+    spctl --assess --type install -vv vedi
