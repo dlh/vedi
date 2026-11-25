@@ -1,7 +1,7 @@
 [tools]
 "github:EmbarkStudios/cargo-about" = "0.9.3"
 cosign = "3.1.4"
-goreleaser = "2.19.0"
+goreleaser = "2.20.0"
 vhs = "0.12.1"
 bat = "0.26.1"
 "github:rustsec/rustsec" = { version = "0.23.0", version_prefix = "cargo-audit/v" }
