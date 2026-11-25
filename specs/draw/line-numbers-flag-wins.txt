@@ -1,0 +1,17 @@
+--line-numbers numbers the lines over a config that does not, and
+--line-numbers-side right at the right edge over one that names the
+left.
+
+-- size --
+40x3
+-- config --
+line_numbers no
+line_numbers_side left
+-- args --
+--line-numbers --line-numbers-side right
+-- input --
+hello
+-- screen --
+hello                                  1
+~
+<stdin>  line 1/1  wrap           h help

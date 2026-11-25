@@ -432,8 +432,12 @@ impl TextView {
     /// The position drawn at a screen cell: `y` rows down from `top`,
     /// stopping at the buffer's last row; the char whose cells hold `x`,
     /// or the newline past the row's end. A separator row is the line
-    /// below, at the same column.
+    /// below, at the same column. A cell of the line numbers is the
+    /// row's nearest.
     pub fn cell_pos(&mut self, x: usize, y: usize) -> Pos {
+        let x = x
+            .saturating_sub(self.geom.left())
+            .min(self.geom.cols.saturating_sub(1));
         if self.buf.is_empty() {
             return Pos::default();
         }

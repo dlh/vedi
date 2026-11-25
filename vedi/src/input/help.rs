@@ -92,6 +92,11 @@ const SECTIONS: &[HelpSection] = {
                     "Toggle the rows naming the inputs",
                 ),
                 bound(&[Cyc("end_markers")], "Toggle the end markers"),
+                bound(&[Cyc("line_numbers")], "Toggle the line numbers"),
+                bound(
+                    &[Cyc("line_numbers_side")],
+                    "Line numbers at the left / right edge",
+                ),
                 bound(&[Cyc("auto_reload")], "Toggle reloading a changed file"),
                 bound(&[Cyc("status_line")], "Toggle the status line"),
                 bound(

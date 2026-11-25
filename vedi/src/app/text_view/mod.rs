@@ -10,6 +10,7 @@ mod search;
 mod selection;
 
 use crate::app::StartScreen;
+use crate::input::setting::Side;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
@@ -26,9 +27,14 @@ pub use selection::Selection;
 pub struct Geometry {
     /// The rows the text has.
     pub rows: usize,
-    /// The screen's rows and columns.
+    /// The screen's rows.
     pub height: usize,
+    /// The columns the text has: the screen's, less the line numbers'.
     pub cols: usize,
+    /// The line numbers' cells, a blank between them and the text
+    /// included: zero for none. And the edge they are at.
+    pub gutter: usize,
+    pub side: Side,
     pub mode: Mode,
     /// Cells wrap mode has on a wider screen; zero is the screen's.
     pub wrap_width: usize,
@@ -65,6 +71,26 @@ impl Geometry {
     /// columns there is no room.
     pub fn wrap_marks(&self) -> bool {
         self.edge_markers && self.mode == Mode::Wrap && self.wrap_cols() > 2
+    }
+
+    /// The cells left of the text: the line numbers', when they are
+    /// there.
+    pub fn left(&self) -> usize {
+        match self.side {
+            Side::Left => self.gutter,
+            Side::Right => 0,
+        }
+    }
+
+    /// The screen column of the line numbers' first digit cell. On the
+    /// right they follow the wrap_width bar, when there is one, rather
+    /// than keep to the screen's edge.
+    pub fn numbers_col(&self) -> Option<usize> {
+        match self.side {
+            _ if self.gutter == 0 => None,
+            Side::Left => Some(0),
+            Side::Right => Some(self.guide_col().map_or(self.cols, |g| g + 1) + 1),
+        }
     }
 
     pub fn layout(&self) -> Layout {

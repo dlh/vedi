@@ -1,0 +1,28 @@
+Without wrap every row has its line's number. Text scrolled sideways
+stays out of the numbers' column, and the edge markers are at the
+text's edges.
+
+-- size --
+12x4
+-- args --
+-S --edge-markers
+-- config --
+line_numbers yes
+status_line no
+-- input --
+abcdefghijklmnop
+xy
+-- screen --
+1 abcdefghi[>]
+2 xy
+  ~
+  ~
+-- keys --
+End
+-- screen --
+1 [<]ijklmnop
+2 [<]
+  ~
+  ~
+-- cursor --
+0 11

@@ -311,11 +311,14 @@ impl<T: Terminal> App<T> {
     }
 
     fn geometry(&self) -> Geometry {
-        let (cols, height) = self.screen.size();
+        let (width, height) = self.screen.size();
+        let gutter = self.gutter(width);
         Geometry {
             rows: self.text_rows(),
             height,
-            cols,
+            cols: width - gutter,
+            gutter,
+            side: self.settings.line_numbers_side,
             mode: self.settings.mode,
             wrap_width: self.settings.wrap_width,
             tab: self.settings.tab_width,
@@ -324,6 +327,19 @@ impl<T: Terminal> App<T> {
             edge_markers: self.settings.edge_markers,
             end_markers: self.settings.end_markers,
         }
+    }
+
+    /// The line numbers' cells on a screen `width` wide: the digits of
+    /// the text's line count, which no input's lines exceed, and a
+    /// blank. None over help, or where they would leave the text no
+    /// column.
+    fn gutter(&self, width: usize) -> usize {
+        let lines = self.views.text().buf().len();
+        let gutter = lines.max(1).ilog10() as usize + 2;
+        if !self.settings.line_numbers || self.views.role() == Role::Help || gutter >= width {
+            return 0;
+        }
+        gutter
     }
 
     fn dispatch(&mut self, ev: Event) -> Flow {

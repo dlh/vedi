@@ -778,6 +778,12 @@ fn theme_styles_each_element() {
     opts.settings.edge_markers = true;
     let a = app(4, 3, "abcdef", opts);
     assert_eq!(style(&a, 3, 0), t[Element::EdgeMarker]);
+
+    let mut opts = themed();
+    opts.settings.line_numbers = true;
+    let a = app(4, 3, "ab", opts);
+    assert_eq!(style(&a, 0, 0), t[Element::LineNumber]);
+    assert_eq!(style(&a, 2, 0), Style::default());
 }
 
 /// A control character's style is drawn over the text's: its colors

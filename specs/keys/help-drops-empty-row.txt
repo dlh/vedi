@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x77
+80x78
 -- input --
 abc
 -- keys --
@@ -17,6 +17,7 @@ h
   h                                       Show the key bindings.
   q                                       Quit.
   W                                       Wrap at 80 cells / the screen's edge.
+  #                                       Toggle the line numbers.
   R                                       Reload the file.
   O                                       Read through the next open_cmd.
  ------------------------------------------------------------------------------

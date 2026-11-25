@@ -1,0 +1,27 @@
+Without wrap a click on a number at the right, or on the blank before
+it, puts the cursor on the row's last char in view; the text stays put.
+
+-- size --
+10x4
+-- args --
+-S
+-- config --
+line_numbers yes
+line_numbers_side right
+status_line no
+-- input --
+abcdefghijklmnop
+xy
+-- mouse --
+click 0 9
+-- cursor --
+0 7
+-- mouse --
+click 0 8
+-- screen --
+abcdefgh 1
+xy       2
+~
+~
+-- cursor --
+0 7

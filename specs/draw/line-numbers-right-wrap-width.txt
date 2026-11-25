@@ -1,0 +1,18 @@
+With wrap_width the numbers on the right follow its bar rather than
+keep to the screen's edge.
+
+-- size --
+20x4
+-- config --
+line_numbers yes
+line_numbers_side right
+wrap_width 10
+status_line no
+-- input --
+one
+abcdefghijklmno
+-- screen --
+one       │ 1
+abcdefghij│ 2
+klmno     │
+~         │

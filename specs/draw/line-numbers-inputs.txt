@@ -1,0 +1,24 @@
+Each input's lines are numbered from 1, as the status line counts
+them. The row naming an input has no number and starts where the text
+does.
+
+-- size --
+28x7
+-- args --
+a.txt b.txt
+-- config --
+line_numbers yes
+-- input --
+a1
+a2
+-- next-file --
+-- input --
+b1
+-- screen --
+  ━━ a.txt ━━━━━━━━━━━━━━━━━
+1 a1
+2 a2
+  ━━ b.txt ━━━━━━━━━━━━━━━━━
+1 b1
+  ~
+a.txt 1/2  line 1/2  wrap

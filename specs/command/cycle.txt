@@ -4,8 +4,9 @@ and word char again. A setting the status line does not show,
 edge_markers or auto_reload, is reported there with its new value.
 Anything but wrap, wrap_style, edge_markers, file_separators,
 end_markers, auto_reload, status_line, view_style, copy_on_select,
-hint_order or open_cmd is an error; a setting without fixed values, tab_width, needs
-them given (cycle-values.txt).
+hint_order, line_numbers, line_numbers_side or open_cmd is an error; a
+setting without fixed values, tab_width, needs them given
+(cycle-values.txt).
 
 -- size --
 60x5
@@ -50,7 +51,7 @@ e sun
 ~
 <stdin>  line 1/1  wrap  [auto_reload yes]              h help
 -- resize --
-150x5
+190x5
 -- keys --
 : "cycle tab_width" Enter
 -- screen --
@@ -58,7 +59,7 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 ~
 ~
 ~
-<stdin>  line 1/1  wrap  [cycle tab_width takes two or more values]                                                                               h help
+<stdin>  line 1/1  wrap  [cycle tab_width takes two or more values]                                                                                                                       h help
 -- keys --
 : "cycle" Enter
 -- screen --
@@ -66,4 +67,4 @@ the quick brown fox jumps over the lazy dog, then naps in the sun
 ~
 ~
 ~
-[cycle takes wrap, wrap_style, edge_markers, file_separators, end_markers, auto_reload, status_line, view_style, copy_on_select, hint_order or open_cmd]
+[cycle takes wrap, wrap_style, edge_markers, file_separators, end_markers, auto_reload, status_line, view_style, copy_on_select, hint_order, line_numbers, line_numbers_side or open_cmd]

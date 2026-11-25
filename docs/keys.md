@@ -10,6 +10,7 @@ search them. These are the defaults.
 | q | Quit |
 | w | Toggle wrap / nowrap |
 | W | Wrap at 80 cells / the screen's edge |
+| # | Toggle the line numbers |
 | R | Reload the file |
 | O | Read through the next open_cmd |
 | Up, Down, Left, Right, Home, End, j, k, 0, $, Enter, Cmd+Left, Cmd+Right | Move the cursor |

@@ -1,0 +1,22 @@
+The bindings have no line numbers.
+
+-- size --
+60x4
+-- config --
+line_numbers yes
+-- input --
+abc
+-- keys --
+h
+-- screen --
+                            SUMMARY OF VEDI COMMANDS
+
+      ⌃ ⌥ ⌘ are Ctrl, Alt and Cmd: ⌃F is Ctrl+f in the confi
+help  motion scrolls, / searches, any other key returns
+-- keys --
+q
+-- screen --
+1 abc
+  ~
+  ~
+<stdin>  line 1/1  wrap                               h help

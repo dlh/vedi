@@ -1,0 +1,21 @@
+line_numbers_side right puts the line numbers at the right edge of the
+screen, a blank between the text and them.
+
+-- size --
+20x5
+-- config --
+line_numbers yes
+line_numbers_side right
+status_line no
+-- input --
+one
+the quick brown fox jumps
+three
+-- screen --
+one                1
+the quick brown fo 2
+x jumps
+three              3
+~
+-- cursor --
+0 0

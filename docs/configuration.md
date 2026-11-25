@@ -53,6 +53,8 @@ directory.
 | `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
 | `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
 | `hint_order` | `top_down` | `--hint-order` | `bottom_up` numbers `s`'s hints from the bottom of the screen. |
+| `line_numbers` | `no` | `--line-numbers`, `--no-line-numbers` | Number the lines. |
+| `line_numbers_side` | `left` | `--line-numbers-side` | `right` puts the numbers at the screen's right edge. |
 | `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
 | `copy_on_select` | `yes` | `--copy-on-select`, `--no-copy-on-select` | Copy what the mouse selects when the button comes up. |
 | `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
@@ -86,6 +88,14 @@ as its characters, the ESC as `^[` in reverse video, and colors nothing. Search
 finds its text and copy sends it. No title names stdin, and `[` and `]` stop
 only at inputs. Changing to or from `raw` keeps the cursor's line and clamps its
 column. `-F` prints the escapes spelled out. The status line shows `raw`.
+
+**line_numbers yes.** Each line's first row has its number, counted in its
+input as the status line counts, in a column as wide as the text's line count; a
+wrapped line's other rows have none. The text has the columns left. On the
+right the numbers are at the screen's edge, or after the `wrap_width` bar when
+there is one. In the filter's list a line has the number it has in the text.
+Help shows none, nor does a screen too narrow to leave the text a column, and
+`-F` prints the text without them.
 
 **copy_on_select no.** Releasing the mouse button no longer copies what it
 selected; the copy keys do. By default it does, as a terminal copies what the
@@ -152,6 +162,7 @@ change it. [themes.md](themes.md) shows each.
 | `guide` | `dim` | The `wrap_width` bar and the `~` below the text. |
 | `separator` | `cyan` | The row naming each input. |
 | `separator_name` | `bold` | The name on it. |
+| `line_number` | `dim` | The numbers of `line_numbers`. |
 
 A style is `[color] [on color] [attribute...]`: the foreground, the background,
 then any of `bold`, `dim`, `italic`, `underline`, `reverse` and `strike`. A
@@ -174,7 +185,8 @@ which shows where it sets no color.
 | `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
 | `:color <element> <style>` | Set a [color](#colors), as in the file. |
 | `:22`, `:goto 22` | Go to line 22. |
-| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `end_markers`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order` and `open_cmd`. |
+| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `end_markers`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order`, `line_numbers`, `line_numbers_side`
+and `open_cmd`. |
 | `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
 | `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
 | `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |
@@ -374,6 +386,12 @@ map w cycle wrap
 
 # Wrap at 80 cells / the screen's edge
 map W cycle wrap_width 0 80
+
+# Toggle the line numbers
+map # cycle line_numbers
+
+# Line numbers at the left / right edge: cycle line_numbers_side;
+# unbound by default
 
 # Reload the file
 map R reload

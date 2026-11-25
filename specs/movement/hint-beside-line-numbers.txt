@@ -1,0 +1,21 @@
+A hint's label is over its line's first cells, beside the line's
+number.
+
+-- size --
+20x3
+-- config --
+line_numbers yes
+status_line no
+-- input --
+ab
+cd
+-- keys --
+s
+-- screen --
+1 <1>b
+2 <2>d
+  ~
+-- keys --
+2
+-- cursor --
+1 2

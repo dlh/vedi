@@ -1,0 +1,18 @@
+A screen too narrow to leave the text a column beside the numbers
+shows none.
+
+-- size --
+2x2
+-- config --
+line_numbers yes
+status_line no
+-- input --
+abc
+-- screen --
+ab
+c
+-- resize --
+3x2
+-- screen --
+1 a
+  b

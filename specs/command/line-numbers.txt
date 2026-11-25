@@ -1,0 +1,35 @@
+line_numbers yes or no at the : prompt shows the numbers or takes them
+away for the rest of the run, and line_numbers_side right or left moves
+them. cycle steps either and says its new value; # is cycle
+line_numbers.
+
+-- size --
+60x3
+-- input --
+hello
+-- keys --
+: "line_numbers yes" Enter
+-- screen --
+1 hello
+  ~
+<stdin>  line 1/1  wrap                               h help
+-- cursor --
+0 2
+-- keys --
+: "line_numbers_side right" Enter
+-- screen --
+hello                                                      1
+~
+<stdin>  line 1/1  wrap                               h help
+-- keys --
+: "cycle line_numbers_side" Enter
+-- screen --
+1 hello
+  ~
+<stdin>  line 1/1  wrap  [line_numbers_side left]       h help
+-- keys --
+#
+-- screen --
+hello
+~
+<stdin>  line 1/1  wrap  [line_numbers no]              h help

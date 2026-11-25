@@ -36,6 +36,10 @@ _vedi() {
         COMPREPLY=($(compgen -W 'top_down bottom_up' -- "$cur"))
         return
         ;;
+    --line-numbers-side)
+        COMPREPLY=($(compgen -W 'left right' -- "$cur"))
+        return
+        ;;
     --completion)
         COMPREPLY=($(compgen -W 'bash zsh fish' -- "$cur"))
         return
@@ -63,6 +67,7 @@ _vedi() {
             --end-markers --no-end-markers
             --status-line --no-status-line
             --view-style --hint-order
+            --line-numbers --no-line-numbers --line-numbers-side
             --config --completion
             -h --help -v --version' -- "$cur"))
         return

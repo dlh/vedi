@@ -30,6 +30,9 @@ _arguments -S \
     '(--status-line --no-status-line)--no-status-line[draw the status line only for a prompt or a message]' \
     '--view-style=[draw the text in color, plain or with its escapes as text]:style:(color plain raw)' \
     '--hint-order=[number hints from the top or the bottom]:order:(top_down bottom_up)' \
+    '(--line-numbers --no-line-numbers)--line-numbers[number the lines]' \
+    '(--line-numbers --no-line-numbers)--no-line-numbers[do not number the lines]' \
+    '--line-numbers-side=[number the lines at the left or right edge]:side:(left right)' \
     '--config=[read the config from this file]:file:_files' \
     '(- *)--completion=[print the completion script for a shell]:shell:(bash zsh fish)' \
     '(- *)'{-h,--help}'[show the help]' \

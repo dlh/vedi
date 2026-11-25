@@ -29,6 +29,9 @@ pub struct Settings {
     /// Releasing the mouse button copies the selection it made.
     pub copy_on_select: bool,
     pub hint_order: HintOrder,
+    /// Each line's first row has its number.
+    pub line_numbers: bool,
+    pub line_numbers_side: Side,
     /// Rows -F leaves below the text.
     pub one_page_rows_below: usize,
     /// color lines.
@@ -50,6 +53,8 @@ impl Default for Settings {
             view_style: ViewStyle::Color,
             copy_on_select: true,
             hint_order: HintOrder::TopDown,
+            line_numbers: false,
+            line_numbers_side: Side::Left,
             one_page_rows_below: 1,
             theme: Theme::default(),
         }
@@ -81,6 +86,35 @@ impl fmt::Display for HintOrder {
         f.write_str(match self {
             HintOrder::TopDown => "top_down",
             HintOrder::BottomUp => "bottom_up",
+        })
+    }
+}
+
+/// The edge of the screen the line numbers are at.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+pub enum Side {
+    #[default]
+    Left,
+    Right,
+}
+
+impl FromStr for Side {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "left" => Ok(Side::Left),
+            "right" => Ok(Side::Right),
+            _ => Err(()),
+        }
+    }
+}
+
+impl fmt::Display for Side {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match self {
+            Side::Left => "left",
+            Side::Right => "right",
         })
     }
 }
@@ -332,6 +366,34 @@ pub const VERBS: &[Verb] = &[
         flag: true,
     },
     Verb {
+        name: "line_numbers",
+        cycle: YES_NO,
+        field: Some(Field {
+            get: |s| yes_no(s.line_numbers),
+            set: |s, a| {
+                s.line_numbers = a == "yes";
+                Ok(())
+            },
+        }),
+        summarized: false,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
+        name: "line_numbers_side",
+        cycle: Cycle::Values(&["left", "right"]),
+        field: Some(Field {
+            get: |s| s.line_numbers_side.to_string(),
+            set: |s, a| {
+                s.line_numbers_side = a.parse().expect("checked");
+                Ok(())
+            },
+        }),
+        summarized: false,
+        prompt: true,
+        flag: true,
+    },
+    Verb {
         name: "clipboard_cmd",
         cycle: Cycle::No,
         field: None,
@@ -537,6 +599,8 @@ mod tests {
                 "view_style",
                 "copy_on_select",
                 "hint_order",
+                "line_numbers",
+                "line_numbers_side",
                 "one_page_rows_below",
             ]
         );
@@ -610,6 +674,8 @@ mod tests {
                 "view_style",
                 "copy_on_select",
                 "hint_order",
+                "line_numbers",
+                "line_numbers_side",
             ]
         );
         let mut want = lists;
@@ -653,6 +719,8 @@ mod tests {
                 "view_style",
                 "copy_on_select",
                 "hint_order",
+                "line_numbers",
+                "line_numbers_side",
                 "one_page_rows_below",
             ]
         );

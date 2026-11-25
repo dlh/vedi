@@ -122,6 +122,8 @@ pub const ERROR: Style = PLAIN.fg(Color::Palette(15)).bg(Color::Palette(1));
 /// so they sit behind the text rather than among it.
 pub const GUIDE: Style = PLAIN.dim();
 pub const SEP_NAME: Style = PLAIN.bold();
+/// The line numbers: dim, as the guide is.
+pub const LINE_NUMBER: Style = PLAIN.dim();
 /// A hint's label: bright cyan, far from a match's yellow and the
 /// current match's magenta, which it is drawn over.
 pub const HINT: Style = PLAIN.fg(Color::Palette(0)).bg(Color::Palette(14)).bold();
@@ -149,10 +151,11 @@ pub enum Element {
     Guide,
     Separator,
     SeparatorName,
+    LineNumber,
 }
 
 impl Element {
-    pub const ALL: [Element; 12] = [
+    pub const ALL: [Element; 13] = [
         Element::Selection,
         Element::Match,
         Element::CurrentMatch,
@@ -165,6 +168,7 @@ impl Element {
         Element::Guide,
         Element::Separator,
         Element::SeparatorName,
+        Element::LineNumber,
     ];
 
     pub fn name(self) -> &'static str {
@@ -181,6 +185,7 @@ impl Element {
             Element::Guide => "guide",
             Element::Separator => "separator",
             Element::SeparatorName => "separator_name",
+            Element::LineNumber => "line_number",
         }
     }
 }
@@ -200,8 +205,19 @@ pub struct Theme([Style; Element::ALL.len()]);
 impl Default for Theme {
     fn default() -> Theme {
         Theme([
-            SELECTION, MATCH, CUR_MATCH, HINT, NOTE, ERROR, STATUS, EDGE, CONTROL, GUIDE, SEP_RULE,
+            SELECTION,
+            MATCH,
+            CUR_MATCH,
+            HINT,
+            NOTE,
+            ERROR,
+            STATUS,
+            EDGE,
+            CONTROL,
+            GUIDE,
+            SEP_RULE,
             SEP_NAME,
+            LINE_NUMBER,
         ])
     }
 }

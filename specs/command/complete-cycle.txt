@@ -18,7 +18,7 @@ Tab
 line 1
 ~
 ~
-:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  end_markers  file_separators  hint_order  open
+:cycle auto_reload   [auto_reload]  copy_on_select  edge_markers  end_markers  file_separators  hint_order  line
 -- keys --
 Esc : "cycle view_style " Tab
 -- screen --

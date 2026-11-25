@@ -1,0 +1,25 @@
+With the numbers at the left a click puts the cursor on the char under
+it, and a click on a number on its row's first char.
+
+-- size --
+40x4
+-- config --
+line_numbers yes
+-- input --
+one two
+three four
+-- mouse --
+click 1 8
+-- cursor --
+1 8
+-- keys --
+Shift+Right
+-- screen --
+1 one two
+2 three [f]our
+  ~
+<stdin>  line 2/2  wrap           h help
+-- mouse --
+click 0 0
+-- cursor --
+0 2

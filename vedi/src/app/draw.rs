@@ -2,6 +2,7 @@
 //! characters, separators and markers, and the cursor.
 
 use crate::app::text_view::{Row, Selection};
+use crate::app::views::Role;
 use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::view::layout::{self, Layout, Mode};
@@ -48,11 +49,13 @@ impl<T: Terminal> App<T> {
 
     /// Draws the visible rows and returns the cursor's cell, if shown.
     /// A row below the text starts with a ~, as in less, unless end_markers
-    /// is off. Every row carries the wrap_width bar when there is one.
+    /// is off. Every row carries the wrap_width bar when there is one,
+    /// and a line's first row its number when they are on.
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
         let rows = self.views.shown.rows();
         let geom = self.views.shown.geometry();
-        let guide = geom.guide_col();
+        let left = geom.left();
+        let guide = geom.guide_col().map(|x| left + x);
         let guide_st = self.settings.theme[Element::Guide];
         let mut p = self.views.shown.top();
         let mut cur = None;
@@ -67,7 +70,10 @@ impl<T: Terminal> App<T> {
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
-                cur = Some((x, y));
+                cur = Some((left + x, y));
+            }
+            if p.col == Some(0) {
+                self.draw_number(g, y, p.line);
             }
             if let Some(x) = guide {
                 g.put(x, y, "│", guide_st, None);
@@ -82,7 +88,7 @@ impl<T: Terminal> App<T> {
         }
         for y in y..rows {
             if geom.end_markers {
-                g.put(0, y, "~", guide_st, None);
+                g.put(left, y, "~", guide_st, None);
             }
             if let Some(x) = guide {
                 g.put(x, y, "│", guide_st, None);
@@ -93,7 +99,8 @@ impl<T: Terminal> App<T> {
 
     /// Draws the row starting at `p` on screen row `y`, with `matches`
     /// the line's search matches and `sel` the selection, and returns
-    /// the cursor's column when the view shows it on this row.
+    /// the cursor's column of the text when the view shows it on this
+    /// row.
     fn draw_row(
         &mut self,
         g: &mut Grid,
@@ -111,8 +118,9 @@ impl<T: Terminal> App<T> {
             let cell = self.views.shown.cursor_on(p);
             return cell.filter(|c| c.shown).map(|c| c.x as usize);
         }
-        let w = g.width();
         let geom = self.views.shown.geometry();
+        let w = geom.cols;
+        let at = RowStart { x: geom.left(), y };
         // Text stops short of the wrap_width bar as it does of the
         // screen's edge: a tab wider than the width would run under it.
         let right = geom.wrap_cols();
@@ -164,7 +172,7 @@ impl<T: Terminal> App<T> {
             let selected = sel.contains(&i);
             if i == n {
                 if selected && x < right as isize {
-                    put(g, x, y, " ", theme[Element::Selection], None);
+                    put(g, at, x, " ", theme[Element::Selection], None);
                 }
                 break;
             }
@@ -207,7 +215,7 @@ impl<T: Terminal> App<T> {
             let room = usize::try_from(right as isize - x).unwrap_or(0);
             let cells = line.text[i] == '\t' || is_control(line.text[i]);
             if room >= width || (cells && room > 0) {
-                glyph(g, x, y, &text, width.min(room), st, link);
+                glyph(g, at, x, &text, width.min(room), st, link);
             }
             i = j;
         }
@@ -218,17 +226,17 @@ impl<T: Terminal> App<T> {
         let width = xs[n];
         if geom.edge_markers && geom.mode == Mode::NoWrap {
             if xoff > 0 && width > 0 {
-                put(g, 0, y, "<", theme[Element::EdgeMarker], None);
+                put(g, at, 0, "<", theme[Element::EdgeMarker], None);
             }
             if width > xoff + w && w > 0 {
                 if w >= 2 {
-                    let c = g.get(w - 2, y);
+                    let c = g.get(at.x + w - 2, y);
                     if c.width == 2 {
                         let (st, link) = (c.style, c.link.clone());
-                        g.put(w - 2, y, " ", st, link);
+                        g.put(at.x + w - 2, y, " ", st, link);
                     }
                 }
-                put(g, w as isize - 1, y, ">", theme[Element::EdgeMarker], None);
+                put(g, at, w as isize - 1, ">", theme[Element::EdgeMarker], None);
             }
         }
         // In wrap mode a row whose line goes on below ends in a marker,
@@ -236,8 +244,8 @@ impl<T: Terminal> App<T> {
         if geom.wrap_marks() && seg.end < n {
             put(
                 g,
+                at,
                 geom.wrap_cols() as isize - 1,
-                y,
                 "\\",
                 theme[Element::EdgeMarker],
                 None,
@@ -246,10 +254,36 @@ impl<T: Terminal> App<T> {
         cell.filter(|c| c.shown).map(|c| c.x as usize)
     }
 
+    /// Draws line `i`'s number at line_numbers_side's edge, counted
+    /// in its input as the status line counts, right-aligned; in a
+    /// filter's list, the number of the text's line it is.
+    fn draw_number(&self, g: &mut Grid, y: usize, i: usize) {
+        let geom = self.views.shown.geometry();
+        let Some(x) = geom.numbers_col() else {
+            return;
+        };
+        let line = match &self.filter {
+            Some(f) if self.views.role() == Role::List => f.line(i),
+            _ => Some(i),
+        };
+        let Some(line) = line else {
+            return;
+        };
+        let (_, lines) = self.views.text().buf().part(line);
+        let n = (line - lines.start + 1).to_string();
+        let x = x + (geom.gutter - 1).saturating_sub(n.len());
+        let st = self.settings.theme[Element::LineNumber];
+        for (k, c) in n.chars().enumerate() {
+            g.put(x + k, y, c.encode_utf8(&mut [0; 4]), st, None);
+        }
+    }
+
     /// Draws the row naming line `i`'s input: two dashes, the name as
     /// given, and dashes to the right edge, or wrap_width's, which cuts a
     /// wider name.
     fn draw_separator(&self, g: &mut Grid, y: usize, i: usize) {
+        let geom = self.views.shown.geometry();
+        let left = geom.left();
         let name: Vec<char> = self
             .names
             .get(self.views.shown.buf().part_at(i))
@@ -260,11 +294,11 @@ impl<T: Terminal> App<T> {
             self.settings.theme[Element::Separator],
             self.settings.theme[Element::SeparatorName],
         );
-        let mut x = runes(g, 0, y, &['━', '━', ' '], rule);
+        let mut x = left + runes(g, left, y, &['━', '━', ' '], rule);
         x += runes(g, x, y, &name, name_st);
         g.put(x, y, " ", rule, None);
         x += 1;
-        let right = self.views.shown.geometry().wrap_cols();
+        let right = left + geom.wrap_cols();
         while x < right {
             g.put(x, y, "━", rule, None);
             x += 1;
@@ -289,21 +323,30 @@ fn is_control(c: char) -> bool {
     c < ' ' && c != '\t' || c == '\x7f'
 }
 
-/// Draws the cluster `s` at (`x`, `y`) if that is on screen.
-fn put(g: &mut Grid, x: isize, y: usize, s: &str, st: Style, link: Option<Link>) {
+/// The cell a row's text starts at: right of line numbers on the left.
+#[derive(Copy, Clone)]
+struct RowStart {
+    x: usize,
+    y: usize,
+}
+
+/// Draws the cluster `s` `x` cells into the row at `at`, unless that is
+/// left of it.
+fn put(g: &mut Grid, at: RowStart, x: isize, s: &str, st: Style, link: Option<Link>) {
     if let Ok(x) = usize::try_from(x) {
-        g.put(x, y, s, st, link);
+        g.put(at.x + x, at.y, s, st, link);
     }
 }
 
-/// Draws the cluster `text` at (`x`, `y`) in `width` cells: a tab as
+/// Draws the cluster `text` `x` cells into the row at `at` in `width`
+/// cells: a tab as
 /// that many spaces, a C0 control as ^X (DEL as ^?), the X only given a
 /// second cell, a C1 control as U+FFFD, anything else as itself with
 /// its marks.
 fn glyph(
     g: &mut Grid,
+    at: RowStart,
     x: isize,
-    y: usize,
     text: &str,
     width: usize,
     st: Style,
@@ -313,26 +356,26 @@ fn glyph(
     match c {
         '\t' => {
             for k in 0..width as isize {
-                put(g, x + k, y, " ", st, link.clone());
+                put(g, at, x + k, " ", st, link.clone());
             }
         }
         '\x7f' => {
-            put(g, x, y, "^", st, link.clone());
+            put(g, at, x, "^", st, link.clone());
             if width > 1 {
-                put(g, x + 1, y, "?", st, link);
+                put(g, at, x + 1, "?", st, link);
             }
         }
         c if c < ' ' => {
-            put(g, x, y, "^", st, link.clone());
+            put(g, at, x, "^", st, link.clone());
             let caret = char::from(c as u8 + 0x40);
             if width > 1 {
-                put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
+                put(g, at, x + 1, caret.encode_utf8(&mut [0; 4]), st, link);
             }
         }
         // A name or title may carry C1, which some terminals take for
         // escapes; content drops it on the way in.
-        c if c.is_control() => put(g, x, y, "\u{fffd}", st, link),
-        _ => put(g, x, y, text, st, link),
+        c if c.is_control() => put(g, at, x, "\u{fffd}", st, link),
+        _ => put(g, at, x, text, st, link),
     }
 }
 
@@ -344,7 +387,8 @@ pub(super) fn runes(g: &mut Grid, x: usize, y: usize, text: &[char], st: Style) 
     while i < text.len() {
         let (_, j) = layout::glyph(&xs, i);
         let s: String = text[i..j].iter().collect();
-        glyph(g, (x + xs[i]) as isize, y, &s, xs[i + 1] - xs[i], st, None);
+        let cell = xs[i] as isize;
+        glyph(g, RowStart { x, y }, cell, &s, xs[i + 1] - xs[i], st, None);
         i = j;
     }
     xs[text.len()]

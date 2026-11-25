@@ -1,4 +1,4 @@
-.Dd November 23, 2026
+.Dd November 25, 2026
 .Dt VEDI 1
 .Os
 .Sh NAME
@@ -140,6 +140,17 @@ or the bottom
 .Pq Cm bottom_up .
 Default:
 .Cm top_down .
+.It Fl \-line\-numbers , Fl \-no\-line\-numbers
+Number the lines, each input's from 1.
+Default: off.
+.It Fl \-line\-numbers\-side Ar side
+Number them at the
+.Cm left
+or
+.Cm right
+edge of the screen.
+Default:
+.Cm left .
 .It Fl \-config Ar file
 Read the config from
 .Ar file .
@@ -223,6 +234,8 @@ Command prompt; see
 Toggle wrap.
 .It Ic W
 Wrap at 80 cells, or at the screen's edge again.
+.It Ic #
+Toggle the line numbers.
 .It Ic R
 Reload the file.
 .It Ic O
@@ -279,7 +292,7 @@ Step a setting to its next value, wrapping to the first.
 Takes
 .Cm wrap , Cm wrap_style , Cm edge_markers , Cm file_separators ,
 .Cm end_markers , Cm auto_reload , Cm status_line , Cm view_style ,
-.Cm copy_on_select , Cm hint_order
+.Cm copy_on_select , Cm hint_order , Cm line_numbers , Cm line_numbers_side
 or
 .Cm open_cmd .
 .Pp
@@ -337,8 +350,8 @@ for
 .Ql \- :
 .Cm wrap , Cm wrap_style , Cm wrap_width , Cm tab_width , Cm edge_markers ,
 .Cm file_separators , Cm end_markers , Cm auto_reload , Cm status_line ,
-.Cm view_style , Cm copy_on_select , Cm hint_order ,
-.Cm one_page_rows_below , Cm clipboard_cmd
+.Cm view_style , Cm copy_on_select , Cm hint_order , Cm line_numbers ,
+.Cm line_numbers_side , Cm one_page_rows_below , Cm clipboard_cmd
 and
 .Cm open_cmd .
 A glob before an
@@ -363,9 +376,10 @@ is the home directory; a relative name is from this file's directory.
 .Cm color Ar element style
 sets how vedi draws an element:
 .Cm selection , Cm match , Cm current_match , Cm hint , Cm note , Cm error ,
-.Cm status , Cm edge_marker , Cm control , Cm guide , Cm separator
+.Cm status , Cm edge_marker , Cm control , Cm guide , Cm separator ,
+.Cm separator_name
 or
-.Cm separator_name .
+.Cm line_number .
 A style is
 .Oo Ar color Oc Oo Cm on Ar color Oc Op Ar attribute ... ,
 replacing the element's default.

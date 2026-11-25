@@ -1,0 +1,26 @@
+line_numbers yes numbers each line at the left edge of the screen,
+right-aligned in a column as wide as the line count's digits, a blank
+between it and the text, which wraps in the columns left. A wrapped
+line's later rows have no number, nor has the end row or a row below
+the text.
+
+-- size --
+20x7
+-- config --
+line_numbers yes
+status_line no
+-- input --
+one
+the quick brown fox jumps
+three
+
+-- screen --
+1 one
+2 the quick brown fo
+  x jumps
+3 three
+
+  ~
+  ~
+-- cursor --
+0 2
