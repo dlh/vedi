@@ -43,7 +43,7 @@ increment() {
 
 main() {
 	ref=${1:-HEAD}
-	last=$(git describe --tags --abbrev=0 "$ref")
+	last=$(git describe --tags --abbrev=0 --match 'v*' "$ref")
 	range=$last..$ref
 	if ! part=$(bump); then
 		echo "no release: nothing user-visible since $last" >&2
