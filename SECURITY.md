@@ -12,8 +12,8 @@ released.
 
 ## Verifying a download
 
-Releases after 2.10.2 cannot change once published. Their `checksums.txt` is
-signed and each archive has a build attestation. With
+Releases starting with 2.11.0 cannot change once published. Their
+`checksums.txt` is signed and each archive has a build attestation. With
 [gh](https://cli.github.com):
 
     gh release verify-asset v1.2.3 vedi_1.2.3_linux_amd64.tar.gz --repo dlh/vedi
