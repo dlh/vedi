@@ -1,0 +1,26 @@
+With several files, s labels the matches on the text rows and none on
+the file separators between them.
+
+-- size --
+20x5
+-- config --
+status_line no
+-- args --
+a.txt b.txt
+-- input --
+ax
+-- next-file --
+-- input --
+bx
+-- keys --
+"/x" Enter s
+-- screen --
+━━ a.txt ━━━━━━━━━━━
+a<1>
+━━ b.txt ━━━━━━━━━━━
+b<2>
+~
+-- keys --
+2
+-- cursor --
+3 1

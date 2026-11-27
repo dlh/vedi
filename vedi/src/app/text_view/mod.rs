@@ -18,7 +18,7 @@ use crate::view::screen::Region;
 pub use motion::Motion;
 pub(crate) use motion::is_word;
 use rows::LaidCache;
-pub use rows::{At, Row};
+pub use rows::{At, Row, Shown, TextRow};
 use search::Count;
 pub use search::{Origin, Outcome};
 pub use selection::Selection;

@@ -3,15 +3,15 @@
 //! list, to that place in the text, as Enter goes.
 
 use std::iter;
-use std::mem;
 use std::ops::Range;
 
-use crate::app::text_view::Motion;
+use crate::app::text_view::{Motion, Shown};
 use crate::app::views::Role;
 use crate::app::{App, Flow};
 use crate::input::key::{Key, KeyCode, Mods};
 use crate::input::setting::HintOrder;
-use crate::text::buffer::Pos;
+use crate::text::buffer::{Buffer, Pos};
+use crate::text::search::Matcher;
 use crate::view::layout::Segment;
 use crate::view::screen::{Grid, Terminal};
 use crate::view::style::Element;
@@ -103,6 +103,70 @@ fn fit(mut targets: Vec<Target>, right: usize, order: HintOrder) -> Vec<Target> 
     }
 }
 
+/// The targets on `rows`, as many as fit: `m`'s matches within the
+/// `right` cells shown, or with none, each line's first row that shows
+/// text.
+fn targets(
+    rows: &[Shown],
+    buf: &Buffer,
+    m: Option<&Matcher>,
+    right: usize,
+    order: HintOrder,
+) -> Vec<Target> {
+    let (mut lines, mut matches) = (Vec::new(), Vec::new());
+    let (mut text, mut found) = (Vec::new(), Vec::new());
+    let mut prev = None;
+    for (y, row) in rows.iter().enumerate() {
+        let Shown::Text(r) = row else {
+            continue;
+        };
+        let first = prev != Some(r.line);
+        prev = Some(r.line);
+        let (seg, xs) = (r.segment(), r.ln.cells());
+        let shown = r.x0..r.x0 + right;
+        if first {
+            buf.text(r.line, &mut text);
+            found = m.map_or_else(Vec::new, |m| m.all(&text));
+            if shows_text(&text, xs, seg, shown.clone()) {
+                let pos = Pos {
+                    line: r.line,
+                    col: seg.start,
+                };
+                lines.push(Target {
+                    y,
+                    x: 0,
+                    pos,
+                    on_match: false,
+                });
+            }
+        }
+        // A match is on the row its glyph starts on. A mark after a tab
+        // cut by the row's end is in the next segment by its index;
+        // matches are sorted, so their glyphs are too.
+        let lo = found.partition_point(|&k| k < seg.start);
+        for &k in &found[lo..] {
+            let (i, _) = r.ln.glyph(k);
+            if i >= seg.end {
+                break;
+            }
+            if i >= seg.start && shown.contains(&xs[i]) {
+                let pos = Pos {
+                    line: r.line,
+                    col: k,
+                };
+                matches.push(Target {
+                    y,
+                    x: xs[i] - r.x0,
+                    pos,
+                    on_match: true,
+                });
+            }
+        }
+    }
+    let targets = if matches.is_empty() { lines } else { matches };
+    fit(targets, right, order)
+}
+
 impl<T: Terminal> App<T> {
     /// Labels the matches or lines shown, unless none is.
     pub(super) fn open_hints(&mut self) -> Flow {
@@ -117,67 +181,12 @@ impl<T: Terminal> App<T> {
     /// The highlighted search's matches shown, top down, left to
     /// right; with none, each line's first row shown.
     fn hint_targets(&mut self) -> Vec<Target> {
-        let mut scratch = mem::take(&mut self.scratch);
         let v = &mut self.views.shown;
-        let searched = v.highlight() && !v.matcher().is_empty();
+        let mut walk = v.shown_rows();
+        let rows: Vec<Shown> = iter::from_fn(|| walk.next(v)).collect();
         let right = v.geometry().wrap_cols();
-        let (mut lines, mut matches) = (Vec::new(), Vec::new());
-        let mut prev = None;
-        let mut p = v.top();
-        for y in 0..v.rows() {
-            if p.line >= v.buf().len() {
-                break;
-            }
-            if let Some(col) = p.col
-                && !v.is_end_row(p)
-            {
-                let first = prev != Some(p.line);
-                prev = Some(p.line);
-                let ln = v.line_layout(p.line);
-                let seg = ln.segments()[ln.segment_at(col)];
-                let xs = ln.cells();
-                let x0 = xs[seg.start] + v.xoff();
-                if first || searched {
-                    v.buf().text(p.line, &mut scratch);
-                }
-                if first && shows_text(&scratch, xs, seg, x0..x0 + right) {
-                    let pos = Pos { line: p.line, col };
-                    lines.push(Target {
-                        y,
-                        x: 0,
-                        pos,
-                        on_match: false,
-                    });
-                }
-                if searched {
-                    for k in v.matcher().all(&scratch) {
-                        // A match may start on a mark or inside a
-                        // cluster, which has no cell of its own.
-                        let (i, _) = ln.glyph(k);
-                        if (seg.start..seg.end).contains(&i) && (x0..x0 + right).contains(&xs[i]) {
-                            let pos = Pos {
-                                line: p.line,
-                                col: k,
-                            };
-                            matches.push(Target {
-                                y,
-                                x: xs[i] - x0,
-                                pos,
-                                on_match: true,
-                            });
-                        }
-                    }
-                }
-            }
-            let next = v.next_row(p);
-            if next == p {
-                break;
-            }
-            p = next;
-        }
-        self.scratch = scratch;
-        let targets = if matches.is_empty() { lines } else { matches };
-        fit(targets, right, self.settings.hint_order)
+        let m = (v.highlight() && !v.matcher().is_empty()).then(|| v.matcher());
+        targets(&rows, v.buf(), m, right, self.settings.hint_order)
     }
 
     /// The labels left for what was typed: the part still to type, and

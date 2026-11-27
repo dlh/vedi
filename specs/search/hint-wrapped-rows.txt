@@ -1,0 +1,19 @@
+A match on a wrapped line's later row is labeled on that row, where
+it shows.
+
+-- size --
+8x3
+-- config --
+status_line no
+-- input --
+ab x cd x yy x
+-- keys --
+"/x" Enter s
+-- screen --
+ab <1> cd
+<2> yy <3>
+~
+-- keys --
+3
+-- cursor --
+1 5

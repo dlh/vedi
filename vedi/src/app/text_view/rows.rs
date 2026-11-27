@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 use crate::app::text_view::TextView;
 use crate::text::buffer::Pos;
-use crate::view::layout::{Laid, Layout, Mode};
+use crate::view::layout::{Laid, Layout, Mode, Segment};
 
 /// How many lines are kept laid out before starting over.
 const LAID_LINES: usize = 1024;
@@ -54,6 +54,74 @@ pub struct CursorCell {
     /// hide a cursor under them. With no > a glyph cut off at the right
     /// edge shows the cursor on its first cell.
     pub shown: bool,
+}
+
+/// What a screen row shows.
+pub enum Shown {
+    Text(TextRow),
+    /// The row naming line `.0`'s input.
+    Separator(usize),
+    /// The end row, and the cursor's glyph when it rests there.
+    End(Option<CursorCell>),
+}
+
+/// A row of a line's text: one segment of its layout.
+pub struct TextRow {
+    pub line: usize,
+    pub ln: Rc<Laid>,
+    /// The segment's index in `ln`.
+    pub seg: usize,
+    /// The line's cell at the row's left edge: the segment's first,
+    /// plus the horizontal scroll.
+    pub x0: usize,
+    /// The cursor's glyph, when it starts on this row.
+    pub cursor: Option<CursorCell>,
+}
+
+impl TextRow {
+    pub fn segment(&self) -> Segment {
+        self.ln.segments()[self.seg]
+    }
+}
+
+/// The rows shown, top down. Stepped rather than iterated, so a row is
+/// drawn as it is reached: the buffer keeps one block decoded, and a
+/// second pass over rows spanning two blocks decodes both again.
+pub struct ShownRows {
+    next: Option<Row>,
+    left: usize,
+}
+
+impl ShownRows {
+    /// The next row of `v`, the view the walk began on; `None` past the
+    /// last row the screen has or the text does.
+    pub fn next(&mut self, v: &mut TextView) -> Option<Shown> {
+        let p = self
+            .next
+            .take()
+            .filter(|p| self.left > 0 && p.line < v.buf.len())?;
+        self.left -= 1;
+        let Some(col) = p.col else {
+            self.next = Some(v.next_row(p));
+            return Some(Shown::Separator(p.line));
+        };
+        // Laid out once for the row and the step past it.
+        let ln = v.line_layout(p.line);
+        let next = v.row_after(p, col, &ln);
+        self.next = Some(next).filter(|&n| n != p);
+        if v.last_newline(p.line) && col >= ln.cells().len() {
+            return Some(Shown::End(v.cursor_on(p)));
+        }
+        let seg = ln.segment_at(col);
+        let x0 = ln.cells()[ln.segments()[seg].start] + v.xoff;
+        Some(Shown::Text(TextRow {
+            line: p.line,
+            ln,
+            seg,
+            x0,
+            cursor: v.cursor_on(p),
+        }))
+    }
 }
 
 /// Where the view is: a line, or the end row past it.
@@ -115,7 +183,7 @@ impl TextView {
     /// it, drawn, and the line's last row is full. With wrap markers the
     /// newline has the marker's column, unless a tab wider than the
     /// screen fills that too.
-    pub fn line_layout(&mut self, i: usize) -> Rc<Laid> {
+    pub(super) fn line_layout(&mut self, i: usize) -> Rc<Laid> {
         let l = self.geom.layout();
         if self.laid.layout != l || self.laid.lines.len() >= LAID_LINES {
             self.laid = LaidCache::new(l);
@@ -155,7 +223,7 @@ impl TextView {
     }
 
     /// Whether `p` is the end row.
-    pub fn is_end_row(&mut self, p: Row) -> bool {
+    pub(super) fn is_end_row(&mut self, p: Row) -> bool {
         p.col
             .is_some_and(|c| self.last_newline(p.line) && c > self.line_len(p.line))
     }
@@ -241,7 +309,7 @@ impl TextView {
     /// shows on the cluster, which has no smaller part to show it on.
     /// On the end row it is the first cell. Past the end of a line that
     /// shrank under it, until a motion clamps it, the cursor is nowhere.
-    pub fn cursor_on(&mut self, p: Row) -> Option<CursorCell> {
+    pub(super) fn cursor_on(&mut self, p: Row) -> Option<CursorCell> {
         let col = p.col?;
         if p.line != self.cur.line {
             return None;
@@ -284,6 +352,14 @@ impl TextView {
             }
         }
         Some(CursorCell { x, width, shown })
+    }
+
+    /// A walk down the rows shown, from `top`.
+    pub fn shown_rows(&mut self) -> ShownRows {
+        ShownRows {
+            next: Some(self.top()),
+            left: self.geom.rows,
+        }
     }
 
     /// Makes row `p` the top one, stopping at the last screenful: each
@@ -358,7 +434,7 @@ impl TextView {
 
     /// The row start after `p`, or `p` at the end: the next line's
     /// separator, when it has one, comes before the line.
-    pub fn next_row(&mut self, p: Row) -> Row {
+    pub(super) fn next_row(&mut self, p: Row) -> Row {
         let Some(col) = p.col else {
             return Row::text(Pos {
                 line: p.line,
@@ -366,6 +442,11 @@ impl TextView {
             });
         };
         let ln = self.line_layout(p.line);
+        self.row_after(p, col, &ln)
+    }
+
+    /// The row start after `p`, at `col` of its line laid out as `ln`.
+    fn row_after(&self, p: Row, col: usize, ln: &Laid) -> Row {
         let n = ln.cells().len() - 1;
         if col > n {
             return p;

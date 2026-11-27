@@ -1,7 +1,7 @@
 //! One frame: the text rows from the top, with the selection, control
 //! characters, separators and markers, and the cursor.
 
-use crate::app::text_view::{Row, Selection};
+use crate::app::text_view::{Selection, Shown, TextRow};
 use crate::app::views::Role;
 use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
@@ -57,33 +57,39 @@ impl<T: Terminal> App<T> {
         let area = geom.text_area();
         let guide = geom.guide_col().map(|x| area.grid_col(x));
         let guide_st = self.settings.theme[Element::Guide];
-        let mut p = self.views.shown.top();
+        let mut shown = self.views.shown.shown_rows();
         let mut cur = None;
         let mut y = 0;
         let mut matches = Vec::new();
         let mut match_line = None;
         let sel = self.views.shown.selection();
-        while y < rows && p.line < self.views.shown.buf().len() {
-            if self.views.shown.highlight() && match_line != Some(p.line) {
-                self.views.shown.buf().text(p.line, &mut self.scratch);
-                matches = self.views.shown.matcher().all(&self.scratch);
-                match_line = Some(p.line);
-            }
-            if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
+        while let Some(row) = shown.next(&mut self.views.shown) {
+            let x = match row {
+                Shown::Separator(i) => {
+                    self.draw_separator(g, y, i);
+                    None
+                }
+                // Nothing but the cursor.
+                Shown::End(cell) => cell.filter(|c| c.shown).map(|c| c.x as usize),
+                Shown::Text(r) => {
+                    if self.views.shown.highlight() && match_line != Some(r.line) {
+                        self.views.shown.buf().text(r.line, &mut self.scratch);
+                        matches = self.views.shown.matcher().all(&self.scratch);
+                        match_line = Some(r.line);
+                    }
+                    let x = self.draw_row(g, y, &r, &matches, sel);
+                    if r.segment().start == 0 {
+                        self.draw_number(g, y, r.line);
+                    }
+                    x
+                }
+            };
+            if let Some(x) = x {
                 cur = Some((area.grid_col(x), y));
-            }
-            if p.col == Some(0) {
-                self.draw_number(g, y, p.line);
             }
             if let Some(x) = guide {
                 g.put(x, y, "│", guide_st, None);
             }
-            let next = self.views.shown.next_row(p);
-            if next == p {
-                y += 1;
-                break;
-            }
-            p = next;
             y += 1;
         }
         for y in y..rows {
@@ -97,49 +103,37 @@ impl<T: Terminal> App<T> {
         cur
     }
 
-    /// Draws the row starting at `p` on screen row `y`, with `matches`
-    /// the line's search matches and `sel` the selection, and returns
-    /// the cursor's column of the text when the view shows it on this
-    /// row.
+    /// Draws text row `r` on screen row `y`, with `matches` the line's
+    /// search matches and `sel` the selection, and returns the cursor's
+    /// column of the text when the view shows it on this row.
     fn draw_row(
         &mut self,
         g: &mut Grid,
         y: usize,
-        p: Row,
+        r: &TextRow,
         matches: &[usize],
         sel: Option<Selection>,
     ) -> Option<usize> {
-        let Some(col) = p.col else {
-            self.draw_separator(g, y, p.line);
-            return None;
-        };
-        // The end row: nothing but the cursor.
-        if self.views.shown.is_end_row(p) {
-            let cell = self.views.shown.cursor_on(p);
-            return cell.filter(|c| c.shown).map(|c| c.x as usize);
-        }
         let geom = self.views.shown.geometry();
         let w = geom.cols;
         let area = geom.text_area();
         let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
         let pointed = self.focus == Focus::Prompting(Kind::Filter)
             && self.filter.as_ref().is_some_and(|f| f.pointer_shown())
-            && cursor.line == p.line;
-        let cell = self.views.shown.cursor_on(p);
-        let ln = self.views.shown.line_layout(p.line);
-        let line = self.views.shown.buf().line(p.line);
+            && cursor.line == r.line;
+        let ln = &r.ln;
+        let line = self.views.shown.buf().line(r.line);
         let xs = ln.cells();
-        let segi = ln.segment_at(col);
-        let seg = ln.segments()[segi];
-        let x0 = (xs[seg.start] + xoff) as isize;
+        let (segi, seg) = (r.seg, r.segment());
+        let x0 = r.x0 as isize;
         let n = line.text.len();
-        let sel = sel.map_or(0..0, |s| s.cols(p.line, n));
+        let sel = sel.map_or(0..0, |s| s.cols(r.line, n));
         // The cursor's glyph [ci, cj), and the chars [cur_lo, cur_hi) of
         // the matches over it: matches may overlap, and those that do
         // are one.
         let m = self.views.shown.matcher().len();
         let (mut cur_lo, mut cur_hi) = (0, 0);
-        if cursor.line == p.line {
+        if cursor.line == r.line {
             let (ci, cj) = ln.glyph(cursor.col);
             // Searched, not scanned: a long line is drawn a row at a
             // time, each with all its matches.
@@ -235,7 +229,7 @@ impl<T: Terminal> App<T> {
             let x = area.width() as isize - 1;
             area.put(g, x, y, "\\", theme[Element::EdgeMarker], None);
         }
-        cell.filter(|c| c.shown).map(|c| c.x as usize)
+        r.cursor.filter(|c| c.shown).map(|c| c.x as usize)
     }
 
     /// Draws line `i`'s number at line_numbers_side's edge, counted

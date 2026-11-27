@@ -1,0 +1,26 @@
+In nowrap scrolled sideways, s labels only the matches on screen, at
+their cells, none on a line scrolled off to the left.
+
+-- size --
+6x3
+-- args --
+-S
+-- config --
+status_line no
+-- input --
+ab x  x x  x
+x
+-- keys --
+"/x" Enter
+-- mouse --
+wheel right
+-- keys --
+s
+-- screen --
+  <1> <2>
+
+~
+-- keys --
+2
+-- cursor --
+0 4
