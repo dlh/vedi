@@ -579,31 +579,6 @@ mod tests {
     /// so is each value it lists; a number must be positive.
     #[test]
     fn fields_round_trip() {
-        let fields: Vec<&str> = VERBS
-            .iter()
-            .filter(|v| v.field.is_some())
-            .map(|v| v.name)
-            .collect();
-        assert_eq!(
-            fields,
-            [
-                "wrap",
-                "wrap_style",
-                "wrap_width",
-                "tab_width",
-                "edge_markers",
-                "file_separators",
-                "end_markers",
-                "auto_reload",
-                "status_line",
-                "view_style",
-                "copy_on_select",
-                "hint_order",
-                "line_numbers",
-                "line_numbers_side",
-                "one_page_rows_below",
-            ]
-        );
         for v in VERBS {
             let Some(f) = &v.field else { continue };
             let values: &[&str] = if v.values().is_empty() {
@@ -650,41 +625,21 @@ mod tests {
         assert_eq!(verb("open_cmd").unwrap().check("bat"), Ok(String::new()));
     }
 
-    /// cycle takes a list for every setting the prompt takes, and
-    /// alone those with fixed values and open_cmd.
+    /// cycle takes a list for every setting the prompt takes, those
+    /// with fixed values among them; alone, only open_cmd besides.
     #[test]
     fn cycled_verbs() {
-        let lists: Vec<&str> = VERBS
-            .iter()
-            .filter(|v| v.takes_list())
-            .map(|v| v.name)
+        for v in VERBS.iter().filter(|v| !v.values().is_empty()) {
+            assert!(v.takes_list(), "{}", v.name);
+        }
+        let alone: Vec<&str> = cycled()
+            .filter(|&n| !verb(n).unwrap().takes_list())
             .collect();
-        assert_eq!(
-            lists,
-            [
-                "wrap",
-                "wrap_style",
-                "wrap_width",
-                "tab_width",
-                "edge_markers",
-                "file_separators",
-                "end_markers",
-                "auto_reload",
-                "status_line",
-                "view_style",
-                "copy_on_select",
-                "hint_order",
-                "line_numbers",
-                "line_numbers_side",
-            ]
-        );
-        let mut want = lists;
-        want.push("open_cmd");
-        assert_eq!(cycled().collect::<Vec<_>>(), want);
+        assert_eq!(alone, ["open_cmd"]);
     }
 
-    /// The prompt takes every verb but the three a running pager
-    /// cannot use.
+    /// The prompt takes every verb but those a running pager cannot
+    /// use.
     #[test]
     fn prompt_verbs() {
         let out: Vec<&str> = VERBS.iter().filter(|v| !v.prompt).map(|v| v.name).collect();
@@ -703,27 +658,9 @@ mod tests {
     /// A flag sets each setting and nothing else; --no- is for yes/no.
     #[test]
     fn flag_verbs() {
-        let flags: Vec<&str> = VERBS.iter().filter(|v| v.flag).map(|v| v.name).collect();
-        assert_eq!(
-            flags,
-            [
-                "wrap",
-                "wrap_style",
-                "wrap_width",
-                "tab_width",
-                "edge_markers",
-                "file_separators",
-                "end_markers",
-                "auto_reload",
-                "status_line",
-                "view_style",
-                "copy_on_select",
-                "hint_order",
-                "line_numbers",
-                "line_numbers_side",
-                "one_page_rows_below",
-            ]
-        );
+        for v in VERBS {
+            assert_eq!(v.flag, v.field.is_some(), "{}", v.name);
+        }
         let name = |f: &str| flag_verb(f).map(|(v, val)| (v.name, val));
         assert_eq!(name("--wrap"), Some(("wrap", Some("yes"))));
         assert_eq!(name("--no-wrap"), Some(("wrap", Some("no"))));

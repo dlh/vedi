@@ -205,7 +205,6 @@ mod tests {
     use crate::input::config::{Names, OpenCmd};
     use crate::input::setting;
     use crate::sys::proc::Killer;
-    use crate::text::ansi::ViewStyle;
     use crate::view::layout::{Mode, WrapStyle};
 
     /// The usage text names each flag a setting has.
@@ -254,17 +253,30 @@ mod tests {
         }
     }
 
-    /// The flag decides; without one the config does; without either a
-    /// changed file is read again.
+    /// For each setting a flag sets, the flag decides; without one the
+    /// config does; without either the default.
     #[test]
-    fn reloads() {
-        for (f, c, want) in [
-            ("", "", true),
-            ("", "auto_reload no", false),
-            ("auto_reload no", "", false),
-            ("auto_reload yes", "auto_reload no", true),
-        ] {
-            assert_eq!(flags(f).settings(&cfg(c)).auto_reload, want, "{f:?} {c:?}");
+    fn flag_beats_config() {
+        for v in setting::VERBS.iter().filter(|v| v.flag) {
+            let default = v.value(&Settings::default());
+            let values = match v.values() {
+                [] => &["2", "3"],
+                vs => vs,
+            };
+            // a differs from the default so the config is seen to apply,
+            // b from a so the flag is seen to win.
+            let a = *values.iter().find(|&&x| x != default).unwrap();
+            let b = *values.iter().find(|&&x| x != a).unwrap();
+            let line = |x: &str| format!("{} {x}", v.name);
+            for (f, c, want) in [
+                (String::new(), String::new(), default.as_str()),
+                (String::new(), line(a), a),
+                (line(b), String::new(), b),
+                (line(b), line(a), b),
+            ] {
+                let got = v.value(&flags(&f).settings(&cfg(&c)));
+                assert_eq!(got, want, "{f:?} {c:?}");
+            }
         }
     }
 
@@ -354,38 +366,6 @@ mod tests {
         }
     }
 
-    /// The flag decides the rows -F leaves below the text; without one
-    /// the config does; without either it is one.
-    #[test]
-    fn rows_below() {
-        for (f, c, want) in [
-            ("", "", 1),
-            ("", "one_page_rows_below 3", 3),
-            ("one_page_rows_below 2", "one_page_rows_below 3", 2),
-            ("one_page_rows_below 2", "", 2),
-        ] {
-            assert_eq!(
-                flags(f).settings(&cfg(c)).one_page_rows_below,
-                want,
-                "{f:?} {c:?}"
-            );
-        }
-    }
-
-    /// The flag decides the tab width; without one the config does;
-    /// without either it is zero, the app's default.
-    #[test]
-    fn app_tab_width() {
-        for (f, c, want) in [
-            ("", "", 0),
-            ("", "tab_width 4", 4),
-            ("tab_width 2", "tab_width 4", 2),
-            ("tab_width 2", "", 2),
-        ] {
-            assert_eq!(flags(f).settings(&cfg(c)).tab_width, want, "{f:?} {c:?}");
-        }
-    }
-
     /// The flag decides the one open command for every file,
     /// --no-open-cmd included; without one the config does, by name,
     /// each matching line; without either there is none. A flag that
@@ -439,79 +419,6 @@ mod tests {
             o.open_cmd(&c).err(),
             Some("open command: unclosed '".to_string())
         );
-    }
-
-    /// --edge-markers and --no-edge-markers decide; without one the
-    /// config does; without either the markers are off.
-    #[test]
-    fn edge_markers() {
-        for (f, c, want) in [
-            ("", "", false),
-            ("", "edge_markers yes", true),
-            ("edge_markers yes", "", true),
-            ("edge_markers no", "edge_markers yes", false),
-        ] {
-            assert_eq!(flags(f).settings(&cfg(c)).edge_markers, want, "{f:?} {c:?}");
-        }
-    }
-
-    /// --end-markers and --no-end-markers decide; without one the
-    /// config does; without either the markers are drawn.
-    #[test]
-    fn end_markers() {
-        for (f, c, want) in [
-            ("", "", true),
-            ("", "end_markers no", false),
-            ("end_markers yes", "end_markers no", true),
-            ("end_markers no", "", false),
-        ] {
-            assert_eq!(flags(f).settings(&cfg(c)).end_markers, want, "{f:?} {c:?}");
-        }
-    }
-
-    /// --file-separators and --no-file-separators decide; without one
-    /// the config does; without either the rows are drawn.
-    #[test]
-    fn file_separators() {
-        for (f, c, want) in [
-            ("", "", true),
-            ("", "file_separators no", false),
-            ("file_separators yes", "file_separators no", true),
-            ("file_separators no", "", false),
-        ] {
-            assert_eq!(
-                flags(f).settings(&cfg(c)).file_separators,
-                want,
-                "{f:?} {c:?}"
-            );
-        }
-    }
-
-    /// --status-line and --no-status-line decide; without one the
-    /// config does; without either the line is drawn.
-    #[test]
-    fn status_line() {
-        for (f, c, hide) in [
-            ("", "", false),
-            ("", "status_line no", true),
-            ("status_line yes", "status_line no", false),
-            ("status_line no", "", true),
-        ] {
-            assert_eq!(!flags(f).settings(&cfg(c)).status_line, hide, "{f:?} {c:?}");
-        }
-    }
-
-    /// --view-style decides; without it the config does.
-    #[test]
-    fn app_view_style() {
-        for (f, c, want) in [
-            ("", "", ViewStyle::Color),
-            ("", "view_style plain", ViewStyle::Plain),
-            ("view_style color", "view_style plain", ViewStyle::Color),
-            ("view_style plain", "", ViewStyle::Plain),
-        ] {
-            assert_eq!(flags(f).settings(&cfg(c)).view_style, want, "{f:?} {c:?}");
-        }
     }
 
     /// Each file is named as given; - and no files are stdin.

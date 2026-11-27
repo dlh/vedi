@@ -444,23 +444,7 @@ mod tests {
                 "{text}"
             );
         }
-        let want = [
-            "wrap",
-            "wrap_style",
-            "edge_markers",
-            "file_separators",
-            "end_markers",
-            "auto_reload",
-            "status_line",
-            "view_style",
-            "copy_on_select",
-            "hint_order",
-            "line_numbers",
-            "line_numbers_side",
-            "open_cmd",
-        ];
-        assert_eq!(setting::names().collect::<Vec<_>>(), want);
-        for name in want {
+        for name in setting::names() {
             let c: Command = format!("cycle  {name}").parse().unwrap();
             assert_eq!(
                 c,
@@ -478,7 +462,10 @@ mod tests {
             let err = text.parse::<Command>().unwrap_err();
             assert_eq!(
                 err.to_string(),
-                "cycle takes wrap, wrap_style, edge_markers, file_separators, end_markers, auto_reload, status_line, view_style, copy_on_select, hint_order, line_numbers, line_numbers_side or open_cmd",
+                format!(
+                    "cycle takes {}",
+                    setting::or_list(&setting::names().collect::<Vec<_>>())
+                ),
                 "{text}"
             );
         }

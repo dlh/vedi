@@ -398,7 +398,7 @@ mod tests {
             ]
         );
         assert_eq!(parse("empty", ""), Ok(Config::default()));
-        let cycle = "vedi.conf:1: cycle takes wrap, wrap_style, edge_markers, file_separators, end_markers, auto_reload, status_line, view_style, copy_on_select, hint_order, line_numbers, line_numbers_side or open_cmd";
+        let cycle = format!("vedi.conf:1: {}", "cycle".parse::<Command>().unwrap_err());
         let bad = [
             (
                 "map h left\nbind j down\n",
@@ -423,8 +423,8 @@ mod tests {
                 "map h select_copy\n",
                 r#"vedi.conf:1: unknown action "select_copy""#,
             ),
-            ("map h cycle\n", cycle),
-            ("map h cycle foo\n", cycle),
+            ("map h cycle\n", cycle.as_str()),
+            ("map h cycle foo\n", cycle.as_str()),
             (
                 "map h cycle tab_width\n",
                 "vedi.conf:1: cycle tab_width takes two or more values",

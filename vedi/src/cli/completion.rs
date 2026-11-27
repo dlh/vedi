@@ -99,6 +99,51 @@ mod tests {
         }
     }
 
+    /// The values `sh`'s script offers after `flag`, as it lists them.
+    fn offered<'a>(sh: &str, script: &'a str, flag: &str) -> Option<Vec<&'a str>> {
+        let list = match sh {
+            "bash" => {
+                let mut lines = script.lines();
+                lines.find(|l| {
+                    l.trim()
+                        .strip_suffix(')')
+                        .is_some_and(|pats| pats.split(" | ").any(|p| p == flag))
+                })?;
+                lines.next()?.split_once("-W '")?.1.split_once('\'')?.0
+            }
+            "zsh" => {
+                let line = script.lines().find(|l| l.contains(&format!("{flag}=[")))?;
+                line.rsplit_once(":(")?.1.split_once(')')?.0
+            }
+            _ => {
+                let opt = format!("-l {} ", &flag[2..]);
+                let line = script.lines().find(|l| l.contains(&opt))?;
+                line.split_once("-a '")?.1.split_once('\'')?.0
+            }
+        };
+        Some(list.split(' ').collect())
+    }
+
+    /// Each script offers a setting's flag exactly the values the
+    /// setting takes.
+    #[test]
+    fn completion_values() {
+        let valued = crate::input::setting::VERBS
+            .iter()
+            .filter(|v| v.flag && !v.yes_no() && !v.values().is_empty());
+        for sh in SHELLS {
+            let script = completion(sh).unwrap();
+            for v in valued.clone() {
+                let flag = format!("--{}", v.name.replace('_', "-"));
+                assert_eq!(
+                    offered(sh, script, &flag),
+                    Some(v.values().to_vec()),
+                    "{sh}: {flag}"
+                );
+            }
+        }
+    }
+
     /// The man page with its \- escapes as dashes and its \& escapes
     /// gone. A dash in a flag must be \- so groff draws a minus sign,
     /// not a hyphen; mandoc does not check that.

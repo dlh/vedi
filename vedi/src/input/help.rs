@@ -401,6 +401,56 @@ mod tests {
         }
     }
 
+    /// Each group of defaults.conf is headed by its commands' help row:
+    /// a bound group by the row's doc, an unbound one by the doc, maybe
+    /// added to, then the commands.
+    #[test]
+    fn help_heads_defaults() {
+        let doc = |c: &Command| {
+            SECTIONS
+                .iter()
+                .flat_map(|s| s.rows)
+                .find(|r| match r.keys {
+                    Keys::Bound(cmds) => cmds.iter().any(|h| h == c),
+                    Keys::Fixed(_) => false,
+                })
+                .map(|r| r.doc)
+        };
+        let groups = crate::input::keymap::DEFAULTS.split("\n\n").skip(1);
+        for group in groups {
+            let heading: Vec<&str> = group.lines().filter_map(|l| l.strip_prefix("# ")).collect();
+            let heading = heading.join(" ");
+            let maps: Vec<&str> = group
+                .lines()
+                .filter_map(|l| l.strip_prefix("map "))
+                .map(|l| l.split_once(' ').unwrap().1)
+                .collect();
+            let bound = !maps.is_empty();
+            let (title, cmds) = if bound {
+                (heading.as_str(), maps)
+            } else {
+                let rest = heading
+                    .strip_suffix("; unbound by default")
+                    .unwrap_or_else(|| panic!("{heading:?}: no map line, nor unbound by default"));
+                let (title, cmds) = rest.rsplit_once(": ").unwrap();
+                let cmds: Vec<&str> = cmds
+                    .split(", ")
+                    .filter(|c| c.parse::<Command>().is_ok())
+                    .collect();
+                (title, cmds)
+            };
+            assert!(!cmds.is_empty(), "{heading:?}: no command");
+            for c in cmds {
+                let want = doc(&c.parse().unwrap()).unwrap_or_else(|| panic!("{c}: no help row"));
+                if bound {
+                    assert_eq!(title, want, "{c}");
+                } else {
+                    assert!(title.starts_with(want), "{c}: {title:?}, help {want:?}");
+                }
+            }
+        }
+    }
+
     /// Keys come in map order; a row with no key bound is left out, and
     /// a section with no rows; fixed rows stay, less their Cmd+ keys
     /// where no binding has Cmd.
