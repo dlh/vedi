@@ -129,13 +129,34 @@ impl FromStr for Action {
 }
 
 /// A decoded key. `extend` is Shift on a movement: extend the
-/// selection instead of clearing it. `arg` is Cycle's setting, and
-/// the values to step through when given, one space apart.
+/// selection instead of clearing it. `cycle` is Cycle's setting.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Command {
     pub action: Action,
     pub extend: bool,
-    pub arg: Option<String>,
+    pub cycle: Option<CycleArg>,
+}
+
+/// The setting cycle steps, and the values to step through, checked
+/// and spelled as it has them; none for its own.
+#[derive(Clone)]
+pub struct CycleArg {
+    pub verb: &'static Verb,
+    pub values: Vec<String>,
+}
+
+impl PartialEq for CycleArg {
+    fn eq(&self, o: &CycleArg) -> bool {
+        std::ptr::eq(self.verb, o.verb) && self.values == o.values
+    }
+}
+
+impl Eq for CycleArg {}
+
+impl fmt::Debug for CycleArg {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CycleArg({:?}, {:?})", self.verb.name, self.values)
+    }
 }
 
 impl Command {
@@ -177,10 +198,13 @@ impl fmt::Display for Command {
             write!(f, "select_")?;
         }
         write!(f, "{}", self.action)?;
-        match &self.arg {
-            Some(arg) => write!(f, " {arg}"),
-            None => Ok(()),
+        if let Some(c) = &self.cycle {
+            write!(f, " {}", c.verb.name)?;
+            for v in &c.values {
+                write!(f, " {v}")?;
+            }
         }
+        Ok(())
     }
 }
 
@@ -194,39 +218,43 @@ impl FromStr for Command {
     fn from_str(text: &str) -> Result<Command, ActionError> {
         let f: Vec<&str> = text.split_whitespace().collect();
         if f.first() == Some(&"cycle") {
-            let cycle = |arg: String| Command {
+            let cycle = |verb, values| Command {
                 action: Action::Cycle,
                 extend: false,
-                arg: Some(arg),
+                cycle: Some(CycleArg { verb, values }),
             };
-            return match f[..] {
-                [_, name] if setting::names().any(|n| n == name) => Ok(cycle(name.to_string())),
-                [_, name] if setting::verb(name).is_some_and(Verb::takes_list) => {
-                    Err(ActionError::CycleValues(name.to_string()))
-                }
-                [_, name, ref values @ ..] if !values.is_empty() => {
-                    let v = setting::verb(name).ok_or(ActionError::Cycle)?;
-                    if !v.takes_list() {
-                        return Err(ActionError::CycleNoValues(name.to_string()));
-                    }
-                    // One value is a set, not a cycle.
-                    if values.len() < 2 {
-                        return Err(ActionError::CycleValues(name.to_string()));
-                    }
-                    let mut arg = vec![name.to_string()];
-                    for &val in values {
-                        let val = v.check(val).map_err(ActionError::Setting)?;
-                        // A repeat is a step that goes nowhere, or
-                        // one never reached.
-                        if arg[1..].contains(&val) {
-                            return Err(ActionError::CycleRepeat(name.to_string(), val));
-                        }
-                        arg.push(val);
-                    }
-                    Ok(cycle(arg.join(" ")))
-                }
-                _ => Err(ActionError::Cycle),
+            let Some(&name) = f.get(1) else {
+                return Err(ActionError::Cycle);
             };
+            let verb = setting::verb(name).ok_or(ActionError::Cycle)?;
+            let given = &f[2..];
+            if given.is_empty() {
+                return match verb.cycle {
+                    setting::Cycle::No if verb.takes_list() => {
+                        Err(ActionError::CycleValues(name.to_string()))
+                    }
+                    setting::Cycle::No => Err(ActionError::Cycle),
+                    _ => Ok(cycle(verb, Vec::new())),
+                };
+            }
+            if !verb.takes_list() {
+                return Err(ActionError::CycleNoValues(name.to_string()));
+            }
+            // One value is a set, not a cycle.
+            if given.len() < 2 {
+                return Err(ActionError::CycleValues(name.to_string()));
+            }
+            let mut values: Vec<String> = Vec::new();
+            for &val in given {
+                let val = verb.check(val).map_err(ActionError::Setting)?;
+                // A repeat is a step that goes nowhere, or one never
+                // reached.
+                if values.contains(&val) {
+                    return Err(ActionError::CycleRepeat(name.to_string(), val));
+                }
+                values.push(val);
+            }
+            return Ok(cycle(verb, values));
         }
         let mut name = f.join(" ");
         if name == "go_to_line" {
@@ -236,14 +264,14 @@ impl FromStr for Command {
             return Ok(Command {
                 action,
                 extend: false,
-                arg: None,
+                cycle: None,
             });
         }
         match name.strip_prefix("select_").map(str::parse::<Action>) {
             Some(Ok(action)) if action.is_movement() => Ok(Command {
                 action,
                 extend: true,
-                arg: None,
+                cycle: None,
             }),
             _ => Err(ActionError::Unknown(name)),
         }
@@ -295,7 +323,7 @@ mod tests {
         Command {
             action,
             extend: false,
-            arg: None,
+            cycle: None,
         }
     }
 
@@ -371,7 +399,9 @@ mod tests {
     #[test]
     fn cycle() {
         let c: Command = "cycle  tab_width  04 8".parse().unwrap();
-        assert_eq!(c.arg.as_deref(), Some("tab_width 4 8"));
+        let arg = c.cycle.as_ref().unwrap();
+        assert_eq!(arg.verb.name, "tab_width");
+        assert_eq!(arg.values, ["4", "8"]);
         assert_eq!(c.to_string(), "cycle tab_width 4 8");
         let c: Command = "cycle view_style plain color".parse().unwrap();
         assert_eq!(c.to_string(), "cycle view_style plain color");
@@ -435,7 +465,10 @@ mod tests {
             assert_eq!(
                 c,
                 Command {
-                    arg: Some(name.to_string()),
+                    cycle: Some(CycleArg {
+                        verb: setting::verb(name).unwrap(),
+                        values: Vec::new(),
+                    }),
                     ..cmd(Action::Cycle)
                 }
             );

@@ -460,7 +460,11 @@ impl<T: Terminal> App<T> {
             Action::Filter => self.open_filter(),
             Action::Hint => return self.open_hints(),
             Action::CommandPrompt => self.open_command(),
-            Action::Cycle => return self.cycle(c.arg.as_deref().unwrap_or_default()),
+            Action::Cycle => {
+                if let Some(arg) = &c.cycle {
+                    return self.cycle(arg);
+                }
+            }
             Action::Help => self.show_help(),
             Action::Reload => return self.reload(true),
             Action::Quit => return Flow::Quit,

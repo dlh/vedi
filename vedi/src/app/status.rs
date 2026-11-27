@@ -185,7 +185,7 @@ impl<T: Terminal> App<T> {
         let help = Command {
             action: Action::Help,
             extend: false,
-            arg: None,
+            cycle: None,
         };
         if let Some(k) = self.keys.find(&help) {
             let hint: Vec<char> = format!("{k} help").chars().collect();

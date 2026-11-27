@@ -75,7 +75,7 @@ mod tests {
             cmd: action.map(|action| Command {
                 action,
                 extend: false,
-                arg: None,
+                cycle: None,
             }),
         }
     }

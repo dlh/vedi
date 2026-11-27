@@ -1,4 +1,4 @@
-use crate::input::action::{Action, Command};
+use crate::input::action::{Action, Command, CycleArg};
 use crate::input::key::Mods;
 use crate::input::keymap::Keymap;
 
@@ -23,17 +23,24 @@ pub struct Section {
 enum HelpCmd {
     Act(Action),
     Sel(Action),
+    /// Cycle's setting, with its own values.
     Cyc(&'static str),
+    /// Cycle's setting, with these.
+    CycIn(&'static str, &'static [&'static str]),
 }
 
 impl PartialEq<Command> for HelpCmd {
     fn eq(&self, c: &Command) -> bool {
+        let cycles = |name: &str, values: &[&str]| {
+            c.cycle
+                .as_ref()
+                .is_some_and(|a| a.verb.name == name && a.values == values)
+        };
         match *self {
-            HelpCmd::Act(a) => c.action == a && !c.extend && c.arg.is_none(),
-            HelpCmd::Sel(a) => c.action == a && c.extend && c.arg.is_none(),
-            HelpCmd::Cyc(s) => {
-                c.action == Action::Cycle && !c.extend && c.arg.as_deref() == Some(s)
-            }
+            HelpCmd::Act(a) => c.action == a && !c.extend && c.cycle.is_none(),
+            HelpCmd::Sel(a) => c.action == a && c.extend && c.cycle.is_none(),
+            HelpCmd::Cyc(s) => cycles(s, &[]),
+            HelpCmd::CycIn(s, values) => cycles(s, values),
         }
     }
 }
@@ -82,7 +89,7 @@ const SECTIONS: &[HelpSection] = {
                 bound(&[Act(Quit)], "Quit"),
                 bound(&[Cyc("wrap")], "Toggle wrap / nowrap"),
                 bound(
-                    &[Cyc("wrap_width 0 80")],
+                    &[CycIn("wrap_width", &["0", "80"])],
                     "Wrap at 80 cells / the screen's edge",
                 ),
                 bound(&[Cyc("wrap_style")], "Cycle the wrap style: char, word"),
@@ -320,13 +327,10 @@ impl Keymap {
     /// in map order, with every key bound to that list; a list the
     /// table has a row for, the default W's, is on that row.
     fn cycle_rows(&self) -> Vec<Row> {
-        let mut rows: Vec<(&str, Row)> = Vec::new();
+        let mut rows: Vec<(&CycleArg, Row)> = Vec::new();
         for b in self.bindings() {
             let Some(c) = &b.cmd else { continue };
-            let Some(arg) = c.arg.as_deref().filter(|_| c.action == Action::Cycle) else {
-                continue;
-            };
-            let Some((setting, values)) = arg.split_once(' ') else {
+            let Some(arg) = c.cycle.as_ref().filter(|a| !a.values.is_empty()) else {
                 continue;
             };
             let tabled = SECTIONS.iter().flat_map(|s| s.rows).any(|r| match r.keys {
@@ -343,7 +347,7 @@ impl Keymap {
                     arg,
                     Row {
                         keys: vec![key],
-                        doc: format!("Cycle {setting}: {}", values.replace(' ', ", ")),
+                        doc: format!("Cycle {}: {}", arg.verb.name, arg.values.join(", ")),
                     },
                 )),
             }
@@ -375,14 +379,8 @@ mod tests {
             .collect();
         let has = |c: Command| covered.iter().any(|h| *h == c);
         for name in setting::names() {
-            assert!(
-                has(Command {
-                    action: Action::Cycle,
-                    extend: false,
-                    arg: Some(name.to_string())
-                }),
-                "cycle {name} has no help row"
-            );
+            let c: Command = format!("cycle {name}").parse().unwrap();
+            assert!(has(c), "cycle {name} has no help row");
         }
         for a in Action::ALL {
             if a == Action::Cycle {
@@ -391,7 +389,7 @@ mod tests {
             let c = Command {
                 action: a,
                 extend: false,
-                arg: None,
+                cycle: None,
             };
             assert!(has(c.clone()), "{a} has no help row");
             if a.is_movement() {

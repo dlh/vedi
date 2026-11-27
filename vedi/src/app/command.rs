@@ -8,7 +8,7 @@ use crate::app::complete::Completion;
 use crate::app::text_view::Motion;
 use crate::app::write::Form;
 use crate::app::{App, Flow, Focus, Kind, status};
-use crate::input::action::Command;
+use crate::input::action::{Command, CycleArg};
 use crate::input::config::{self, Config};
 use crate::input::setting::{self, Cycle, Settings};
 use crate::text::ansi::ViewStyle;
@@ -124,23 +124,20 @@ impl<T: Terminal> App<T> {
 
     /// Sets a setting to the value after its current one, the first
     /// after the last or when the current is not among them: its own
-    /// values, or those `arg` gives after its name. Says the new value
-    /// unless the status line shows it anyway.
-    pub(super) fn cycle(&mut self, arg: &str) -> Flow {
-        let mut words = arg.split_whitespace();
-        let Some(s) = words.next().and_then(setting::verb) else {
-            return Flow::Continue;
-        };
+    /// values, or those `arg` gives. Says the new value unless the
+    /// status line shows it anyway.
+    pub(super) fn cycle(&mut self, arg: &CycleArg) -> Flow {
+        let s = arg.verb;
         let name = s.name;
-        let values: Vec<&str> = words.collect();
         let cur = s.value(&self.settings);
-        let next = if values.is_empty() {
+        let next = if arg.values.is_empty() {
             match s.cycle {
                 Cycle::No => return Flow::Continue,
                 Cycle::Commands => return self.cycle_commands(name),
                 Cycle::Values(_) => s.next(&cur),
             }
         } else {
+            let values: Vec<&str> = arg.values.iter().map(String::as_str).collect();
             setting::next_in(&values, &cur)
         };
         let line = format!("{name} {next}");
