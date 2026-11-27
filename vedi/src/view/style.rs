@@ -136,57 +136,44 @@ pub const CONTROL: Style = PLAIN.reverse();
 /// terminal's cursor shows as it does in the text.
 pub const STATUS: Style = PLAIN.reverse();
 
-/// What the pager draws in a style of its own, as `color` names it.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Element {
-    Selection,
-    Match,
-    CurrentMatch,
-    Hint,
-    Note,
-    Error,
-    Status,
-    EdgeMarker,
-    Control,
-    Guide,
-    Separator,
-    SeparatorName,
-    LineNumber,
+/// Declares `Element`, `ELEMENTS` and `Element::ALL` from one list, so a
+/// variant cannot lack its row or sit at another index.
+macro_rules! elements {
+    ($(($e:ident, $name:literal, $style:expr)),* $(,)?) => {
+        /// What the pager draws in a style of its own, as `color` names it.
+        #[derive(Copy, Clone, PartialEq, Eq, Debug)]
+        pub enum Element {
+            $($e,)*
+        }
+
+        /// Each element's name and default style, indexed by `Element as usize`.
+        const ELEMENTS: &[(Element, &str, Style)] = &[$((Element::$e, $name, $style),)*];
+
+        impl Element {
+            pub const ALL: [Element; ELEMENTS.len()] = [$(Element::$e,)*];
+        }
+    };
 }
 
-impl Element {
-    pub const ALL: [Element; 13] = [
-        Element::Selection,
-        Element::Match,
-        Element::CurrentMatch,
-        Element::Hint,
-        Element::Note,
-        Element::Error,
-        Element::Status,
-        Element::EdgeMarker,
-        Element::Control,
-        Element::Guide,
-        Element::Separator,
-        Element::SeparatorName,
-        Element::LineNumber,
-    ];
+elements![
+    (Selection, "selection", SELECTION),
+    (Match, "match", MATCH),
+    (CurrentMatch, "current_match", CUR_MATCH),
+    (Hint, "hint", HINT),
+    (Note, "note", NOTE),
+    (Error, "error", ERROR),
+    (Status, "status", STATUS),
+    (EdgeMarker, "edge_marker", EDGE),
+    (Control, "control", CONTROL),
+    (Guide, "guide", GUIDE),
+    (Separator, "separator", SEP_RULE),
+    (SeparatorName, "separator_name", SEP_NAME),
+    (LineNumber, "line_number", LINE_NUMBER),
+];
 
+impl Element {
     pub fn name(self) -> &'static str {
-        match self {
-            Element::Selection => "selection",
-            Element::Match => "match",
-            Element::CurrentMatch => "current_match",
-            Element::Hint => "hint",
-            Element::Note => "note",
-            Element::Error => "error",
-            Element::Status => "status",
-            Element::EdgeMarker => "edge_marker",
-            Element::Control => "control",
-            Element::Guide => "guide",
-            Element::Separator => "separator",
-            Element::SeparatorName => "separator_name",
-            Element::LineNumber => "line_number",
-        }
+        ELEMENTS[self as usize].1
     }
 }
 
@@ -204,21 +191,7 @@ pub struct Theme([Style; Element::ALL.len()]);
 
 impl Default for Theme {
     fn default() -> Theme {
-        Theme([
-            SELECTION,
-            MATCH,
-            CUR_MATCH,
-            HINT,
-            NOTE,
-            ERROR,
-            STATUS,
-            EDGE,
-            CONTROL,
-            GUIDE,
-            SEP_RULE,
-            SEP_NAME,
-            LINE_NUMBER,
-        ])
+        Theme(Element::ALL.map(|e| ELEMENTS[e as usize].2))
     }
 }
 
