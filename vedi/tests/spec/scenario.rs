@@ -624,10 +624,6 @@ impl Scenario<'_, '_> {
         // once.
         let (disks, rendered) = (Rc::clone(&self.disks), Rc::clone(&self.rendered));
         let open_cmd = flags.open_cmd(cfg)?;
-        let counts: Vec<usize> = names(&files)
-            .iter()
-            .map(|n| open_cmd.as_ref().map_or(0, |f| f(n).len()))
-            .collect();
         let file = !files.is_empty() && !files.iter().any(|f| f == "-");
         let runtime = Runtime {
             copier: match flags.clipboard_cmd(cfg) {
@@ -636,11 +632,11 @@ impl Scenario<'_, '_> {
             },
             wake: Arc::clone(&self.wake),
             open: file.then(|| {
-                Box::new(move |_, cmd_index: Option<usize>| {
+                Box::new(move |_, argvs: &[Option<Vec<String>>]| {
                     let (disks, rendered) = (disks.borrow(), rendered.borrow());
                     let parts: Vec<Disk> = (disks.iter().enumerate())
                         .map(|(i, d)| match rendered.get(i) {
-                            Some(r) if cmd_index.is_some_and(|c| c < counts[i]) => r.clone(),
+                            Some(r) if argvs.get(i).is_some_and(Option::is_some) => r.clone(),
                             _ => d.clone(),
                         })
                         .collect();

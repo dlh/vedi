@@ -164,7 +164,7 @@ impl<T: Terminal> App<T> {
     pub(super) fn open_cmd_status(&self) -> String {
         let v = self.views.text();
         let (part, _) = v.buf().part(v.cursor().line);
-        let argv = self.names.get(part).and_then(|n| self.input.command_for(n));
+        let argv = self.input.command_for(part);
         let cmd = argv.map_or_else(|| "''".to_string(), |a| a.join(" "));
         format!("open_cmd {cmd}")
     }

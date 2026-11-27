@@ -36,9 +36,8 @@ impl Drop for TempDir {
     }
 }
 
-fn always(argv: &[&str]) -> OpenCmdFor {
-    let argv: Vec<String> = argv.iter().map(|a| a.to_string()).collect();
-    Box::new(move |_| vec![argv.clone()])
+fn cmd(argv: &[&str]) -> Option<Vec<String>> {
+    Some(argv.iter().map(|a| a.to_string()).collect())
 }
 
 fn read_all(i: &mut Input) -> String {
@@ -63,7 +62,7 @@ fn storage(i: &Input) -> &'static str {
 fn open_input_file_is_paged() {
     let d = TempDir::new();
     let f = d.file("f", "hello\n");
-    let i = open_input(&[f], None, Opening::First, &Killers::default()).unwrap();
+    let i = open_input(&[f], &[], Opening::First, &Killers::default()).unwrap();
     assert_eq!((storage(&i), i.on_disk), ("paged", true));
 }
 
@@ -83,7 +82,7 @@ fn open_input_fifo_is_in_memory() {
     let writer = thread::spawn(move || fs::write(w, "hello\n"));
     let mut i = open_input(
         &[p.into_os_string()],
-        None,
+        &[],
         Opening::First,
         &Killers::default(),
     )
@@ -121,12 +120,12 @@ fn refuses_non_files() {
     );
     let zero = d.0.join("zero");
     std::os::unix::fs::symlink("/dev/zero", &zero).unwrap();
-    let cat = always(&["cat", "%s"]);
+    let cat = [cmd(&["cat", "%s"])];
     for p in [fifo, zero] {
         let shown = p.display().to_string();
         let f = [p.into_os_string()];
-        for cmd in [None, Some((&cat, 0))] {
-            let err = open_input(&f, cmd, Opening::Again, &Killers::default()).err();
+        for argvs in [&[][..], &cat] {
+            let err = open_input(&f, argvs, Opening::Again, &Killers::default()).err();
             assert_eq!(err, Some(format!("{shown}: not a regular file")));
         }
     }
@@ -140,7 +139,7 @@ fn open_input_cmd_is_in_memory_on_disk() {
     let f = d.file("f", "hello\n");
     let mut i = open_input(
         &[f],
-        Some((&always(&["sed", "s/l/L/g", "%s"]), 0)),
+        &[cmd(&["sed", "s/l/L/g", "%s"])],
         Opening::First,
         &Killers::default(),
     )
@@ -152,27 +151,18 @@ fn open_input_cmd_is_in_memory_on_disk() {
     assert_eq!(read_all(&mut i), "heLLo\n");
 }
 
-// Paged only when every file is read as it is. A file with no command
-// of the index given is read as it is.
+// Each file is read through the command given at its place; one given
+// none is read as it is. Paged only when every file is read as it is.
 #[test]
-fn open_input_cmd_by_name() {
+fn open_input_cmd_by_place() {
     let d = TempDir::new();
     let a = d.file("a.md", "hello\n");
     let b = d.file("b.txt", "hello\n");
-    let sed = |e: &str| vec!["sed".to_string(), e.to_string()];
-    let by_name: OpenCmdFor = Box::new(move |name| match name.ends_with(".md") {
-        true => vec![sed("s/l/L/g"), sed("s/h/H/")],
-        false => vec![sed("s/o/O/")],
-    });
     let files = [a, b];
-    for (cmd_index, killers, want) in [(0, 2, "heLLo\nhellO\n"), (1, 1, "Hello\nhello\n")] {
-        let mut i = open_input(
-            &files,
-            Some((&by_name, cmd_index)),
-            Opening::First,
-            &Killers::default(),
-        )
-        .unwrap();
+    let both = [cmd(&["sed", "s/l/L/g"]), cmd(&["sed", "s/o/O/"])];
+    let first = [cmd(&["sed", "s/h/H/"]), None];
+    for (argvs, killers, want) in [(&both, 2, "heLLo\nhellO\n"), (&first, 1, "Hello\nhello\n")] {
+        let mut i = open_input(&files, argvs, Opening::First, &Killers::default()).unwrap();
         assert_eq!(
             (storage(&i), i.on_disk, i.killers.len()),
             ("memory", true, killers)
@@ -273,25 +263,13 @@ fn reload_prunes_reaped_commands() {
     let readers = Readers::default();
     let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
-    let cat = always(&["cat", "%s"]);
+    let cat = [cmd(&["cat", "%s"])];
     for g in 0..3 {
-        let input = open_input(
-            std::slice::from_ref(&f),
-            Some((&cat, 0)),
-            Opening::First,
-            &readers.0,
-        )
-        .unwrap();
+        let input = open_input(std::slice::from_ref(&f), &cat, Opening::First, &readers.0).unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
-    let input = open_input(
-        std::slice::from_ref(&f),
-        Some((&cat, 0)),
-        Opening::First,
-        &readers.0,
-    )
-    .unwrap();
+    let input = open_input(std::slice::from_ref(&f), &cat, Opening::First, &readers.0).unwrap();
     let _buf = readers.start(input, ViewStyle::Color, 3, &tx);
     assert_eq!(readers.0.kept(), 1);
 }
@@ -308,15 +286,9 @@ fn reload_spares_a_clipboard_command() {
     let (ctx, crx) = mpsc::channel();
     CommandCopier::new("sleep 1", copies).copy("x", Box::new(move |r| ctx.send(r).unwrap()));
     let (tx, rx) = mpsc::channel();
-    let cat = always(&["cat", "%s"]);
+    let cat = [cmd(&["cat", "%s"])];
     for g in 0..2 {
-        let input = open_input(
-            std::slice::from_ref(&f),
-            Some((&cat, 0)),
-            Opening::First,
-            &readers.0,
-        )
-        .unwrap();
+        let input = open_input(std::slice::from_ref(&f), &cat, Opening::First, &readers.0).unwrap();
         let _buf = readers.start(input, ViewStyle::Color, g, &tx);
         assert!(std::iter::from_fn(|| next_from(&rx, g)).any(|p| is_done(&p)));
     }
@@ -332,8 +304,8 @@ fn reload_kills_old_commands_at_its_end() {
     let readers = Readers::default();
     let _kill = KillOnExit(vec![readers.0.clone()]);
     let (tx, rx) = mpsc::channel();
-    let slow = always(&["sh", "-c", "cat \"$0\"; exec sleep 30", "%s"]);
-    let input = open_input(&[f], Some((&slow, 0)), Opening::First, &readers.0).unwrap();
+    let slow = [cmd(&["sh", "-c", "cat \"$0\"; exec sleep 30", "%s"])];
+    let input = open_input(&[f], &slow, Opening::First, &readers.0).unwrap();
     let _old = readers.start(input, ViewStyle::Color, 0, &tx);
     while !matches!(
         next_from(&rx, 0),

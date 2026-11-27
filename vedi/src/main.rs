@@ -8,13 +8,12 @@ use std::os::unix::fs::OpenOptionsExt;
 use std::panic;
 use std::path::Path;
 use std::process::ExitCode;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
-use vedi::app::{App, Event, Opener, Runtime, Verdict, one_page};
-use vedi::cli::{self, OpenCmdFor, USAGE};
+use vedi::app::{App, Event, Opener, Runtime, Verdict, one_page, pick_open_cmds};
+use vedi::cli::{self, USAGE};
 use vedi::input::config::{self, Config, LoadError};
 use vedi::sys::opencmd;
 use vedi::sys::proc::{self, Killer, Killers};
@@ -92,7 +91,7 @@ fn run() -> Result<(), Fail> {
         }
         Err(e) => return Err(e.to_string().into()),
     };
-    let open_cmd = opts.open_cmd(&cfg)?.map(Rc::new);
+    let open_cmd = opts.open_cmd(&cfg)?;
     let settings = opts.settings(&cfg);
     let view = settings.view_style;
 
@@ -105,8 +104,9 @@ fn run() -> Result<(), Fail> {
         term::restore_after_panic();
         signal_killers.iter().for_each(Killers::kill_all);
     });
-    let first = open_cmd.as_deref().map(|f| (f, 0));
-    let input = open_input(&files, first, Opening::First, &readers.0).map_err(|msg| Fail {
+    let names: Vec<String> = files.iter().map(|f| f.to_string_lossy().into()).collect();
+    let first = pick_open_cmds(open_cmd.as_ref(), &names, Some(0));
+    let input = open_input(&files, &first, Opening::First, &readers.0).map_err(|msg| Fail {
         msg,
         usage: files.is_empty(),
     })?;
@@ -154,14 +154,11 @@ fn run() -> Result<(), Fail> {
         wake: Arc::new(move || {
             let _ = wake_tx.send(Event::Copied);
         }),
-        open_cmd: open_cmd
-            .clone()
-            .map(|f| Box::new(move |name: &str| f(name)) as OpenCmdFor),
+        open_cmd,
         open: on_disk.then(|| {
             let (files, readers, tx) = (files.clone(), readers.clone(), tx.clone());
-            Box::new(move |generation, cmd_index: Option<usize>| {
-                let cmd = open_cmd.as_deref().zip(cmd_index);
-                let input = open_input(&files, cmd, Opening::Again, &readers.0)
+            Box::new(move |generation, argvs: &[Option<Vec<String>>]| {
+                let input = open_input(&files, argvs, Opening::Again, &readers.0)
                     .map_err(io::Error::other)?;
                 Ok(readers.start(input, view, generation, &tx))
             }) as Opener
@@ -213,8 +210,8 @@ enum Opening {
 }
 
 /// Opens the files, each a part, or stdin when there are none; "-"
-/// names stdin. A file with an `open_cmd` of the index given is read
-/// through it and left for the command to open: a named pipe opened
+/// names stdin. A file given a command in `argvs`, by its place, is
+/// read through it and left for the command to open: a named pipe opened
 /// twice waits for a second writer. Each command joins `running` as it
 /// starts: a later open may block, and a signal must still reach it.
 /// The text is paged from disk only when
@@ -222,7 +219,7 @@ enum Opening {
 /// and a pipe can be read only once.
 fn open_input(
     files: &[OsString],
-    open_cmd: Option<(&OpenCmdFor, usize)>,
+    argvs: &[Option<Vec<String>>],
     opening: Opening,
     running: &Killers,
 ) -> Result<Input, String> {
@@ -239,21 +236,21 @@ fn open_input(
     let mut paged = Some(Vec::new());
     let mut on_disk = true;
     let mut killers = Vec::new();
-    for name in names {
+    for (i, name) in names.iter().enumerate() {
         if name == "-" {
             on_disk = false;
             parts.push(Box::new(io::stdin()));
             continue;
         }
         let shown = Path::new(name).display();
-        match open_cmd.and_then(|(f, i)| f(&name.to_string_lossy()).into_iter().nth(i)) {
+        match argvs.get(i).and_then(Option::as_ref) {
             Some(argv) => {
                 let md = fs::metadata(name).map_err(|e| format!("stat {shown}: {e}"))?;
                 if opening == Opening::Again && !md.is_file() {
                     return Err(format!("{shown}: not a regular file"));
                 }
                 on_disk &= md.is_file();
-                let c = opencmd::open(&argv, name).map_err(|e| format!("exec {}: {e}", argv[0]))?;
+                let c = opencmd::open(argv, name).map_err(|e| format!("exec {}: {e}", argv[0]))?;
                 running.add(c.killer());
                 killers.push(c.killer());
                 parts.push(Box::new(c));

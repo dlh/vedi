@@ -27,6 +27,7 @@ use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::{Duration, Instant};
 
 pub use event::{Event, Mouse, MouseKind};
+pub use input::pick_open_cmds;
 pub use onepage::{Verdict, one_page};
 pub use options::{
     Clock, Copier, CopyResult, Done, Entry, Lister, OpenCmdFor, Opener, Options, Runtime, STDIN,
@@ -143,7 +144,12 @@ impl<T: Terminal> App<T> {
             views: Views::new(TextView::new(buffer, start, Geometry::default())),
             filter: None,
             hint: None,
-            input: Input::new(opts.runtime.open, opts.runtime.open_cmd, generation),
+            input: Input::new(
+                opts.runtime.open,
+                opts.runtime.open_cmd,
+                opts.names.clone(),
+                generation,
+            ),
             copier: opts.runtime.copier,
             copying: None,
             wake: opts.runtime.wake,

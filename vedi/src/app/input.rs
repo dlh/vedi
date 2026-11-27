@@ -18,9 +18,13 @@ pub(super) struct Input {
     /// `None` when the input cannot be read again, as a pipe cannot.
     open: Option<Opener>,
     open_cmd: Option<OpenCmdFor>,
+    /// The files, in order, by the names their open_cmds match.
+    names: Vec<String>,
     /// Which of its open_cmds a reload reads each file through; `None`
     /// as it is.
     cmd_index: Option<usize>,
+    /// The command each file of the text was read through.
+    landed: Vec<Option<Vec<String>>>,
     /// The text's reader's generation.
     generation: Gen,
     /// The last generation handed out: a dropped reload's is never
@@ -36,6 +40,8 @@ pub(super) struct Input {
 struct Pending {
     generation: Gen,
     buf: Buffer,
+    /// The command each file is read through.
+    argvs: Vec<Option<Vec<String>>>,
     /// Once the text lands, the status line names the command the
     /// cursor's input is read through, unless a read error shows.
     names_open_cmd: bool,
@@ -67,16 +73,21 @@ pub(super) enum Applied {
 }
 
 impl Input {
-    /// `generation` is the text's reader's.
+    /// `generation` is the text's reader's, read through each file's
+    /// first open_cmd.
     pub(super) fn new(
         open: Option<Opener>,
         open_cmd: Option<OpenCmdFor>,
+        names: Vec<String>,
         generation: Gen,
     ) -> Input {
+        let landed = pick_open_cmds(open_cmd.as_ref(), &names, Some(0));
         Input {
             open,
             open_cmd,
+            names,
             cmd_index: Some(0),
+            landed,
             generation,
             last_gen: generation,
             next: None,
@@ -101,24 +112,29 @@ impl Input {
         }
         let generation = self.last_gen.wrapping_add(1);
         self.last_gen = generation;
-        let buf = open(generation, self.cmd_index).map_err(Refused::Open)?;
+        let argvs = pick_open_cmds(self.open_cmd.as_ref(), &self.names, self.cmd_index);
+        let buf = open(generation, &argvs).map_err(Refused::Open)?;
         self.next = Some(Pending {
             generation,
             buf,
+            argvs,
             names_open_cmd,
         });
         Ok(())
     }
 
-    /// Reads the files `names` through their next open_cmd, as they
-    /// are after the last any has, and through the first after that. A
-    /// reload still being read is dropped: it may be waiting on a
-    /// command that never ends.
-    pub(super) fn cycle_open_cmd(&mut self, names: &[String]) -> Result<(), Refused> {
+    /// Reads the files through their next open_cmd, as they are after
+    /// the last any has, and through the first after that. A reload
+    /// still being read is dropped: it may be waiting on a command that
+    /// never ends.
+    pub(super) fn cycle_open_cmd(&mut self) -> Result<(), Refused> {
         if self.open.is_none() {
             return Err(Refused::NotAFile);
         }
-        let count = names.iter().map(|n| self.commands(n).len()).max();
+        let f = self.open_cmd.as_ref();
+        let count = (self.names.iter())
+            .map(|n| f.map_or(0, |f| f(n).len()))
+            .max();
         self.cmd_index = match self.cmd_index {
             Some(i) if i + 1 < count.unwrap_or(0) => Some(i + 1),
             Some(_) => None,
@@ -162,6 +178,7 @@ impl Input {
     pub(super) fn take_finished(&mut self) -> Option<(Buffer, bool)> {
         let p = self.next.take_if(|p| p.buf.finished().is_some())?;
         self.generation = p.generation;
+        self.landed = p.argvs;
         if self.dirty {
             self.dirty = false;
             // Not by key, so a refusal has no one to tell.
@@ -170,14 +187,27 @@ impl Input {
         Some((p.buf, p.names_open_cmd))
     }
 
-    /// The command the file `name` is read through; `None` as it is.
-    pub(super) fn command_for(&self, name: &str) -> Option<Vec<String>> {
-        self.commands(name).into_iter().nth(self.cmd_index?)
+    /// The command the text's file `part` was read through; `None` as
+    /// it is.
+    pub(super) fn command_for(&self, part: usize) -> Option<&[String]> {
+        self.landed.get(part)?.as_deref()
     }
+}
 
-    fn commands(&self, name: &str) -> Vec<Vec<String>> {
-        self.open_cmd.as_ref().map_or_else(Vec::new, |f| f(name))
-    }
+/// The command each file is read through: the one at `index` of its
+/// open_cmds, or `None` to read it as it is, when `index` is or the
+/// file has fewer.
+pub fn pick_open_cmds(
+    open_cmd: Option<&OpenCmdFor>,
+    names: &[String],
+    index: Option<usize>,
+) -> Vec<Option<Vec<String>>> {
+    let at = |n: &String| {
+        open_cmd
+            .zip(index)
+            .and_then(|(f, i)| f(n).into_iter().nth(i))
+    };
+    names.iter().map(at).collect()
 }
 
 impl<T: Terminal> App<T> {
@@ -192,7 +222,7 @@ impl<T: Terminal> App<T> {
     /// covered are not the text the next reload brings, even when this
     /// one fails to open.
     pub(super) fn cycle_open_cmd(&mut self) -> Flow {
-        let started = self.input.cycle_open_cmd(&self.names);
+        let started = self.input.cycle_open_cmd();
         if !matches!(started, Err(Refused::NotAFile)) {
             self.views.shown.deselect();
         }
