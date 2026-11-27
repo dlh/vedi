@@ -12,8 +12,10 @@ Set Padding 12
 Set TypingSpeed 60ms
 
 # As in demo.tape: the copy lands in a temp file that pbpaste reads.
+# vhs cannot send Alt+Shift+Down, so a temp config binds its
+# select_paragraph_down to P.
 Hide
-Type `clip=$(mktemp) && export VEDI="--clipboard-cmd 'cat > $clip' --open-cmd 'bat --color=always -p %s'" && pbpaste() { cat "$clip"; } && clear`
+Type `clip=$(mktemp) && conf=$(mktemp) && echo 'map P select_paragraph_down' > "$conf" && export VEDI="--clipboard-cmd 'cat > $clip' --open-cmd 'bat --color=always -p %s' --config $conf" && pbpaste() { cat "$clip"; } && clear`
 Enter
 Show
 
@@ -33,14 +35,16 @@ Sleep 1.2s
 # file.
 Enter
 Sleep 600ms
-Type@200ms "0jjjjjjjjj"
+Type@200ms "0jjjjjjjj"
 Sleep 600ms
 Enter
 Sleep 1.5s
 
-# J extends the selection down over the function, and Ctrl+c copies it.
-Type@200ms "JJJJJJJ"
+# P extends the selection by paragraph from the fn line, and Ctrl+c
+# copies it.
 Sleep 600ms
+Type "P"
+Sleep 800ms
 Ctrl+C
 Sleep 1.2s
 
