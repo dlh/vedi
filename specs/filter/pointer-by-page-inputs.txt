@@ -1,0 +1,46 @@
+A separator row counts as a row of the page PgDn and PgUp move the
+pointer by, so no listed line is paged over unseen.
+
+-- size --
+20x4
+-- args --
+a.txt b.txt c.txt d.txt
+-- input --
+x1
+-- next-file --
+-- input --
+x2
+-- next-file --
+-- input --
+x3
+-- next-file --
+-- input --
+x4
+-- keys --
+& "x" PgDn
+-- screen --
+{x}2
+━━ c.txt ━━━━━━━━━━━
+{{x}}[3]
+&x               4/4
+-- keys --
+PgDn
+-- screen --
+{x}3
+━━ d.txt ━━━━━━━━━━━
+{{x}}[4]
+&x               4/4
+-- keys --
+PgUp
+-- screen --
+{{x}}[3]
+━━ d.txt ━━━━━━━━━━━
+{x}4
+&x               4/4
+-- keys --
+PgUp PgUp
+-- screen --
+━━ a.txt ━━━━━━━━━━━
+{{x}}[1]
+━━ b.txt ━━━━━━━━━━━
+&x               4/4

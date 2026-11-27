@@ -335,6 +335,27 @@ impl TextView {
         }
     }
 
+    /// The line `n` rows from line `i`'s first (negative is up), a
+    /// separator row counting as its line's; another line than `i`
+    /// when there is one that way, however many rows `i` has.
+    pub fn line_rows_from(&mut self, i: usize, n: isize) -> usize {
+        let mut p = Row::text(Pos { line: i, col: 0 });
+        for _ in 0..n.unsigned_abs() {
+            p = if n > 0 {
+                self.next_row(p)
+            } else {
+                self.prev_row(p)
+            };
+        }
+        if p.line != i || n == 0 {
+            p.line
+        } else if n > 0 {
+            (i + 1).min(self.buf.len().saturating_sub(1))
+        } else {
+            i.saturating_sub(1)
+        }
+    }
+
     /// The row start after `p`, or `p` at the end: the next line's
     /// separator, when it has one, comes before the line.
     pub fn next_row(&mut self, p: Row) -> Row {

@@ -36,6 +36,10 @@ struct State {
     ix: Indexer,
     /// The last line fed, and whether as its bytes came.
     last: Option<(usize, bool)>,
+    /// How many of the text's inputs the list has begun: each begins
+    /// in the list where its first listed line is, so the list's parts
+    /// are the text's.
+    parts: usize,
 }
 
 /// The text's bytes a block at a time, for copying lines undecoded.
@@ -166,6 +170,15 @@ impl State {
         let mut blocks = Blocks::new(text);
         let literal = style == ViewStyle::Raw;
         for &li in lines {
+            if text.parts().get(self.parts).is_some_and(|&s| s <= li) {
+                self.flush(&mut out, apply);
+                while text.parts().get(self.parts).is_some_and(|&s| s <= li) {
+                    apply(Progress::Part {
+                        offset: self.ix.offset(),
+                    });
+                    self.parts += 1;
+                }
+            }
             let known = li == 0 || self.last.is_some_and(|(l, raw)| raw && l + 1 == li);
             let mut resync = None;
             if !known && !literal && li % BLOCK_LINES == 0 {
@@ -210,9 +223,17 @@ impl State {
             }
             self.last = Some((li, raw));
         }
-        let indexed = self.ix.feed(&out);
+        self.flush(&mut out, apply);
+    }
+
+    /// Gives the list the bytes in `out`.
+    fn flush(&mut self, out: &mut Vec<u8>, apply: &mut impl FnMut(Progress)) {
+        if out.is_empty() {
+            return;
+        }
+        let indexed = self.ix.feed(out);
         apply(Progress::Data {
-            chunk: Some(out.into()),
+            chunk: Some(mem::take(out).into()),
             indexed,
         });
     }
@@ -232,6 +253,7 @@ impl State {
         self.scanned = scanned;
         self.ix = Indexer::new();
         self.last = None;
+        self.parts = 0;
         let mut buf = Buffer::new(Storage::Memory(Vec::new()), style == ViewStyle::Raw);
         self.feed(text, style, &lines, &mut |p| buf.apply(p));
         self.lines = lines;
@@ -292,6 +314,7 @@ impl<T: Terminal> App<T> {
                         scanned: 0,
                         ix: Indexer::new(),
                         last: None,
+                        parts: 0,
                     },
                     parked: None,
                     moved: false,
@@ -374,7 +397,12 @@ impl<T: Terminal> App<T> {
             _ => None,
         };
         if let Some(by) = by {
-            let line = self.views.shown.cursor().line.saturating_add_signed(by);
+            let v = &mut self.views.shown;
+            let line = v.cursor().line;
+            let line = match by {
+                1 | -1 => line.saturating_add_signed(by),
+                _ => v.line_rows_from(line, by),
+            };
             self.point(line);
             if let Some(f) = &mut self.filter {
                 f.moved = true;

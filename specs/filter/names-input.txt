@@ -1,19 +1,44 @@
-With several inputs the status line names the listed line's input,
-and the list has no separator rows of its own.
+With several inputs the list has a separator row before each input's
+first listed line, [ and ] go between them, and the status line names
+the listed line's input.
 
+-- size --
+40x8
 -- args --
-a.txt b.txt
+a.txt b.txt c.txt
 -- input --
 x1
+y
+x2
 -- next-file --
 -- input --
-x2
+y
+-- next-file --
+-- input --
+x3
 -- keys --
-& "x" Ctrl+n Enter
+& "x" Enter
 -- screen --
+━━ a.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{x}}1
+{x}2
+━━ c.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{x}3
+~
+~
+&x  1/3  a.txt line 1/3  wrap     h help
+-- keys --
+]
+-- screen --
+━━ a.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {x}1
-{{x}}2
+{x}2
+━━ c.txt ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{x}}3
 ~
 ~
-~
-&x  2/2  b.txt line 1/1  wrap     h help
+&x  3/3  c.txt line 1/1  wrap     h help
+-- keys --
+[
+-- cursor --
+1 0
