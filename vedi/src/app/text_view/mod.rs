@@ -14,6 +14,7 @@ use crate::input::setting::Side;
 use crate::text::buffer::{Buffer, Pos, Progress};
 use crate::text::search::Matcher;
 use crate::view::layout::{Layout, Mode, WrapStyle};
+use crate::view::screen::Region;
 pub use motion::Motion;
 pub(crate) use motion::is_word;
 use rows::LaidCache;
@@ -73,13 +74,14 @@ impl Geometry {
         self.edge_markers && self.mode == Mode::Wrap && self.wrap_cols() > 2
     }
 
-    /// The cells left of the text: the line numbers', when they are
-    /// there.
-    pub fn left(&self) -> usize {
-        match self.side {
+    /// The columns text is drawn in: right of the line numbers on the
+    /// left, and short of the wrap_width bar.
+    pub fn text_area(&self) -> Region {
+        let left = match self.side {
             Side::Left => self.gutter,
             Side::Right => 0,
-        }
+        };
+        Region::new(left, self.wrap_cols())
     }
 
     /// The screen column of the line numbers' first digit cell. On the

@@ -11,7 +11,7 @@ use crate::input::setting;
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::ReadError;
 use crate::view::layout::{self, Layout, Mode as WrapMode, WrapStyle};
-use crate::view::screen::{Grid, Terminal};
+use crate::view::screen::{Grid, Region, Terminal};
 use crate::view::style::{Element, Style};
 
 /// What a message tells of: something done, or something that could
@@ -120,6 +120,7 @@ impl<T: Terminal> App<T> {
             (self.settings.theme[Element::Status], Style::default())
         };
         g.fill_row(h - 1, st);
+        let line = Region::new(0, w);
         let (text, said) = self.status_text(&row, w, at);
         let text: Vec<char> = text.chars().collect();
         let xs = Layout::default().cells(&text);
@@ -132,7 +133,8 @@ impl<T: Terminal> App<T> {
         let first = (0..=text.len())
             .find(|&i| xs[i] >= off && layout::glyph_start(&xs, i))
             .unwrap_or(text.len());
-        let mut width = xs[first] - off + runes(g, xs[first] - off, h - 1, &text[first..], st);
+        let mut width =
+            xs[first] - off + runes(g, line, xs[first] - off, h - 1, &text[first..], st);
         let cur = cur.map(|c| (c - off, h - 1));
         if let Some((tone, m)) = said {
             let st = match tone {
@@ -140,7 +142,7 @@ impl<T: Terminal> App<T> {
                 Tone::Error => self.settings.theme[Element::Error],
             };
             let m: Vec<char> = m.chars().collect();
-            width += runes(g, width, h - 1, &m, st);
+            width += runes(g, line, width, h - 1, &m, st);
         }
         if let Some((ms, at)) = prompt.and_then(Prompt::listing) {
             let ms: Vec<Vec<char>> = ms.iter().map(|m| m.chars().collect()).collect();
@@ -158,7 +160,7 @@ impl<T: Terminal> App<T> {
             for (i, m) in ms.iter().enumerate().skip(first) {
                 width += 2;
                 let ms = if at == Some(i) { mark } else { st };
-                width += runes(g, width, h - 1, m, ms);
+                width += runes(g, line, width, h - 1, m, ms);
             }
         }
         if self.focus == Focus::Prompting(Kind::Filter)
@@ -167,7 +169,7 @@ impl<T: Terminal> App<T> {
             let total = self.views.text().buf().len();
             let count: Vec<char> = format!("{}/{total}", f.listed()).chars().collect();
             if width + 2 + count.len() <= w {
-                runes(g, w - count.len(), h - 1, &count, st);
+                runes(g, line, w - count.len(), h - 1, &count, st);
             }
         }
         if let Focus::Prompting(Kind::Search { .. }) = self.focus
@@ -177,7 +179,7 @@ impl<T: Terminal> App<T> {
         {
             let count: Vec<char> = format!("{at}/{of}").chars().collect();
             if width + 2 + count.len() <= w {
-                runes(g, w - count.len(), h - 1, &count, st);
+                runes(g, line, w - count.len(), h - 1, &count, st);
             }
         }
         let help = Command {
@@ -191,7 +193,7 @@ impl<T: Terminal> App<T> {
                 && self.views.role() != Role::Help
                 && width + 2 + hint.len() <= w
             {
-                runes(g, w - hint.len(), h - 1, &hint, st);
+                runes(g, line, w - hint.len(), h - 1, &hint, st);
             }
         }
         cur

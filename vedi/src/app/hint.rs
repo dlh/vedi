@@ -237,10 +237,11 @@ impl<T: Terminal> App<T> {
     /// Draws the labels over the start of what they go to.
     pub(super) fn draw_hints(&mut self, g: &mut Grid) {
         let st = self.settings.theme[Element::Hint];
-        let left = self.views.shown.geometry().left();
+        let area = self.views.shown.geometry().text_area();
         for (label, t) in self.hints() {
             for (i, c) in label.chars().enumerate() {
-                g.put(left + t.x + i, t.y, c.encode_utf8(&mut [0; 4]), st, None);
+                let x = (t.x + i) as isize;
+                area.put(g, x, t.y, c.encode_utf8(&mut [0; 4]), st, None);
             }
         }
     }

@@ -435,8 +435,12 @@ impl TextView {
     /// below, at the same column. A cell of the line numbers is the
     /// row's nearest.
     pub fn cell_pos(&mut self, x: usize, y: usize) -> Pos {
-        let x = x
-            .saturating_sub(self.geom.left())
+        // Not clamped to the text area: a cell past wrap_width is past
+        // the row's text.
+        let x = self
+            .geom
+            .text_area()
+            .col(x)
             .min(self.geom.cols.saturating_sub(1));
         if self.buf.is_empty() {
             return Pos::default();

@@ -6,7 +6,7 @@ use crate::app::views::Role;
 use crate::app::{App, Focus, Kind, STDIN};
 use crate::text::ansi::{Link, Run, ViewStyle};
 use crate::view::layout::{self, Layout, Mode};
-use crate::view::screen::{Grid, Terminal};
+use crate::view::screen::{Grid, Region, Terminal};
 use crate::view::style::{Element, Style};
 
 impl<T: Terminal> App<T> {
@@ -54,8 +54,8 @@ impl<T: Terminal> App<T> {
     fn draw_text(&mut self, g: &mut Grid) -> Option<(usize, usize)> {
         let rows = self.views.shown.rows();
         let geom = self.views.shown.geometry();
-        let left = geom.left();
-        let guide = geom.guide_col().map(|x| left + x);
+        let area = geom.text_area();
+        let guide = geom.guide_col().map(|x| area.grid_col(x));
         let guide_st = self.settings.theme[Element::Guide];
         let mut p = self.views.shown.top();
         let mut cur = None;
@@ -70,7 +70,7 @@ impl<T: Terminal> App<T> {
                 match_line = Some(p.line);
             }
             if let Some(x) = self.draw_row(g, y, p, &matches, sel) {
-                cur = Some((left + x, y));
+                cur = Some((area.grid_col(x), y));
             }
             if p.col == Some(0) {
                 self.draw_number(g, y, p.line);
@@ -88,7 +88,7 @@ impl<T: Terminal> App<T> {
         }
         for y in y..rows {
             if geom.end_markers {
-                g.put(left, y, "~", guide_st, None);
+                area.put(g, 0, y, "~", guide_st, None);
             }
             if let Some(x) = guide {
                 g.put(x, y, "│", guide_st, None);
@@ -120,10 +120,7 @@ impl<T: Terminal> App<T> {
         }
         let geom = self.views.shown.geometry();
         let w = geom.cols;
-        let at = RowStart { x: geom.left(), y };
-        // Text stops short of the wrap_width bar as it does of the
-        // screen's edge: a tab wider than the width would run under it.
-        let right = geom.wrap_cols();
+        let area = geom.text_area();
         let (cursor, xoff) = (self.views.shown.cursor(), self.views.shown.xoff());
         let pointed = self.focus == Focus::Prompting(Kind::Filter)
             && self.filter.as_ref().is_some_and(|f| f.pointer_shown())
@@ -171,8 +168,8 @@ impl<T: Terminal> App<T> {
             let (_, j) = ln.glyph(i);
             let selected = sel.contains(&i);
             if i == n {
-                if selected && x < right as isize {
-                    put(g, at, x, " ", theme[Element::Selection], None);
+                if selected {
+                    area.put(g, x, y, " ", theme[Element::Selection], None);
                 }
                 break;
             }
@@ -208,15 +205,7 @@ impl<T: Terminal> App<T> {
                 _ => None,
             };
             let text: String = line.text[i..j].iter().collect();
-            let width = xs[i + 1] - xs[i];
-            // A tab or ^X keeps the cells short of `right`; a wider
-            // glyph across it is left out, as the grid leaves one out
-            // at its edge.
-            let room = usize::try_from(right as isize - x).unwrap_or(0);
-            let cells = line.text[i] == '\t' || is_control(line.text[i]);
-            if room >= width || (cells && room > 0) {
-                glyph(g, at, x, &text, width.min(room), st, link);
-            }
+            glyph(g, area, x, y, &text, xs[i + 1] - xs[i], st, link);
             i = j;
         }
         // With edge markers on, text off either side of the screen is
@@ -226,30 +215,25 @@ impl<T: Terminal> App<T> {
         let width = xs[n];
         if geom.edge_markers && geom.mode == Mode::NoWrap {
             if xoff > 0 && width > 0 {
-                put(g, at, 0, "<", theme[Element::EdgeMarker], None);
+                area.put(g, 0, y, "<", theme[Element::EdgeMarker], None);
             }
             if width > xoff + w && w > 0 {
                 if w >= 2 {
-                    let c = g.get(at.x + w - 2, y);
+                    let c = g.get(area.grid_col(w - 2), y);
                     if c.width == 2 {
                         let (st, link) = (c.style, c.link.clone());
-                        g.put(at.x + w - 2, y, " ", st, link);
+                        area.put(g, w as isize - 2, y, " ", st, link);
                     }
                 }
-                put(g, at, w as isize - 1, ">", theme[Element::EdgeMarker], None);
+                let st = theme[Element::EdgeMarker];
+                area.put(g, w as isize - 1, y, ">", st, None);
             }
         }
         // In wrap mode a row whose line goes on below ends in a marker,
         // in the column the layout leaves free.
         if geom.wrap_marks() && seg.end < n {
-            put(
-                g,
-                at,
-                geom.wrap_cols() as isize - 1,
-                "\\",
-                theme[Element::EdgeMarker],
-                None,
-            );
+            let x = area.width() as isize - 1;
+            area.put(g, x, y, "\\", theme[Element::EdgeMarker], None);
         }
         cell.filter(|c| c.shown).map(|c| c.x as usize)
     }
@@ -282,8 +266,7 @@ impl<T: Terminal> App<T> {
     /// given, and dashes to the right edge, or wrap_width's, which cuts a
     /// wider name.
     fn draw_separator(&self, g: &mut Grid, y: usize, i: usize) {
-        let geom = self.views.shown.geometry();
-        let left = geom.left();
+        let area = self.views.shown.geometry().text_area();
         let name: Vec<char> = self
             .names
             .get(self.views.shown.buf().part_at(i))
@@ -294,17 +277,11 @@ impl<T: Terminal> App<T> {
             self.settings.theme[Element::Separator],
             self.settings.theme[Element::SeparatorName],
         );
-        let mut x = left + runes(g, left, y, &['━', '━', ' '], rule);
-        x += runes(g, x, y, &name, name_st);
-        g.put(x, y, " ", rule, None);
-        x += 1;
-        let right = left + geom.wrap_cols();
-        while x < right {
-            g.put(x, y, "━", rule, None);
-            x += 1;
-        }
-        for x in right..g.width() {
-            g.put(x, y, " ", Style::default(), None);
+        let mut x = runes(g, area, 0, y, &['━', '━', ' '], rule);
+        x += runes(g, area, x, y, &name, name_st);
+        area.put(g, x as isize, y, " ", rule, None);
+        for x in x + 1..area.width() {
+            area.put(g, x as isize, y, "━", rule, None);
         }
     }
 }
@@ -323,30 +300,17 @@ fn is_control(c: char) -> bool {
     c < ' ' && c != '\t' || c == '\x7f'
 }
 
-/// The cell a row's text starts at: right of line numbers on the left.
-#[derive(Copy, Clone)]
-struct RowStart {
-    x: usize,
-    y: usize,
-}
-
-/// Draws the cluster `s` `x` cells into the row at `at`, unless that is
-/// left of it.
-fn put(g: &mut Grid, at: RowStart, x: isize, s: &str, st: Style, link: Option<Link>) {
-    if let Ok(x) = usize::try_from(x) {
-        g.put(at.x + x, at.y, s, st, link);
-    }
-}
-
-/// Draws the cluster `text` `x` cells into the row at `at` in `width`
-/// cells: a tab as
-/// that many spaces, a C0 control as ^X (DEL as ^?), the X only given a
-/// second cell, a C1 control as U+FFFD, anything else as itself with
-/// its marks.
+/// Draws the cluster `text` at (`x`, `y`) of `area` in `width` cells:
+/// a tab as that many spaces, a C0 control as ^X (DEL as ^?), the X
+/// only given a second cell, a C1 control as U+FFFD, anything else as
+/// itself with its marks. A tab or ^X cut by the area's right edge
+/// keeps the cells short of it.
+#[allow(clippy::too_many_arguments)]
 fn glyph(
     g: &mut Grid,
-    at: RowStart,
+    area: Region,
     x: isize,
+    y: usize,
     text: &str,
     width: usize,
     st: Style,
@@ -354,41 +318,54 @@ fn glyph(
 ) {
     let c = text.chars().next().unwrap_or(' ');
     match c {
+        // Only the cells in the area: a tab may be thousands wide.
         '\t' => {
-            for k in 0..width as isize {
-                put(g, at, x + k, " ", st, link.clone());
+            let end = (width as isize).min(area.width() as isize - x);
+            for k in (-x).max(0)..end {
+                area.put(g, x + k, y, " ", st, link.clone());
             }
         }
         '\x7f' => {
-            put(g, at, x, "^", st, link.clone());
+            area.put(g, x, y, "^", st, link.clone());
             if width > 1 {
-                put(g, at, x + 1, "?", st, link);
+                area.put(g, x + 1, y, "?", st, link);
             }
         }
         c if c < ' ' => {
-            put(g, at, x, "^", st, link.clone());
+            area.put(g, x, y, "^", st, link.clone());
             let caret = char::from(c as u8 + 0x40);
             if width > 1 {
-                put(g, at, x + 1, caret.encode_utf8(&mut [0; 4]), st, link);
+                area.put(g, x + 1, y, caret.encode_utf8(&mut [0; 4]), st, link);
             }
         }
         // A name or title may carry C1, which some terminals take for
         // escapes; content drops it on the way in.
-        c if c.is_control() => put(g, at, x, "\u{fffd}", st, link),
-        _ => put(g, at, x, text, st, link),
+        c if c.is_control() => {
+            area.put(g, x, y, "\u{fffd}", st, link);
+        }
+        _ => {
+            area.put(g, x, y, text, st, link);
+        }
     }
 }
 
-/// Draws `text` from (`x`, `y`) glyph by glyph and returns its width in
-/// cells.
-pub(super) fn runes(g: &mut Grid, x: usize, y: usize, text: &[char], st: Style) -> usize {
+/// Draws `text` from (`x`, `y`) of `area` glyph by glyph and returns its
+/// width in cells.
+pub(super) fn runes(
+    g: &mut Grid,
+    area: Region,
+    x: usize,
+    y: usize,
+    text: &[char],
+    st: Style,
+) -> usize {
     let xs = Layout::default().cells(text);
     let mut i = 0;
     while i < text.len() {
         let (_, j) = layout::glyph(&xs, i);
         let s: String = text[i..j].iter().collect();
-        let cell = xs[i] as isize;
-        glyph(g, RowStart { x, y }, cell, &s, xs[i + 1] - xs[i], st, None);
+        let cell = (x + xs[i]) as isize;
+        glyph(g, area, cell, y, &s, xs[i + 1] - xs[i], st, None);
         i = j;
     }
     xs[text.len()]

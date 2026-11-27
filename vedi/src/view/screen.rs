@@ -122,6 +122,7 @@ impl Grid {
 
     /// Draws one cluster at `(x, y)` and returns the cells it took: 0
     /// when it is zero-width or does not fit before the right edge.
+    #[inline]
     pub fn put(
         &mut self,
         x: usize,
@@ -130,7 +131,20 @@ impl Grid {
         style: Style,
         link: Option<Link>,
     ) -> usize {
-        if x >= self.w || y >= self.h {
+        self.put_before(self.w, x, y, text, style, link)
+    }
+
+    /// `put`, with column `right`, at most the width, for the right edge.
+    fn put_before(
+        &mut self,
+        right: usize,
+        x: usize,
+        y: usize,
+        text: &str,
+        style: Style,
+        link: Option<Link>,
+    ) -> usize {
+        if x >= right || y >= self.h {
             return 0;
         }
         let joined = match self.pending.take() {
@@ -146,7 +160,7 @@ impl Grid {
             return 0;
         }
         let text = joined.as_deref().unwrap_or(text);
-        if x + width > self.w {
+        if x + width > right {
             return 0;
         }
         let i = y * self.w + x;
@@ -179,6 +193,56 @@ impl Grid {
             .iter()
             .enumerate()
             .map(move |(i, c)| (i % w, i / w, c))
+    }
+}
+
+/// A band of a grid's columns, `width` wide from column `x`, drawn into
+/// from its own column 0. A cluster left of it or past its right edge
+/// is left out, as the grid leaves one out at its own edge.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct Region {
+    x: usize,
+    width: usize,
+}
+
+impl Region {
+    pub fn new(x: usize, width: usize) -> Region {
+        Region { x, width }
+    }
+
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
+    /// `Grid::put` at the region's column `x`, which may be left of it.
+    #[inline]
+    pub fn put(
+        &self,
+        g: &mut Grid,
+        x: isize,
+        y: usize,
+        text: &str,
+        style: Style,
+        link: Option<Link>,
+    ) -> usize {
+        match usize::try_from(x) {
+            Ok(x) if x < self.width => {
+                let right = (self.x + self.width).min(g.w);
+                g.put_before(right, self.x + x, y, text, style, link)
+            }
+            _ => 0,
+        }
+    }
+
+    /// The grid column of the region's column `x`, which may be past
+    /// its edge.
+    pub fn grid_col(&self, x: usize) -> usize {
+        self.x + x
+    }
+
+    /// The region's column at grid column `x`: 0 left of it.
+    pub fn col(&self, x: usize) -> usize {
+        x.saturating_sub(self.x)
     }
 }
 
@@ -437,6 +501,38 @@ mod tests {
         put(&mut g, 0, 0, "月");
         assert_eq!((g.get(0, 0).text.as_str(), g.get(1, 0).width), ("月", 0));
         assert_eq!(*g.get(2, 0), Cell::blank());
+    }
+
+    #[test]
+    fn region_draws_from_its_left_edge() {
+        let mut g = Grid::new(6, 1);
+        let r = Region::new(2, 3);
+        assert_eq!(r.put(&mut g, 0, 0, "a", Style::default(), None), 1);
+        assert_eq!(g.get(2, 0).text, "a");
+        assert_eq!(r.put(&mut g, -1, 0, "b", Style::default(), None), 0);
+        assert_eq!(*g.get(1, 0), Cell::blank());
+    }
+
+    #[test]
+    fn region_leaves_out_what_crosses_its_right_edge() {
+        let mut g = Grid::new(6, 1);
+        let r = Region::new(2, 3);
+        assert_eq!(r.put(&mut g, 2, 0, "日", Style::default(), None), 0);
+        assert_eq!(r.put(&mut g, 3, 0, "c", Style::default(), None), 0);
+        assert!(g.cells().all(|(_, _, c)| *c == Cell::blank()));
+        assert_eq!(r.put(&mut g, 1, 0, "日", Style::default(), None), 2);
+        assert_eq!((g.get(3, 0).text.as_str(), g.get(4, 0).width), ("日", 0));
+        assert_eq!(r.put(&mut g, 2, 0, "x", Style::default(), None), 1);
+        assert_eq!(*g.get(3, 0), Cell::blank());
+    }
+
+    #[test]
+    fn region_maps_columns_both_ways() {
+        let r = Region::new(4, 10);
+        assert_eq!(r.grid_col(3), 7);
+        assert_eq!(r.col(7), 3);
+        assert_eq!(r.col(2), 0);
+        assert_eq!(r.col(r.grid_col(12)), 12);
     }
 
     #[test]
