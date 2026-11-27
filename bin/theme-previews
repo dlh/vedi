@@ -1,6 +1,6 @@
 #!/bin/sh
 # Writes docs/media/themes/NAME.png for each theme in vedi/themes, from
-# docs/media/theme.tape, with the terminal colors the theme is for.
+# docs/media/themes/theme.tape, with the terminal colors the theme is for.
 # Needs vedi and vhs on PATH; run from `make media`.
 set -eu
 
@@ -32,7 +32,7 @@ main() {
     for conf in vedi/themes/*.conf; do
         name=$(basename "$conf" .conf)
         term=$(terminal "$name")
-        sed "s/@NAME@/$name/g; s/@TERMINAL@/$term/g" docs/media/theme.tape \
+        sed "s/@NAME@/$name/g; s/@TERMINAL@/$term/g" docs/media/themes/theme.tape \
             >"$dir/$name.tape"
         vhs -q -o "$dir/$name.gif" "$dir/$name.tape"
     done

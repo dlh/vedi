@@ -25,7 +25,7 @@ the secrets script need [gh](https://cli.github.com), at any version.
     make release-notes  print the notes the next release carries: the first CHANGELOG.md entry
     make release-tag    commit the CHANGELOG.md entry and tag HEAD with the next version
     make aur            write the AUR packages to dist/aur/ (needs goreleaser and gh)
-    make media          record the README gifs
+    make media          record the README gifs and theme screenshots
 
 CI runs `fmt`, `test`, `tidy` and `licenses` on every push and PR; run them
 before committing. `licenses` runs
@@ -70,10 +70,13 @@ benchmarked until vedi 1.9.0 and then dropped.
 third over `vedi/src/app/status.rs`, read through bat as the `open_cmd`. vedi
 runs with its defaults otherwise: the config home is `docs/media`, which holds
 no config. It then runs `bin/theme-previews`, which fills in
-`docs/media/theme.tape` for each theme in `vedi/themes/` and writes a screenshot
-to `docs/media/themes/`; a new theme needs its terminal colors added to the
-script. Run it after a change to the drawing or a theme, and commit what it
-rewrites.
+`docs/media/themes/theme.tape` for each theme in `vedi/themes/` and writes a
+screenshot beside it; a new theme needs its terminal colors added to the script.
+Run it after a change to the drawing or a theme, and commit what it rewrites.
+
+`make docs/media/hint.gif` records one gif, and only when its tape or input is
+newer; `-B` forces it, as after a change to vedi alone. `make media-gifs`
+records the gifs, `make media-themes` the theme screenshots.
 
 Commit messages follow
 [Conventional Commits](https://www.conventionalcommits.org/). `CHANGELOG.md`

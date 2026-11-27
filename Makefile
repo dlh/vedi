@@ -1,4 +1,4 @@
-.PHONY: build install test licenses audit outdated bench bench-compare bench-pagers media fmt tidy release-check next-version changelog release-notes release-tag aur clean
+.PHONY: build install test licenses audit outdated bench bench-compare bench-pagers media media-gifs media-themes fmt tidy release-check next-version changelog release-notes release-tag aur clean
 
 build:
 	cargo build --release -p vedi
@@ -30,14 +30,24 @@ bench-compare:
 bench-pagers: build
 	cargo run --release -q -p bench -- --vedi $(CURDIR)/target/release/vedi $(BENCHFLAGS)
 
-# Needs vhs and bat (mise install), and ttyd and ffmpeg (brew install). Rewrites
-# docs/media/demo.gif, hint.gif, filter.gif and themes/. The config home holds
+# Needs vhs and bat (mise install), and ttyd and ffmpeg (brew install). A gif is
+# recorded when its tape or input is newer; -B forces it. The config home holds
 # no vedi.conf, so the demos run with the defaults.
-media: build
-	PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media" vhs docs/media/demo.tape
-	PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media" vhs docs/media/hint.tape
-	PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media" vhs docs/media/filter.tape
-	PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media" bin/theme-previews
+MEDIA_ENV = PATH="$(CURDIR)/target/release:$$PATH" XDG_CONFIG_HOME="$(CURDIR)/docs/media"
+GIFS = $(patsubst %.tape,%.gif,$(wildcard docs/media/*.tape))
+
+media: media-gifs media-themes
+
+media-gifs: $(GIFS)
+
+docs/media/demo.gif docs/media/hint.gif: docs/media/sample.txt
+docs/media/filter.gif: vedi/src/app/status.rs
+
+docs/media/%.gif: docs/media/%.tape | build
+	$(MEDIA_ENV) vhs $<
+
+media-themes: build
+	$(MEDIA_ENV) bin/theme-previews
 
 # Shows what rustfmt would change and fails; never rewrites.
 fmt:
