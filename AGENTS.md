@@ -13,7 +13,6 @@ A pager: view ANSI-colored text, select with the keyboard, copy.
 - A default key works in terminals as shipped. One that needs a terminal setting
   is not bound, except in Terminal.app, which lacks mappings for many modified
   keys: its Send Text fix goes in the table in `docs/terminals.md`.
-  `docs/development.md` says what terminals send.
 - Colors, read errors and the event loop are tested in Rust
   (`vedi/src/app/tests.rs`), as is `open_cmd`, which runs in the binary where no
   spec reaches (`vedi/tests/main.rs`); everything else belongs in `specs/`.

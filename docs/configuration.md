@@ -2,22 +2,36 @@
 
 - [The file](#the-file)
 - [Settings](#settings)
+- [clipboard_cmd](#clipboard_cmd)
+- [open_cmd](#open_cmd)
 - [Colors](#colors)
-- [Commands](#commands)
 - [Keys](#keys)
 - [Actions](#actions)
 - [Defaults](#defaults)
 - [vim](#vim)
 - [emacs](#emacs)
-- [Shell completion](#shell-completion)
 
 ## The file
 
-vedi reads `~/.config/vedi/vedi.conf` (or `$XDG_CONFIG_HOME/vedi/vedi.conf`), or
-the file named by `--config`. Without a file it uses the [defaults](#defaults).
-A bad line stops vedi before it opens, naming the file and line.
+vedi reads `~/.config/vedi/vedi.conf`, or `$XDG_CONFIG_HOME/vedi/vedi.conf`.
+`--config FILE` names another. Without a file it uses the
+[defaults](#defaults).
 
-One directive per line. Blank lines and `#` comments are skipped.
+One directive per line. Blank lines and `#` comments are skipped. A bad line
+stops vedi before it opens, naming the file and line.
+
+| Directive | Does |
+| --- | --- |
+| `<setting> <value>` | Sets a [setting](#settings). |
+| `map <key> <action>` | Binds a [key](#keys) to an [action](#actions). The action `none` unbinds it. |
+| `clear_all_shortcuts` | Drops every binding so far, defaults included. |
+| `color <element> <style>` | Sets a [color](#colors). |
+| `include FILE` | Reads another file there, as if its lines were in this one. |
+
+Later lines win over earlier ones and over the defaults.
+
+In `include FILE`, a leading `~` is the home directory, and a relative name is
+from this file's directory.
 
     # vim-style horizontal motion
     map h left
@@ -30,118 +44,173 @@ One directive per line. Blank lines and `#` comments are skipped.
     map j down
     map k up
 
-`map <key> <action>` binds a key. Later lines win over earlier ones and over the
-defaults; the action `none` unbinds. `clear_all_shortcuts` drops every binding
-so far, defaults included.
-
-`include FILE` reads another file there, as if its lines were in this one. A
-leading `~` is the home directory; a relative name is from this file's
-directory.
-
 ## Settings
 
-| Setting | Default | Flags | Effect |
-| --- | --- | --- | --- |
-| `auto_reload` | `yes` | `--auto-reload`, `--no-auto-reload` | Reread a file that changes on disk. `R` reloads either way. |
-| `wrap` | `yes` | `--wrap`, `-S` | Start in wrap mode. `w` toggles. |
-| `wrap_style` | `char` | `--wrap-style` | `word` breaks rows at spaces and tabs. |
-| `wrap_width` | `0` | `--wrap-width` | Wrap rows at this many cells when the screen is wider; `0` wraps at its edge. |
-| `tab_width` | `8` | `--tab-width` | Cells per tab stop. |
-| `edge_markers` | `no` | `--edge-markers`, `--no-edge-markers` | Mark text that runs off the screen. |
-| `file_separators` | `yes` | `--file-separators`, `--no-file-separators` | Name each input in a row when several are given; see [the input's name](pager.md#the-inputs-name). |
-| `end_markers` | `yes` | `--end-markers`, `--no-end-markers` | Start each row below the text with `~`. |
-| `status_line` | `yes` | `--status-line`, `--no-status-line` | Draw the status line. |
-| `view_style` | `color` | `--view-style` | `plain` draws the text without its colors; `raw` shows its escapes. |
-| `hint_order` | `top_down` | `--hint-order` | `bottom_up` numbers `s`'s hints from the bottom of the screen. |
-| `line_numbers` | `no` | `--line-numbers`, `--no-line-numbers` | Number the lines. |
-| `line_numbers_side` | `left` | `--line-numbers-side` | `right` puts the numbers at the screen's right edge. |
-| `one_page_rows_below` | `1` | `--one-page-rows-below` | Rows `-F` leaves below the text, for the shell's prompt. |
-| `copy_on_select` | `yes` | `--copy-on-select`, `--no-copy-on-select` | Copy what the mouse selects when the button comes up. |
-| `clipboard_cmd` | | `--clipboard-cmd`, `--no-clipboard-cmd` | Pipe copied text to a command instead of OSC 52. |
-| `open_cmd` | | `--open-cmd`, `--no-open-cmd` | Read each file through a command, by name pattern or for all; `%s` is the file name. |
+| Setting | Values | Default | Effect | Flag |
+| --- | --- | --- | --- | --- |
+| `auto_reload` | `no`, `yes` | `yes` | Reread a file that changes on disk. `R` reloads either way. | `--[no-]auto-reload` |
+| `wrap` | `no`, `yes` | `yes` | Start in wrap mode. `w` toggles. | `-S`, `--[no-]wrap` |
+| [`wrap_style`](#wrap_style) | `char`, `word` | `char` | Break rows at the screen's edge, or at spaces and tabs. | `--wrap-style` |
+| [`wrap_width`](#wrap_width) | A number | `0` | Wrap rows at this many cells when the screen is wider; `0` wraps at its edge. | `--wrap-width` |
+| `tab_width` | A number | `8` | Cells per tab stop. | `--tab-width` |
+| [`edge_markers`](#edge_markers) | `no`, `yes` | `no` | Mark text that runs off the screen. | `--[no-]edge-markers` |
+| `file_separators` | `no`, `yes` | `yes` | Name each input in a row when [several are given](usage.md#several-files). | `--[no-]file-separators` |
+| `end_markers` | `no`, `yes` | `yes` | Start each row below the text with `~`. | `--[no-]end-markers` |
+| [`status_line`](#status_line) | `no`, `yes` | `yes` | Draw the status line. | `--[no-]status-line` |
+| [`view_style`](#view_style) | `color`, `plain`, `raw` | `color` | Draw the text in color, without its colors, or with its escapes as text. | `--view-style` |
+| `hint_order` | `bottom_up`, `top_down` | `top_down` | Number `s`'s hints from the top or the bottom of the screen. | `--hint-order` |
+| [`line_numbers`](#line_numbers) | `no`, `yes` | `no` | Number the lines. | `--[no-]line-numbers` |
+| `line_numbers_side` | `left`, `right` | `left` | The edge of the screen the line numbers are at. | `--line-numbers-side` |
+| `one_page_rows_below` | A number | `1` | Rows `-F` leaves below the text, for the shell's prompt. | `--one-page-rows-below` |
+| [`copy_on_select`](#copy_on_select) | `no`, `yes` | `yes` | Copy what the mouse selects when the button comes up. | `--[no-]copy-on-select` |
+| [`clipboard_cmd`](#clipboard_cmd) | A command |  | Pipe copied text to a command instead of OSC 52. | `--[no-]clipboard-cmd` |
+| [`open_cmd`](#open_cmd) | A command |  | Read each file through a command. | `--[no-]open-cmd` |
 
-Flags apply for one run. Flags in the `VEDI` environment variable override the
-file, and the command line overrides `VEDI`; see [Pager](pager.md#vedi).
+Where a value is set, strongest first:
 
-**wrap_style word.** A word that does not fit moves to the next row, taking the
-space after it; one wider than the screen breaks at the edge. The status line
-shows `word wrap`.
+1. A flag on the command line, for one run.
+2. A flag in the [`VEDI`](pager.md#vedi) environment variable.
+3. The config file.
 
-**wrap_width 80.** Rows wrap at 80 cells, a dim `│` in the 81st. With
-`edge_markers yes` the `\` takes the 80th. `W` switches between `0` and `80`.
+A `:` [command](commands.md#settings) changes most settings for the rest of the
+run.
 
-**edge_markers yes.** In nowrap mode a row that runs past the right edge ends in
-`>`, and one scrolled off the left edge starts with `<`, both in reverse video.
-In wrap mode a row that continues on the next ends in `\`, and text wraps a
-column early to leave room for it.
+### wrap_style
 
-**status_line no.** The text has the bottom row. The line comes back for a
-prompt, a message, help or a read error, and goes with the next key. A copy the
-mouse makes says nothing unless it fails, so the row stays under the next click.
+- `char` breaks a row at the screen's edge.
+- `word` moves a word that does not fit to the next row, with the space after
+  it. A word wider than the screen breaks at the edge. The status line shows
+  `word wrap`.
 
-**view_style plain.** The text is drawn in the terminal's default colors,
-without its SGR colors and attributes; links stay, and `-F` prints the same. The
-status line shows `plain`.
+### wrap_width
 
-**view_style raw.** The text is the input's bytes: an escape sequence is drawn
-as its characters, the ESC as `^[` in reverse video, and colors nothing. Search
-finds its text and copy sends it. No title names stdin, and `[` and `]` stop
-only at inputs. Changing to or from `raw` keeps the cursor's line and clamps its
-column. `-F` prints the escapes spelled out. The status line shows `raw`.
+With `wrap_width 80`:
 
-**line_numbers yes.** Each line's first row has its number, counted in its
-input as the status line counts, in a column as wide as the text's line count; a
-wrapped line's other rows have none. The text has the columns left. On the
-right the numbers are at the screen's edge, or after the `wrap_width` bar when
-there is one. In the filter's list a line has the number it has in the text.
-Help shows none, nor does a screen too narrow to leave the text a column, and
-`-F` prints the text without them.
+- Rows wrap at 80 cells, with a `│` in the 81st.
+- With `edge_markers yes`, the `\` takes the 80th.
 
-**copy_on_select no.** Releasing the mouse button no longer copies what it
-selected; the copy keys do. By default it does, as a terminal copies what the
-mouse selects when no program has taken the mouse.
+`W` switches between `0` and `80`.
 
-**clipboard_cmd** and **open_cmd** take the rest of the line as the command:
-`clipboard_cmd xclip -selection clipboard`,
-`open_cmd bat --color=always --paging=never %s`. A pipeline needs a script.
+### edge_markers
 
-**clipboard_cmd** runs in the background. The status line says `copying` until
-it is done, and `copy_and_quit` waits for it. A second copy before then ends it,
-as does quitting.
+With `edge_markers yes`:
 
-**open_cmd** leaves stdin as it is. A command that fails ends the text with a
-read error naming its exit status and stderr; `R` and auto-reload run it again.
+| Mode | Marker |
+| --- | --- |
+| nowrap | `>` ends a row that runs past the right edge. `<` starts one scrolled off the left edge. |
+| wrap | `\` ends a row that continues on the next. Text wraps a column early to leave room for it. |
 
-**open_cmd by file type.** A glob before the command limits it to files whose
-name matches, case ignored. A glob is a word with `*`, `?` or `[`; `[!a-c]`
-excludes, and `[*]` is a literal star:
+### status_line
+
+With `status_line no`:
+
+- The text has the bottom row.
+- The line comes back for a prompt, a message, help or a read error, and goes
+  with the next key.
+- A copy the mouse makes says nothing unless it fails, so the row stays under
+  the next click.
+
+### view_style
+
+`plain` draws the text in the terminal's default colors:
+
+- Its SGR colors and attributes are left out. Links stay.
+- `-F` prints the text without its colors too.
+- The status line shows `plain`.
+
+`raw` draws the input's bytes:
+
+- An escape sequence is drawn as its characters and colors nothing. The ESC is
+  drawn as `^[`.
+- Search finds the escapes' text, copy sends it, and `-F` prints it.
+- No [title](usage.md#titles) names stdin, and `[` and `]` stop only at inputs.
+- The status line shows `raw`.
+
+Changing to or from `raw` keeps the cursor's line and clamps its column.
+
+### line_numbers
+
+With `line_numbers yes`:
+
+- Each line's first row has its number. A wrapped line's other rows have none.
+- Lines are counted within their input, as the status line counts.
+- The column is as wide as the text's line count, and the text has the columns
+  left.
+- With `line_numbers_side right`, the numbers are at the screen's edge, or after
+  the `wrap_width` bar when there is one.
+- In the filter's list, a line has the number it has in the text.
+
+Nothing is numbered in help, on a screen too narrow to leave the text a column,
+or in what `-F` prints.
+
+### copy_on_select
+
+By default releasing the mouse button copies what it selected, as a terminal
+does when no program has taken the mouse. With `copy_on_select no`, only the
+copy keys copy.
+
+## clipboard_cmd
+
+`clipboard_cmd` pipes copied text to a command. The command is the rest of the
+line; a pipeline needs a script.
+
+    clipboard_cmd xclip -selection clipboard
+
+- It runs in the background, and the status line says `copying` until it is
+  done.
+- `copy_and_quit` waits for it.
+- A second copy before then ends it, as does quitting.
+
+[Terminals](terminals.md#clipboard) says when one is needed.
+
+## open_cmd
+
+`open_cmd` reads each file through a command, to color or format it. The command
+is the rest of the line; a pipeline needs a script.
+
+    open_cmd bat --color=always --paging=never %s
+
+- `%s` is the file name. Without `%s`, the name is the command's last argument.
+- A name starting with `-` is passed as `./-name`, so the command does not take
+  it for an option.
+- Text on stdin is read as it is.
+- A command that fails ends the text with a read error naming its exit status
+  and stderr.
+- `R` and auto-reload run the command again.
+
+### By file type
+
+A glob before the command limits it to files whose name matches, case ignored:
 
     open_cmd *.md mdcat --ansi
     open_cmd --no-fallback *.json jq -C . %s
     open_cmd bat --color=always --paging=never %s
 
-A file is read through the last line whose pattern matches it, else the last
-fallback line, one without a pattern. A command without `%s` gets the file name
-as its last argument; a name starting with `-` is passed as `./-name`, so the
-command does not take it for an option. `--open-cmd` replaces every line for
-one run.
+- A glob is a word with `*`, `?` or `[`. `[!a-c]` excludes, and `[*]` is a
+  literal star.
+- A line without a glob is a fallback.
+- A file is read through the last line whose glob matches it, else the last
+  fallback.
+
+### Cycling
 
 `O` (`cycle open_cmd`) steps each file through every line that matches it, then
-reads it as it is. Above, a `.md` file goes from mdcat to bat to as it is.
-`--no-fallback` before a pattern keeps the fallback lines from the files it
-matches, so a `.json` file goes from jq to as it is. The status line names the
-command for the file at the cursor, or `''` for none, and the selection is
-cleared.
+reads it as it is. With the lines above:
+
+| File | `O` steps through |
+| --- | --- |
+| `a.md` | mdcat, bat, as it is |
+| `a.json` | jq, as it is |
+
+- `--no-fallback` before a glob keeps the fallback lines from the files it
+  matches.
+- The status line names the command for the file at the cursor, or `''` for
+  none.
+- The selection is cleared.
 
 ## Colors
 
-`color <element> <style>` sets how vedi draws one of its own elements. A theme
-is a file of `color` lines: `include themes/NAME.conf`.
-
-Homebrew installs example themes in `$(brew --prefix)/share/vedi/themes/`, the
-AUR packages in `/usr/share/vedi/themes/`, and a release archive holds them in
-`themes/`. Include one from there, or copy it to `~/.config/vedi/themes/` to
-change it. [themes.md](themes.md) shows each.
+`color <element> <style>` sets how vedi draws one of its own elements:
 
     color selection      on #3a3d4a
     color match          black on #e5c07b
@@ -155,71 +224,70 @@ change it. [themes.md](themes.md) shows each.
 | `current_match` | `bright_white on magenta` | The match the cursor is in. |
 | `hint` | `black on bright_cyan bold` | `s`'s labels. |
 | `note` | `black on yellow` | A message saying what was done. |
-| `error` | `bright_white on red` | One saying what could not be. |
+| `error` | `bright_white on red` | A message saying what could not be done. |
 | `status` | `reverse` | The status line, and a completion Tab fills in. |
 | `edge_marker` | `reverse` | `<`, `>` and `\` with `edge_markers yes`. |
 | `control` | `reverse` | A control character, drawn as `^X`. |
 | `guide` | `dim` | The `wrap_width` bar and the `~` below the text. |
 | `separator` | `cyan` | The row naming each input. |
-| `separator_name` | `bold` | The name on it. |
+| `separator_name` | `bold` | The input's name on that row. |
 | `line_number` | `dim` | The numbers of `line_numbers`. |
 
+### Styles
+
 A style is `[color] [on color] [attribute...]`: the foreground, the background,
-then any of `bold`, `dim`, `italic`, `underline`, `reverse` and `strike`. A
-color is `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan` or
-`white`, a `bright_` one, a number from `0` to `255`, `#rrggbb`, or `default`,
-the terminal's own. The named colors and numbers are the terminal's palette, so
-they follow its theme; `#rrggbb` does not.
+then attributes.
 
-A line replaces the element's whole style: `color match on blue` is the default
-foreground on blue, not bold. A `control` style is drawn over the text's own,
-which shows where it sets no color.
-
-## Commands
-
-`:` opens a prompt on the status line. A bad command is an error there.
-
-| Command | Effect |
+| Part | Values |
 | --- | --- |
-| `:<setting> <value>` | Change a setting for the rest of the run: `:wrap_style word`, `:tab_width 4`. Any setting above but `clipboard_cmd`, `open_cmd` and `one_page_rows_below`. |
-| `:map <key> <action>` | Bind a key, as in the file. `clear_all_shortcuts` is refused: it would unbind `:` and `q`. |
-| `:color <element> <style>` | Set a [color](#colors), as in the file. |
-| `:22`, `:goto 22` | Go to line 22. |
-| `:cycle <setting>` | Step a setting to its next value, wrapping to the first. Takes `wrap`, `wrap_style`, `edge_markers`, `file_separators`, `end_markers`, `auto_reload`, `status_line`, `view_style`, `copy_on_select`, `hint_order`, `line_numbers`, `line_numbers_side`
-and `open_cmd`. |
-| `:cycle <setting> <value>...` | Step through the values given instead: the one after the current, or the first when the current is not among them. Any setting the prompt takes, with two or more different values: `:cycle tab_width 4 8`. |
-| `:help`, `:reload`, `:quit` | What `h`, `R` and `q` do. |
-| `:write FILE` | Save the text, or the selection when there is one, to a new FILE as plain text, as copy sends it. |
-| `:write --raw FILE` | Save the input itself, byte for byte; a selection's lines whole. |
-| `:write --color FILE` | Save what the screen shows, with its colors and links as SGR and OSC 8. |
-| `:write! FILE` | The same, replacing a FILE that exists, the file being viewed included. |
+| Color | `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, or one with `bright_` in front |
+| | A number from `0` to `255` |
+| | `#rrggbb` |
+| | `default`, the terminal's own |
+| Attribute | `bold`, `dim`, `italic`, `underline`, `reverse`, `strike` |
 
-**write.** The file name is the rest of the line; a leading `~` is the home
-directory. A symlink you own is written through; another user's is refused.
+- The named colors and numbers are the terminal's palette, so they follow its
+  theme. `#rrggbb` does not.
+- A line replaces the element's whole style: `color match on blue` is the
+  default foreground on blue, not bold.
+- A `control` style is drawn over the text's own, which shows where it sets no
+  color.
 
-**Editing.** Tab completes the word: a command, a setting's value (starting
-after the current one) or `write`'s file name. Up and Down recall earlier
-commands; Esc, Ctrl+g and Ctrl+c cancel. [keys.md](keys.md) lists the rest of
-the prompt keys. A paste goes in as one line, its newlines dropped, here and at
-the search prompt.
+### Themes
+
+A theme is a file of `color` lines. [Themes](themes.md) shows each one vedi
+ships. To use one, include it:
+
+    include themes/NAME.conf
+
+| Installed by | Themes are in |
+| --- | --- |
+| Homebrew | `$(brew --prefix)/share/vedi/themes/` |
+| The AUR packages | `/usr/share/vedi/themes/` |
+| A release archive | `themes/` |
+
+Include a theme from there, or copy it to `~/.config/vedi/themes/` to change it.
 
 ## Keys
 
-A key is one of
-`Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, or a
-single character, with any of `Shift+`, `Ctrl+`, `Alt+`, `Cmd+` in front: `q`,
+A key is a name or a single character, with any modifiers in front: `q`,
 `Ctrl+f`, `Alt+Shift+Left`, `Ctrl+Space`.
 
+| Part | Values |
+| --- | --- |
+| Name | `Up` `Down` `Left` `Right` `Home` `End` `PgUp` `PgDn` `Enter` `Esc` `Tab` `Backspace` `Space` |
+| Modifier | `Shift+` `Ctrl+` `Alt+` `Cmd+` |
+
 - `Ctrl+f` and `Ctrl+F` are the same key.
-- A shifted character is just that character: `G`, not `Shift+g`. Only `Cmd+`
-  takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`. `Shift+Space` is
-  not a key a terminal can send.
+- A shifted character is just that character: `G`, not `Shift+g`.
+- Only `Cmd+` takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`.
+- `Shift+Space` is not a key a terminal can send.
 - `Cmd+` is Super off macOS. It reaches vedi only where the terminal passes it
   on.
 - Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,
   as `Alt+<`, is read as on a US layout.
 
-`h` shows the bindings in effect; a key that cycles a setting through given
+`h` shows the bindings in effect. A key that cycles a setting through given
 values is on a row naming them.
 
 ## Actions
@@ -230,8 +298,9 @@ The [defaults](#defaults) below name every action but these:
   clearing it: `left` and `select_left`, `page_down` and `select_page_down`.
 - `set_mark` starts a selection that every motion then extends until `set_mark`
   again, `clear_selection` or a click ends it: vim's `v`, emacs's `Ctrl+Space`.
-- `cycle <setting> [value...]` steps a setting, as in [Commands](#commands). It
-  is the one action that takes an argument.
+- `cycle <setting> [value...]` steps a setting, as
+  [`:cycle`](commands.md#cycle) does. It is the one action that takes an
+  argument.
 
 ## Defaults
 
@@ -453,21 +522,3 @@ map Ctrl+g clear_selection
 # Ctrl+Space sets the mark: motions extend the selection until Ctrl+g
 map Ctrl+Space set_mark
 ```
-
-## Shell completion
-
-Tab completes vedi's flags and their values in bash, zsh and fish. A release
-archive holds the scripts in `completions/`; `vedi --completion SHELL` prints
-the same ones. Put one where the shell looks:
-
-    # bash, with the bash-completion package
-    vedi --completion bash > ~/.local/share/bash-completion/completions/vedi
-
-    # zsh; the directory must be in $fpath before compinit runs
-    vedi --completion zsh > ~/.zfunc/_vedi
-
-    # fish
-    vedi --completion fish > ~/.config/fish/completions/vedi.fish
-
-Bash without bash-completion reads no directory; save the script anywhere and
-source it from `~/.bashrc`.

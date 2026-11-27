@@ -1,36 +1,53 @@
 # Terminals
 
+What a terminal needs before every key and the clipboard work in vedi.
+
+| Terminal | See |
+|---|---|
+| kitty | [Shift+click](#shiftclick), [Cmd keys](#cmd-keys), [Option as Alt](#option-as-alt), [scrollback](#kitty-scrollback) |
+| Ghostty, iTerm2 | [Option as Alt](#option-as-alt) |
+| Terminal.app | [Cmd keys](#cmd-keys), [Option as Alt](#option-as-alt), [its other keys](#macos-terminalapp) |
+| tmux | [Clipboard](#clipboard) |
+
 ## Clipboard
 
 Copy uses OSC 52, which works in kitty, xterm, tmux (`set-clipboard on`) and
-over ssh. Where it does not, set `--clipboard-cmd pbcopy` (macOS),
-`--clipboard-cmd wl-copy` (Wayland) or
-`--clipboard-cmd 'xclip -selection clipboard'` (X11), or
-`clipboard_cmd xclip -selection clipboard` in the config.
+over ssh. Where it does not, set a command in the config:
+
+| System | Line in `vedi.conf` |
+|---|---|
+| macOS | `clipboard_cmd pbcopy` |
+| Wayland | `clipboard_cmd wl-copy` |
+| X11 | `clipboard_cmd xclip -selection clipboard` |
+
+`--clipboard-cmd CMD` sets the command for one run. Terminal.app does not
+support OSC 52, so vedi uses `pbcopy` there by itself.
 
 ## Shift+click
 
 A terminal keeps Shift+click for its own selection while a program has the
-mouse. vedi asks for it with XTSHIFTESCAPE (`\033[>1s`), which xterm and Ghostty
-grant unless configured not to. kitty does not; unmap its shifted presses in
-`kitty.conf`:
+mouse. vedi asks for it with XTSHIFTESCAPE (`\033[>1s`).
 
-    mouse_map shift+left press grabbed
-    mouse_map shift+left click grabbed
-    mouse_map shift+left doublepress grabbed
-    mouse_map shift+left triplepress grabbed
+- xterm and Ghostty grant it unless configured not to.
+- kitty does not. Unmap its shifted presses in `kitty.conf`:
 
-Each removes a kitty default.
+      mouse_map shift+left press grabbed
+      mouse_map shift+left click grabbed
+      mouse_map shift+left doublepress grabbed
+      mouse_map shift+left triplepress grabbed
+
+  Each removes a kitty default.
 
 ## Cmd keys
 
-kitty passes Cmd+ keys on to vedi, Cmd+c only when it has no selection of its
-own. Terminal.app keeps them.
+- kitty passes Cmd+ keys on to vedi, Cmd+c only when it has no selection of its
+  own.
+- Terminal.app keeps them.
 
 ## Option as Alt
 
 On macOS the Option key composes a character unless the terminal is told to send
-Alt: Alt+v, Alt+b and Alt+f arrive as `√`, `∫` and `ƒ`, which nothing is bound
+Alt. Alt+v, Alt+b and Alt+f arrive as `√`, `∫` and `ƒ`, which nothing is bound
 to. Each terminal has a setting:
 
 | Terminal | Setting |
@@ -44,10 +61,9 @@ Option then no longer types symbols in that terminal.
 
 ## macOS Terminal.app
 
-Terminal.app has no mapping for ⇧↑, ⇧↓, ⇧Home, ⇧End, ⇧⇞, ⇧⇟, ⌃Home, ⌃End,
-⌃⇧Home, ⌃⇧End, ⌥↑, ⌥↓, ⌥⇧↑ or ⌥⇧↓, so the program sees them unmodified or as
-other keys. To use them, add these under Settings → Profiles → Keyboard, action
-Send Text:
+Terminal.app has no mapping for the keys below, so the program sees them
+unmodified or as other keys. To use them, add each under Settings → Profiles →
+Keyboard, with the action Send Text:
 
 | Key | Text |
 |-----|------|
@@ -66,24 +82,17 @@ Send Text:
 | ⌥⇧↑ | `\033[1;4A` |
 | ⌥⇧↓ | `\033[1;4B` |
 
-It does not support OSC 52, so copy uses `pbcopy`.
-
-## Scrollback
-
-A terminal that hands its screen to a pager with its escape sequences may write
-a run of blank cells as a cursor forward, CSI `n C`, and a run of one character
-as a repeat, CSI `n b`. vedi draws them as the spaces and characters they stand
-for; search and copy see them too. Any other cursor movement is dropped.
-
-## kitty
+## kitty scrollback
 
 The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its scrollback
-to a pager. This binding in `kitty.conf` opens it in vedi, scrolled to the rows
-you were looking at, with the cursor where it was:
+to a pager, in either of two ways.
+
+**A binding.** This line in `kitty.conf` opens the scrollback in vedi, scrolled
+to the rows you were looking at, with the cursor where it was:
 
     map <shortcut> launch --type overlay --stdin-source=@screen_scrollback --stdin-add-formatting vedi --hint-order bottom_up --scrolled-by @scrolled-by --cursor-row @cursor-y --cursor-col @cursor-x
 
-Or set vedi as the `scrollback_pager`. That gets one line per screen row — `-S`
-keeps them so, but a wrapped line then copies with a newline at each wrap:
+**The `scrollback_pager`.** This gets one line per screen row. `-S` keeps them
+so, but a wrapped line then copies with a newline at each wrap:
 
     scrollback_pager vedi --hint-order bottom_up -S +INPUT_LINE_NUMBER

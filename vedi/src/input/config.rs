@@ -1228,21 +1228,32 @@ open_cmd cat %s
         );
     }
 
-    /// The table in docs/keys.md and the help screen are the same list:
-    /// each row of the table is a row, in order.
+    /// The tables in docs/keys.md and the help screen are the same list:
+    /// a table under each section's heading, each row of it a row, in order.
     #[test]
     fn help_matches_keys_doc() {
         let secs = default_keymap().help();
-        let all = rows(&secs);
+        let all: Vec<(&str, String, &str)> = secs
+            .iter()
+            .flat_map(|s| {
+                s.rows
+                    .iter()
+                    .map(|r| (s.name.as_str(), r.keys.join(", "), r.doc.as_str()))
+            })
+            .collect();
         let mut got = Vec::new();
-        let mut in_keys = false;
+        let mut section = None;
         let md = doc("keys.md");
         for line in md.split('\n') {
             if line.starts_with('#') {
-                in_keys = line == "# Keys";
+                section = match line.strip_prefix("## ") {
+                    Some(h) => secs.iter().map(|s| s.name.as_str()).find(|n| *n == h),
+                    None => (line == "# Keys").then_some(""),
+                };
                 continue;
             }
-            if !in_keys || !line.starts_with('|') {
+            let Some(section) = section else { continue };
+            if !line.starts_with('|') {
                 continue;
             }
             let cells: Vec<&str> = line.trim_matches('|').split('|').map(str::trim).collect();
@@ -1250,17 +1261,13 @@ open_cmd cat %s
                 panic!("docs/keys.md row {line:?}: want two cells");
             };
             if keys != "Key" && keys != "---" {
-                got.push((keys, doc));
+                // Fixed rows hold a comma themselves, so compare the joined text.
+                got.push((section, keys.to_string(), doc));
             }
         }
         assert_eq!(got.len(), all.len(), "docs/keys.md rows, help rows");
-        for (i, (r, (keys, doc))) in all.iter().zip(got).enumerate() {
-            // Fixed rows hold a comma themselves, so compare the joined text.
-            assert_eq!(
-                (r.keys.join(", ").as_str(), r.doc.as_str()),
-                (keys, doc),
-                "row {i}"
-            );
+        for (i, (want, got)) in all.iter().zip(&got).enumerate() {
+            assert_eq!(want, got, "row {i}");
         }
     }
 }
