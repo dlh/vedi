@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.11.0 - 2026-11-27
+
+### Features
+
+- `line_numbers` numbers the lines, `#` toggles ([05d18b0](https://github.com/dlh/vedi/commit/05d18b0))
+
+### Fixes
+
+- `&` shows file separators in its list ([e7e6a58](https://github.com/dlh/vedi/commit/e7e6a58))
+- a combining mark after a cut tab stays on the tab's row ([3d8c71a](https://github.com/dlh/vedi/commit/3d8c71a))
+
+Full diff: [v2.10.2...v2.11.0](https://github.com/dlh/vedi/compare/v2.10.2...v2.11.0)
+
 ## v2.10.2 - 2026-11-23
 
 ### Fixes
