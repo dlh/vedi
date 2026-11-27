@@ -1,0 +1,22 @@
+A match on a mark after a tab the row's end cuts is labeled on the
+tab's row, which the mark is drawn on. This file holds a raw tab and
+combining marks.
+
+-- size --
+4x4
+-- config --
+status_line no
+-- input --
+	́a
+b́
+-- keys --
+/ "́" Enter s
+-- screen --
+<1>{{   }}
+a
+<2>
+~
+-- keys --
+1
+-- cursor --
+0 0

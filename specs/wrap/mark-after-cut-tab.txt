@@ -1,0 +1,18 @@
+A combining mark after a tab the row's end cuts stays on the tab's
+row, as it does after any glyph: the next row starts after it. This
+file holds a raw tab and a combining mark.
+
+-- size --
+4x3
+-- config --
+status_line no
+-- input --
+	́a
+-- keys --
+Shift+Right
+-- screen --
+[    ]
+a
+~
+-- cursor --
+1 0

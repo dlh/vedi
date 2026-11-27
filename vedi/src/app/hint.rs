@@ -140,9 +140,8 @@ fn targets(
                 });
             }
         }
-        // A match is on the row its glyph starts on. A mark after a tab
-        // cut by the row's end is in the next segment by its index;
-        // matches are sorted, so their glyphs are too.
+        // A match is on the row its glyph starts on; matches are
+        // sorted, so their glyphs are too.
         let lo = found.partition_point(|&k| k < seg.start);
         for &k in &found[lo..] {
             let (i, _) = r.ln.glyph(k);

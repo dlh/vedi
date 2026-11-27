@@ -159,7 +159,8 @@ impl Layout {
         let (mut start, mut x0) = (0, 0);
         for i in 0..n {
             let w = xs[i + 1] - xs[i];
-            if xs[i] - x0 + w > self.width && i > start {
+            // A mark past a tab the row cuts stays with the tab.
+            if w > 0 && xs[i] - x0 + w > self.width && i > start {
                 segs.push(Segment { start, end: i });
                 (start, x0) = (i, xs[i]);
             }
