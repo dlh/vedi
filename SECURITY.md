@@ -13,17 +13,22 @@ released.
 ## Verifying a download
 
 Releases starting with 2.11.0 cannot change once published. Their
-`checksums.txt` is signed and each archive has a build attestation. With
-[gh](https://cli.github.com):
+`checksums.txt` is signed and each archive has a build attestation.
 
-    gh release verify-asset v1.2.3 vedi_1.2.3_linux_amd64.tar.gz --repo dlh/vedi
-    gh attestation verify vedi_1.2.3_linux_amd64.tar.gz --repo dlh/vedi \
+Set `VERSION` to the release you downloaded. With [gh](https://cli.github.com):
+
+    VERSION=2.11.0
+    ARCHIVE=$(ls vedi_${VERSION}_*.tar.gz)
+    gh release verify-asset v$VERSION $ARCHIVE --repo dlh/vedi
+    gh attestation verify $ARCHIVE --repo dlh/vedi \
         --signer-workflow dlh/vedi/.github/workflows/release.yml
 
-Or with [cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
+Or download the release's `checksums.txt` and `checksums.txt.sigstore.json` too,
+and use [cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
 
+    VERSION=2.11.0
     cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
-        --certificate-identity https://github.com/dlh/vedi/.github/workflows/release.yml@refs/tags/v1.2.3 \
+        --certificate-identity https://github.com/dlh/vedi/.github/workflows/release.yml@refs/tags/v$VERSION \
         --certificate-oidc-issuer https://token.actions.githubusercontent.com
     sha256sum --check --ignore-missing checksums.txt
 
