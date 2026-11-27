@@ -21,13 +21,26 @@ pub(super) enum Form {
 }
 
 impl Form {
+    /// The flags before the name, and the form each asks for.
+    pub(super) const FLAGS: [(&str, Form); 2] = [("--color", Form::Color), ("--raw", Form::Raw)];
+
     /// The form a flag before the name asks for; `None` for another word.
     pub(super) fn flag(word: &str) -> Option<Form> {
-        match word {
-            "--color" => Some(Form::Color),
-            "--raw" => Some(Form::Raw),
-            _ => None,
-        }
+        Form::FLAGS
+            .iter()
+            .find(|(f, _)| *f == word)
+            .map(|&(_, form)| form)
+    }
+}
+
+/// What follows write: the flag, a first word beginning with --, and
+/// the name, the rest of `args`, spaces inside and after it kept.
+pub(super) fn split_args(args: &str) -> (Option<&str>, &str) {
+    let args = args.trim_start();
+    match args.split_once(char::is_whitespace) {
+        Some((flag, name)) if flag.starts_with("--") => (Some(flag), name.trim_start()),
+        None if args.starts_with("--") => (Some(args), ""),
+        _ => (None, args),
     }
 }
 

@@ -6,25 +6,70 @@ use std::rc::Rc;
 
 use crate::app::complete::Completion;
 use crate::app::text_view::Motion;
-use crate::app::write::Form;
+use crate::app::write::{self, Form};
 use crate::app::{App, Flow, Focus, Kind, status};
 use crate::input::action::{Command, CycleArg};
 use crate::input::config::{self, Config};
-use crate::input::setting::{self, Cycle, Settings};
+use crate::input::setting::{self, Cycle, Settings, Verb};
 use crate::text::ansi::ViewStyle;
 use crate::text::buffer::Pos;
 use crate::view::screen::Terminal;
 
+/// What a : command takes after its name. Running a line and Tab
+/// completing one both read it.
+#[derive(Copy, Clone)]
+pub(super) enum Args {
+    /// Nothing: help, reload, quit.
+    None,
+    /// A line number: goto.
+    Line,
+    /// A setting, then values to step through: cycle.
+    Cycle,
+    /// A flag, then a file name, the rest of the line: write.
+    Write,
+    /// One of the setting's values.
+    Setting(&'static Verb),
+    /// A key, then an action: map.
+    Map,
+    /// An element, then a style: color.
+    Color,
+}
+
 /// What the : prompt runs itself; the config verbs follow.
-const BUILTINS: &[&str] = &["goto", "cycle", "help", "reload", "quit", "write"];
+const BUILTINS: &[(&str, Args)] = &[
+    ("goto", Args::Line),
+    ("cycle", Args::Cycle),
+    ("help", Args::None),
+    ("reload", Args::None),
+    ("quit", Args::None),
+    ("write", Args::Write),
+];
 
 /// What the : prompt takes.
 pub(crate) fn commands() -> impl Iterator<Item = &'static str> {
-    BUILTINS.iter().copied().chain(setting::at_prompt())
+    BUILTINS
+        .iter()
+        .map(|&(name, _)| name)
+        .chain(setting::at_prompt())
+}
+
+/// What command `name` takes; `None` for no command.
+pub(super) fn args(name: &str) -> Option<Args> {
+    // write! is write overwriting; Tab offers write alone.
+    let name = if name == "write!" { "write" } else { name };
+    if let Some(&(_, a)) = BUILTINS.iter().find(|(n, _)| *n == name) {
+        return Some(a);
+    }
+    let v = setting::verb(name).filter(|v| v.prompt)?;
+    Some(match v.name {
+        "map" => Args::Map,
+        "color" => Args::Color,
+        _ => Args::Setting(v),
+    })
 }
 
 pub(super) fn is_command(name: &str) -> bool {
-    commands().any(|c| c == name)
+    args(name).is_some()
 }
 
 impl<T: Terminal> App<T> {
@@ -48,31 +93,35 @@ impl<T: Terminal> App<T> {
     /// in a file, for the rest of the run. Nothing typed does nothing.
     fn command(&mut self, line: &str) -> Result<Flow, String> {
         let f: Vec<&str> = line.split_whitespace().collect();
-        match f[..] {
-            [] => {}
-            [n] | ["goto", n] if is_number(n) => self.goto(n),
-            ["goto", ..] => return Err("goto takes a line number".into()),
-            [verb @ ("help" | "reload" | "quit"), _, ..] => {
-                return Err(format!("{verb} takes no argument"));
-            }
-            ["cycle" | "help" | "reload" | "quit", ..] => {
+        let [verb, ref rest @ ..] = f[..] else {
+            return Ok(Flow::Continue);
+        };
+        match (args(verb), rest) {
+            (_, []) if is_number(verb) => self.goto(verb),
+            (Some(Args::Line), [n]) if is_number(n) => self.goto(n),
+            (Some(Args::Line), _) => return Err(format!("{verb} takes a line number")),
+            (Some(Args::None), [_, ..]) => return Err(format!("{verb} takes no argument")),
+            (Some(Args::None | Args::Cycle), _) => {
                 let c: Command = line.parse().map_err(|e| format!("{e}"))?;
                 return Ok(self.view_key(c));
             }
-            [verb @ ("write" | "write!"), ..] => {
-                let mut form = Form::Plain;
-                let mut name = line.trim_start()[verb.len()..].trim();
-                if let Some(flag) = f.get(1).filter(|w| w.starts_with("--")) {
-                    form = Form::flag(flag).ok_or("write takes --color or --raw")?;
-                    name = name[flag.len()..].trim();
-                }
+            (Some(Args::Write), _) => {
+                let (flag, name) = write::split_args(&line.trim_start()[verb.len()..]);
+                let form = match flag {
+                    Some(flag) => Form::flag(flag).ok_or_else(|| {
+                        let flags = Form::FLAGS.map(|(f, _)| f);
+                        format!("write takes {}", setting::or_list(&flags))
+                    })?,
+                    None => Form::Plain,
+                };
+                let name = name.trim_end();
                 if name.is_empty() {
                     return Err("write takes a file name".into());
                 }
                 return self.write(name, verb == "write!", form);
             }
-            [verb, ..] if is_command(verb) => self.set(line)?,
-            [verb, ..] => return Err(format!("unknown command {verb:?}")),
+            (Some(Args::Setting(_) | Args::Map | Args::Color), _) => self.set(line)?,
+            (None, _) => return Err(format!("unknown command {verb:?}")),
         }
         Ok(Flow::Continue)
     }

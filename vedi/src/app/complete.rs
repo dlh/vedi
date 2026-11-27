@@ -2,9 +2,9 @@
 
 use std::path::PathBuf;
 
-use crate::app::command::{commands, is_command};
+use crate::app::command::{Args, args, commands, is_command};
 use crate::app::options::Lister;
-use crate::app::write::Form;
+use crate::app::write::{self, Form};
 use crate::input::action::Command;
 use crate::input::setting::{self, Settings};
 use crate::sys::words;
@@ -151,47 +151,42 @@ impl Completion {
     /// current, so the first is a change; cycle's setting's values in
     /// their order.
     fn candidates(&self, before: &[&str], word: &str) -> Vec<String> {
-        let mut names: Vec<String> = match before {
-            [] => commands().map(String::from).collect(),
-            ["cycle"] | ["map", _, "cycle"] => setting::cycled().map(String::from).collect(),
-            ["cycle", s, ..] | ["map", _, "cycle", s, ..] => {
-                return setting::lookup(s).map_or_else(Vec::new, |s| {
-                    s.values().iter().map(|&v| v.to_string()).collect()
-                });
-            }
-            ["write" | "write!"] if word.starts_with('-') => {
-                vec!["--color".into(), "--raw".into()]
+        let Some((verb, rest)) = before.split_first() else {
+            return sorted(commands().map(String::from).collect());
+        };
+        match (args(verb), rest) {
+            (Some(Args::Cycle), rest) => cycled(rest),
+            (Some(Args::Map), [_]) => sorted(Command::names()),
+            (Some(Args::Map), [_, "cycle", rest @ ..]) => cycled(rest),
+            (Some(Args::Write), []) if word.starts_with('-') => {
+                Form::FLAGS.map(|(f, _)| f.to_string()).into()
             }
             // A name here beginning with - gets ./ before it, or write
             // would read it as the flag; after one, it cannot.
-            ["write" | "write!"] => self
-                .paths(word)
-                .into_iter()
-                .map(|p| {
-                    if p.starts_with('-') {
-                        format!("./{p}")
-                    } else {
-                        p
-                    }
-                })
-                .collect(),
-            ["write" | "write!", _] => self.paths(word),
-            ["color"] => Element::ALL.map(|e| e.name().to_string()).into(),
-            ["color", _, ..] => style::style_words(),
-            [s] => {
-                return setting::lookup(s).map_or_else(Vec::new, |s| {
-                    let values = s.values();
-                    let next = s.next(&s.value(&self.settings));
-                    let at = values.iter().position(|&v| v == next).unwrap_or(0);
-                    let (tail, head) = values.split_at(at);
-                    head.iter().chain(tail).map(|&v| v.to_string()).collect()
-                });
+            (Some(Args::Write), []) => sorted(
+                self.paths(word)
+                    .into_iter()
+                    .map(|p| {
+                        if p.starts_with('-') {
+                            format!("./{p}")
+                        } else {
+                            p
+                        }
+                    })
+                    .collect(),
+            ),
+            (Some(Args::Write), [_]) => sorted(self.paths(word)),
+            (Some(Args::Color), []) => sorted(Element::ALL.map(|e| e.name().to_string()).into()),
+            (Some(Args::Color), [_, ..]) => sorted(style::style_words()),
+            (Some(Args::Setting(s)), []) if !s.values().is_empty() => {
+                let values = s.values();
+                let next = s.next(&s.value(&self.settings));
+                let at = values.iter().position(|&v| v == next).unwrap_or(0);
+                let (tail, head) = values.split_at(at);
+                head.iter().chain(tail).map(|&v| v.to_string()).collect()
             }
-            ["map", _] => Command::names(),
             _ => Vec::new(),
-        };
-        names.sort();
-        names
+        }
     }
 
     /// The names in the directory of `word`, a path being typed, that
@@ -229,6 +224,23 @@ fn done(candidate: &str) -> String {
     }
 }
 
+/// Sorted, as names are offered.
+fn sorted(mut names: Vec<String>) -> Vec<String> {
+    names.sort();
+    names
+}
+
+/// What cycle takes after `rest`: a setting, sorted, then its values
+/// in their order.
+fn cycled(rest: &[&str]) -> Vec<String> {
+    match rest {
+        [] => sorted(setting::cycled().map(String::from).collect()),
+        [s, ..] => setting::lookup(s).map_or_else(Vec::new, |s| {
+            s.values().iter().map(|&v| v.to_string()).collect()
+        }),
+    }
+}
+
 /// Splits a prompt into the word being typed, "" after a space, and
 /// the words before it.
 fn last_word(text: &str) -> (&str, Vec<&str>) {
@@ -250,23 +262,22 @@ fn split(text: &str) -> (&str, Vec<&str>) {
 /// another command, or a first word beginning with -, a flag.
 fn write_name(text: &str) -> Option<(&str, Vec<&str>)> {
     let (verb, rest) = text.trim_start().split_once(char::is_whitespace)?;
-    if !matches!(verb, "write" | "write!") {
+    if !matches!(args(verb), Some(Args::Write)) {
         return None;
     }
-    let mut before = vec![verb];
-    let mut name = rest.trim_start();
-    if let Some((flag, after)) = name.split_once(char::is_whitespace)
-        && Form::flag(flag).is_some()
-    {
-        before.push(flag);
-        name = after.trim_start();
+    match write::split_args(rest) {
+        (None, name) if !name.starts_with('-') => Some((name, vec![verb])),
+        // A flag still being typed is the word completed.
+        (Some(flag), name) if Form::flag(flag).is_some() && rest.trim_start() != flag => {
+            Some((name, vec![verb, flag]))
+        }
+        _ => None,
     }
-    (before.len() == 2 || !name.starts_with('-')).then_some((name, before))
 }
 
 /// Whether the word after `before` is a setting's value.
 fn is_values(before: &[&str]) -> bool {
-    matches!(before, [s] if setting::lookup(s).is_some())
+    matches!(before, [v] if matches!(args(v), Some(Args::Setting(_))))
 }
 
 fn common_prefix<'a>(a: &'a str, b: &str) -> &'a str {
