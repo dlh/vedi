@@ -4,7 +4,7 @@ unbound there is no wrap row, and the rows below move up.
 -- config --
 map w none
 -- size --
-80x78
+80x79
 -- input --
 abc
 -- keys --
@@ -32,7 +32,8 @@ h
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Up  ⌥Down                              Move by paragraph.
-  g  G  <  >  ⌃Home  ⌃End  ⌘Up  ⌘Down     Start, end of the text.
+  g  G  <  >  ⌥<  ⌥>  ⌃Home  ⌃End  ⌘Up    Start, end of the text.
+  ⌘Down
   T  M  B                                 Top, middle, bottom of the shown text.
   s                                       Jump to a match or line by hint.
   [  ]                                    Previous, next input or title.

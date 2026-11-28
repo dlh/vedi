@@ -24,7 +24,7 @@ These are the defaults. `h` shows the bindings in effect, and
 | u, Ctrl+u | Up half a page |
 | Ctrl+Left, Ctrl+Right, Alt+Left, Alt+Right, Alt+b, Alt+f | Move by word |
 | Alt+Up, Alt+Down | Move by paragraph |
-| g, G, <, >, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
+| g, G, <, >, Alt+<, Alt+>, Ctrl+Home, Ctrl+End, Cmd+Up, Cmd+Down | Start, end of the text |
 | T, M, B | Top, middle, bottom of the shown text |
 | s | Jump to a match or line by hint |
 | [, ] | Previous, next input or title |

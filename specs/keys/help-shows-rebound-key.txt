@@ -6,7 +6,7 @@ as a capital.
 map h left
 map Alt+h help
 -- size --
-80x79
+80x80
 -- input --
 abc
 -- keys --
@@ -35,7 +35,8 @@ Alt+h
   u  ⌃U                                   Up half a page.
   ⌃Left  ⌃Right  ⌥Left  ⌥Right  ⌥B  ⌥F    Move by word.
   ⌥Up  ⌥Down                              Move by paragraph.
-  g  G  <  >  ⌃Home  ⌃End  ⌘Up  ⌘Down     Start, end of the text.
+  g  G  <  >  ⌥<  ⌥>  ⌃Home  ⌃End  ⌘Up    Start, end of the text.
+  ⌘Down
   T  M  B                                 Top, middle, bottom of the shown text.
   s                                       Jump to a match or line by hint.
   [  ]                                    Previous, next input or title.

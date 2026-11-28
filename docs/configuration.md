@@ -361,6 +361,8 @@ map g first
 map G last
 map < first
 map > last
+map Alt+< first
+map Alt+> last
 map Ctrl+Home first
 map Ctrl+End last
 map Cmd+Up first
@@ -510,9 +512,6 @@ map Ctrl+b left
 # Ctrl+a and Ctrl+e go to the line's ends; Ctrl+a no longer selects all
 map Ctrl+a home
 map Ctrl+e end
-# Alt+< and Alt+> go to the first and last line
-map Alt+< first
-map Alt+> last
 # Ctrl+s and Ctrl+r search; Ctrl+s needs `stty -ixon` in most terminals
 map Ctrl+s search
 map Ctrl+r search_back
