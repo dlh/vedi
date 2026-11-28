@@ -276,12 +276,16 @@ A key is a name or a single character, with any modifiers in front: `q`,
 | Part | Values |
 | --- | --- |
 | Name | `Up` `Down` `Left` `Right` `Home` `End` `PgUp` `PgDn` `Enter` `Esc` `Tab` `Backspace` `Space` |
+| F key | `F1` to `F35` |
+| Media key | `Play` `Pause` `PlayPause` `Stop` `Reverse` `FastForward` `Rewind` `NextTrack` `PrevTrack` `Record` `VolumeUp` `VolumeDown` `Mute` |
 | Modifier | `Shift+` `Ctrl+` `Alt+` `Cmd+` |
 
 - `Ctrl+f` and `Ctrl+F` are the same key.
 - A shifted character is just that character: `G`, not `Shift+g`.
 - Only `Cmd+` takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`.
 - `Shift+Space` is not a key a terminal can send.
+- Most terminals send `F1` to `F12`, some up to `F20`. Media keys and `F21` up
+  come only under the kitty keyboard protocol, where the system passes them on.
 - `Cmd+` is Super off macOS. It reaches vedi only where the terminal passes it
   on.
 - Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,

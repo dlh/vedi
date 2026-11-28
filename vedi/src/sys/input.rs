@@ -161,7 +161,7 @@ fn escape(b: &[u8], alt: bool, out: &mut Vec<Input>) -> Step {
                 b'a'..=b'd' if params == 0 => {
                     cursor_key(c.to_ascii_uppercase()).map(|code| (code, Mods::CTRL))
                 }
-                _ => cursor_key(c).zip(mods),
+                _ => cursor_key(c).or(f1_to_f4(c)).zip(mods),
             };
             if let Some((code, mods)) = code {
                 out.push(key(code, mods));
@@ -185,6 +185,12 @@ fn escape(b: &[u8], alt: bool, out: &mut Vec<Input>) -> Step {
             }
         }
     }
+}
+
+/// F1 to F4 by the final byte that xterm sends after SS3, or after
+/// CSI with modifiers.
+fn f1_to_f4(c: u8) -> Option<KeyCode> {
+    matches!(c, b'P'..=b'S').then(|| KeyCode::F(c - b'P' + 1))
 }
 
 fn cursor_key(c: u8) -> Option<KeyCode> {
@@ -212,13 +218,15 @@ fn csi(b: &[u8], out: &mut Vec<Input>) -> Step {
         out.push(Input::Mouse(mouse(at(cb), at(x), at(y), false)));
         return Step::Done(6);
     }
-    // The Linux console's F1 to F5: `[` and a letter, which is no key.
+    // The Linux console's F1 to F5: `[` and a letter.
     if body.first() == Some(&b'[') {
-        return if body.len() < 2 {
-            Step::More
-        } else {
-            Step::Done(4)
+        let Some(&c) = body.get(1) else {
+            return Step::More;
         };
+        if let b'A'..=b'E' = c {
+            out.push(key(KeyCode::F(c - b'A' + 1), Mods::NONE));
+        }
+        return Step::Done(4);
     }
     // urxvt ends a shifted key with `$`, elsewhere an intermediate
     // byte, and then only after a `;`.
@@ -283,6 +291,12 @@ fn csi(b: &[u8], out: &mut Vec<Input>) -> Step {
                 Some(4 | 8) => Some(KeyCode::End),
                 Some(5) => Some(KeyCode::PageUp),
                 Some(6) => Some(KeyCode::PageDown),
+                // F1 to F20, numbered with gaps, as on a VT220.
+                Some(n @ 11..=15) => Some(KeyCode::F(n as u8 - 10)),
+                Some(n @ 17..=21) => Some(KeyCode::F(n as u8 - 11)),
+                Some(n @ 23..=26) => Some(KeyCode::F(n as u8 - 12)),
+                Some(n @ 28..=29) => Some(KeyCode::F(n as u8 - 13)),
+                Some(n @ 31..=34) => Some(KeyCode::F(n as u8 - 14)),
                 _ => None,
             };
             if let (Some(code), Some(mods)) = (code, mods) {
@@ -299,9 +313,15 @@ fn csi(b: &[u8], out: &mut Vec<Input>) -> Step {
         c => {
             // xterm's older modifyCursorKeys sends the modifiers alone:
             // `ESC [ 2 A` is Shift+Up.
-            let (first, second) = (field(), field());
+            let (first, second, third) = (field(), field(), field());
             let mods = if second.is_empty() { first } else { second };
-            if let (Some(code), Some(mods)) = (cursor_key(c), pressed(mods)) {
+            // A cursor position report, `ESC [ row ; col R`, ends as F3
+            // does: an F key's first field, if it has a second, is 1.
+            // Row 1 is the one report left looking like a key.
+            let f_key =
+                !params.starts_with('?') && third.is_empty() && (second.is_empty() || first == "1");
+            let code = cursor_key(c).or(f1_to_f4(c).filter(|_| f_key));
+            if let (Some(code), Some(mods)) = (code, pressed(mods)) {
                 out.push(key(code, mods));
             }
         }
@@ -363,6 +383,20 @@ fn kitty(code: &str, mods: &str, text: &str, out: &mut Vec<Input>) {
         57422 => Some(KeyCode::PageDown),
         57423 => Some(KeyCode::Home),
         57424 => Some(KeyCode::End),
+        57376..=57398 => Some(KeyCode::F((code - 57363) as u8)),
+        57428 => Some(KeyCode::Play),
+        57429 => Some(KeyCode::Pause),
+        57430 => Some(KeyCode::PlayPause),
+        57431 => Some(KeyCode::Reverse),
+        57432 => Some(KeyCode::Stop),
+        57433 => Some(KeyCode::FastForward),
+        57434 => Some(KeyCode::Rewind),
+        57435 => Some(KeyCode::NextTrack),
+        57436 => Some(KeyCode::PrevTrack),
+        57437 => Some(KeyCode::Record),
+        57438 => Some(KeyCode::VolumeDown),
+        57439 => Some(KeyCode::VolumeUp),
+        57440 => Some(KeyCode::Mute),
         // Keys with no name here, the modifiers themselves among
         // them, and 0, a report that is text alone.
         0 | 0xe000..=0xf8ff => None,
@@ -498,7 +532,7 @@ mod tests {
         (b"\x1bO3H", &["Alt+Home"]),
         (b"\x1bO6F", &["Ctrl+Shift+End"]),
         (b"\x1bO1;5C", &["Ctrl+Right"]),
-        (b"\x1bO5Pq", &["q"]),
+        (b"\x1bO5Pq", &["Ctrl+F1", "q"]),
         (b"\x1bO2xq", &["q"]),
         // urxvt.
         (b"\x1b[a", &["Shift+Up"]),
@@ -522,9 +556,65 @@ mod tests {
         (b"\x1b[?2026;2$yq", &["q"]),
         (b"\x1b[4;1$yq", &["q"]),
         // The Linux console's F1 to F5.
-        (b"\x1b[[A", &[]),
-        (b"\x1b[[Eq", &["q"]),
-        (b"\x1b[[Bj", &["j"]),
+        (b"\x1b[[A", &["F1"]),
+        (b"\x1b[[Eq", &["F5", "q"]),
+        (b"\x1b[[Bj", &["F2", "j"]),
+        (b"\x1b[[Fj", &["j"]),
+        // F keys.
+        (b"\x1bOP", &["F1"]),
+        (b"\x1bOQ", &["F2"]),
+        (b"\x1bOR", &["F3"]),
+        (b"\x1bOS", &["F4"]),
+        (b"\x1bO2S", &["Shift+F4"]),
+        (b"\x1b[P", &["F1"]),
+        (b"\x1b[1;5P", &["Ctrl+F1"]),
+        (b"\x1b[1;2R", &["Shift+F3"]),
+        (b"\x1b[1;3S", &["Alt+F4"]),
+        (b"\x1b[2R", &["Shift+F3"]),
+        // Cursor position reports are no keys.
+        (b"\x1b[24;1Rq", &["q"]),
+        (b"\x1b[24;5R", &[]),
+        (b"\x1b[?24;1R", &[]),
+        (b"\x1b[?5R", &[]),
+        (b"\x1b[1;2;3R", &[]),
+        (b"\x1b[11~", &["F1"]),
+        (b"\x1b[13~", &["F3"]),
+        (b"\x1b[15~", &["F5"]),
+        (b"\x1b[17~", &["F6"]),
+        (b"\x1b[21~", &["F10"]),
+        (b"\x1b[23~", &["F11"]),
+        (b"\x1b[24;5~", &["Ctrl+F12"]),
+        (b"\x1b[25~", &["F13"]),
+        (b"\x1b[26~", &["F14"]),
+        (b"\x1b[28~", &["F15"]),
+        (b"\x1b[29~", &["F16"]),
+        (b"\x1b[31~", &["F17"]),
+        (b"\x1b[34~", &["F20"]),
+        (b"\x1b[16~", &[]),
+        (b"\x1b[22~", &[]),
+        (b"\x1b[27~", &[]),
+        (b"\x1b[30~", &[]),
+        (b"\x1b[35~", &[]),
+        (b"\x1b[15^", &["Ctrl+F5"]),
+        (b"\x1b[15$", &["Shift+F5"]),
+        (b"\x1b[57376u", &["F13"]),
+        (b"\x1b[57398;2u", &["Shift+F35"]),
+        (b"\x1b[13;1:3~", &[]),
+        // Media keys.
+        (b"\x1b[57428u", &["Play"]),
+        (b"\x1b[57429u", &["Pause"]),
+        (b"\x1b[57430u", &["PlayPause"]),
+        (b"\x1b[57431u", &["Reverse"]),
+        (b"\x1b[57432u", &["Stop"]),
+        (b"\x1b[57433u", &["FastForward"]),
+        (b"\x1b[57434u", &["Rewind"]),
+        (b"\x1b[57435u", &["NextTrack"]),
+        (b"\x1b[57436u", &["PrevTrack"]),
+        (b"\x1b[57437u", &["Record"]),
+        (b"\x1b[57438u", &["VolumeDown"]),
+        (b"\x1b[57439u", &["VolumeUp"]),
+        (b"\x1b[57440;5u", &["Ctrl+Mute"]),
+        (b"\x1b[57440;1:3u", &[]),
         // CSI ~ keys.
         (b"\x1b[1~", &["Home"]),
         (b"\x1b[7~", &["Home"]),
@@ -615,9 +705,6 @@ mod tests {
         (b"\x1b[57442;5u", &[]),
         (b"\x1b[57448;9u", &[]),
         (b"\x1b[57358u", &[]),
-        (b"\x1bOP", &[]),
-        (b"\x1b[P", &[]),
-        (b"\x1b[11~", &[]),
         (b"\x1b[3~", &[]),
         (b"\x1b[I", &[]),
         (b"\x1b[201~", &[]),

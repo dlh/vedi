@@ -1,0 +1,28 @@
+F keys and media keys are names a map line can bind, with modifiers as
+any named key takes them.
+
+-- config --
+map F2 end
+map Ctrl+F2 home
+map PlayPause end
+-- input --
+abc
+-- keys --
+F2
+-- cursor --
+0 3
+-- keys --
+Ctrl+F2
+-- screen --
+abc
+~
+~
+~
+~
+<stdin>  line 1/1  wrap           h help
+-- cursor --
+0 0
+-- keys --
+PlayPause
+-- cursor --
+0 3

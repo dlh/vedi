@@ -413,7 +413,7 @@ mod tests {
                 "map h left now\n",
                 "vedi.conf:1: map takes a key and an action",
             ),
-            ("\n\nmap F1 help\n", r#"vedi.conf:3: unknown key "F1""#),
+            ("\n\nmap F36 help\n", r#"vedi.conf:3: unknown key "F36""#),
             ("map h foo\n", r#"vedi.conf:1: unknown action "foo""#),
             (
                 "map Shift+h left\n",

@@ -16,6 +16,21 @@ pub enum KeyCode {
     Esc,
     Tab,
     Backspace,
+    /// F1 to F35.
+    F(u8),
+    Play,
+    Pause,
+    PlayPause,
+    Stop,
+    Reverse,
+    FastForward,
+    Rewind,
+    NextTrack,
+    PrevTrack,
+    Record,
+    VolumeUp,
+    VolumeDown,
+    Mute,
     Char(char),
 }
 
@@ -88,7 +103,7 @@ fn shifted(c: char) -> Option<char> {
     })
 }
 
-const NAMES: [(&str, KeyCode); 12] = [
+const NAMES: [(&str, KeyCode); 25] = [
     ("Up", KeyCode::Up),
     ("Down", KeyCode::Down),
     ("Left", KeyCode::Left),
@@ -101,7 +116,33 @@ const NAMES: [(&str, KeyCode); 12] = [
     ("Esc", KeyCode::Esc),
     ("Tab", KeyCode::Tab),
     ("Backspace", KeyCode::Backspace),
+    ("Play", KeyCode::Play),
+    ("Pause", KeyCode::Pause),
+    ("PlayPause", KeyCode::PlayPause),
+    ("Stop", KeyCode::Stop),
+    ("Reverse", KeyCode::Reverse),
+    ("FastForward", KeyCode::FastForward),
+    ("Rewind", KeyCode::Rewind),
+    ("NextTrack", KeyCode::NextTrack),
+    ("PrevTrack", KeyCode::PrevTrack),
+    ("Record", KeyCode::Record),
+    ("VolumeUp", KeyCode::VolumeUp),
+    ("VolumeDown", KeyCode::VolumeDown),
+    ("Mute", KeyCode::Mute),
 ];
+
+/// The highest F key the kitty keyboard protocol has.
+const F_MAX: u8 = 35;
+
+/// `F1` to `F35`, without a leading zero.
+fn function_key(tok: &str) -> Option<KeyCode> {
+    let n = tok.strip_prefix('F')?;
+    if n.starts_with('0') {
+        return None;
+    }
+    let n: u8 = n.parse().ok()?;
+    (1..=F_MAX).contains(&n).then_some(KeyCode::F(n))
+}
 
 const PREFIXES: [(&str, Mods); 4] = [
     ("Shift+", Mods::SHIFT),
@@ -197,8 +238,8 @@ impl fmt::Display for KeyError {
 impl std::error::Error for KeyError {}
 
 /// A key name: Up Down Left Right Home End PgUp PgDn Enter Esc Tab
-/// Backspace Space or one character, after any of Shift+ Ctrl+ Alt+
-/// Cmd+.
+/// Backspace Space, F1 to F35, a media key or one character, after any
+/// of Shift+ Ctrl+ Alt+ Cmd+.
 impl FromStr for Key {
     type Err = KeyError;
 
@@ -212,7 +253,8 @@ impl FromStr for Key {
             tok = rest;
             mods.insert(m);
         }
-        if let Some(&(_, code)) = NAMES.iter().find(|&&(n, _)| n == tok) {
+        let named = NAMES.iter().find(|&&(n, _)| n == tok).map(|&(_, c)| c);
+        if let Some(code) = named.or_else(|| function_key(tok)) {
             return Ok(Key::new(code, mods).normalized());
         }
         if tok == "Space" {
@@ -249,6 +291,7 @@ impl fmt::Display for Key {
         match self.code {
             KeyCode::Char(' ') => f.write_str("Space"),
             KeyCode::Char(c) => write!(f, "{c}"),
+            KeyCode::F(n) => write!(f, "F{n}"),
             code => {
                 let name = NAMES.iter().find(|&&(_, k)| k == code).map(|&(n, _)| n);
                 f.write_str(name.unwrap_or_default())
@@ -417,12 +460,21 @@ mod tests {
             ("Cmd+Shift+g", ch('g', CMD | SHIFT)),
             ("Cmd+G", ch('g', CMD | SHIFT)),
             ("Cmd+Up", key(Up, CMD)),
+            ("F1", key(F(1), NONE)),
+            ("Shift+F5", key(F(5), SHIFT)),
+            ("Ctrl+F12", key(F(12), CTRL)),
+            ("F35", key(F(35), NONE)),
+            ("PlayPause", key(PlayPause, NONE)),
+            ("Shift+VolumeUp", key(VolumeUp, SHIFT)),
         ];
         for (name, want) in tests {
             assert_eq!(name.parse::<Key>(), Ok(want), "{name}");
         }
         let bad = [
-            ("F1", r#"unknown key "F1""#),
+            ("F0", r#"unknown key "F0""#),
+            ("F36", r#"unknown key "F36""#),
+            ("F01", r#"unknown key "F01""#),
+            ("f1", r#"unknown key "f1""#),
             ("Spacex", r#"unknown key "Spacex""#),
             ("Ctrl+", r#"unknown key "Ctrl+""#),
             ("", r#"unknown key """#),
@@ -474,6 +526,22 @@ mod tests {
             ("Cmd+Shift+g", "Cmd+Shift+g"),
             ("Cmd+G", "Cmd+Shift+g"),
             ("Cmd+Left", "Cmd+Left"),
+            ("F1", "F1"),
+            ("Shift+Ctrl+F10", "Ctrl+Shift+F10"),
+            ("F35", "F35"),
+            ("Play", "Play"),
+            ("Pause", "Pause"),
+            ("PlayPause", "PlayPause"),
+            ("Stop", "Stop"),
+            ("Reverse", "Reverse"),
+            ("FastForward", "FastForward"),
+            ("Rewind", "Rewind"),
+            ("NextTrack", "NextTrack"),
+            ("PrevTrack", "PrevTrack"),
+            ("Record", "Record"),
+            ("VolumeUp", "VolumeUp"),
+            ("VolumeDown", "VolumeDown"),
+            ("Alt+Mute", "Alt+Mute"),
         ];
         for (name, want) in tests {
             let k: Key = name.parse().unwrap();
