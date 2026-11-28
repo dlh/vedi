@@ -302,7 +302,11 @@ impl Scenario<'_, '_> {
                 let keys = parse_keys(&sec.body).map_err(fail)?;
                 for k in keys {
                     let app = self.app.as_mut().expect("started");
-                    self.quit = app.handle(Event::Key(k.key)) == Flow::Quit;
+                    let ev = match k.text {
+                        Some(text) => Event::KeyText(k.key, text),
+                        None => Event::Key(k.key),
+                    };
+                    self.quit = app.handle(ev) == Flow::Quit;
                     app.draw();
                 }
             }

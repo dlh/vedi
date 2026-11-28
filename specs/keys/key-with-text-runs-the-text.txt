@@ -1,0 +1,11 @@
+A key that came with text and has no binding runs the binding of its
+text, when that is one character: Option+Shift+f on macOS types Ï, which
+quits here.
+
+-- config --
+map Ï quit
+-- input --
+abc
+-- keys --
+Alt+Ï:"Ï"
+-- quit --

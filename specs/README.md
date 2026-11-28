@@ -71,7 +71,7 @@ Actions:
 
 | Section | Content |
 |---|---|
-| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune. |
+| `-- keys --` | `Up Down Left Right Home End PgUp PgDn Enter Esc Tab Backspace Space`, with `Shift+`, `Ctrl+`, `Alt+` and `Cmd+`; a single character as itself, optionally with `Alt+`, `Cmd+` or `Cmd+Shift+`; `"quoted text"` typed rune by rune; `KEY:"text"`, a key and the text the terminal says it typed, as `Alt+v:"√"`. |
 | `-- paste --` | Text pasted, ended the way `-- input --` is: one event, not keys. |
 | `-- mouse --` | `click R C`, `dblclick R C`, `tripleclick R C`, `drag R C R C` (press at the first cell, release at the second), `press R C` and `release R C` (the halves of a click, so keys can come between), `dblpress R C` (a double-click whose second press is held, so motion drags from the word), `move R C` (motion with the button held), each optionally with `Shift+`, `wheel up`, `wheel down`, `wheel left` or `wheel right`, optionally with `Shift+` on the direction and followed by a count of ticks, `tick` (the auto-scroll timer armed by the last motion fires), optionally followed by a count. `R C` is a screen cell, 0-based like `-- cursor --`. A second `click` is never a double-click: the clock moves on a second before each. |
 | `-- resize --` | `WxH`. |

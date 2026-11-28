@@ -1,0 +1,28 @@
+At a prompt, a key that came with text types the text, unless the key
+edits the prompt: Option+x on macOS types ≈, and Option+b moves back a
+word, as Alt+b does, where it would have typed ∫.
+
+-- input --
+foo bar
+-- keys --
+/ "foo bar" Alt+b:"∫"
+-- screen --
+{{foo bar}}
+~
+~
+~
+~
+/foo bar                             1/1
+-- cursor --
+5 5
+-- keys --
+Alt+x:"≈"
+-- screen --
+foo bar
+~
+~
+~
+~
+/foo ≈bar                            0/0
+-- cursor --
+5 6

@@ -386,7 +386,7 @@ impl<T: Terminal> App<T> {
     /// the list up; Esc, Ctrl+g and Ctrl+c leave the filter; any other
     /// key edits the query, Up and Down among them, which recall earlier
     /// ones, and the list follows it.
-    pub(super) fn filter_key(&mut self, key: Key) -> Flow {
+    pub(super) fn filter_key(&mut self, key: Key, text: Option<&str>) -> Flow {
         let rows = self.views.shown.rows() as isize;
         let k = key.normalized();
         let by = match (k.code, k.mods) {
@@ -409,7 +409,7 @@ impl<T: Terminal> App<T> {
             }
             return Flow::Continue;
         }
-        match self.query.key(key) {
+        match self.query.key(key, text) {
             Edit::Editing => self.query_changed(),
             Edit::Submit(_) => self.focus(Focus::Viewing),
             Edit::Cancel => {

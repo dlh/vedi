@@ -1,5 +1,5 @@
 A key with no binding says so on the status line; the next key clears
-it.
+it. A key that came with text is named as the key.
 
 -- input --
 abc
@@ -21,3 +21,12 @@ abc
 ~
 ~
 <stdin>  line 1/1  wrap           h help
+-- keys --
+Alt+x:"≈"
+-- screen --
+abc
+~
+~
+~
+~
+[not bound: Alt+x]                  h help

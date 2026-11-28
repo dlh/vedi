@@ -35,6 +35,7 @@ pub use options::{
 };
 
 use crate::input::action::{Action, Command};
+use crate::input::key::{Key, KeyCode, Mods};
 use crate::input::keymap::Keymap;
 use crate::input::setting::Settings;
 use crate::text::ansi::ViewStyle;
@@ -359,26 +360,8 @@ impl<T: Terminal> App<T> {
                 self.screen.sync();
                 self.sync_view();
             }
-            Event::Key(k) => {
-                self.act();
-                return match self.focus {
-                    Focus::Viewing if self.views.role() == Role::Help => {
-                        let cmd = self.keys.lookup(k);
-                        self.help_key(cmd)
-                    }
-                    Focus::Viewing if self.hint.is_some() => self.hint_key(k),
-                    Focus::Viewing => {
-                        if let Some(flow) = self.list_key(k) {
-                            return flow;
-                        }
-                        match self.keys.lookup(k) {
-                            Some(c) => self.view_key(c),
-                            None => Flow::Fail(format!("not bound: {k}")),
-                        }
-                    }
-                    Focus::Prompting(kind) => self.prompt_key(kind, k),
-                };
-            }
+            Event::Key(k) => return self.key(k, None),
+            Event::KeyText(k, text) => return self.key(k, Some(&text)),
             Event::Paste(text) => {
                 self.views.release();
                 if let Some(p) = self.prompt_mut() {
@@ -403,6 +386,39 @@ impl<T: Terminal> App<T> {
             }
         }
         Flow::Continue
+    }
+
+    /// A key, with the text it typed if it came with Ctrl, Alt or Cmd
+    /// held. The key is tried first and, where it does nothing, its
+    /// text: as a key if it is one character, and at a prompt typed.
+    /// Over the labels it is the key alone, which is none of them.
+    fn key(&mut self, k: Key, text: Option<&str>) -> Flow {
+        self.act();
+        let typed = text.and_then(|t| {
+            let mut chars = t.chars();
+            match (chars.next(), chars.next()) {
+                (Some(c), None) => Some(Key::new(KeyCode::Char(c), Mods::NONE)),
+                _ => None,
+            }
+        });
+        let lookup = |keys: &Keymap| keys.lookup(k).or_else(|| keys.lookup(typed?));
+        match self.focus {
+            Focus::Viewing if self.views.role() == Role::Help => {
+                let cmd = lookup(&self.keys);
+                self.help_key(cmd)
+            }
+            Focus::Viewing if self.hint.is_some() => self.hint_key(k),
+            Focus::Viewing => {
+                if let Some(flow) = self.list_key(k) {
+                    return flow;
+                }
+                match lookup(&self.keys) {
+                    Some(c) => self.view_key(c),
+                    None => Flow::Fail(format!("not bound: {k}")),
+                }
+            }
+            Focus::Prompting(kind) => self.prompt_key(kind, k, text),
+        }
     }
 
     /// Records that the user did something: startup positioning stops,

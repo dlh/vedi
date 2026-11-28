@@ -285,7 +285,11 @@ A key is a name or a single character, with any modifiers in front: `q`,
 - `Cmd+` is Super off macOS. It reaches vedi only where the terminal passes it
   on.
 - Under the kitty keyboard protocol a shifted character with `Alt+` or `Cmd+`,
-  as `Alt+<`, is read as on a US layout.
+  as `Alt+<`, is the one the terminal reports for its layout. A terminal that
+  reports none is read as on a US layout.
+- Under the kitty keyboard protocol a key with `Ctrl+`, `Alt+` or `Cmd+` that
+  types a character, as Option+v types `√` on macOS, runs its own binding, or
+  the character's if it has none.
 
 `h` shows the bindings in effect. A key that cycles a setting through given
 values is on a row naming them.

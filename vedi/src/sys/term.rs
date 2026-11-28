@@ -38,8 +38,10 @@ const SHIFT_ESCAPE_OFF: &[u8] = b"\x1b[>0s";
 
 const PASTE_ON: &[u8] = b"\x1b[?2004h";
 const PASTE_OFF: &[u8] = b"\x1b[?2004l";
-/// The kitty keyboard flag that tells Esc and the modified keys apart.
-const KEYS: u32 = 1;
+/// The kitty keyboard flags: disambiguate, so Esc and the modified
+/// keys are told apart, every key as an escape code, its text, and
+/// the key Shift makes of it on the terminal's layout.
+const KEYS: u32 = 1 | 4 | 8 | 16;
 const KEYS_QUERY: &[u8] = b"\x1b[?u\x1b[c";
 const KEYS_POP: &[u8] = b"\x1b[<1u";
 
@@ -108,12 +110,23 @@ impl Term {
         // A paste read as keys would run any : line its author put
         // in it.
         t.out.extend_from_slice(PASTE_ON);
-        // Asked on the alternate screen, which has flags of its own.
+        // Asked and pushed on the alternate screen, which has flags of
+        // its own.
         t.out.extend_from_slice(KEYS_QUERY);
         t.flush()?;
         if events.keyboard_flags()?.is_some() {
             write!(t.out, "\x1b[>{KEYS}u")?;
             PUSHED.store(true, Ordering::SeqCst);
+            t.out.extend_from_slice(KEYS_QUERY);
+            t.flush()?;
+            // A terminal that sends every key as an escape code but
+            // not its text leaves a shifted or composed character
+            // unknown, and one without the shifted key leaves it a
+            // guess. With the one flag text comes bare, which every
+            // such terminal gets right.
+            if events.keyboard_flags()?.is_none_or(|f| f & KEYS != KEYS) {
+                t.out.extend_from_slice(b"\x1b[=1u");
+            }
         }
         t.out.extend_from_slice(SHIFT_ESCAPE_ON);
         t.flush()?;
@@ -293,6 +306,7 @@ impl Events {
                     for input in inputs.drain(..) {
                         let ev = match input {
                             Input::Key(k) => Event::Key(k),
+                            Input::KeyText(k, text) => Event::KeyText(k, text),
                             Input::Mouse(m) => Event::Mouse(m),
                             Input::Paste(s) => Event::Paste(s),
                             Input::KeyboardFlags(_) | Input::DeviceAttributes => continue,

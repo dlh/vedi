@@ -1,0 +1,11 @@
+A terminal may report a key pressed with Ctrl, Alt or Cmd along with the
+text it typed. The key's binding runs, not the text's: Alt+/ quits here,
+though / alone searches.
+
+-- config --
+map Alt+/ quit
+-- input --
+abc
+-- keys --
+Alt+/:"/"
+-- quit --

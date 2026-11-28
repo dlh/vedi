@@ -2,7 +2,8 @@ s in the list labels each match of the query shown, 1 to 9 then
 letters, in bold black on bright cyan over its first cells, and typing
 a label goes to that match in the text, as Enter on it does. Any key
 that is no label takes the labels down and does nothing else: j does
-not move, Esc does not leave.
+not move, Esc does not leave, and a key with Alt held goes nowhere
+though the text it typed is a label.
 
 -- input --
 foo one
@@ -50,3 +51,14 @@ s Esc
 ~
 ~
 &foo  2/3  line 3/5  wrap         h help
+-- keys --
+s Alt+1:"1"
+-- screen --
+{foo} one
+{foo} two {{foo}}
+{foo} three
+~
+~
+&foo  2/3  line 3/5  wrap         h help
+-- cursor --
+1 8

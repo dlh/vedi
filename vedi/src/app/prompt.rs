@@ -103,8 +103,9 @@ impl Prompt {
     /// Handles a key. Enter submits the line, remembered unless empty;
     /// Esc, Ctrl+g and Ctrl+c cancel. At a prompt that completes, Tab
     /// completes, and Enter on a listed command fills in the space
-    /// after it instead. Any other key edits.
-    pub fn key(&mut self, key: Key) -> Edit {
+    /// after it instead. Any other key edits. `typed` is the text a key
+    /// came with: where the key would only type, that is typed.
+    pub fn key(&mut self, key: Key, typed: Option<&str>) -> Edit {
         let key = key.normalized();
         let text = self.text();
         if let Some(c) = &mut self.completion {
@@ -137,7 +138,16 @@ impl Prompt {
             }
             return Edit::Submit(line);
         }
-        self.edit(key);
+        if !self.edit(key) {
+            match (typed, key.code) {
+                (Some(typed), _) => self.paste(typed),
+                (None, KeyCode::Char(c)) if !key.mods.contains(Mods::CTRL) => {
+                    self.text.insert(self.cursor, c);
+                    self.cursor += 1;
+                }
+                _ => {}
+            }
+        }
         Edit::Editing
     }
 
@@ -146,14 +156,14 @@ impl Prompt {
     /// before Up; Left, Right, Home, End and the word keys move the
     /// cursor, by the glyph, a character and the marks on it; Backspace
     /// deletes the glyph before it, with Ctrl or Alt a word, as Ctrl+w
-    /// does, and with Cmd the line before it, as Ctrl+u does; a
-    /// character types. Any other key does nothing.
-    fn edit(&mut self, key: Key) {
+    /// does, and with Cmd the line before it, as Ctrl+u does. False for
+    /// any other key, which types or does nothing.
+    fn edit(&mut self, key: Key) -> bool {
         let mods = key.mods;
         match key.code {
             KeyCode::Up => {
                 if self.pos == 0 {
-                    return;
+                    return true;
                 }
                 if self.pos == self.history.len() {
                     self.draft.clone_from(&self.text);
@@ -163,7 +173,7 @@ impl Prompt {
             }
             KeyCode::Down => {
                 if self.pos == self.history.len() {
-                    return;
+                    return true;
                 }
                 self.pos += 1;
                 if self.pos == self.history.len() {
@@ -193,12 +203,9 @@ impl Prompt {
             KeyCode::Char('w') if mods == Mods::CTRL => self.delete_word(),
             KeyCode::Backspace if mods == Mods::CMD => self.delete_to_start(),
             KeyCode::Char('u') if mods == Mods::CTRL => self.delete_to_start(),
-            KeyCode::Char(c) if !mods.contains(Mods::CTRL) => {
-                self.text.insert(self.cursor, c);
-                self.cursor += 1;
-            }
-            _ => {}
+            _ => return false,
         }
+        true
     }
 
     /// Where each glyph starts, as the row draws them: a character
@@ -324,11 +331,11 @@ impl<T: Terminal> App<T> {
     /// prompt has closed, so the status line's row is the text's again
     /// by then. The & prompt's keys are its own; the / prompt's line is
     /// searched for as it changes.
-    pub(super) fn prompt_key(&mut self, kind: Kind, key: Key) -> Flow {
+    pub(super) fn prompt_key(&mut self, kind: Kind, key: Key, text: Option<&str>) -> Flow {
         let edit = match kind {
-            Kind::Search { .. } => self.search.key(key),
-            Kind::Command => self.command.key(key),
-            Kind::Filter => return self.filter_key(key),
+            Kind::Search { .. } => self.search.key(key, text),
+            Kind::Command => self.command.key(key, text),
+            Kind::Filter => return self.filter_key(key, text),
         };
         match edit {
             Edit::Editing => {

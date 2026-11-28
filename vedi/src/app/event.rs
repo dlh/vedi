@@ -7,6 +7,10 @@ use crate::text::reader::Gen;
 
 pub enum Event {
     Key(Key),
+    /// A key pressed with Ctrl, Alt or Cmd, and the text the terminal
+    /// says it typed: Option+v on macOS is Alt+v and `√`. Which was
+    /// meant is for the bindings to say.
+    KeyText(Key, String),
     Mouse(Mouse),
     /// Text pasted, bracketed by the terminal so it is not keys.
     Paste(String),

@@ -7,6 +7,8 @@ use crate::input::key::{Key, KeyCode, Mods};
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Input {
     Key(Key),
+    /// A key with Ctrl, Alt or Cmd held, and the text it typed.
+    KeyText(Key, String),
     Mouse(Mouse),
     Paste(String),
     /// The reply to `CSI ? u`: the kitty keyboard flags in effect.
@@ -172,7 +174,7 @@ fn escape(b: &[u8], alt: bool, out: &mut Vec<Input>) -> Step {
             let from = out.len();
             let step = parse(&b[1..], true, out);
             for input in &mut out[from..] {
-                if let Input::Key(k) = input {
+                if let Input::Key(k) | Input::KeyText(k, _) = input {
                     *k = Key::new(k.code, k.mods | Mods::ALT).normalized();
                 }
             }
@@ -260,7 +262,7 @@ fn csi(b: &[u8], out: &mut Vec<Input>) -> Step {
             }
         }
         b'c' if params.starts_with('?') => out.push(Input::DeviceAttributes),
-        b'u' => kitty(field(), field(), out),
+        b'u' => kitty(field(), field(), field(), out),
         b'~' | b'$' | b'^' | b'@' => {
             let (code, mods) = (sub(field(), 0), pressed(field()));
             // urxvt's modifiers are the last byte.
@@ -335,9 +337,9 @@ fn pressed(field: &str) -> Option<Mods> {
     Some(mods)
 }
 
-/// A `CSI key ; modifiers:event u` report. The shifted key and the
-/// text come only under flags vedi does not ask for.
-fn kitty(code: &str, mods: &str, out: &mut Vec<Input>) {
+/// A `CSI key:shifted ; modifiers:event ; text u` report.
+fn kitty(code: &str, mods: &str, text: &str, out: &mut Vec<Input>) {
+    let shifted = sub(code, 1).and_then(char::from_u32);
     let (Some(code), Some(mods)) = (sub(code, 0), pressed(mods)) else {
         return;
     };
@@ -366,8 +368,41 @@ fn kitty(code: &str, mods: &str, out: &mut Vec<Input>) {
         0 | 0xe000..=0xf8ff => None,
         c => char::from_u32(c).map(KeyCode::Char),
     };
-    if let Some(code) = code {
-        out.push(key(code, mods));
+    // Shift's character on the terminal's layout, which the US table
+    // in `normalized` only guesses: Alt+Shift+v is Alt+V. Shift is
+    // then spent; `normalized` puts it back on a letter under Cmd.
+    // Under Ctrl, Shift stays a modifier: Ctrl+Shift+f.
+    let (code, mods) = match (code, shifted) {
+        (Some(KeyCode::Char(_)), Some(s))
+            if mods.contains(Mods::SHIFT) && !mods.contains(Mods::CTRL) =>
+        {
+            let mut mods = mods;
+            mods.remove(Mods::SHIFT);
+            (Some(KeyCode::Char(s)), mods)
+        }
+        (code, _) => (code, mods),
+    };
+    let text: String = text
+        .split(':')
+        .filter_map(|n| char::from_u32(n.parse().ok()?))
+        .collect();
+    let typed = !text.is_empty() && !text.chars().any(char::is_control);
+    let held = [Mods::CTRL, Mods::ALT, Mods::CMD]
+        .iter()
+        .any(|&m| mods.contains(m));
+    match code {
+        // Nothing here tells a shortcut from composing: Option+v on
+        // macOS is Alt+v typing √, Alt+/ is Alt+7 typing / where Shift+7
+        // is /, and one terminal's shifted key is another's composed
+        // text. Both go on, for the bindings to choose.
+        Some(code) if typed && held => {
+            out.push(Input::KeyText(Key::new(code, mods).normalized(), text));
+        }
+        // Text is what the key typed, and arrives as from a terminal
+        // that sends it bare: Shift+g is G.
+        _ if typed => out.extend(text.chars().map(|c| key(KeyCode::Char(c), Mods::NONE))),
+        Some(code) => out.push(key(code, mods)),
+        None => {}
     }
 }
 
@@ -402,10 +437,16 @@ mod tests {
         out
     }
 
+    /// Keys by name; `Alt+v:"√"` is one with text.
     fn named(names: &[&str]) -> Vec<Input> {
         names
             .iter()
-            .map(|n| Input::Key(n.parse().unwrap()))
+            .map(
+                |n| match n.strip_suffix('"').and_then(|n| n.split_once(":\"")) {
+                    Some((key, text)) => Input::KeyText(key.parse().unwrap(), text.into()),
+                    None => Input::Key(n.parse().unwrap()),
+                },
+            )
             .collect()
     }
 
@@ -492,7 +533,7 @@ mod tests {
         (b"\x1b[5~", &["PgUp"]),
         (b"\x1b[6;2~", &["Shift+PgDn"]),
         (b"\x1b[27;5;102~", &["Ctrl+f"]),
-        // CSI u.
+        // CSI u without text.
         (b"\x1b[9u", &["Tab"]),
         (b"\x1b[9;2u", &["Shift+Tab"]),
         (b"\x1b[13u", &["Enter"]),
@@ -502,6 +543,9 @@ mod tests {
         (b"\x1b[32;5u", &["Ctrl+Space"]),
         (b"\x1b[102;5u", &["Ctrl+f"]),
         (b"\x1b[102;6u", &["Ctrl+Shift+f"]),
+        (b"\x1b[102:70;6u", &["Ctrl+Shift+f"]),
+        (b"\x1b[102:70;8u", &["Ctrl+Alt+Shift+f"]),
+        (b"\x1b[102:70;14u", &["Ctrl+Cmd+Shift+f"]),
         (b"\x1b[102;3u", &["Alt+f"]),
         (b"\x1b[99;9u", &["Cmd+c"]),
         (b"\x1b[103;10u", &["Cmd+Shift+g"]),
@@ -510,9 +554,60 @@ mod tests {
         (b"\x1b[113;1:1u", &["q"]),
         (b"\x1b[57414u", &["Enter"]),
         (b"\x1b[57419;2u", &["Shift+Up"]),
+        // CSI u with text: the text is the key.
+        (b"\x1b[97;;97u", &["a"]),
+        (b"\x1b[103;2;71u", &["G"]),
+        (b"\x1b[97:65;2;65u", &["A"]),
+        (b"\x1b[44:60;2;60u", &["<"]),
+        (b"\x1b[32;;32u", &["Space"]),
+        (b"\x1b[32;2;32u", &["Space"]),
+        // Caps Lock.
+        (b"\x1b[97;65;65u", &["A"]),
+        // The keypad.
+        (b"\x1b[57400;129;49u", &["1"]),
+        // Composed and input-method text has no key, however long.
+        (b"\x1b[0;;233u", &["é"]),
+        (b"\x1b[0;3;233u", &["é"]),
+        (b"\x1b[0;;12371:12435u", &["こ", "ん"]),
+        (
+            b"\x1b[0;;12371:12435:12395:12385:12399:19990:30028:128512u",
+            &["こ", "ん", "に", "ち", "は", "世", "界", "😀"],
+        ),
+        // With Ctrl, Alt or Cmd held, the key and its text.
+        // Option composing on macOS.
+        (b"\x1b[118;3;8730u", &["Alt+v:\"√\""]),
+        (b"\x1b[102;3;402u", &["Alt+f:\"ƒ\""]),
+        (b"\x1b[102:70;4;207u", &["Alt+F:\"Ï\""]),
+        (b"\x1b[44:60;4;175u", &["Alt+<:\"¯\""]),
+        (b"\x1b[101;3;101:769u", &["Alt+e:\"e\u{301}\""]),
+        // Ghostty as shipped on macOS, Option+Shift+,: the modifiers,
+        // then the key without text.
+        (b"\x1b[57443;3u\x1b[57441;4u\x1b[44:60;4u", &["Alt+<"]),
+        // Ghostty composing: the shifted key is the composed text.
+        (b"\x1b[102:207;4;207u", &["Alt+Ï:\"Ï\""]),
+        (b"\x1b[44:175;4;175u", &["Alt+¯:\"¯\""]),
+        // Alacritty: Alt+/ where Shift+7 is /.
+        (b"\x1b[55:47;4;47u", &["Alt+/:\"/\""]),
+        // The key's own character, or the one Shift makes of it.
+        (b"\x1b[102;3;102u", &["Alt+f:\"f\""]),
+        (b"\x1b[103;10;71u", &["Cmd+Shift+g:\"G\""]),
+        (b"\x1b[103:71;10;71u", &["Cmd+Shift+g:\"G\""]),
+        (b"\x1b[118:86;4;86u", &["Alt+V:\"V\""]),
+        (b"\x1b[44:60;4;60u", &["Alt+<:\"<\""]),
+        (b"\x1b[46:62;10;62u", &["Cmd+>:\">\""]),
+        (b"\x1b[102:70;6;70u", &["Ctrl+Shift+f:\"F\""]),
+        // Without the shifted key, as on a US layout.
+        (b"\x1b[44;4;60u", &["Alt+<:\"<\""]),
+        (b"\x1b[46;10;62u", &["Cmd+>:\">\""]),
+        // An ESC before it is Alt, as before any key.
+        (b"\x1b\x1b[99;9;231u", &["Alt+Cmd+c:\"ç\""]),
+        // Without text, the key alone.
+        (b"\x1b[118:86;4u", &["Alt+V"]),
+        (b"\x1b[118;4u", &["Alt+v"]),
         // Releases, repeats, modifier keys and keys without a name.
         (b"\x1b[113;1:3u", &[]),
         (b"\x1b[113;1:2u", &[]),
+        (b"\x1b[97;1:3;97u", &[]),
         (b"\x1b[1;1:3A", &[]),
         (b"\x1b[5;1:3~", &[]),
         (b"\x1b[57441u", &[]),
@@ -691,5 +786,20 @@ mod tests {
         assert!(!p.pending());
         p.feed(b"qj", &mut out);
         assert_eq!(out, named(&["j"]));
+    }
+
+    /// A text report longer than one read is one report.
+    #[test]
+    fn long_text_across_reads() {
+        let mut report = b"\x1b[0;1;12371".to_vec();
+        for _ in 1..180 {
+            report.extend_from_slice(b":12371");
+        }
+        report.push(b'u');
+        let (mut p, mut out) = (Parser::default(), Vec::new());
+        for chunk in report.chunks(1024) {
+            p.feed(chunk, &mut out);
+        }
+        assert_eq!(out, named(&["こ"; 180]));
     }
 }

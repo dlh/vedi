@@ -46,9 +46,20 @@ mouse. vedi asks for it with XTSHIFTESCAPE (`\033[>1s`).
 
 ## Option as Alt
 
-On macOS the Option key composes a character unless the terminal is told to send
-Alt. Alt+v, Alt+b and Alt+f arrive as `√`, `∫` and `ƒ`, which nothing is bound
-to. Each terminal has a setting:
+On macOS the Option key composes a character: Option+v, Option+b and Option+f
+type `√`, `∫` and `ƒ`.
+
+A terminal with the kitty keyboard protocol may report the key along with the
+character, as kitty does, so the Alt+ keys work there as they are. Ghostty as
+shipped sends Option keys as Alt keys, with no character.
+
+- The key's binding runs. Without one, the character's does: `map √ quit` works
+  once `Alt+v` is unbound.
+- At a prompt a key that edits the line does so, and any other types its
+  character: Option+b and Option+f move by a word and do not type `∫` and `ƒ`.
+
+Elsewhere the characters arrive alone, and nothing is bound to them, unless the
+terminal is told to send Alt:
 
 | Terminal | Setting |
 |---|---|

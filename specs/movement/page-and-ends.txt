@@ -3,6 +3,8 @@ text rows; PgUp, b, Ctrl+B and Alt+v scroll it up one. The cursor
 stays where it was, hidden off screen. G, >, Alt+> and Ctrl+End go to
 the end of the text, g, <, Alt+< and Ctrl+Home to its start. Ctrl+V and
 Alt+v are the emacs pair, as are Alt+< and Alt+>; less has them too.
+Alt+v scrolls where it also typed a character, as Option+v types √ on
+macOS.
 
 -- size --
 40x4
@@ -154,6 +156,15 @@ line 10
 2 7
 -- keys --
 Alt+<
+-- screen --
+line 1
+line 2
+line 3
+<stdin>  line 1/10  wrap          h help
+-- cursor --
+0 0
+-- keys --
+PgDn Alt+v:"√"
 -- screen --
 line 1
 line 2
