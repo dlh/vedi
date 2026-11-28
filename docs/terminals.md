@@ -92,6 +92,10 @@ Keyboard, with the action Send Text:
 | ⌥↓ | `\033[1;3B` |
 | ⌥⇧↑ | `\033[1;4A` |
 | ⌥⇧↓ | `\033[1;4B` |
+| ⌃⇧← | `\033[1;6D` |
+| ⌃⇧→ | `\033[1;6C` |
+| ⌥⇧← | `\033[1;4D` |
+| ⌥⇧→ | `\033[1;4C` |
 
 With Use Option as Meta key on, ⌥↑ and ⌥↓ need no entry.
 
