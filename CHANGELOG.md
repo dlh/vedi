@@ -1,5 +1,16 @@
 # Changelog
 
+## v2.11.1 - 2026-11-28
+
+### Fixes
+
+- `Alt+<` and `Alt+>` go to the start and end of the text ([6dbd394](https://github.com/dlh/vedi/commit/6dbd394))
+- modified keys from Terminal.app, urxvt and older Konsole ([6da4886](https://github.com/dlh/vedi/commit/6da4886))
+- `Alt+` keys work in kitty-protocol terminals without Option as Alt ([650b0bd](https://github.com/dlh/vedi/commit/650b0bd))
+- F keys and media keys can be bound ([52166a5](https://github.com/dlh/vedi/commit/52166a5))
+
+Full diff: [v2.11.0...v2.11.1](https://github.com/dlh/vedi/compare/v2.11.0...v2.11.1)
+
 ## v2.11.0 - 2026-11-27
 
 ### Features
