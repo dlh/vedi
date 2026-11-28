@@ -81,12 +81,13 @@ These work at the `/`, `?`, `&` and `:` prompts.
 
 ## Keys your terminal may keep
 
-- **Cmd+** keys reach vedi only where the terminal passes them on. That works
-  over ssh too. Off macOS, Cmd is Super.
-- **Alt+** keys on macOS need the terminal's Option-as-Alt setting.
-- **Shift+** arrows and some other modified keys need a fix in Terminal.app.
-
-[Terminals](terminals.md) has the settings.
+- **Cmd+** keys reach vedi only where the
+  [terminal passes them on](terminals.md#cmd-keys). That works over ssh too.
+  Off macOS, Cmd is Super.
+- **Alt+** keys on macOS may need the terminal's
+  [Option-as-Alt](terminals.md#option-as-alt) setting.
+- **Shift+** arrows and some other modified keys need a
+  [fix in Terminal.app](terminals.md#macos-terminalapp).
 
 ## Rebinding
 
