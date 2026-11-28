@@ -15,16 +15,20 @@ released.
 Releases starting with 2.11.0 cannot change once published. Their
 `checksums.txt` is signed and each archive has a build attestation.
 
-Set `VERSION` to the release you downloaded. With [gh](https://cli.github.com):
+Set `VERSION` to the release you downloaded. With [gh](https://cli.github.com),
+`release verify-asset` checks the archive is the one published with the release,
+and `attestation verify` checks the release workflow built it at that tag:
 
     VERSION=2.11.0
     ARCHIVE=$(ls vedi_${VERSION}_*.tar.gz)
     gh release verify-asset v$VERSION $ARCHIVE --repo dlh/vedi
     gh attestation verify $ARCHIVE --repo dlh/vedi \
-        --signer-workflow dlh/vedi/.github/workflows/release.yml
+        --signer-workflow dlh/vedi/.github/workflows/release.yml \
+        --source-ref refs/tags/v$VERSION
 
 Or download the release's `checksums.txt` and `checksums.txt.sigstore.json` too,
-and use [cosign](https://docs.sigstore.dev/cosign/system_config/installation/):
+and use [cosign](https://docs.sigstore.dev/cosign/system_config/installation/)
+to check the release workflow signed the checksums at that tag:
 
     VERSION=2.11.0
     cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
