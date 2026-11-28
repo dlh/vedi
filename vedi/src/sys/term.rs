@@ -1,26 +1,15 @@
-//! The terminal, through crossterm: frames out, keys, the mouse and
-//! resizes in.
+//! The terminal: frames out, keys, the mouse and resizes in.
 
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
 
-use crossterm::cursor::{Hide, MoveTo, Show};
-use crossterm::event::{
-    self as ct, DisableBracketedPaste, EnableBracketedPaste, KeyEventKind, KeyModifiers,
-    KeyboardEnhancementFlags, MouseButton, MouseEventKind, PopKeyboardEnhancementFlags,
-    PushKeyboardEnhancementFlags,
-};
-use crossterm::queue;
-use crossterm::terminal::{
-    self as ctt, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
-};
-
+use super::input::{Input, Parser};
 use super::tty;
-use crate::app::{Event, Mouse, MouseKind};
-use crate::input::key::{Key, KeyCode, Mods};
+use crate::app::Event;
 use crate::view::render::Renderer;
 use crate::view::screen::{Cell, Terminal};
 
@@ -36,9 +25,10 @@ fn set_size((w, h): (usize, usize)) {
     SIZE.store((w as u64) << 32 | h as u64 & 0xffff_ffff, Ordering::SeqCst);
 }
 
-// Presses, releases and motion with a button down. crossterm's
-// EnableMouseCapture also asks for every motion (1003), a report per
-// move that nothing here reads.
+const ALT_SCREEN_ON: &[u8] = b"\x1b[?1049h";
+const ALT_SCREEN_OFF: &[u8] = b"\x1b[2J\x1b[?25h\x1b[?1049l";
+// Presses, releases and motion with a button down, as SGR reports.
+// Not every motion (1003), a report per move that nothing here reads.
 const MOUSE_ON: &[u8] = b"\x1b[?1000h\x1b[?1002h\x1b[?1006h";
 const MOUSE_OFF: &[u8] = b"\x1b[?1006l\x1b[?1002l\x1b[?1000l";
 // XTSHIFTESCAPE: Shift+click to the pager, which the terminal
@@ -46,9 +36,45 @@ const MOUSE_OFF: &[u8] = b"\x1b[?1006l\x1b[?1002l\x1b[?1000l";
 const SHIFT_ESCAPE_ON: &[u8] = b"\x1b[>1s";
 const SHIFT_ESCAPE_OFF: &[u8] = b"\x1b[>0s";
 
-/// The terminal on /dev/tty: stdout may be a pipe.
+const PASTE_ON: &[u8] = b"\x1b[?2004h";
+const PASTE_OFF: &[u8] = b"\x1b[?2004l";
+/// The kitty keyboard flag that tells Esc and the modified keys apart.
+const KEYS: u32 = 1;
+const KEYS_QUERY: &[u8] = b"\x1b[?u\x1b[c";
+const KEYS_POP: &[u8] = b"\x1b[<1u";
+
+/// How long a terminal has to answer a query. One that answers none
+/// costs this at startup.
+const REPLY_WAIT: Duration = Duration::from_secs(2);
+/// How long after an Esc the rest of a sequence may take to come,
+/// over a slow line; past it the Esc was the key.
+const ESC_WAIT: Duration = Duration::from_millis(50);
+
+/// /dev/tty, open for `Term::enter`: stdout may be a pipe.
+pub struct Device {
+    out: File,
+    input: File,
+    sized: File,
+}
+
+/// Opens the terminal. Called before the input files are opened: the
+/// wait for input can only watch a low descriptor.
+pub fn open() -> io::Result<Device> {
+    let out = File::options()
+        .read(true)
+        .write(true)
+        .open("/dev/tty")
+        .map_err(|e| io::Error::new(e.kind(), format!("open /dev/tty: {e}")))?;
+    Ok(Device {
+        input: out.try_clone()?,
+        sized: out.try_clone()?,
+        out,
+    })
+}
+
+/// The terminal on /dev/tty.
 /// Raw, on the alternate screen, with the mouse; Drop puts it back.
-pub struct Crossterm {
+pub struct Term {
     tty: File,
     out: Vec<u8>,
     renderer: Renderer,
@@ -56,45 +82,42 @@ pub struct Crossterm {
     raw: Receiver<Vec<u8>>,
 }
 
-impl Crossterm {
-    /// Takes the terminal over. Call before `spawn_events`: the
-    /// keyboard protocol query reads the answer as an event.
-    pub fn enter() -> io::Result<Crossterm> {
-        let tty = File::options()
-            .read(true)
-            .write(true)
-            .open("/dev/tty")
-            .map_err(|e| io::Error::new(e.kind(), format!("open /dev/tty: {e}")))?;
-        ctt::enable_raw_mode()?;
+impl Term {
+    /// Takes the terminal over.
+    pub fn enter(device: Device) -> io::Result<(Term, Events)> {
+        let tty = device.out;
+        let mut events = Events {
+            tty: device.input,
+            sized: device.sized,
+            parser: Parser::default(),
+            early: Vec::new(),
+        };
+        tty::raw(&tty)?;
         set_size(tty::size(&tty));
         ENTERED.store(true, Ordering::SeqCst);
         let (raw_tx, raw) = mpsc::channel();
-        let mut t = Crossterm {
+        let mut t = Term {
             tty,
             out: Vec::new(),
             renderer: Renderer::new(),
             raw_tx,
             raw,
         };
-        // crossterm writes its keyboard query to stdout, maybe a pipe,
-        // when it cannot write /dev/tty, which it opens read-only.
-        let kitty =
-            tty::with_stdout_on(&t.tty, ctt::supports_keyboard_enhancement).unwrap_or(false);
-        queue!(t.out, EnterAlternateScreen)?;
+        t.out.extend_from_slice(ALT_SCREEN_ON);
         t.out.extend_from_slice(MOUSE_ON);
         // A paste read as keys would run any : line its author put
         // in it.
-        queue!(t.out, EnableBracketedPaste)?;
-        if kitty {
-            queue!(
-                t.out,
-                PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
-            )?;
+        t.out.extend_from_slice(PASTE_ON);
+        // Asked on the alternate screen, which has flags of its own.
+        t.out.extend_from_slice(KEYS_QUERY);
+        t.flush()?;
+        if events.keyboard_flags()?.is_some() {
+            write!(t.out, "\x1b[>{KEYS}u")?;
             PUSHED.store(true, Ordering::SeqCst);
         }
         t.out.extend_from_slice(SHIFT_ESCAPE_ON);
         t.flush()?;
-        Ok(t)
+        Ok((t, events))
     }
 
     /// A writer for the clipboard's OSC 52. Its bytes go out with the
@@ -110,7 +133,7 @@ impl Crossterm {
     }
 }
 
-impl Terminal for Crossterm {
+impl Terminal for Term {
     fn size(&self) -> (usize, usize) {
         let s = SIZE.load(Ordering::SeqCst);
         ((s >> 32) as usize, (s & 0xffff_ffff) as usize)
@@ -130,8 +153,8 @@ impl Terminal for Crossterm {
         // off screen.
         let at = at.and_then(|(x, y)| Some((u16::try_from(x).ok()?, u16::try_from(y).ok()?)));
         let _ = match at {
-            Some((x, y)) => queue!(self.out, MoveTo(x, y), Show),
-            None => queue!(self.out, Hide),
+            Some((x, y)) => write!(self.out, "\x1b[{};{}H\x1b[?25h", y + 1, x + 1),
+            None => self.out.write_all(b"\x1b[?25l"),
         };
         self.renderer.cursor_moved();
     }
@@ -148,7 +171,7 @@ impl Terminal for Crossterm {
     }
 }
 
-impl Drop for Crossterm {
+impl Drop for Term {
     fn drop(&mut self) {
         self.take_raw();
         let mut out = std::mem::take(&mut self.out);
@@ -174,13 +197,13 @@ fn restore(tty: &mut File, mut out: Vec<u8>) {
     }
     out.extend_from_slice(SHIFT_ESCAPE_OFF);
     if PUSHED.swap(false, Ordering::SeqCst) {
-        let _ = queue!(out, PopKeyboardEnhancementFlags);
+        out.extend_from_slice(KEYS_POP);
     }
-    let _ = queue!(out, DisableBracketedPaste);
+    out.extend_from_slice(PASTE_OFF);
     out.extend_from_slice(MOUSE_OFF);
-    let _ = queue!(out, Clear(ClearType::All), Show, LeaveAlternateScreen);
+    out.extend_from_slice(ALT_SCREEN_OFF);
     let _ = tty.write_all(&out);
-    let _ = ctt::disable_raw_mode();
+    tty::cooked(tty);
 }
 
 /// Bytes for the terminal, sent with its next flush.
@@ -199,232 +222,97 @@ impl Write for RawWriter {
     }
 }
 
-/// Reads the terminal's input on a thread, sending keys, pastes, the
-/// mouse and resizes until `tx` closes or the terminal fails.
-pub fn spawn_events(tx: Sender<Event>) -> JoinHandle<()> {
-    thread::Builder::new()
-        .name("vedi-events".into())
-        .spawn(move || {
-            while let Ok(ev) = ct::read() {
-                let ev = match ev {
-                    ct::Event::Key(k) => key(k).map(Event::Key),
-                    ct::Event::Mouse(m) => Some(Event::Mouse(mouse(m))),
-                    ct::Event::Paste(s) => Some(Event::Paste(s)),
-                    ct::Event::Resize(w, h) => {
-                        let (w, h) = (w.into(), h.into());
-                        set_size((w, h));
-                        Some(Event::Resize(w, h))
-                    }
-                    _ => None,
-                };
-                if let Some(ev) = ev
-                    && tx.send(ev).is_err()
-                {
-                    return;
+/// The terminal's input, to read once the app is there to hear it.
+pub struct Events {
+    tty: File,
+    /// For the resize thread to size.
+    sized: File,
+    parser: Parser,
+    /// What was typed ahead of a query's reply.
+    early: Vec<Input>,
+}
+
+impl Events {
+    /// Reads until DA1's reply, which every terminal sends: the
+    /// keyboard flags if their reply came before it, the sign of the
+    /// kitty keyboard protocol.
+    fn keyboard_flags(&mut self) -> io::Result<Option<u32>> {
+        let deadline = Instant::now() + REPLY_WAIT;
+        let mut flags = None;
+        let mut inputs = Vec::new();
+        let mut buf = [0; 1024];
+        loop {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if !tty::readable_within(&self.tty, left) {
+                return Ok(flags);
+            }
+            let n = match self.tty.read(&mut buf) {
+                Ok(0) => return Ok(flags),
+                Ok(n) => n,
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                Err(e) => return Err(e),
+            };
+            self.parser.feed(&buf[..n], &mut inputs);
+            let mut done = false;
+            for input in inputs.drain(..) {
+                match input {
+                    Input::KeyboardFlags(f) => flags = Some(f),
+                    Input::DeviceAttributes => done = true,
+                    input => self.early.push(input),
                 }
             }
-        })
-        .expect("spawn event thread")
-}
-
-/// The key pressed; `None` for a release or repeat, or a key the key
-/// map has no name for.
-fn key(k: ct::KeyEvent) -> Option<Key> {
-    if k.kind != KeyEventKind::Press {
-        return None;
-    }
-    let mut mods = Mods::NONE;
-    for (m, to) in [
-        (KeyModifiers::SHIFT, Mods::SHIFT),
-        (KeyModifiers::CONTROL, Mods::CTRL),
-        (KeyModifiers::ALT, Mods::ALT),
-        (KeyModifiers::SUPER, Mods::CMD),
-        (KeyModifiers::META, Mods::CMD),
-    ] {
-        if k.modifiers.contains(m) {
-            mods.insert(to);
-        }
-    }
-    let code = match k.code {
-        ct::KeyCode::Char(c) => KeyCode::Char(c),
-        ct::KeyCode::Null => KeyCode::Char('\0'),
-        ct::KeyCode::Up => KeyCode::Up,
-        ct::KeyCode::Down => KeyCode::Down,
-        ct::KeyCode::Left => KeyCode::Left,
-        ct::KeyCode::Right => KeyCode::Right,
-        ct::KeyCode::Home => KeyCode::Home,
-        ct::KeyCode::End => KeyCode::End,
-        ct::KeyCode::PageUp => KeyCode::PageUp,
-        ct::KeyCode::PageDown => KeyCode::PageDown,
-        ct::KeyCode::Enter => KeyCode::Enter,
-        ct::KeyCode::Esc => KeyCode::Esc,
-        ct::KeyCode::Tab => KeyCode::Tab,
-        ct::KeyCode::BackTab => {
-            mods.insert(Mods::SHIFT);
-            KeyCode::Tab
-        }
-        ct::KeyCode::Backspace => KeyCode::Backspace,
-        _ => return None,
-    };
-    Some(Key::new(code, mods).normalized())
-}
-
-/// Button 1 and the wheel. Anything else, motion with no button or
-/// another button, is button 1 not held, so no drag outlives its button.
-fn mouse(m: ct::MouseEvent) -> Mouse {
-    let kind = match m.kind {
-        MouseEventKind::Down(MouseButton::Left) => MouseKind::Press,
-        MouseEventKind::Drag(MouseButton::Left) => MouseKind::Drag,
-        MouseEventKind::Up(_)
-        | MouseEventKind::Down(_)
-        | MouseEventKind::Drag(_)
-        | MouseEventKind::Moved => MouseKind::Release,
-        MouseEventKind::ScrollUp => MouseKind::Wheel { rows: -1, cols: 0 },
-        MouseEventKind::ScrollDown => MouseKind::Wheel { rows: 1, cols: 0 },
-        MouseEventKind::ScrollLeft => MouseKind::Wheel { rows: 0, cols: -1 },
-        MouseEventKind::ScrollRight => MouseKind::Wheel { rows: 0, cols: 1 },
-    };
-    Mouse {
-        kind,
-        x: m.column.into(),
-        y: m.row.into(),
-        shift: m.modifiers.contains(KeyModifiers::SHIFT),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn press(code: ct::KeyCode, mods: KeyModifiers) -> ct::KeyEvent {
-        ct::KeyEvent::new(code, mods)
-    }
-
-    // Each byte sequence as crossterm's parser reports it, then as the
-    // key map names it.
-    #[test]
-    fn terminal_keys() {
-        use ct::KeyCode as C;
-        let none = KeyModifiers::NONE;
-        let ctrl = KeyModifiers::CONTROL;
-        let shift = KeyModifiers::SHIFT;
-        for (raw, ev, name) in [
-            ("\\x00", press(C::Char(' '), ctrl), "Ctrl+Space"),
-            ("\\x7f", press(C::Backspace, none), "Backspace"),
-            ("\\x08", press(C::Char('h'), ctrl), "Backspace"),
-            ("\\x06", press(C::Char('f'), ctrl), "Ctrl+f"),
-            ("\\r", press(C::Enter, none), "Enter"),
-            ("G", press(C::Char('G'), shift), "G"),
-            ("<", press(C::Char('<'), none), "<"),
-            (" ", press(C::Char(' '), none), "Space"),
-            ("é", press(C::Char('é'), none), "é"),
-            ("\\x1b[A", press(C::Up, none), "Up"),
-            ("\\x1b[1;2B", press(C::Down, shift), "Shift+Down"),
-            (
-                "\\x1b[1;6D",
-                press(C::Left, ctrl | shift),
-                "Ctrl+Shift+Left",
-            ),
-            ("\\x1b[5~", press(C::PageUp, none), "PgUp"),
-            ("\\x1b[Z", press(C::BackTab, shift), "Shift+Tab"),
-            ("\\x1b[9u", press(C::Tab, none), "Tab"),
-            (
-                "kitty ⌘c",
-                press(C::Char('c'), KeyModifiers::SUPER),
-                "Cmd+c",
-            ),
-            (
-                "kitty ⌘⇧G",
-                press(C::Char('G'), KeyModifiers::SUPER | shift),
-                "Cmd+Shift+g",
-            ),
-            ("meta", press(C::Char('c'), KeyModifiers::META), "Cmd+c"),
-            (
-                "kitty ⌥<",
-                press(C::Char(','), KeyModifiers::ALT | shift),
-                "Alt+<",
-            ),
-        ] {
-            let want: Key = name.parse().unwrap();
-            assert_eq!(key(ev), Some(want), "{raw}");
+            if done {
+                return Ok(flags);
+            }
         }
     }
 
-    #[test]
-    fn only_presses_of_named_keys() {
-        let mut ev = press(ct::KeyCode::Char('q'), KeyModifiers::NONE);
-        ev.kind = KeyEventKind::Release;
-        assert_eq!(key(ev), None);
-        ev.kind = KeyEventKind::Repeat;
-        assert_eq!(key(ev), None);
-        assert_eq!(key(press(ct::KeyCode::F(1), KeyModifiers::NONE)), None);
-        assert_eq!(key(press(ct::KeyCode::Delete, KeyModifiers::NONE)), None);
-    }
-
-    #[test]
-    fn mouse_events() {
-        let ev = |kind, mods| ct::MouseEvent {
-            kind,
-            column: 3,
-            row: 4,
-            modifiers: mods,
-        };
-        let at = |kind, shift| Mouse {
-            kind,
-            x: 3,
-            y: 4,
-            shift,
-        };
-        let none = KeyModifiers::NONE;
-        let shift = KeyModifiers::SHIFT;
-        let left = MouseButton::Left;
-        for (got, want) in [
-            (
-                ev(MouseEventKind::Down(left), shift),
-                at(MouseKind::Press, true),
-            ),
-            (
-                ev(MouseEventKind::Up(left), none),
-                at(MouseKind::Release, false),
-            ),
-            (
-                ev(MouseEventKind::Drag(left), none),
-                at(MouseKind::Drag, false),
-            ),
-            (
-                ev(MouseEventKind::Moved, none),
-                at(MouseKind::Release, false),
-            ),
-            (
-                ev(MouseEventKind::ScrollUp, none),
-                at(MouseKind::Wheel { rows: -1, cols: 0 }, false),
-            ),
-            (
-                ev(MouseEventKind::ScrollDown, shift),
-                at(MouseKind::Wheel { rows: 1, cols: 0 }, true),
-            ),
-            (
-                ev(MouseEventKind::ScrollLeft, none),
-                at(MouseKind::Wheel { rows: 0, cols: -1 }, false),
-            ),
-            (
-                ev(MouseEventKind::ScrollRight, none),
-                at(MouseKind::Wheel { rows: 0, cols: 1 }, false),
-            ),
-            (
-                ev(MouseEventKind::Down(MouseButton::Right), none),
-                at(MouseKind::Release, false),
-            ),
-            (
-                ev(MouseEventKind::Drag(MouseButton::Middle), none),
-                at(MouseKind::Release, false),
-            ),
-            (
-                ev(MouseEventKind::Up(MouseButton::Right), none),
-                at(MouseKind::Release, false),
-            ),
-        ] {
-            assert_eq!(mouse(got), want, "{got:?}");
-        }
+    /// Reads the terminal's input on a thread, sending keys, pastes,
+    /// the mouse and resizes until `tx` closes or the terminal fails.
+    pub fn spawn(mut self, tx: Sender<Event>) -> JoinHandle<()> {
+        thread::Builder::new()
+            .name("vedi-events".into())
+            .spawn(move || {
+                let resize_tx = tx.clone();
+                let resized = move |w, h| {
+                    set_size((w, h));
+                    resize_tx.send(Event::Resize(w, h)).is_ok()
+                };
+                let was = SIZE.load(Ordering::SeqCst);
+                // A resize since `enter` sized the terminal came before
+                // anything listened for one.
+                let _resize = tty::sigwinch(self.sized, resized.clone());
+                let now = tty::size(&self.tty);
+                set_size(now);
+                if SIZE.load(Ordering::SeqCst) != was && !resized(now.0, now.1) {
+                    return;
+                }
+                let mut inputs = std::mem::take(&mut self.early);
+                let mut buf = [0; 1024];
+                loop {
+                    for input in inputs.drain(..) {
+                        let ev = match input {
+                            Input::Key(k) => Event::Key(k),
+                            Input::Mouse(m) => Event::Mouse(m),
+                            Input::Paste(s) => Event::Paste(s),
+                            Input::KeyboardFlags(_) | Input::DeviceAttributes => continue,
+                        };
+                        if tx.send(ev).is_err() {
+                            return;
+                        }
+                    }
+                    if self.parser.pending() && !tty::readable_within(&self.tty, ESC_WAIT) {
+                        self.parser.flush(&mut inputs);
+                        continue;
+                    }
+                    match self.tty.read(&mut buf) {
+                        Ok(0) => return,
+                        Ok(n) => self.parser.feed(&buf[..n], &mut inputs),
+                        Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+                        Err(_) => return,
+                    }
+                }
+            })
+            .expect("spawn event thread")
     }
 }

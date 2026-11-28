@@ -82,6 +82,8 @@ Keyboard, with the action Send Text:
 | ⌥⇧↑ | `\033[1;4A` |
 | ⌥⇧↓ | `\033[1;4B` |
 
+With Use Option as Meta key on, ⌥↑ and ⌥↓ need no entry.
+
 ## kitty scrollback
 
 The [kitty](https://sw.kovidgoyal.net/kitty/) terminal can hand its scrollback

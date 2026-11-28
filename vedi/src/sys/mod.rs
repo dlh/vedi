@@ -1,4 +1,5 @@
 pub mod clipboard;
+pub mod input;
 pub mod opencmd;
 pub mod proc;
 pub mod save;

@@ -17,7 +17,7 @@ use vedi::cli::{self, USAGE};
 use vedi::input::config::{self, Config, LoadError};
 use vedi::sys::opencmd;
 use vedi::sys::proc::{self, Killer, Killers};
-use vedi::sys::term::{self, Crossterm};
+use vedi::sys::term::{self, Term};
 use vedi::sys::watch::Watch;
 use vedi::sys::{clipboard, tty};
 use vedi::text::ansi::{Printer, ViewStyle};
@@ -104,6 +104,8 @@ fn run() -> Result<(), Fail> {
         term::restore_after_panic();
         signal_killers.iter().for_each(Killers::kill_all);
     });
+    // Before the files, for a low descriptor; missed only if paging.
+    let device = term::open();
     let names: Vec<String> = files.iter().map(|f| f.to_string_lossy().into()).collect();
     let first = pick_open_cmds(open_cmd.as_ref(), &names, Some(0));
     let input = open_input(&files, &first, Opening::First, &readers.0).map_err(|msg| Fail {
@@ -117,7 +119,9 @@ fn run() -> Result<(), Fail> {
         // environment's size or 80×25; only paging needs one.
         if let Ok(tty) = File::open("/dev/tty").or_else(|_| File::open("/dev/null")) {
             let size = tty::size(&tty);
-            let _resize = tty::sigwinch(tx.clone(), tty);
+            let resize_tx = tx.clone();
+            let _resize =
+                tty::sigwinch(tty, move |w, h| resize_tx.send(Event::Resize(w, h)).is_ok());
             let below = settings.one_page_rows_below;
             let seps = settings.file_separators;
             if wait_one_page(&mut buf, &rx, size, below, seps) {
@@ -141,7 +145,7 @@ fn run() -> Result<(), Fail> {
             std::process::exit(2);
         }
     }));
-    let term = Crossterm::enter().map_err(|e| e.to_string())?;
+    let (term, events) = device.and_then(Term::enter).map_err(|e| e.to_string())?;
     let wake_tx = tx.clone();
     let runtime = Runtime {
         copier: clipboard::pick(
@@ -165,7 +169,7 @@ fn run() -> Result<(), Fail> {
         }),
     };
     let mut app = App::new(term, buf, 0, opts.app(&files, &cfg, runtime));
-    term::spawn_events(tx.clone());
+    events.spawn(tx.clone());
     // Declared after the app, so dropped before the terminal is put back.
     let _watch = on_disk.then(|| {
         let tx = tx.clone();
