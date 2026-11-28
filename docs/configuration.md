@@ -280,9 +280,11 @@ A key is a name or a single character, with any modifiers in front: `q`,
 | Media key | `Play` `Pause` `PlayPause` `Stop` `Reverse` `FastForward` `Rewind` `NextTrack` `PrevTrack` `Record` `VolumeUp` `VolumeDown` `Mute` |
 | Modifier | `Shift+` `Ctrl+` `Alt+` `Cmd+` |
 
-- `Ctrl+f` and `Ctrl+F` are the same key.
+- `Ctrl+f` and `Ctrl+F` are the same key, as a legacy terminal sends them.
+  `Ctrl+Shift+f` is another, sent only under the kitty keyboard protocol.
 - A shifted character is just that character: `G`, not `Shift+g`.
-- Only `Cmd+` takes `Shift+` on a character, and `Cmd+G` is `Cmd+Shift+g`.
+- Only `Ctrl+` and `Cmd+` take `Shift+` on a character. `Cmd+G` is
+  `Cmd+Shift+g`: Cmd keys come only under the kitty keyboard protocol.
 - `Shift+Space` is not a key a terminal can send.
 - Most terminals send `F1` to `F12`, some up to `F20`. Media keys and `F21` up
   come only under the kitty keyboard protocol, where the system passes them on.
